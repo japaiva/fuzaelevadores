@@ -1,139 +1,169 @@
-<!-- templates/gestor/subgrupo_list.html -->
 {% extends 'gestor/base_gestor.html' %}
 
-{% block title %}Subgrupos de Produtos | Portal do Gestor{% endblock %}
+{% block title %}Subgrupos de Produtos | Portal Comercial{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-sitemap me-2"></i>Subgrupos de Produtos</h2>
-    <a href="{% url 'gestor:subgrupo_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Novo Subgrupo
-    </a>
-</div>
-
-<!-- Filtros -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Grupo</label>
-                <select name="grupo" class="form-select">
-                    <option value="">Todos os Grupos</option>
-                    {% for grupo in grupos %}
-                        <option value="{{ grupo.id }}" {% if grupo_filtro == grupo.id|stringformat:"s" %}selected{% endif %}>
-                            {{ grupo.codigo }} - {{ grupo.nome }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
-                    <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Buscar</label>
-                <input type="text" name="q" class="form-control" value="{{ query|default:'' }}" placeholder="Código ou nome do subgrupo">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-outline-primary">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-sitemap me-2"></i> Subgrupos de Produtos
+    </h5>
+    <div>
+      <a href="{% url 'gestor:subgrupo_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Subgrupo
+      </a>
+      <a href="{% url 'gestor:dashboard' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-header bg-white">
+    <div class="row">
+      <div class="col-md-8">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-auto">
+            <select name="grupo" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Grupos</option>
+              {% for grupo in grupos %}
+                <option value="{{ grupo.id }}" {% if grupo_filtro == grupo.id|stringformat:"s" %}selected{% endif %}>
+                  {{ grupo.codigo }} - {{ grupo.nome }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Subgrupos</option>
+              <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
+              <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
+            </select>
+          </div>
         </form>
+      </div>
+      <div class="col-md-4">
+        <form method="get" class="d-flex">
+          <input type="text" name="q" class="form-control form-control-sm me-2" 
+                 placeholder="Buscar por código ou nome" value="{{ query|default:'' }}">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
     </div>
-</div>
-
-<!-- Lista de Subgrupos -->
-<div class="card">
-    <div class="card-body">
-        {% if subgrupos %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th width="100">Código</th>
-                            <th>Grupo</th>
-                            <th>Nome</th>
-                            <th>Descrição</th>
-                            <th width="80">Status</th>
-                            <th width="120">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for subgrupo in subgrupos %}
-                        <tr>
-                            <td><strong>{{ subgrupo.grupo.codigo }}.{{ subgrupo.codigo }}</strong></td>
-                            <td>{{ subgrupo.grupo.nome }}</td>
-                            <td>{{ subgrupo.nome }}</td>
-                            <td>{{ subgrupo.descricao|truncatechars:60 }}</td>
-                            <td>
-                                {% if subgrupo.ativo %}
-                                    <span class="badge bg-success">Ativo</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Inativo</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'gestor:subgrupo_update' subgrupo.pk %}" class="btn btn-outline-primary" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'gestor:subgrupo_toggle_status' subgrupo.pk %}" class="btn btn-outline-warning" title="Alterar Status">
-                                        <i class="fas fa-power-off"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Paginação -->
-            {% if subgrupos.has_other_pages %}
-            <nav>
-                <ul class="pagination justify-content-center">
-                    {% if subgrupos.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">&laquo; Primeira</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ subgrupos.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Anterior</a>
-                        </li>
-                    {% endif %}
-                    
-                    <li class="page-item active">
-                        <span class="page-link">{{ subgrupos.number }} de {{ subgrupos.paginator.num_pages }}</span>
-                    </li>
-                    
-                    {% if subgrupos.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ subgrupos.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Próxima</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ subgrupos.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Última &raquo;</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-        {% else %}
-            <div class="text-center py-4">
-                <i class="fas fa-sitemap fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Nenhum subgrupo encontrado</h5>
-                <p class="text-muted">Comece criando subgrupos para organizar melhor os produtos.</p>
-                <a href="{% url 'gestor:subgrupo_create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Criar Primeiro Subgrupo
+  </div>
+  
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Código Completo</th>
+            <th>Grupo</th>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th>Produtos</th>
+            <th class="text-center">Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for subgrupo in subgrupos %}
+            <tr>
+              <td><strong>{{ subgrupo.grupo.codigo }}.{{ subgrupo.codigo }}</strong></td>
+              <td>
+                <span class="badge bg-primary">{{ subgrupo.grupo.codigo }}</span>
+                <br><small class="text-muted">{{ subgrupo.grupo.nome }}</small>
+              </td>
+              <td>{{ subgrupo.nome }}</td>
+              <td>{{ subgrupo.descricao|truncatechars:60|default:"-" }}</td>
+              <td>
+                <span class="badge bg-info">{{ subgrupo.produto_set.count }} produtos</span>
+              </td>
+              <td class="text-center">
+                <span class="badge {% if subgrupo.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                  {% if subgrupo.ativo %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-end">
+                <a href="{% url 'gestor:produto_list' %}?subgrupo={{ subgrupo.id }}" class="btn btn-sm btn-outline-info me-1" title="Ver Produtos">
+                  <i class="fas fa-boxes"></i>
                 </a>
-            </div>
-        {% endif %}
+                <a href="{% url 'gestor:subgrupo_update' subgrupo.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'gestor:subgrupo_toggle_status' subgrupo.id %}" class="btn btn-sm {% if subgrupo.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                   title="{% if subgrupo.ativo %}Desativar{% else %}Ativar{% endif %}">
+                  <i class="fas {% if subgrupo.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-3 text-muted">
+                Nenhum subgrupo cadastrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
+  
+  {% if subgrupos.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav aria-label="Navegação de página">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if subgrupos.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ subgrupos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;&laquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;</span>
+          </li>
+        {% endif %}
+        
+        {% for i in subgrupos.paginator.page_range %}
+          {% if subgrupos.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% elif i > subgrupos.number|add:'-3' and i < subgrupos.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if subgrupos.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ subgrupos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ subgrupos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;&raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

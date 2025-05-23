@@ -50,6 +50,13 @@ urlpatterns = [
     path('produtos/<uuid:pk>/fornecedores/', views.produto_fornecedores, name='produto_fornecedores'),
     path('fornecedor-produto/<int:pk>/toggle/', views.fornecedor_produto_toggle, name='fornecedor_produto_toggle'),
     
+    # 🆕 CRUD CLIENTES
+    path('clientes/', views.cliente_list, name='cliente_list'),
+    path('clientes/novo/', views.cliente_create, name='cliente_create'),
+    path('clientes/<int:pk>/', views.cliente_detail, name='cliente_detail'),
+    path('clientes/<int:pk>/editar/', views.cliente_update, name='cliente_update'),
+    path('clientes/<int:pk>/alternar-status/', views.cliente_toggle_status, name='cliente_toggle_status'),
+    
     # APIs para AJAX
     path('api/subgrupos-por-grupo/<int:grupo_id>/', views.api_subgrupos_por_grupo, name='api_subgrupos_por_grupo'),
     path('api/produto-por-codigo/<str:codigo>/', views.api_produto_por_codigo, name='api_produto_por_codigo'),

@@ -1,0 +1,281 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{{ cliente.nome }} | Portal Comercial{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-user me-2"></i> {{ cliente.nome }}
+    </h5>
+    <div>
+      <a href="{% url 'gestor:cliente_update' cliente.id %}" class="btn btn-outline-primary btn-sm me-1">
+        <i class="fas fa-edit me-1"></i> Editar
+      </a>
+      <a href="{% url 'gestor:cliente_toggle_status' cliente.id %}" class="btn btn-sm {% if cliente.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+        <i class="fas {% if cliente.ativo %}fa-ban{% else %}fa-check-circle{% endif %} me-1"></i>
+        {% if cliente.ativo %}Desativar{% else %}Ativar{% endif %}
+      </a>
+      <a href="{% url 'gestor:cliente_list' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+      <!-- COLUNA 1 - Informações principais -->
+      <div class="col-md-6">
+        <!-- Informações Gerais -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Informações Gerais</h6>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <strong>Tipo:</strong>
+                <span class="badge {% if cliente.tipo_pessoa == 'PF' %}bg-info{% else %}bg-primary{% endif %}">
+                  {% if cliente.tipo_pessoa == 'PF' %}Pessoa Física{% else %}Pessoa Jurídica{% endif %}
+                </span>
+              </li>
+              <li class="list-group-item"><strong>Nome:</strong> {{ cliente.nome }}</li>
+              {% if cliente.nome_fantasia %}
+              <li class="list-group-item"><strong>Nome Fantasia:</strong> {{ cliente.nome_fantasia }}</li>
+              {% endif %}
+              {% if cliente.cpf_cnpj %}
+              <li class="list-group-item">
+                <strong>{% if cliente.tipo_pessoa == 'PF' %}CPF{% else %}CNPJ{% endif %}:</strong> 
+                {{ cliente.cpf_cnpj }}
+              </li>
+              {% endif %}
+              {% if cliente.contato_principal %}
+              <li class="list-group-item"><strong>Contato Principal:</strong> {{ cliente.contato_principal }}</li>
+              {% endif %}
+              <li class="list-group-item">
+                <strong>Status:</strong>
+                <span class="badge {% if cliente.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                  {% if cliente.ativo %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </li>
+              <li class="list-group-item"><strong>Cadastro:</strong> {{ cliente.criado_em|date:"d/m/Y H:i" }}</li>
+              {% if cliente.atualizado_em != cliente.criado_em %}
+              <li class="list-group-item"><strong>Última Atualização:</strong> {{ cliente.atualizado_em|date:"d/m/Y H:i" }}</li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Contato -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Informações de Contato</h6>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+              {% if cliente.telefone %}
+              <li class="list-group-item">
+                <strong>Telefone:</strong> 
+                <a href="tel:{{ cliente.telefone }}">{{ cliente.telefone }}</a>
+              </li>
+              {% endif %}
+              {% if cliente.email %}
+              <li class="list-group-item">
+                <strong>Email:</strong> 
+                <a href="mailto:{{ cliente.email }}">{{ cliente.email }}</a>
+              </li>
+              {% endif %}
+              {% if not cliente.telefone and not cliente.email %}
+              <li class="list-group-item text-muted">Nenhuma informação de contato cadastrada</li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Endereço -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Endereço</h6>
+          </div>
+          <div class="card-body">
+            {% if cliente.endereco or cliente.cidade %}
+              <address class="mb-0">
+                {% if cliente.endereco %}
+                  {{ cliente.endereco }}{% if cliente.numero %}, {{ cliente.numero }}{% endif %}<br>
+                  {% if cliente.complemento %}{{ cliente.complemento }}<br>{% endif %}
+                {% endif %}
+                {% if cliente.bairro %}{{ cliente.bairro }}<br>{% endif %}
+                {% if cliente.cidade %}
+                  {{ cliente.cidade }}{% if cliente.estado %} - {{ cliente.estado }}{% endif %}<br>
+                {% endif %}
+                {% if cliente.cep %}CEP: {{ cliente.cep }}{% endif %}
+              </address>
+            {% else %}
+              <p class="text-muted mb-0">Nenhum endereço cadastrado</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Observações -->
+        {% if cliente.observacoes %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Observações</h6>
+          </div>
+          <div class="card-body">
+            {{ cliente.observacoes|linebreaksbr }}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- COLUNA 2 - Ações e estatísticas -->
+      <div class="col-md-6">
+        <!-- Ações Rápidas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Ações Rápidas</h6>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              {% if cliente.telefone %}
+              <a href="tel:{{ cliente.telefone }}" class="btn btn-outline-success">
+                <i class="fas fa-phone me-2"></i>Ligar: {{ cliente.telefone }}
+              </a>
+              {% endif %}
+              {% if cliente.email %}
+              <a href="mailto:{{ cliente.email }}" class="btn btn-outline-info">
+                <i class="fas fa-envelope me-2"></i>Enviar Email
+              </a>
+              {% endif %}
+              <a href="{% url 'gestor:cliente_update' cliente.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit me-2"></i>Editar Dados
+              </a>
+              {% if cliente.endereco and cliente.cidade %}
+              <button type="button" class="btn btn-outline-secondary" onclick="abrirMapa()">
+                <i class="fas fa-map-marker-alt me-2"></i>Ver no Mapa
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Estatísticas</h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-6">
+                <div class="border-end">
+                  <h4 class="text-primary mb-0">0</h4>
+                  <small class="text-muted">Projetos</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4 class="text-success mb-0">R$ 0,00</h4>
+                <small class="text-muted">Total Vendas</small>
+              </div>
+            </div>
+            <hr class="my-3">
+            <div class="row text-center">
+              <div class="col-md-6">
+                <div class="border-end">
+                  <h4 class="text-info mb-0">-</h4>
+                  <small class="text-muted">Última Venda</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h4 class="text-warning mb-0">-</h4>
+                <small class="text-muted">Próximo Contato</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Histórico Recente -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Histórico Recente</h6>
+          </div>
+          <div class="card-body">
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-marker bg-primary"></div>
+                <div class="timeline-content">
+                  <h6 class="timeline-title">Cliente Cadastrado</h6>
+                  <p class="timeline-text">{{ cliente.criado_em|date:"d/m/Y H:i" }}</p>
+                </div>
+              </div>
+              {% if cliente.atualizado_em != cliente.criado_em %}
+              <div class="timeline-item">
+                <div class="timeline-marker bg-info"></div>
+                <div class="timeline-content">
+                  <h6 class="timeline-title">Dados Atualizados</h6>
+                  <p class="timeline-text">{{ cliente.atualizado_em|date:"d/m/Y H:i" }}</p>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -23px;
+  top: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.timeline-title {
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+  font-weight: 600;
+}
+
+.timeline-text {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+</style>
+
+{% block extra_js %}
+<script>
+  function abrirMapa() {
+    const endereco = '{{ cliente.endereco|default:"" }} {{ cliente.numero|default:"" }}, {{ cliente.bairro|default:"" }}, {{ cliente.cidade|default:"" }} - {{ cliente.estado|default:"" }}';
+    const url = `https://www.google.com/maps/search/${encodeURIComponent(endereco)}`;
+    window.open(url, '_blank');
+  }
+</script>
+{% endblock %}
+{% endblock %}

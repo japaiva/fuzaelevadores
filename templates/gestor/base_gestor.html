@@ -15,13 +15,22 @@
 
 <!-- Menu de Cadastros Básicos -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'grupo' in request.resolver_match.url_name or 'subgrupo' in request.resolver_match.url_name or 'fornecedor' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'grupo' in request.resolver_match.url_name or 'subgrupo' in request.resolver_match.url_name or 'fornecedor' in request.resolver_match.url_name or 'cliente' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
      Cadastros
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><h6 class="dropdown-header">Geral</h6></li>
     <li><a class="dropdown-item" href="{% url 'gestor:usuario_list' %}">
-        Usuários
+        <i class="fas fa-users me-2"></i>Usuários
+    </a></li>
+    
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header">Comercial</h6></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:cliente_list' %}">
+        <i class="fas fa-user-friends me-2"></i>Clientes
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
+        <i class="fas fa-truck me-2"></i>Fornecedores
     </a></li>
   </ul>
 </li>
@@ -32,30 +41,26 @@
     Produtos
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-
-
-
+    <li><h6 class="dropdown-header">Tipos de Produto</h6></li>
     <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=MP">
-        Matéria Prima
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=PA">
-        Produtos Acabados
+        <i class="fas fa-cubes me-2"></i>Matéria Prima
     </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=PI">
-        Produtos Intermediários
+        <i class="fas fa-cogs me-2"></i>Produtos Intermediários
     </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=PA">
+        <i class="fas fa-box me-2"></i>Produtos Acabados
+    </a></li>
+    
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header">Organização</h6></li>
     <li><a class="dropdown-item" href="{% url 'gestor:grupo_list' %}">
-         Grupos de Produtos
+        <i class="fas fa-layer-group me-2"></i>Grupos de Produtos
     </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:subgrupo_list' %}">
-         Subgrupos de Produtos
-    </a></li>
-        <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
-         Fornecedores
+        <i class="fas fa-sitemap me-2"></i>Subgrupos de Produtos
     </a></li>
   </ul>
 </li>
-
 
 {% endblock %}

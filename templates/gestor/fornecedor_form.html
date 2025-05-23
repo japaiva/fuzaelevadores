@@ -1,119 +1,196 @@
-<!-- templates/gestor/fornecedor_form.html -->
 {% extends 'gestor/base_gestor.html' %}
 
-{% block title %}
-{% if fornecedor %}Editar Fornecedor{% else %}Novo Fornecedor{% endif %} | Portal do Gestor
-{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Fornecedor | Portal Comercial{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-truck me-2"></i>
-                    {% if fornecedor %}Editar Fornecedor: {{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}{% else %}Novo Fornecedor{% endif %}
-                </h5>
-                <a href="{% url 'gestor:fornecedor_list' %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-2"></i>Voltar
-                </a>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label class="form-label">Razão Social *</label>
-                                {{ form.razao_social }}
-                                {% if form.razao_social.errors %}
-                                    <div class="text-danger small">{{ form.razao_social.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">CNPJ</label>
-                                {{ form.cnpj }}
-                                {% if form.cnpj.errors %}
-                                    <div class="text-danger small">{{ form.cnpj.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+      {% if form.instance.pk %}Editar{% else %}Novo{% endif %} Fornecedor
+    </h5>
+    <a href="{% url 'gestor:fornecedor_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Nome Fantasia</label>
-                                {{ form.nome_fantasia }}
-                                {% if form.nome_fantasia.errors %}
-                                    <div class="text-danger small">{{ form.nome_fantasia.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Contato Principal</label>
-                                {{ form.contato_principal }}
-                                {% if form.contato_principal.errors %}
-                                    <div class="text-danger small">{{ form.contato_principal.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="form-check mt-4">
-                                    {{ form.ativo }}
-                                    <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
-                                        Ativo
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Telefone</label>
-                                {{ form.telefone }}
-                                {% if form.telefone.errors %}
-                                    <div class="text-danger small">{{ form.telefone.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">E-mail</label>
-                                {{ form.email }}
-                                {% if form.email.errors %}
-                                    <div class="text-danger small">{{ form.email.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Endereço</label>
-                        {{ form.endereco }}
-                        <div class="form-text">Informações de endereço em formato JSON ou texto livre</div>
-                        {% if form.endereco.errors %}
-                            <div class="text-danger small">{{ form.endereco.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="text-end">
-                        <a href="{% url 'gestor:fornecedor_list' %}" class="btn btn-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>
-                            {% if fornecedor %}Atualizar{% else %}Criar{% endif %}
-                        </button>
-                    </div>
-                </form>
-            </div>
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
         </div>
-    </div>
+      {% endif %}
+      
+      <!-- Bloco de Informações Principais -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-building me-2"></i>
+            Informações da Empresa
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label for="{{ form.razao_social.id_for_label }}" class="form-label">Razão Social*</label>
+              {{ form.razao_social }}
+              {% if form.razao_social.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.razao_social.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.cnpj.id_for_label }}" class="form-label">CNPJ</label>
+              {{ form.cnpj }}
+              {% if form.cnpj.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.cnpj.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-8">
+              <label for="{{ form.nome_fantasia.id_for_label }}" class="form-label">Nome Fantasia</label>
+              {{ form.nome_fantasia }}
+              {% if form.nome_fantasia.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome_fantasia.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <div class="form-check form-switch mt-4">
+                {{ form.ativo }}
+                <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Fornecedor Ativo</label>
+              </div>
+              {% if form.ativo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.ativo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Contato -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-phone me-2"></i>
+            Informações de Contato
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.contato_principal.id_for_label }}" class="form-label">Contato Principal</label>
+              {{ form.contato_principal }}
+              {% if form.contato_principal.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.contato_principal.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.telefone.id_for_label }}" class="form-label">Telefone</label>
+              {{ form.telefone }}
+              {% if form.telefone.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.telefone.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-12">
+              <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+              {{ form.email }}
+              {% if form.email.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.email.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Endereço -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-map-marker-alt me-2"></i>
+            Endereço
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="{{ form.endereco.id_for_label }}" class="form-label">Endereço Completo</label>
+              {{ form.endereco }}
+              {% if form.endereco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.endereco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Endereço completo com logradouro, número, bairro, cidade, UF e CEP
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Máscaras para campos
+    if (typeof IMask !== 'undefined') {
+      // CNPJ
+      const cnpjInput = document.getElementById('{{ form.cnpj.id_for_label }}');
+      if (cnpjInput) {
+        IMask(cnpjInput, {
+          mask: '00.000.000/0000-00'
+        });
+      }
+      
+      // Telefone
+      const telefoneInputs = document.querySelectorAll('input[name$="telefone"]');
+      telefoneInputs.forEach(input => {
+        IMask(input, {
+          mask: [
+            { mask: '(00) 0000-0000' },
+            { mask: '(00) 00000-0000' }
+          ],
+          dispatch: function (appended, dynamicMasked) {
+            const number = (dynamicMasked.value + appended).replace(/\D/g, '');
+            return number.length <= 10
+              ? dynamicMasked.compiledMasks[0]
+              : dynamicMasked.compiledMasks[1];
+          }
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}
 {% endblock %}

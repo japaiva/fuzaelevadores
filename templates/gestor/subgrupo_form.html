@@ -1,0 +1,202 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Subgrupo | Portal Comercial{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+      {% if form.instance.pk %}Editar{% else %}Novo{% endif %} Subgrupo de Produto
+    </h5>
+    <a href="{% url 'gestor:subgrupo_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Bloco de Informações Principais -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Informações do Subgrupo
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.grupo.id_for_label }}" class="form-label">Grupo Pai*</label>
+              {{ form.grupo }}
+              {% if form.grupo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.grupo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Selecione o grupo ao qual este subgrupo pertence
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.codigo.id_for_label }}" class="form-label">Código*</label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.codigo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Código único dentro do grupo
+              </div>
+            </div>
+            
+            <div class="col-md-2">
+              <div class="form-check form-switch mt-4">
+                {{ form.ativo }}
+                <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+              </div>
+              {% if form.ativo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.ativo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
+              {{ form.nome }}
+              {% if form.nome.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+              {{ form.descricao }}
+              {% if form.descricao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Descrição detalhada do subgrupo de produtos
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Prévia do Código -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-barcode me-2"></i>
+            Código Completo
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="alert alert-info mb-0">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-info-circle me-2"></i>
+                  <div>
+                    <strong>Código que será gerado:</strong>
+                    <span id="codigo-preview" class="ms-2 fw-bold text-primary">
+                      {% if form.instance.pk %}
+                        {{ form.instance.grupo.codigo }}.{{ form.instance.codigo }}
+                      {% else %}
+                        [GRUPO].[CÓDIGO]
+                      {% endif %}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if form.instance.pk %}
+      <!-- Bloco de Informações Adicionais -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-chart-bar me-2"></i>
+            Estatísticas
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <div class="text-center">
+                <h4 class="text-info">{{ form.instance.produto_set.count }}</h4>
+                <small class="text-muted">Produtos neste Subgrupo</small>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <a href="{% url 'gestor:produto_list' %}?subgrupo={{ form.instance.id }}" class="btn btn-outline-info btn-sm">
+                <i class="fas fa-boxes me-1"></i> Ver Produtos deste Subgrupo
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
+    const codigoInput = document.getElementById('{{ form.codigo.id_for_label }}');
+    const codigoPreview = document.getElementById('codigo-preview');
+    
+    function updateCodigoPreview() {
+      const grupoOption = grupoSelect.selectedOptions[0];
+      const codigo = codigoInput.value;
+      
+      if (grupoOption && grupoOption.value) {
+        const grupoTexto = grupoOption.text.split(' - ')[0]; // Pega só o código do grupo
+        codigoPreview.textContent = `${grupoTexto}.${codigo || '[CÓDIGO]'}`;
+      } else {
+        codigoPreview.textContent = `[GRUPO].${codigo || '[CÓDIGO]'}`;
+      }
+    }
+    
+    if (grupoSelect && codigoInput && codigoPreview) {
+      grupoSelect.addEventListener('change', updateCodigoPreview);
+      codigoInput.addEventListener('input', updateCodigoPreview);
+      
+      // Atualizar na inicialização
+      updateCodigoPreview();
+    }
+  });
+</script>
+{% endblock %}
+{% endblock %}

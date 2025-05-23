@@ -1,77 +1,136 @@
-
-<!-- templates/gestor/grupo_form.html -->
 {% extends 'gestor/base_gestor.html' %}
 
-{% block title %}
-{% if grupo %}Editar Grupo{% else %}Novo Grupo{% endif %} | Portal do Gestor
-{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Grupo | Portal Comercial{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-layer-group me-2"></i>
-                    {% if grupo %}Editar Grupo: {{ grupo.nome }}{% else %}Novo Grupo de Produto{% endif %}
-                </h5>
-                <a href="{% url 'gestor:grupo_list' %}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-arrow-left me-2"></i>Voltar
-                </a>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Código *</label>
-                                {{ form.codigo }}
-                                {% if form.codigo.errors %}
-                                    <div class="text-danger small">{{ form.codigo.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Nome *</label>
-                                {{ form.nome }}
-                                {% if form.nome.errors %}
-                                    <div class="text-danger small">{{ form.nome.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="mb-3">
-                                <div class="form-check mt-4">
-                                    {{ form.ativo }}
-                                    <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
-                                        Ativo
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+      {% if form.instance.pk %}Editar{% else %}Novo{% endif %} Grupo de Produto
+    </h5>
+    <a href="{% url 'gestor:grupo_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label class="form-label">Descrição</label>
-                        {{ form.descricao }}
-                        {% if form.descricao.errors %}
-                            <div class="text-danger small">{{ form.descricao.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="text-end">
-                        <a href="{% url 'gestor:grupo_list' %}" class="btn btn-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>
-                            {% if grupo %}Atualizar{% else %}Criar{% endif %}
-                        </button>
-                    </div>
-                </form>
-            </div>
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
         </div>
-    </div>
+      {% endif %}
+      
+      <!-- Bloco de Informações Principais -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Informações do Grupo
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="{{ form.codigo.id_for_label }}" class="form-label">Código*</label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.codigo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-7">
+              <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
+              {{ form.nome }}
+              {% if form.nome.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-2">
+              <div class="form-check form-switch mt-4">
+                {{ form.ativo }}
+                <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+              </div>
+              {% if form.ativo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.ativo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+              {{ form.descricao }}
+              {% if form.descricao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Descrição detalhada do grupo de produtos para facilitar a identificação
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% if form.instance.pk %}
+      <!-- Bloco de Informações Adicionais -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-chart-bar me-2"></i>
+            Estatísticas
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="text-center">
+                <h4 class="text-primary">{{ form.instance.subgrupos.count }}</h4>
+                <small class="text-muted">Subgrupos Cadastrados</small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-center">
+                <h4 class="text-info">{{ form.instance.produto_set.count }}</h4>
+                <small class="text-muted">Produtos Cadastrados</small>
+              </div>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <div class="d-flex gap-2">
+                <a href="{% url 'gestor:subgrupo_list' %}?grupo={{ form.instance.id }}" class="btn btn-outline-info btn-sm">
+                  <i class="fas fa-sitemap me-1"></i> Ver Subgrupos
+                </a>
+                <a href="{% url 'gestor:produto_list' %}?grupo={{ form.instance.id }}" class="btn btn-outline-secondary btn-sm">
+                  <i class="fas fa-boxes me-1"></i> Ver Produtos
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

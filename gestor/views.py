@@ -15,12 +15,12 @@ from django.db.models import Q, Sum, Count
 from core.models import (
     Usuario, Produto, GrupoProduto, SubgrupoProduto, Fornecedor,
     EspecificacaoElevador, OpcaoEspecificacao, RegraComponente,
-    ComponenteDerivado, SimulacaoElevador
+    ComponenteDerivado, SimulacaoElevador, Cliente
 )
 from core.forms import (
     UsuarioForm, ProdutoForm, GrupoProdutoForm, SubgrupoProdutoForm, 
     FornecedorForm, EspecificacaoElevadorForm, OpcaoEspecificacaoForm,
-    RegraComponenteForm, ComponenteDerivadoForm
+    RegraComponenteForm, ComponenteDerivadoForm, ClienteForm
 )
 
 logger = logging.getLogger(__name__)
@@ -616,3 +616,98 @@ def fornecedor_produto_toggle(request, pk):
     messages.success(request, f'Fornecedor {status_text} para este produto.')
     
     return redirect('gestor:produto_detail', pk=fornecedor_produto.produto.pk)
+
+# Adicionar estas views em gestor/views.py
+
+# =============================================================================
+# CRUD CLIENTES
+# =============================================================================
+
+@login_required
+def cliente_list(request):
+    clientes_list = Cliente.objects.all().order_by('nome')
+    
+    # Filtros
+    tipo = request.GET.get('tipo')
+    if tipo:
+        clientes_list = clientes_list.filter(tipo_pessoa=tipo)
+    
+    status = request.GET.get('status')
+    if status == 'ativo':
+        clientes_list = clientes_list.filter(ativo=True)
+    elif status == 'inativo':
+        clientes_list = clientes_list.filter(ativo=False)
+    
+    query = request.GET.get('q')
+    if query:
+        clientes_list = clientes_list.filter(
+            Q(nome__icontains=query) | 
+            Q(nome_fantasia__icontains=query) |
+            Q(cpf_cnpj__icontains=query) |
+            Q(email__icontains=query)
+        )
+    
+    # Paginação
+    paginator = Paginator(clientes_list, 15)
+    page = request.GET.get('page', 1)
+    
+    try:
+        clientes = paginator.page(page)
+    except PageNotAnInteger:
+        clientes = paginator.page(1)
+    except EmptyPage:
+        clientes = paginator.page(paginator.num_pages)
+    
+    return render(request, 'gestor/cliente_list.html', {
+        'clientes': clientes,
+        'tipo_filtro': tipo,
+        'status_filtro': status,
+        'query': query
+    })
+
+@login_required
+def cliente_create(request):
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            cliente = form.save(commit=False)
+            cliente.criado_por = request.user
+            cliente.atualizado_por = request.user
+            cliente.save()
+            messages.success(request, f'Cliente "{cliente.nome}" criado com sucesso.')
+            return redirect('gestor:cliente_detail', pk=cliente.id)
+    else:
+        form = ClienteForm()
+    return render(request, 'gestor/cliente_form.html', {'form': form})
+
+@login_required
+def cliente_update(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    if request.method == 'POST':
+        form = ClienteForm(request.POST, instance=cliente)
+        if form.is_valid():
+            cliente = form.save(commit=False)
+            cliente.atualizado_por = request.user
+            cliente.save()
+            messages.success(request, f'Cliente "{cliente.nome}" atualizado com sucesso.')
+            return redirect('gestor:cliente_detail', pk=cliente.id)
+    else:
+        form = ClienteForm(instance=cliente)
+    return render(request, 'gestor/cliente_form.html', {'form': form, 'cliente': cliente})
+
+@login_required
+def cliente_detail(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    return render(request, 'gestor/cliente_detail.html', {'cliente': cliente})
+
+@login_required
+def cliente_toggle_status(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    cliente.ativo = not cliente.ativo
+    cliente.atualizado_por = request.user
+    cliente.save()
+    
+    status_text = "ativado" if cliente.ativo else "desativado"
+    messages.success(request, f'Cliente "{cliente.nome}" {status_text} com sucesso.')
+    
+    return redirect('gestor:cliente_list')

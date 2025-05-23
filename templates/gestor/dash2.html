@@ -1,0 +1,153 @@
+
+<!-- templates/gestor/dashboard.html ATUALIZADO -->
+{% extends 'gestor/base_gestor.html' %}
+{% load static %}
+
+{% block title %}Dashboard | Portal do Gestor{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard do Gestor</h2>
+        <p class="text-muted">Visão geral do sistema e principais indicadores</p>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary hover-card">
+            <div class="card-body text-center">
+                <div class="icon-circle bg-primary text-white mb-3">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+                <h3 class="text-primary mb-0">{{ total_usuarios }}</h3>
+                <p class="text-muted mb-0">Usuários</p>
+                <a href="{% url 'gestor:usuario_list' %}" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-success hover-card">
+            <div class="card-body text-center">
+                <div class="icon-circle bg-success text-white mb-3">
+                    <i class="fas fa-boxes fa-2x"></i>
+                </div>
+                <h3 class="text-success mb-0">{{ total_produtos }}</h3>
+                <p class="text-muted mb-0">Produtos</p>
+                <a href="{% url 'gestor:produto_list' %}" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-info hover-card">
+            <div class="card-body text-center">
+                <div class="icon-circle bg-info text-white mb-3">
+                    <i class="fas fa-truck fa-2x"></i>
+                </div>
+                <h3 class="text-info mb-0">{{ total_fornecedores }}</h3>
+                <p class="text-muted mb-0">Fornecedores</p>
+                <a href="{% url 'gestor:fornecedor_list' %}" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card border-warning hover-card">
+            <div class="card-body text-center">
+                <div class="icon-circle bg-warning text-white mb-3">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+                <h3 class="text-warning mb-0">{{ produtos_sem_estoque }}</h3>
+                <p class="text-muted mb-0">Estoque Baixo</p>
+                <a href="{% url 'gestor:produto_list' %}?status=estoque_baixo" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Links Rápidos -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-plus me-2"></i>Ações Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'gestor:produto_create' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-box text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Novo Produto</h6>
+                            <small>Cadastrar um novo produto no sistema</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'gestor:fornecedor_create' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-truck text-info me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Novo Fornecedor</h6>
+                            <small>Cadastrar um novo fornecedor</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'gestor:usuario_create' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-user-plus text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Novo Usuário</h6>
+                            <small>Adicionar usuário ao sistema</small>
+                        </div>
+                    </a>
+                    <a href="{% url 'gestor:grupo_create' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <i class="fas fa-layer-group text-warning me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Novo Grupo</h6>
+                            <small>Criar grupo de produtos</small>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list me-2"></i>Relatórios</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'gestor:produto_list' %}?tipo=MP" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Matérias Prima</h6>
+                            <small>Ver todas as matérias prima</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">Ver</span>
+                    </a>
+                    <a href="{% url 'gestor:produto_list' %}?tipo=PI" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Produtos Intermediários</h6>
+                            <small>Ver produtos intermediários</small>
+                        </div>
+                        <span class="badge bg-info rounded-pill">Ver</span>
+                    </a>
+                    <a href="{% url 'gestor:produto_list' %}?tipo=PA" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Produtos Acabados</h6>
+                            <small>Ver produtos acabados</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill">Ver</span>
+                    </a>
+                    <a href="{% url 'gestor:produto_list' %}?status=indisponivel" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Produtos Bloqueados</h6>
+                            <small>Ver produtos indisponíveis</small>
+                        </div>
+                        <span class="badge bg-warning rounded-pill">Ver</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

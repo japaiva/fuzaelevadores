@@ -1,147 +1,161 @@
-<!-- templates/gestor/usuario_list.html -->
 {% extends 'gestor/base_gestor.html' %}
-{% load static %}
 
-{% block title %}Usuários | Portal do Gestor{% endblock %}
+{% block title %}Usuários | Portal Comercial{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-users me-2"></i>Usuários</h2>
-    <a href="{% url 'gestor:usuario_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Novo Usuário
-    </a>
-</div>
-
-<!-- Filtros -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Nível</label>
-                <select name="nivel" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="admin" {% if nivel_filtro == 'admin' %}selected{% endif %}>Admin</option>
-                    <option value="gestor" {% if nivel_filtro == 'gestor' %}selected{% endif %}>Gestor</option>
-                    <option value="vendedor" {% if nivel_filtro == 'vendedor' %}selected{% endif %}>Vendedor</option>
-                    <option value="compras" {% if nivel_filtro == 'compras' %}selected{% endif %}>Compras</option>
-                    <option value="engenharia" {% if nivel_filtro == 'engenharia' %}selected{% endif %}>Engenharia</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">Todos</option>
-                    <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
-                    <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Buscar</label>
-                <input type="text" name="q" class="form-control" value="{{ query|default:'' }}" placeholder="Nome, usuário ou e-mail">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-outline-primary">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-users me-2"></i> Usuários
+    </h5>
+    <div>
+      <a href="{% url 'gestor:usuario_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Usuário
+      </a>
+      <a href="{% url 'gestor:dashboard' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-header bg-white">
+    <div class="row">
+      <div class="col-md-8">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-auto">
+            <select name="nivel" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Níveis</option>
+              <option value="admin" {% if nivel_filtro == 'admin' %}selected{% endif %}>Admin</option>
+              <option value="gestor" {% if nivel_filtro == 'gestor' %}selected{% endif %}>Gestor</option>
+              <option value="vendedor" {% if nivel_filtro == 'vendedor' %}selected{% endif %}>Vendedor</option>
+              <option value="compras" {% if nivel_filtro == 'compras' %}selected{% endif %}>Compras</option>
+              <option value="engenharia" {% if nivel_filtro == 'engenharia' %}selected{% endif %}>Engenharia</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Usuários</option>
+              <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
+              <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
+            </select>
+          </div>
         </form>
+      </div>
+      <div class="col-md-4">
+        <form method="get" class="d-flex">
+          <input type="text" name="q" class="form-control form-control-sm me-2" 
+                 placeholder="Buscar por nome ou usuário" value="{{ query|default:'' }}">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
     </div>
-</div>
-
-<!-- Lista de Usuários -->
-<div class="card">
-    <div class="card-body">
-        {% if usuarios %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Usuário</th>
-                            <th>Nome</th>
-                            <th>E-mail</th>
-                            <th>Nível</th>
-                            <th>Códigos</th>
-                            <th>Status</th>
-                            <th width="120">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for usuario in usuarios %}
-                        <tr>
-                            <td><strong>{{ usuario.username }}</strong></td>
-                            <td>{{ usuario.first_name }} {{ usuario.last_name }}</td>
-                            <td>{{ usuario.email }}</td>
-                            <td>
-                                <span class="badge bg-info">{{ usuario.get_nivel_display }}</span>
-                            </td>
-                            <td>
-                                {% if usuario.codigo_loja %}L{{ usuario.codigo_loja }}{% endif %}
-                                {% if usuario.codigo_vendedor %}V{{ usuario.codigo_vendedor }}{% endif %}
-                            </td>
-                            <td>
-                                {% if usuario.is_active %}
-                                    <span class="badge bg-success">Ativo</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Inativo</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'gestor:usuario_update' usuario.pk %}" class="btn btn-outline-primary" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'gestor:usuario_toggle_status' usuario.pk %}" class="btn btn-outline-warning" title="Alterar Status">
-                                        <i class="fas fa-power-off"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Paginação -->
-            {% if usuarios.has_other_pages %}
-            <nav>
-                <ul class="pagination justify-content-center">
-                    {% if usuarios.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">&laquo; Primeira</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ usuarios.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Anterior</a>
-                        </li>
-                    {% endif %}
-                    
-                    <li class="page-item active">
-                        <span class="page-link">{{ usuarios.number }} de {{ usuarios.paginator.num_pages }}</span>
-                    </li>
-                    
-                    {% if usuarios.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ usuarios.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Próxima</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ usuarios.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Última &raquo;</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
-        {% else %}
-            <div class="text-center py-4">
-                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Nenhum usuário encontrado</h5>
-                <p class="text-muted">Comece criando o primeiro usuário do sistema.</p>
-                <a href="{% url 'gestor:usuario_create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Criar Primeiro Usuário
+  </div>
+  
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Usuário</th>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Nível</th>
+            <th class="text-center">Status</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for usuario in usuarios %}
+            <tr>
+              <td><strong>{{ usuario.username }}</strong></td>
+              <td>{{ usuario.first_name }} {{ usuario.last_name }}</td>
+              <td>{{ usuario.email|default:"-" }}</td>
+              <td>
+                <span class="badge bg-info">{{ usuario.get_nivel_display }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge {% if usuario.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                  {% if usuario.is_active %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-end">
+                <a href="{% url 'gestor:usuario_update' usuario.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                  <i class="fas fa-edit"></i>
                 </a>
-            </div>
-        {% endif %}
+                <a href="{% url 'gestor:usuario_toggle_status' usuario.id %}" class="btn btn-sm {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                   title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}">
+                  <i class="fas {% if usuario.is_active %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-3 text-muted">
+                Nenhum usuário cadastrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
+  
+  {% if usuarios.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav aria-label="Navegação de página">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if usuarios.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ usuarios.previous_page_number }}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;&laquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;</span>
+          </li>
+        {% endif %}
+        
+        {% for i in usuarios.paginator.page_range %}
+          {% if usuarios.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% elif i > usuarios.number|add:'-3' and i < usuarios.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if usuarios.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ usuarios.next_page_number }}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ usuarios.paginator.num_pages }}{% if nivel_filtro %}&nivel={{ nivel_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;&raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

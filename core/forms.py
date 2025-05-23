@@ -3,7 +3,8 @@ from django import forms
 from core.models import (
     Usuario, Produto, GrupoProduto, SubgrupoProduto, Fornecedor,
     EspecificacaoElevador, OpcaoEspecificacao, RegraComponente,
-    ComponenteDerivado, SimulacaoElevador, FornecedorProduto  # Adicionar aqui
+    ComponenteDerivado, SimulacaoElevador, FornecedorProduto, Cliente
+        # Adicionar aqui
 )
 from django.contrib.auth.hashers import make_password
 from datetime import datetime
@@ -77,7 +78,8 @@ class UsuarioForm(forms.ModelForm):
             user.save()
         
         return user
-
+    
+# Substitua o ProdutoForm no seu core/forms.py por esta versão corrigida:
 
 class ProdutoForm(forms.ModelForm):
     class Meta:
@@ -121,11 +123,19 @@ class ProdutoForm(forms.ModelForm):
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.filter(grupo_id=grupo_id, ativo=True)
             except (ValueError, TypeError):
                 pass
-        elif self.instance.pk and self.instance.grupo:
-            self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True)
+        elif self.instance.pk:
+            # Só verificar grupo se a instância já existe (produto sendo editado)
+            try:
+                if self.instance.grupo:
+                    self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True)
+                else:
+                    self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
+            except:
+                # Se der erro ao acessar grupo, deixar queryset vazio
+                self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         else:
+            # Para produtos novos, não mostrar subgrupos até que um grupo seja selecionado
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
-
 
 class GrupoProdutoForm(forms.ModelForm):
     class Meta:
@@ -273,3 +283,80 @@ FornecedorProdutoFormSet = forms.inlineformset_factory(
     can_delete=True,
     fields=['fornecedor', 'codigo_fornecedor', 'preco_unitario', 'prioridade', 'prazo_entrega', 'ativo']
 )
+
+
+# Adicionar este form em core/forms.py
+
+class ClienteForm(forms.ModelForm):
+    class Meta:
+        model = Cliente
+        fields = [
+            'tipo_pessoa', 'nome', 'nome_fantasia', 'cpf_cnpj',
+            'telefone', 'email', 'contato_principal',
+            'cep', 'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado',
+            'observacoes', 'ativo'
+        ]
+        widgets = {
+            'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}, choices=[
+                ('', 'Selecione o tipo'),
+                ('PF', 'Pessoa Física'),
+                ('PJ', 'Pessoa Jurídica'),
+            ]),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
+            'cpf_cnpj': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'contato_principal': forms.TextInput(attrs={'class': 'form-control'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control'}),
+            'endereco': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'complemento': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'estado': forms.Select(attrs={'class': 'form-select'}, choices=[
+                ('', 'Selecione o estado'),
+                ('AC', 'Acre'), ('AL', 'Alagoas'), ('AP', 'Amapá'), ('AM', 'Amazonas'),
+                ('BA', 'Bahia'), ('CE', 'Ceará'), ('DF', 'Distrito Federal'), ('ES', 'Espírito Santo'),
+                ('GO', 'Goiás'), ('MA', 'Maranhão'), ('MT', 'Mato Grosso'), ('MS', 'Mato Grosso do Sul'),
+                ('MG', 'Minas Gerais'), ('PA', 'Pará'), ('PB', 'Paraíba'), ('PR', 'Paraná'),
+                ('PE', 'Pernambuco'), ('PI', 'Piauí'), ('RJ', 'Rio de Janeiro'), ('RN', 'Rio Grande do Norte'),
+                ('RS', 'Rio Grande do Sul'), ('RO', 'Rondônia'), ('RR', 'Roraima'), ('SC', 'Santa Catarina'),
+                ('SP', 'São Paulo'), ('SE', 'Sergipe'), ('TO', 'Tocantins')
+            ]),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo_pessoa'].required = True
+        self.fields['nome'].required = True
+        
+        # Se for uma nova instância, marcar como ativo por padrão
+        if not self.instance.pk:
+            self.initial['ativo'] = True
+
+    def clean_cpf_cnpj(self):
+        cpf_cnpj = self.cleaned_data.get('cpf_cnpj')
+        tipo_pessoa = self.cleaned_data.get('tipo_pessoa')
+        
+        if cpf_cnpj and tipo_pessoa:
+            # Remove caracteres não numéricos
+            cpf_cnpj_numerico = ''.join(filter(str.isdigit, cpf_cnpj))
+            
+            if tipo_pessoa == 'PF' and len(cpf_cnpj_numerico) != 11:
+                raise forms.ValidationError("CPF deve ter 11 dígitos numéricos.")
+            elif tipo_pessoa == 'PJ' and len(cpf_cnpj_numerico) != 14:
+                raise forms.ValidationError("CNPJ deve ter 14 dígitos numéricos.")
+                
+        return cpf_cnpj
+
+    def clean_cep(self):
+        cep = self.cleaned_data.get('cep')
+        if cep:
+            # Remove caracteres não numéricos
+            cep_numerico = ''.join(filter(str.isdigit, cep))
+            if len(cep_numerico) != 8:
+                raise forms.ValidationError("CEP deve ter 8 dígitos numéricos.")
+        return cep
