@@ -1,0 +1,142 @@
+
+<!-- templates/gestor/fornecedor_list.html -->
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Fornecedores | Portal do Gestor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-truck me-2"></i>Fornecedores</h2>
+    <a href="{% url 'gestor:fornecedor_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Novo Fornecedor
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
+                    <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+            <div class="col-md-7">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="q" class="form-control" value="{{ query|default:'' }}" placeholder="Razão social, nome fantasia ou CNPJ">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Fornecedores -->
+<div class="card">
+    <div class="card-body">
+        {% if fornecedores %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>CNPJ</th>
+                            <th>Contato</th>
+                            <th width="80">Status</th>
+                            <th width="120">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fornecedor in fornecedores %}
+                        <tr>
+                            <td>
+                                <strong>{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</strong>
+                                {% if fornecedor.nome_fantasia and fornecedor.nome_fantasia != fornecedor.razao_social %}
+                                    <br><small class="text-muted">{{ fornecedor.razao_social }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ fornecedor.cnpj|default:"-" }}</td>
+                            <td>
+                                {% if fornecedor.contato_principal %}
+                                    {{ fornecedor.contato_principal }}
+                                    {% if fornecedor.telefone %}<br>{{ fornecedor.telefone }}{% endif %}
+                                {% else %}
+                                    {{ fornecedor.telefone|default:"-" }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if fornecedor.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'gestor:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-info" title="Visualizar">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'gestor:fornecedor_update' fornecedor.pk %}" class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'gestor:fornecedor_toggle_status' fornecedor.pk %}" class="btn btn-outline-warning" title="Alterar Status">
+                                        <i class="fas fa-power-off"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if fornecedores.has_other_pages %}
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if fornecedores.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">&laquo; Primeira</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ fornecedores.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ fornecedores.number }} de {{ fornecedores.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if fornecedores.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ fornecedores.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Próxima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ fornecedores.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">Última &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum fornecedor encontrado</h5>
+                <p class="text-muted">Comece cadastrando seus fornecedores.</p>
+                <a href="{% url 'gestor:fornecedor_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Cadastrar Primeiro Fornecedor
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

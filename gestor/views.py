@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime, timedelta
+from django.db import models
 import json
 
 from django.http import HttpResponse, JsonResponse
@@ -572,3 +573,46 @@ def api_produto_por_codigo(request, codigo):
             'success': False,
             'message': 'Produto não encontrado'
         })
+    
+# Adicione estes imports no topo do seu gestor/views.py:
+
+from core.models import FornecedorProduto
+from core.forms import FornecedorProdutoFormSet
+
+# Adicione estas views ao final do seu gestor/views.py:
+
+@login_required
+def produto_fornecedores(request, pk):
+    """Gerenciar fornecedores de um produto"""
+    produto = get_object_or_404(Produto, pk=pk)
+    
+    if request.method == 'POST':
+        formset = FornecedorProdutoFormSet(request.POST, instance=produto)
+        if formset.is_valid():
+            instances = formset.save(commit=False)
+            for instance in instances:
+                if not instance.criado_por_id:  # Só define se for novo
+                    instance.criado_por = request.user
+                instance.save()
+            formset.save_m2m()
+            messages.success(request, 'Fornecedores atualizados com sucesso.')
+            return redirect('gestor:produto_detail', pk=produto.pk)
+    else:
+        formset = FornecedorProdutoFormSet(instance=produto)
+    
+    return render(request, 'gestor/produto_fornecedores.html', {
+        'produto': produto,
+        'formset': formset
+    })
+
+@login_required
+def fornecedor_produto_toggle(request, pk):
+    """Ativar/desativar relação fornecedor-produto"""
+    fornecedor_produto = get_object_or_404(FornecedorProduto, pk=pk)
+    fornecedor_produto.ativo = not fornecedor_produto.ativo
+    fornecedor_produto.save()
+    
+    status_text = "ativado" if fornecedor_produto.ativo else "desativado"
+    messages.success(request, f'Fornecedor {status_text} para este produto.')
+    
+    return redirect('gestor:produto_detail', pk=fornecedor_produto.produto.pk)

@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.conf import settings
+from django import forms  # Adicionar este import
 import uuid
 
 class Usuario(AbstractUser):
@@ -179,7 +180,7 @@ class Produto(models.Model):
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Preço Venda")
     margem_padrao = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Margem Padrão (%)")
     
-    # Fornecimento (para MPs)
+    # Fornecimento (para MPs) - MANTIDO PARA COMPATIBILIDADE
     fornecedor_principal = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, blank=True, null=True)
     prazo_entrega_padrao = models.IntegerField(blank=True, null=True, verbose_name="Prazo Entrega (dias)")
     
@@ -225,6 +226,140 @@ class Produto(models.Model):
             }
             
         return {'disponivel': True, 'motivo': '', 'tipo': 'ok'}
+
+    @property
+    def fornecedor_principal_novo(self):
+        """Retorna o fornecedor principal baseado na nova estrutura"""
+        fornecedor_principal = self.fornecedores_produto.filter(
+            ativo=True, 
+            prioridade=1
+        ).first()
+        
+        if fornecedor_principal:
+            return fornecedor_principal.fornecedor
+        
+        # Fallback para o campo antigo se existir
+        return self.fornecedor_principal
+    
+    @property
+    def melhor_preco(self):
+        """Retorna o melhor preço entre os fornecedores ativos"""
+        precos = self.fornecedores_produto.filter(
+            ativo=True,
+            preco_unitario__isnull=False
+        ).values_list('preco_unitario', flat=True)
+        
+        return min(precos) if precos else None
+    
+    @property
+    def menor_prazo_entrega(self):
+        """Retorna o menor prazo de entrega"""
+        prazos = self.fornecedores_produto.filter(
+            ativo=True,
+            prazo_entrega__isnull=False
+        ).values_list('prazo_entrega', flat=True)
+        
+        return min(prazos) if prazos else self.prazo_entrega_padrao
+    
+    def fornecedores_ordenados(self):
+        """Retorna fornecedores ordenados por prioridade"""
+        return self.fornecedores_produto.filter(ativo=True).order_by('prioridade')
+
+
+class FornecedorProduto(models.Model):
+    """
+    Relacionamento N:N entre Fornecedor e Produto com informações específicas
+    """
+    PRIORIDADE_CHOICES = [
+        (1, 'Principal'),
+        (2, 'Secundário'),
+        (3, 'Terceiro'),
+        (4, 'Backup'),
+    ]
+    
+    produto = models.ForeignKey(
+        Produto, 
+        on_delete=models.CASCADE, 
+        related_name='fornecedores_produto'
+    )
+    fornecedor = models.ForeignKey(
+        Fornecedor, 
+        on_delete=models.CASCADE, 
+        related_name='produtos_fornecedor'
+    )
+    
+    # Informações específicas desta relação
+    codigo_fornecedor = models.CharField(
+        max_length=50, 
+        blank=True, 
+        verbose_name="Código do Fornecedor",
+        help_text="Código que o fornecedor usa para este produto"
+    )
+    preco_unitario = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        verbose_name="Preço Unitário"
+    )
+    prioridade = models.IntegerField(
+        choices=PRIORIDADE_CHOICES, 
+        default=2,
+        verbose_name="Prioridade"
+    )
+    prazo_entrega = models.IntegerField(
+        blank=True, 
+        null=True, 
+        verbose_name="Prazo Entrega (dias)"
+    )
+    quantidade_minima = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=1,
+        verbose_name="Quantidade Mínima"
+    )
+    observacoes = models.TextField(
+        blank=True, 
+        verbose_name="Observações",
+        help_text="Condições especiais, descontos, etc."
+    )
+    
+    # Status
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    ultima_cotacao = models.DateTimeField(
+        blank=True, 
+        null=True, 
+        verbose_name="Última Cotação"
+    )
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT,
+        related_name='fornecedor_produto_criados'
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Fornecedor do Produto"
+        verbose_name_plural = "Fornecedores dos Produtos"
+        unique_together = ['produto', 'fornecedor']
+        ordering = ['prioridade', '-ativo', 'fornecedor__razao_social']
+    
+    def __str__(self):
+        return f"{self.produto.codigo} → {self.fornecedor.nome_fantasia or self.fornecedor.razao_social}"
+    
+    @property
+    def prioridade_display_badge(self):
+        """Retorna classe CSS para badge de prioridade"""
+        badges = {
+            1: 'bg-success',     # Principal
+            2: 'bg-primary',     # Secundário  
+            3: 'bg-info',        # Terceiro
+            4: 'bg-warning',     # Backup
+        }
+        return badges.get(self.prioridade, 'bg-secondary')
 
 
 # Modelo para relacionamento entre produtos (composição/estrutura)

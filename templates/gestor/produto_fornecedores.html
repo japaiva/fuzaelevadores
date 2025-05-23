@@ -1,0 +1,432 @@
+<!-- templates/gestor/produto_fornecedores.html -->
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Fornecedores - {{ produto.nome }} | Portal do Gestor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-truck me-2"></i>Fornecedores do Produto</h2>
+        <p class="text-muted mb-0">{{ produto.codigo }} - {{ produto.nome }}</p>
+    </div>
+    <a href="{% url 'gestor:produto_detail' produto.pk %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Voltar ao Produto
+    </a>
+</div>
+
+<!-- Informações do Produto -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Código:</strong> {{ produto.codigo }}
+            </div>
+            <div class="col-md-6">
+                <strong>Nome:</strong> {{ produto.nome }}
+            </div>
+            <div class="col-md-3">
+                <strong>Tipo:</strong> {{ produto.get_tipo_display }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulário de Fornecedores -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Gerenciar Fornecedores</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" id="fornecedores-form">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            
+            <div id="fornecedores-container">
+                {% for form in formset %}
+                    <div class="fornecedor-form border rounded p-3 mb-3 {% if form.instance.pk %}existing-form bg-light{% else %}new-form{% endif %}" data-form-index="{{ forloop.counter0 }}">
+                        {% if form.instance.pk %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0 text-primary">
+                                    <i class="fas fa-building me-2"></i>
+                                    {{ form.instance.fornecedor.nome_fantasia|default:form.instance.fornecedor.razao_social }}
+                                </h6>
+                                <div>
+                                    {% if form.instance.ativo %}
+                                        <span class="badge bg-success me-2">Ativo</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary me-2">Inativo</span>
+                                    {% endif %}
+                                    <span class="badge {{ form.instance.prioridade_display_badge }}">
+                                        {{ form.instance.get_prioridade_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-plus me-2"></i>Novo Fornecedor
+                            </h6>
+                        {% endif %}
+                        
+                        {% for hidden in form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.fornecedor.label }} *
+                                        <i class="fas fa-info-circle text-muted" title="Selecione o fornecedor"></i>
+                                    </label>
+                                    {{ form.fornecedor }}
+                                    {% if form.fornecedor.errors %}
+                                        <div class="text-danger small">{{ form.fornecedor.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.codigo_fornecedor.label }}
+                                        <i class="fas fa-info-circle text-muted" title="Código que o fornecedor usa para este produto"></i>
+                                    </label>
+                                    {{ form.codigo_fornecedor }}
+                                    {% if form.codigo_fornecedor.errors %}
+                                        <div class="text-danger small">{{ form.codigo_fornecedor.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.preco_unitario.label }}
+                                        <i class="fas fa-info-circle text-muted" title="Preço por unidade deste fornecedor"></i>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">R$</span>
+                                        {{ form.preco_unitario }}
+                                    </div>
+                                    {% if form.preco_unitario.errors %}
+                                        <div class="text-danger small">{{ form.preco_unitario.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.prioridade.label }} *
+                                        <i class="fas fa-info-circle text-muted" title="Ordem de preferência do fornecedor"></i>
+                                    </label>
+                                    {{ form.prioridade }}
+                                    {% if form.prioridade.errors %}
+                                        <div class="text-danger small">{{ form.prioridade.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.prazo_entrega.label }}
+                                        <i class="fas fa-info-circle text-muted" title="Prazo de entrega em dias"></i>
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.prazo_entrega }}
+                                        <span class="input-group-text">dias</span>
+                                    </div>
+                                    {% if form.prazo_entrega.errors %}
+                                        <div class="text-danger small">{{ form.prazo_entrega.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.quantidade_minima.label }}
+                                        <i class="fas fa-info-circle text-muted" title="Quantidade mínima para pedido"></i>
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.quantidade_minima }}
+                                        <span class="input-group-text">{{ produto.unidade_medida }}</span>
+                                    </div>
+                                    {% if form.quantidade_minima.errors %}
+                                        <div class="text-danger small">{{ form.quantidade_minima.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {{ form.observacoes.label }}
+                                        <i class="fas fa-info-circle text-muted" title="Condições especiais, descontos, etc."></i>
+                                    </label>
+                                    {{ form.observacoes }}
+                                    {% if form.observacoes.errors %}
+                                        <div class="text-danger small">{{ form.observacoes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <div class="form-check mt-4">
+                                        {{ form.ativo }}
+                                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                            {{ form.ativo.label }}
+                                        </label>
+                                    </div>
+                                    {% if form.can_delete %}
+                                        <div class="form-check mt-2">
+                                            {{ form.DELETE }}
+                                            <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                                <i class="fas fa-trash me-1"></i>Remover
+                                            </label>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if form.instance.pk and form.instance.ultima_cotacao %}
+                        <div class="row">
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Última cotação: {{ form.instance.ultima_cotacao|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not forloop.last %}
+                            <hr class="my-3">
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Botões de Ação -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <button type="button" id="add-fornecedor" class="btn btn-outline-success">
+                    <i class="fas fa-plus me-2"></i>Adicionar Fornecedor
+                </button>
+                
+                <div>
+                    <a href="{% url 'gestor:produto_detail' produto.pk %}" class="btn btn-secondary me-2">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Salvar Alterações
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Dicas de Uso -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Dicas de Uso</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="badge bg-success mb-2">Principal</div>
+                    <p class="small text-muted mb-0">Fornecedor preferencial para compras regulares</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="badge bg-primary mb-2">Secundário</div>
+                    <p class="small text-muted mb-0">Opção alternativa com boas condições</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="badge bg-info mb-2">Terceiro</div>
+                    <p class="small text-muted mb-0">Fornecedor adicional para comparação</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <div class="badge bg-warning mb-2">Backup</div>
+                    <p class="small text-muted mb-0">Reserva para emergências</p>
+                </div>
+            </div>
+        </div>
+        <hr class="my-3">
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-primary">💡 Dicas:</h6>
+                <ul class="small text-muted">
+                    <li>Mantenha sempre pelo menos 2 fornecedores ativos</li>
+                    <li>Atualize os preços regularmente para comparação</li>
+                    <li>Use o campo observações para condições especiais</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-success">✅ Boas Práticas:</h6>
+                <ul class="small text-muted">
+                    <li>Defina códigos de fornecedor para facilitar pedidos</li>
+                    <li>Cadastre prazos realistas de entrega</li>
+                    <li>Desative fornecedores inativos ao invés de remover</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Script para adicionar novos fornecedores dinamicamente
+document.addEventListener('DOMContentLoaded', function() {
+    const addButton = document.getElementById('add-fornecedor');
+    const container = document.getElementById('fornecedores-container');
+    const totalForms = document.querySelector('#id_fornecedores_produto-TOTAL_FORMS');
+    let formTemplate = null;
+    
+    // Criar template baseado no último formulário vazio
+    function createFormTemplate() {
+        const newForms = container.querySelectorAll('.new-form');
+        if (newForms.length > 0) {
+            formTemplate = newForms[newForms.length - 1].cloneNode(true);
+        }
+    }
+    
+    // Inicializar template
+    createFormTemplate();
+    
+    addButton.addEventListener('click', function() {
+        if (!formTemplate) {
+            alert('Erro: Não foi possível criar um novo formulário. Recarregue a página.');
+            return;
+        }
+        
+        const formCount = parseInt(totalForms.value);
+        const newForm = formTemplate.cloneNode(true);
+        
+        // Atualizar IDs e nomes dos campos
+        newForm.innerHTML = newForm.innerHTML.replace(/__prefix__/g, formCount);
+        newForm.innerHTML = newForm.innerHTML.replace(/fornecedores_produto-\d+-/g, `fornecedores_produto-${formCount}-`);
+        
+        // Atualizar data-form-index
+        newForm.setAttribute('data-form-index', formCount);
+        
+        // Limpar valores dos campos (exceto hidden)
+        const inputs = newForm.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.type !== 'hidden' && !input.name.includes('DELETE')) {
+                if (input.type === 'checkbox') {
+                    input.checked = input.name.includes('ativo'); // Marcar 'ativo' por padrão
+                } else {
+                    input.value = '';
+                }
+            }
+        });
+        
+        // Remover classes de formulário existente
+        newForm.classList.remove('existing-form', 'bg-light');
+        newForm.classList.add('new-form');
+        
+        // Atualizar título do formulário
+        const title = newForm.querySelector('h6');
+        if (title) {
+            title.innerHTML = '<i class="fas fa-plus me-2"></i>Novo Fornecedor #' + (formCount + 1);
+            title.className = 'text-success mb-3';
+        }
+        
+        // Adicionar separador se necessário
+        if (container.children.length > 0) {
+            const separator = document.createElement('hr');
+            separator.className = 'my-3';
+            newForm.insertBefore(separator, newForm.firstChild);
+        }
+        
+        // Adicionar ao container
+        container.appendChild(newForm);
+        
+        // Atualizar contador
+        totalForms.value = formCount + 1;
+        
+        // Scroll para o novo formulário
+        newForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Focar no primeiro campo do novo formulário
+        const firstInput = newForm.querySelector('select, input[type="text"]');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 500);
+        }
+    });
+    
+    // Confirmar remoção de fornecedores
+    container.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox' && e.target.name.includes('DELETE')) {
+            const form = e.target.closest('.fornecedor-form');
+            if (e.target.checked) {
+                if (confirm('Tem certeza que deseja remover este fornecedor?')) {
+                    form.style.opacity = '0.5';
+                    form.style.textDecoration = 'line-through';
+                } else {
+                    e.target.checked = false;
+                }
+            } else {
+                form.style.opacity = '1';
+                form.style.textDecoration = 'none';
+            }
+        }
+    });
+    
+    // Validação antes do envio
+    document.getElementById('fornecedores-form').addEventListener('submit', function(e) {
+        const activeForms = container.querySelectorAll('.fornecedor-form:not([style*="opacity: 0.5"])');
+        let hasActiveFornecedor = false;
+        
+        activeForms.forEach(form => {
+            const fornecedorSelect = form.querySelector('select[name$="fornecedor"]');
+            const ativoCheckbox = form.querySelector('input[name$="ativo"]');
+            
+            if (fornecedorSelect && fornecedorSelect.value && ativoCheckbox && ativoCheckbox.checked) {
+                hasActiveFornecedor = true;
+            }
+        });
+        
+        if (!hasActiveFornecedor) {
+            e.preventDefault();
+            alert('É necessário ter pelo menos um fornecedor ativo para este produto.');
+            return false;
+        }
+    });
+});
+</script>
+
+<style>
+.fornecedor-form {
+    transition: all 0.3s ease;
+}
+
+.fornecedor-form:hover {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+}
+
+.form-check-input:checked {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.text-danger .form-check-input:checked {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+</style>
+{% endblock %}

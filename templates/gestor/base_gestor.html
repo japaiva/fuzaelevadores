@@ -19,24 +19,9 @@
      Cadastros
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <li><h6 class="dropdown-header">Usuários</h6></li>
+    <li><h6 class="dropdown-header">Geral</h6></li>
     <li><a class="dropdown-item" href="{% url 'gestor:usuario_list' %}">
-        <i class="fas fa-users me-2"></i> Usuários
-    </a></li>
-    
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header">Classificações</h6></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:grupo_list' %}">
-        <i class="fas fa-layer-group me-2"></i> Grupos de Produtos
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:subgrupo_list' %}">
-        <i class="fas fa-sitemap me-2"></i> Subgrupos de Produtos
-    </a></li>
-    
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header">Fornecimento</h6></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
-        <i class="fas fa-truck me-2"></i> Fornecedores
+        Usuários
     </a></li>
   </ul>
 </li>
@@ -47,22 +32,27 @@
     Produtos
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}">
-        <i class="fas fa-list me-2"></i> Todos os Produtos
-    </a></li>
+
+
+
     <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=MP">
-        <i class="fas fa-industry me-2"></i> Matéria Prima
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=PI">
-        <i class="fas fa-cog me-2"></i> Produtos Intermediários
+        Matéria Prima
     </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=PA">
-        <i class="fas fa-elevator me-2"></i> Produtos Acabados
+        Produtos Acabados
     </a></li>
-    
+    <li><a class="dropdown-item" href="{% url 'gestor:produto_list' %}?tipo=PI">
+        Produtos Intermediários
+    </a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:produto_create' %}">
-        <i class="fas fa-plus me-2"></i> Novo Produto
+    <li><a class="dropdown-item" href="{% url 'gestor:grupo_list' %}">
+         Grupos de Produtos
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:subgrupo_list' %}">
+         Subgrupos de Produtos
+    </a></li>
+        <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
+         Fornecedores
     </a></li>
   </ul>
 </li>

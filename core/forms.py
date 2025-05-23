@@ -3,7 +3,7 @@ from django import forms
 from core.models import (
     Usuario, Produto, GrupoProduto, SubgrupoProduto, Fornecedor,
     EspecificacaoElevador, OpcaoEspecificacao, RegraComponente,
-    ComponenteDerivado, SimulacaoElevador
+    ComponenteDerivado, SimulacaoElevador, FornecedorProduto  # Adicionar aqui
 )
 from django.contrib.auth.hashers import make_password
 from datetime import datetime
@@ -242,3 +242,34 @@ class SimulacaoElevadorForm(forms.ModelForm):
             'cliente_contato': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
+
+
+# Formulário para múltiplos fornecedores por produto
+class FornecedorProdutoForm(forms.ModelForm):
+    class Meta:
+        model = FornecedorProduto
+        fields = [
+            'fornecedor', 'codigo_fornecedor', 'preco_unitario', 'prioridade',
+            'prazo_entrega', 'quantidade_minima', 'observacoes', 'ativo'
+        ]
+        widgets = {
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'codigo_fornecedor': forms.TextInput(attrs={'class': 'form-control'}),
+            'preco_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'prioridade': forms.Select(attrs={'class': 'form-select'}),
+            'prazo_entrega': forms.NumberInput(attrs={'class': 'form-control'}),
+            'quantidade_minima': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+# Formset para gerenciar múltiplos fornecedores
+FornecedorProdutoFormSet = forms.inlineformset_factory(
+    Produto,
+    FornecedorProduto,
+    form=FornecedorProdutoForm,
+    extra=1,
+    can_delete=True,
+    fields=['fornecedor', 'codigo_fornecedor', 'preco_unitario', 'prioridade', 'prazo_entrega', 'ativo']
+)

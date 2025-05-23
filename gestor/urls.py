@@ -45,6 +45,10 @@ urlpatterns = [
     path('produtos/<uuid:pk>/editar/', views.produto_update, name='produto_update'),
     path('produtos/<uuid:pk>/alternar-status/', views.produto_toggle_status, name='produto_toggle_status'),
     path('produtos/<uuid:pk>/alternar-disponibilidade/', views.produto_toggle_disponibilidade, name='produto_toggle_disponibilidade'),
+
+    # Gestão de fornecedores do produto
+    path('produtos/<uuid:pk>/fornecedores/', views.produto_fornecedores, name='produto_fornecedores'),
+    path('fornecedor-produto/<int:pk>/toggle/', views.fornecedor_produto_toggle, name='fornecedor_produto_toggle'),
     
     # APIs para AJAX
     path('api/subgrupos-por-grupo/<int:grupo_id>/', views.api_subgrupos_por_grupo, name='api_subgrupos_por_grupo'),

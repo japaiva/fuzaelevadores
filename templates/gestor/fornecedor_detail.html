@@ -1,0 +1,359 @@
+<!-- templates/gestor/fornecedor_detail.html -->
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }} | Portal do Gestor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-truck me-2"></i>{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</h2>
+    <div>
+        <a href="{% url 'gestor:fornecedor_update' fornecedor.pk %}" class="btn btn-primary me-2">
+            <i class="fas fa-edit me-2"></i>Editar
+        </a>
+        <a href="{% url 'gestor:fornecedor_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Dados do Fornecedor -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Razão Social:</dt>
+                    <dd class="col-sm-9">{{ fornecedor.razao_social }}</dd>
+
+                    {% if fornecedor.nome_fantasia %}
+                    <dt class="col-sm-3">Nome Fantasia:</dt>
+                    <dd class="col-sm-9">{{ fornecedor.nome_fantasia }}</dd>
+                    {% endif %}
+
+                    {% if fornecedor.cnpj %}
+                    <dt class="col-sm-3">CNPJ:</dt>
+                    <dd class="col-sm-9">{{ fornecedor.cnpj }}</dd>
+                    {% endif %}
+
+                    {% if fornecedor.contato_principal %}
+                    <dt class="col-sm-3">Contato Principal:</dt>
+                    <dd class="col-sm-9">{{ fornecedor.contato_principal }}</dd>
+                    {% endif %}
+
+                    {% if fornecedor.telefone %}
+                    <dt class="col-sm-3">Telefone:</dt>
+                    <dd class="col-sm-9">{{ fornecedor.telefone }}</dd>
+                    {% endif %}
+
+                    {% if fornecedor.email %}
+                    <dt class="col-sm-3">E-mail:</dt>
+                    <dd class="col-sm-9">
+                        <a href="mailto:{{ fornecedor.email }}">{{ fornecedor.email }}</a>
+                    </dd>
+                    {% endif %}
+
+                    <dt class="col-sm-3">Status:</dt>
+                    <dd class="col-sm-9">
+                        {% if fornecedor.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">Cadastro:</dt>
+                    <dd class="col-sm-9">{{ fornecedor.criado_em|date:"d/m/Y H:i" }} por {{ fornecedor.criado_por.get_full_name|default:fornecedor.criado_por.username }}</dd>
+                </dl>
+
+                {% if fornecedor.endereco %}
+                <h6 class="mt-4"><i class="fas fa-map-marker-alt me-2"></i>Endereço</h6>
+                <div class="bg-light p-3 rounded">
+                    <pre class="mb-0">{{ fornecedor.endereco }}</pre>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Estatísticas</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="border-bottom pb-3 mb-3">
+                        <h3 class="text-primary mb-0">{{ total_produtos }}</h3>
+                        <small class="text-muted">Produtos Cadastrados</small>
+                    </div>
+                    <div class="border-bottom pb-3 mb-3">
+                        <h3 class="text-success mb-0">{{ fornecedor.produtos_fornecedor.filter.ativo=True.count }}</h3>
+                        <small class="text-muted">Relações Ativas</small>
+                    </div>
+                    <a href="{% url 'gestor:produto_list' %}?fornecedor={{ fornecedor.pk }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-list me-2"></i>Ver Todos os Produtos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Ações</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'gestor:fornecedor_toggle_status' fornecedor.pk %}" class="btn btn-outline-warning">
+                        <i class="fas fa-power-off me-2"></i>
+                        {% if fornecedor.ativo %}Desativar{% else %}Ativar{% endif %}
+                    </a>
+                    <a href="{% url 'gestor:produto_create' %}?fornecedor={{ fornecedor.pk }}" class="btn btn-outline-success">
+                        <i class="fas fa-plus me-2"></i>Novo Produto
+                    </a>
+                    <hr class="my-2">
+                    <a href="{% url 'gestor:fornecedor_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-list me-2"></i>Lista de Fornecedores
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Produtos do Fornecedor (Sistema Legado) -->
+{% if produtos %}
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Produtos como Fornecedor Principal ({{ total_produtos }})</h5>
+        <small class="text-muted">Campo legado - fornecedor_principal</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Tipo</th>
+                        <th>Estoque</th>
+                        <th>Preço</th>
+                        <th>Status</th>
+                        <th width="80">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos|slice:":15" %}
+                    <tr>
+                        <td><strong>{{ produto.codigo }}</strong></td>
+                        <td>
+                            {{ produto.nome }}
+                            {% if produto.descricao %}
+                                <br><small class="text-muted">{{ produto.descricao|truncatechars:40 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge 
+                                {% if produto.tipo == 'MP' %}bg-primary
+                                {% elif produto.tipo == 'PI' %}bg-info
+                                {% else %}bg-success{% endif %}">
+                                {{ produto.get_tipo_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if produto.controla_estoque %}
+                                <span class="{% if produto.estoque_atual <= produto.estoque_minimo %}text-danger{% endif %}">
+                                    {{ produto.estoque_atual }} {{ produto.unidade_medida }}
+                                </span>
+                                {% if produto.estoque_atual <= produto.estoque_minimo %}
+                                    <br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Baixo</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">N/C</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if produto.preco_venda %}
+                                <strong>R$ {{ produto.preco_venda|floatformat:2 }}</strong>
+                                {% if produto.custo_medio %}
+                                    <br><small class="text-muted">Custo: R$ {{ produto.custo_medio|floatformat:2 }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if produto.status == 'ATIVO' and produto.disponivel %}
+                                <span class="badge bg-success">Disponível</span>
+                            {% elif produto.status == 'ATIVO' %}
+                                <span class="badge bg-warning">Bloqueado</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ produto.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'gestor:produto_detail' produto.pk %}" class="btn btn-outline-primary" title="Ver Produto">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'gestor:produto_update' produto.pk %}" class="btn btn-outline-secondary" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if produtos.count > 15 %}
+            <div class="text-center mt-3">
+                <a href="{% url 'gestor:produto_list' %}?fornecedor={{ fornecedor.pk }}" class="btn btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-2"></i>Ver Todos os {{ total_produtos }} Produtos
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Produtos com Nova Estrutura de Fornecedores -->
+{% if fornecedor.produtos_fornecedor.exists %}
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-handshake me-2"></i>Relações de Fornecimento ({{ fornecedor.produtos_fornecedor.count }})</h5>
+        <small class="text-muted">Nova estrutura - múltiplos fornecedores</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Código Fornecedor</th>
+                        <th>Preço</th>
+                        <th>Prioridade</th>
+                        <th>Prazo</th>
+                        <th>Qtd. Min.</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fp in fornecedor.produtos_fornecedor.all|slice:":15" %}
+                    <tr class="{% if not fp.ativo %}table-secondary{% endif %}">
+                        <td>
+                            <strong>{{ fp.produto.codigo }}</strong>
+                            <br><small>{{ fp.produto.nome|truncatechars:30 }}</small>
+                        </td>
+                        <td>
+                            {% if fp.codigo_fornecedor %}
+                                <strong>{{ fp.codigo_fornecedor }}</strong>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if fp.preco_unitario %}
+                                <strong>R$ {{ fp.preco_unitario|floatformat:2 }}</strong>
+                                {% if fp.ultima_cotacao %}
+                                    <br><small class="text-muted">{{ fp.ultima_cotacao|date:"d/m/Y" }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Não informado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ fp.prioridade_display_badge }}">
+                                {{ fp.get_prioridade_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if fp.prazo_entrega %}
+                                {{ fp.prazo_entrega }} dias
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ fp.quantidade_minima }} {{ fp.produto.unidade_medida }}
+                        </td>
+                        <td>
+                            {% if fp.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'gestor:produto_detail' fp.produto.pk %}" class="btn btn-outline-primary" title="Ver Produto">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'gestor:produto_fornecedores' fp.produto.pk %}" class="btn btn-outline-info" title="Gestão Fornecedores">
+                                    <i class="fas fa-handshake"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if fornecedor.produtos_fornecedor.count > 15 %}
+            <div class="text-center mt-3">
+                <span class="text-muted">Mostrando 15 de {{ fornecedor.produtos_fornecedor.count }} relações</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if fornecedor.produtos_fornecedor.exists %}
+        <!-- Resumo das Relações -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-success">{{ fornecedor.produtos_fornecedor.filter.prioridade=1.count }}</h4>
+                    <small class="text-muted">Como Principal</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-primary">{{ fornecedor.produtos_fornecedor.filter.prioridade=2.count }}</h4>
+                    <small class="text-muted">Como Secundário</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-warning">{{ fornecedor.produtos_fornecedor.filter.prioridade=4.count }}</h4>
+                    <small class="text-muted">Como Backup</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="text-center">
+                    <h4 class="text-danger">{{ fornecedor.produtos_fornecedor.filter.ativo=False.count }}</h4>
+                    <small class="text-muted">Inativos</small>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Mensagem se não há produtos -->
+{% if not produtos and not fornecedor.produtos_fornecedor.exists %}
+<div class="card mt-4">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Nenhum produto associado</h5>
+        <p class="text-muted">Este fornecedor ainda não possui produtos cadastrados.</p>
+        <a href="{% url 'gestor:produto_create' %}?fornecedor={{ fornecedor.pk }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Cadastrar Primeiro Produto
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
