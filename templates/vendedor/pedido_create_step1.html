@@ -58,7 +58,7 @@
                 </div>
               {% endif %}
               <div class="form-text small text-muted">
-                <a href="{% url 'gestor:cliente_create' %}" target="_blank" class="text-decoration-none">
+                <a href="#" id="btnNovoCliente" class="text-decoration-none">
                   <i class="fas fa-plus me-1"></i>Cadastrar novo cliente
                 </a>
               </div>
@@ -131,6 +131,42 @@
   </div>
 </div>
 
+<!-- Modal para Novo Cliente -->
+<div class="modal fade" id="clienteModal" tabindex="-1" aria-labelledby="clienteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="clienteModalLabel">
+          <i class="fas fa-user-plus me-2"></i>Cadastrar Novo Cliente
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <form id="clienteModalForm">
+        {% csrf_token %}
+        <div class="modal-body">
+          <!-- Formulário será carregado via AJAX -->
+          <div id="modal-form-content">
+            <div class="text-center">
+              <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+              <p class="text-muted">Carregando formulário...</p>
+            </div>
+          </div>
+          
+          <div id="modal-errors" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success" id="btnSalvarCliente">
+            <i class="fas fa-save me-1"></i>Salvar Cliente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -139,6 +175,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
     const clienteInfo = document.getElementById('cliente-info');
     const clienteDados = document.getElementById('cliente-dados');
+    const btnNovoCliente = document.getElementById('btnNovoCliente');
+    let clienteModal;
+    
+    // Inicializar modal
+    clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
     
     // Função para carregar informações do cliente
     function carregarInfoCliente(clienteId) {
@@ -186,21 +227,138 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Validação do formulário
+    // Event listener para botão novo cliente
+    btnNovoCliente.addEventListener('click', function(e) {
+        e.preventDefault();
+        abrirModalCliente();
+    });
+    
+    function abrirModalCliente() {
+        const modalContent = document.getElementById('modal-form-content');
+        
+        // Mostrar loading
+        modalContent.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
+                <p class="text-muted">Carregando formulário...</p>
+            </div>
+        `;
+        
+        // Carregar formulário via AJAX
+        fetch('{% url "vendedor:cliente_create_ajax" %}')
+            .then(response => response.text())
+            .then(html => {
+                modalContent.innerHTML = html;
+                clienteModal.show();
+            })
+            .catch(error => {
+                console.error('Erro ao carregar modal:', error);
+                modalContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Erro ao carregar formulário. Tente novamente.
+                    </div>
+                `;
+            });
+    }
+    
+    // Event listener para salvar cliente
+    document.getElementById('clienteModalForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        salvarClienteModal(e);
+    });
+    
+    function salvarClienteModal(e) {
+        const form = e.target;
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('btnSalvarCliente');
+        const errorDiv = document.getElementById('modal-errors');
+        
+        // Desabilitar botão
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
+        errorDiv.style.display = 'none';
+        
+        fetch('{% url "vendedor:cliente_create_ajax" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Adicionar novo cliente ao select
+                const option = new Option(data.cliente.nome, data.cliente.id, true, true);
+                clienteSelect.add(option);
+                clienteSelect.value = data.cliente.id;
+                
+                // Disparar evento change para carregar informações
+                clienteSelect.dispatchEvent(new Event('change'));
+                
+                // Fechar modal
+                clienteModal.hide();
+                
+                // Mostrar mensagem de sucesso
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>
+                    Cliente <strong>${data.cliente.nome}</strong> criado com sucesso!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                const cardBody = document.querySelector('.card-body');
+                cardBody.insertBefore(alertDiv, cardBody.firstChild);
+                
+                // Remover alerta após 5 segundos
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+                
+            } else {
+                // Mostrar erros
+                errorDiv.innerHTML = '';
+                for (const [field, errors] of Object.entries(data.errors)) {
+                    errors.forEach(error => {
+                        errorDiv.innerHTML += `<p class="mb-1"><strong>${field}:</strong> ${error}</p>`;
+                    });
+                }
+                errorDiv.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao salvar cliente:', error);
+            errorDiv.innerHTML = '<p class="mb-0">Erro ao salvar cliente. Tente novamente.</p>';
+            errorDiv.style.display = 'block';
+        })
+        .finally(() => {
+            // Reabilitar botão
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save me-1"></i>Salvar Cliente';
+        });
+    }
+    
+    // Validação do formulário principal
     const form = document.getElementById('clienteForm');
     form.addEventListener('submit', function(e) {
-        const cliente = document.getElementById('{{ form.cliente.id_for_label }}').value;
+        const cliente = clienteSelect.value;
         const projeto = document.getElementById('{{ form.nome_projeto.id_for_label }}').value;
         
         if (!cliente) {
             e.preventDefault();
             alert('Por favor, selecione um cliente.');
+            clienteSelect.focus();
             return;
         }
         
         if (!projeto.trim()) {
             e.preventDefault();
             alert('Por favor, informe o nome do projeto.');
+            document.getElementById('{{ form.nome_projeto.id_for_label }}').focus();
             return;
         }
     });
@@ -209,6 +367,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (clienteSelect) {
         clienteSelect.focus();
     }
+    
+    // Limpar modal quando fechar
+    document.getElementById('clienteModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('modal-form-content').innerHTML = '';
+        document.getElementById('modal-errors').style.display = 'none';
+    });
 });
 </script>
 {% endblock %}

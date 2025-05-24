@@ -21,8 +21,10 @@ from core.utils.formatters import extrair_especificacoes_do_pedido, agrupar_resp
 from .models import Pedido, HistoricoPedido, AnexoPedido
 from .forms import (
     PedidoClienteForm, PedidoElevadorForm, PedidoPortasForm, 
-    PedidoCabineForm, PedidoResumoForm, AnexoPedidoForm, PedidoFiltroForm
+    PedidoCabineForm, PedidoResumoForm, AnexoPedidoForm, PedidoFiltroForm,
+    ClienteCreateForm
 )
+
 from .utils import validar_permissoes_vendedor, calcular_estatisticas_vendedor
 from core.models import Cliente
 
@@ -80,29 +82,87 @@ def dashboard(request):
 # WORKFLOW DO PEDIDO = SIMULAÇÃO INTEGRADA
 # =============================================================================
 
+
+# vendedor/views.py
+# SUBSTITUIR a função pedido_step1_cliente existente por esta versão corrigida
+
+import logging
+logger = logging.getLogger(__name__)
+
 @login_required
 def pedido_step1_cliente(request):
-    """Etapa 1: Dados do Cliente - USA template pedido_create_step1.html"""
+    """Etapa 1: Dados do Cliente - VERSÃO CORRIGIDA COM VALORES PADRÃO"""
     
     if request.method == 'POST':
         form = PedidoClienteForm(request.POST)
         if form.is_valid():
-            pedido = form.save(commit=False)
-            pedido.vendedor = request.user
-            pedido.atualizado_por = request.user
-            pedido.status = 'rascunho'
-            pedido.save()
-            
-            # Registrar no histórico
-            HistoricoPedido.objects.create(
-                pedido=pedido,
-                status_novo='rascunho',
-                observacao='Pedido criado',
-                usuario=request.user
-            )
-            
-            messages.success(request, f'Pedido {pedido.numero} criado com sucesso.')
-            return redirect('vendedor:pedido_create_step2', pk=pedido.pk)
+            try:
+                pedido = form.save(commit=False)
+                pedido.vendedor = request.user
+                pedido.atualizado_por = request.user
+                pedido.status = 'rascunho'
+                
+                # ⭐ CORREÇÃO: Definir valores padrão obrigatórios para evitar NULL
+                # Estes valores serão atualizados nos próximos steps
+                
+                # === DADOS DO ELEVADOR (Step 2) ===
+                pedido.capacidade = 80.00  # 1 pessoa = 80kg
+                pedido.capacidade_pessoas = 1  # Valor padrão
+                pedido.modelo_elevador = 'Passageiro'  # Mais comum
+                pedido.acionamento = 'Motor'  # Mais comum
+                pedido.tracao = '1x1'  # Padrão para motor
+                pedido.contrapeso = 'Lateral'  # Padrão
+                
+                # Dimensões do poço - valores padrão realistas
+                pedido.largura_poco = 2.00  # 2 metros
+                pedido.comprimento_poco = 2.00  # 2 metros  
+                pedido.altura_poco = 3.00  # 3 metros
+                pedido.pavimentos = 2  # Térreo + 1º andar
+                
+                # === DADOS DAS PORTAS (Step 3) ===
+                # Porta da Cabine
+                pedido.modelo_porta_cabine = 'Automática'
+                pedido.material_porta_cabine = 'Inox'
+                pedido.folhas_porta_cabine = '2'
+                pedido.largura_porta_cabine = 0.80  # 80cm padrão
+                pedido.altura_porta_cabine = 2.00   # 2m padrão
+                
+                # Porta do Pavimento  
+                pedido.modelo_porta_pavimento = 'Automática'
+                pedido.material_porta_pavimento = 'Inox'
+                pedido.folhas_porta_pavimento = '2'
+                pedido.largura_porta_pavimento = 0.80  # 80cm padrão
+                pedido.altura_porta_pavimento = 2.00   # 2m padrão
+                
+                # === DADOS DA CABINE (Step 4) ===
+                pedido.material_cabine = 'Inox 430'  # Material mais comum
+                pedido.espessura_cabine = '1,2'      # 1,2mm padrão
+                pedido.saida_cabine = 'Padrão'       # Saída padrão
+                pedido.altura_cabine = 2.30          # 2,3m padrão
+                pedido.piso_cabine = 'Por conta do cliente'  # Mais comum
+                
+                logger.info(f"Criando pedido para cliente {pedido.cliente.nome}")
+                pedido.save()
+                logger.info(f"Pedido {pedido.numero} criado com sucesso")
+                
+                # Registrar no histórico
+                HistoricoPedido.objects.create(
+                    pedido=pedido,
+                    status_novo='rascunho',
+                    observacao='Pedido criado com valores padrão - a serem configurados nos próximos passos',
+                    usuario=request.user
+                )
+                
+                messages.success(request, f'Pedido {pedido.numero} criado com sucesso.')
+                return redirect('vendedor:pedido_create_step2', pk=pedido.pk)
+                
+            except Exception as e:
+                logger.error(f"Erro ao criar pedido: {str(e)}")
+                messages.error(request, f'Erro ao criar pedido: {str(e)}')
+                
+        else:
+            logger.warning(f"Form inválido: {form.errors}")
+            messages.error(request, 'Por favor, corrija os erros no formulário.')
     else:
         form = PedidoClienteForm()
     
@@ -476,29 +536,36 @@ def gerar_pdf_demonstrativo(request, pk):
 
 @login_required
 def api_cliente_info(request, cliente_id):
-    """API para retornar informações do cliente"""
+    """API para retornar informações do cliente - VERSÃO MELHORADA"""
     try:
-        cliente = get_object_or_404(Cliente, id=cliente_id)
+        cliente = get_object_or_404(Cliente, id=cliente_id, ativo=True)
         
         return JsonResponse({
             'success': True,
             'cliente': {
                 'id': cliente.id,
                 'nome': cliente.nome,
-                'nome_fantasia': cliente.nome_fantasia,
-                'telefone': cliente.telefone,
-                'email': cliente.email,
+                'nome_fantasia': cliente.nome_fantasia or '',
+                'telefone': cliente.telefone or '',
+                'email': cliente.email or '',
+                'contato_principal': cliente.contato_principal or '',
                 'endereco_completo': cliente.endereco_completo,
                 'tipo_pessoa': cliente.get_tipo_pessoa_display(),
+                'cpf_cnpj': cliente.cpf_cnpj or '',
             }
         })
         
-    except Exception as e:
+    except Cliente.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Cliente não encontrado'
         })
-
+    except Exception as e:
+        logger.error(f"Erro ao buscar cliente {cliente_id}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Erro interno do servidor'
+        })
 
 @login_required
 def api_pedido_stats(request):
@@ -535,3 +602,89 @@ def pedido_anexo_upload(request, pk):
 def pedido_anexo_delete(request, pk, anexo_id):
     messages.info(request, 'Funcionalidade em desenvolvimento.')
     return redirect('vendedor:pedido_detail', pk=pk)
+
+@login_required
+def cliente_create_ajax(request):
+    """
+    Cria cliente via AJAX para não perder o contexto do vendedor
+    """
+    if request.method == 'POST':
+        form = ClienteCreateForm(request.POST)
+        if form.is_valid():
+            cliente = form.save(commit=False)
+            cliente.criado_por = request.user
+            cliente.save()
+            
+            return JsonResponse({
+                'success': True,
+                'cliente': {
+                    'id': cliente.id,
+                    'nome': cliente.nome,
+                    'nome_fantasia': cliente.nome_fantasia,
+                    'telefone': cliente.telefone,
+                    'email': cliente.email,
+                    'endereco_completo': cliente.endereco_completo,
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors
+            })
+    
+    # GET request - retorna formulário
+    form = ClienteCreateForm()
+    return render(request, 'vendedor/cliente_create_modal.html', {
+        'form': form
+    })
+
+
+@login_required
+def cliente_create_ajax(request):
+    """Cria cliente via AJAX para não perder o contexto do vendedor"""
+    if request.method == 'POST':
+        form = ClienteCreateForm(request.POST)
+        if form.is_valid():
+            try:
+                cliente = form.save(commit=False)
+                cliente.criado_por = request.user
+                cliente.save()
+                
+                logger.info(f"Cliente {cliente.nome} criado via AJAX pelo vendedor {request.user}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'cliente': {
+                        'id': cliente.id,
+                        'nome': cliente.nome,
+                        'nome_fantasia': cliente.nome_fantasia or '',
+                        'telefone': cliente.telefone or '',
+                        'email': cliente.email or '',
+                        'endereco_completo': cliente.endereco_completo,
+                    }
+                })
+                
+            except Exception as e:
+                logger.error(f"Erro ao criar cliente via AJAX: {str(e)}")
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'Erro': [str(e)]}
+                })
+        else:
+            # Formatar erros para exibição
+            formatted_errors = {}
+            for field, errors in form.errors.items():
+                field_label = form.fields[field].label or field
+                formatted_errors[field_label] = errors
+                
+            return JsonResponse({
+                'success': False,
+                'errors': formatted_errors
+            })
+    
+    # GET request - retorna formulário
+    form = ClienteCreateForm()
+    return render(request, 'vendedor/cliente_create_modal.html', {
+        'form': form
+    })
+

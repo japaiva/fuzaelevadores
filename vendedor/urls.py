@@ -1,4 +1,4 @@
-# vendedor/urls.py
+# vendedor/urls.py - VERSÃO CORRIGIDA
 from django.urls import path
 from . import views
 from core.views import VendedorLoginView
@@ -33,15 +33,18 @@ urlpatterns = [
     # Ações do pedido
     path('pedidos/<uuid:pk>/alterar-status/', views.pedido_change_status, name='pedido_change_status'),
     
+    # ⭐ NOVA FUNCIONALIDADE - Cliente via AJAX (SOLUÇÃO DO PROBLEMA!)
+    path('cliente/novo/', views.cliente_create_ajax, name='cliente_create_ajax'),
+    
     # Anexos
     path('pedidos/<uuid:pk>/anexos/upload/', views.pedido_anexo_upload, name='pedido_anexo_upload'),
     path('pedidos/<uuid:pk>/anexos/<int:anexo_id>/excluir/', views.pedido_anexo_delete, name='pedido_anexo_delete'),
     
-    # Geração de PDFs
-    path('pedidos/<uuid:pk>/orcamento/', views.gerar_pdf_orcamento, name='pedido_gerar_orcamento'),
-    path('pedidos/<uuid:pk>/demonstrativo/', views.gerar_pdf_demonstrativo, name='pedido_gerar_demonstrativo'),
+    # Geração de PDFs (URLs unificadas - removi as duplicadas)
+    path('pedidos/<uuid:pk>/pdf/orcamento/', views.gerar_pdf_orcamento, name='pdf_orcamento'),
+    path('pedidos/<uuid:pk>/pdf/demonstrativo/', views.gerar_pdf_demonstrativo, name='pdf_demonstrativo'),
     
-    # APIs AJAX
+    # APIs AJAX (URLs unificadas - removi as duplicadas)
     path('api/cliente/<int:cliente_id>/', views.api_cliente_info, name='api_cliente_info'),
     path('api/stats/', views.api_pedido_stats, name='api_pedido_stats'),
 ]

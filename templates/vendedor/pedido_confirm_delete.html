@@ -1,0 +1,161 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Excluir Pedido {{ pedido.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card shadow">
+        <div class="card-header bg-danger text-white">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão
+          </h5>
+        </div>
+        
+        <div class="card-body">
+          <div class="alert alert-warning" role="alert">
+            <h6 class="alert-heading">
+              <i class="fas fa-warning me-2"></i>Atenção!
+            </h6>
+            <p class="mb-0">
+              Esta ação não pode ser desfeita. Todos os dados do pedido serão permanentemente removidos.
+            </p>
+          </div>
+          
+          <h6 class="mb-3">Tem certeza que deseja excluir este pedido?</h6>
+          
+          <!-- Informações do Pedido -->
+          <div class="card bg-light mb-4">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-sm-6">
+                  <p class="mb-2"><strong>Número:</strong> {{ pedido.numero }}</p>
+                  <p class="mb-2"><strong>Projeto:</strong> {{ pedido.nome_projeto }}</p>
+                  <p class="mb-2"><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
+                </div>
+                <div class="col-sm-6">
+                  <p class="mb-2"><strong>Status:</strong> 
+                    <span class="badge {{ pedido.status_badge_class }}">{{ pedido.get_status_display }}</span>
+                  </p>
+                  <p class="mb-2"><strong>Modelo:</strong> {{ pedido.get_modelo_elevador_display }}</p>
+                  <p class="mb-2"><strong>Criado em:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
+                </div>
+              </div>
+              
+              {% if pedido.observacoes %}
+              <div class="mt-3">
+                <strong>Observações:</strong>
+                <p class="text-muted mb-0">{{ pedido.observacoes|truncatewords:20 }}</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Itens que serão excluídos -->
+          <div class="alert alert-info">
+            <h6 class="alert-heading">
+              <i class="fas fa-info-circle me-2"></i>Itens que serão excluídos:
+            </h6>
+            <ul class="mb-0">
+              <li>Todas as especificações técnicas do elevador</li>
+              <li>Configurações de portas e cabine</li>
+              <li>Cálculos e dimensionamentos</li>
+              {% if pedido.anexos.exists %}
+              <li>{{ pedido.anexos.count }} anexo(s) associado(s)</li>
+              {% endif %}
+              {% if pedido.historico.exists %}
+              <li>Histórico de alterações de status</li>
+              {% endif %}
+            </ul>
+          </div>
+          
+          <!-- Formulário de Confirmação -->
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between">
+              <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash me-1"></i> Sim, Excluir Pedido
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Foco no botão cancelar por segurança
+    const cancelBtn = document.querySelector('a[href*="pedido_detail"]');
+    if (cancelBtn) {
+        cancelBtn.focus();
+    }
+    
+    // Confirmação adicional antes de submeter
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const confirmed = confirm(
+            'ÚLTIMA CONFIRMAÇÃO:\n\n' +
+            'Tem CERTEZA ABSOLUTA que deseja excluir o pedido {{ pedido.numero }}?\n\n' +
+            'Esta ação é IRREVERSÍVEL!'
+        );
+        
+        if (!confirmed) {
+            e.preventDefault();
+        }
+    });
+    
+    // Adicionar efeito visual no botão de exclusão
+    const deleteBtn = document.querySelector('button[type="submit"]');
+    deleteBtn.addEventListener('mouseover', function() {
+        this.classList.add('btn-danger');
+        this.classList.remove('btn-outline-danger');
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    max-width: 600px;
+    margin: 2rem auto;
+}
+
+.alert-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.alert-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.btn-danger:hover {
+    transform: scale(1.02);
+    transition: transform 0.1s ease;
+}
+
+.card-body {
+    position: relative;
+}
+
+.card-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #dc3545, #ffc107, #dc3545);
+    opacity: 0.3;
+}
+</style>
+{% endblock %}

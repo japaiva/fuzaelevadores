@@ -1,0 +1,248 @@
+<!-- templates/vendedor/cliente_create_modal.html -->
+<!-- Formulário simplificado para criar cliente -->
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <label for="{{ form.tipo_pessoa.id_for_label }}" class="form-label">Tipo de Pessoa*</label>
+    {{ form.tipo_pessoa }}
+    {% if form.tipo_pessoa.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.tipo_pessoa.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.nome.id_for_label }}" class="form-label">Nome/Razão Social*</label>
+    {{ form.nome }}
+    {% if form.nome.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.nome.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.nome_fantasia.id_for_label }}" class="form-label">Nome Fantasia</label>
+    {{ form.nome_fantasia }}
+    {% if form.nome_fantasia.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.nome_fantasia.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.cpf_cnpj.id_for_label }}" class="form-label">CPF/CNPJ</label>
+    {{ form.cpf_cnpj }}
+    {% if form.cpf_cnpj.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.cpf_cnpj.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+    <div class="form-text small text-muted">
+      Apenas números
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.telefone.id_for_label }}" class="form-label">Telefone</label>
+    {{ form.telefone }}
+    {% if form.telefone.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.telefone.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+    {{ form.email }}
+    {% if form.email.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.email.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.contato_principal.id_for_label }}" class="form-label">Contato Principal</label>
+    {{ form.contato_principal }}
+    {% if form.contato_principal.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.contato_principal.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+    <div class="form-text small text-muted">
+      Nome do responsável
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.cep.id_for_label }}" class="form-label">CEP</label>
+    {{ form.cep }}
+    {% if form.cep.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.cep.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-8">
+    <label for="{{ form.endereco.id_for_label }}" class="form-label">Endereço</label>
+    {{ form.endereco }}
+    {% if form.endereco.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.endereco.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-4">
+    <label for="{{ form.numero.id_for_label }}" class="form-label">Número</label>
+    {{ form.numero }}
+    {% if form.numero.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.numero.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-4">
+    <label for="{{ form.bairro.id_for_label }}" class="form-label">Bairro</label>
+    {{ form.bairro }}
+    {% if form.bairro.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.bairro.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-6">
+    <label for="{{ form.cidade.id_for_label }}" class="form-label">Cidade</label>
+    {{ form.cidade }}
+    {% if form.cidade.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.cidade.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="col-md-2">
+    <label for="{{ form.estado.id_for_label }}" class="form-label">UF</label>
+    {{ form.estado }}
+    {% if form.estado.errors %}
+      <div class="text-danger small mt-1">
+        {% for error in form.estado.errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="alert alert-info mt-3">
+  <i class="fas fa-info-circle me-2"></i>
+  <strong>Dica:</strong> Preencha pelo menos o nome e tipo de pessoa. Os demais campos podem ser completados depois.
+</div>
+
+<script>
+// Máscara para CPF/CNPJ
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoPessoaSelect = document.getElementById('{{ form.tipo_pessoa.id_for_label }}');
+    const cpfCnpjInput = document.getElementById('{{ form.cpf_cnpj.id_for_label }}');
+    const cepInput = document.getElementById('{{ form.cep.id_for_label }}');
+    const telefoneInput = document.getElementById('{{ form.telefone.id_for_label }}');
+    
+    // Máscaras básicas
+    function aplicarMascaraTelefone(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 10) {
+                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+            } else {
+                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+            }
+            e.target.value = value;
+        });
+    }
+    
+    function aplicarMascaraCEP(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.replace(/(\d{5})(\d{3})/, '$1-$2');
+            e.target.value = value;
+        });
+    }
+    
+    function aplicarMascaraCPFCNPJ(input, tipo) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (tipo === 'PF') {
+                // CPF: 000.000.000-00
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            } else {
+                // CNPJ: 00.000.000/0000-00
+                value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+            }
+            
+            e.target.value = value;
+        });
+    }
+    
+    // Aplicar máscaras iniciais
+    if (telefoneInput) aplicarMascaraTelefone(telefoneInput);
+    if (cepInput) aplicarMascaraCEP(cepInput);
+    
+    // Atualizar máscara do CPF/CNPJ conforme tipo
+    if (tipoPessoaSelect && cpfCnpjInput) {
+        function updateCPFCNPJMask() {
+            const tipo = tipoPessoaSelect.value;
+            cpfCnpjInput.value = ''; // Limpar campo
+            
+            // Remover listeners antigos (simplificado)
+            const newInput = cpfCnpjInput.cloneNode(true);
+            cpfCnpjInput.parentNode.replaceChild(newInput, cpfCnpjInput);
+            
+            aplicarMascaraCPFCNPJ(newInput, tipo);
+            
+            // Atualizar placeholder
+            if (tipo === 'PF') {
+                newInput.placeholder = '000.000.000-00';
+            } else {
+                newInput.placeholder = '00.000.000/0000-00';
+            }
+        }
+        
+        tipoPessoaSelect.addEventListener('change', updateCPFCNPJMask);
+        updateCPFCNPJMask(); // Aplicar inicialmente
+    }
+    
+    // Buscar CEP (funcionalidade opcional)
+    if (cepInput) {
+        cepInput.addEventListener('blur', function() {
+            const cep = this.value.replace(/\D/g, '');
+            
+            if (cep.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.erro) {
+                            const enderecoInput = document.getElementById('{{ form.endereco.id_for_label }}');
+                            const bairroInput = document.getElementById('{{ form.bairro.id_for_label }}');
+                            const cidadeInput = document.getElementById('{{ form.cidade.id_for_label }}');
+                            const estadoInput = document.getElementById('{{ form.estado.id_for_label }}');
+                            
+                            if (enderecoInput && !enderecoInput.value) enderecoInput.value = data.logradouro;
+                            if (bairroInput && !bairroInput.value) bairroInput.value = data.bairro;
+                            if (cidadeInput && !cidadeInput.value) cidadeInput.value = data.localidade;
+                            if (estadoInput && !estadoInput.value) estadoInput.value = data.uf;
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Erro ao buscar CEP:', error);
+                    });
+            }
+        });
+    }
+});
+</script>

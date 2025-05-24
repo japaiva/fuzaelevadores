@@ -1,0 +1,323 @@
+{% extends 'vendedor/base_vendedor.html' %}
+{% load formato_br %}
+
+{% block title %}Pedido {{ pedido.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-check me-2"></i>Pedido {{ pedido.numero }}
+    </h5>
+    <div>
+      {% if pedido.pode_editar %}
+      <a href="{% url 'vendedor:pedido_edit' pedido.pk %}" class="btn btn-warning btn-sm me-2">
+        <i class="fas fa-edit me-1"></i> Editar
+      </a>
+      {% endif %}
+      {% if pedido.pode_simular %}
+      <a href="{% url 'vendedor:pedido_resumo' pedido.pk %}" class="btn btn-primary btn-sm me-2">
+        <i class="fas fa-calculator me-1"></i> Simular
+      </a>
+      {% endif %}
+      <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <!-- Status e Informações Básicas -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <h6 class="border-bottom pb-2 mb-3">Informações do Pedido</h6>
+        <div class="row">
+          <div class="col-sm-6">
+            <p><strong>Número:</strong> {{ pedido.numero }}</p>
+            <p><strong>Projeto:</strong> {{ pedido.nome_projeto }}</p>
+            <p><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
+            {% if pedido.cliente.nome_fantasia %}
+              <p><strong>Empresa:</strong> {{ pedido.cliente.nome_fantasia }}</p>
+            {% endif %}
+          </div>
+          <div class="col-sm-6">
+            <p><strong>Status:</strong> 
+              <span class="badge {{ pedido.status_badge_class }}">{{ pedido.get_status_display }}</span>
+            </p>
+            <p><strong>Vendedor:</strong> {{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</p>
+            <p><strong>Faturado por:</strong> {{ pedido.get_faturado_por_display }}</p>
+            <p><strong>Criado em:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
+          </div>
+        </div>
+        
+        {% if pedido.observacoes %}
+        <div class="mt-3">
+          <strong>Observações:</strong>
+          <p class="text-muted">{{ pedido.observacoes }}</p>
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="col-md-4">
+        <div class="card bg-light">
+          <div class="card-body text-center">
+            <h6 class="card-title">Resumo do Elevador</h6>
+            <p class="card-text small">{{ pedido.resumo_elevador }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Especificações Técnicas -->
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="border-bottom pb-2 mb-3">Especificações do Elevador</h6>
+        
+        <!-- Modelo e Capacidade -->
+        <div class="card mb-3">
+          <div class="card-header bg-secondary text-white">
+            <h6 class="mb-0">Modelo e Capacidade</h6>
+          </div>
+          <div class="card-body">
+            <p><strong>Modelo:</strong> {{ pedido.get_modelo_elevador_display }}</p>
+            <p><strong>Capacidade:</strong> {{ pedido.capacidade }} kg
+              {% if pedido.capacidade_pessoas %}({{ pedido.capacidade_pessoas }} pessoas){% endif %}
+            </p>
+            <p><strong>Acionamento:</strong> {{ pedido.get_acionamento_display }}</p>
+            {% if pedido.tracao %}
+              <p><strong>Tração:</strong> {{ pedido.get_tracao_display }}</p>
+            {% endif %}
+            {% if pedido.contrapeso %}
+              <p><strong>Contrapeso:</strong> {{ pedido.get_contrapeso_display }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Dimensões do Poço -->
+        <div class="card mb-3">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0">Dimensões do Poço</h6>
+          </div>
+          <div class="card-body">
+            <p><strong>Largura:</strong> {{ pedido.largura_poco|formato_br }} m</p>
+            <p><strong>Comprimento:</strong> {{ pedido.comprimento_poco|formato_br }} m</p>
+            <p><strong>Altura:</strong> {{ pedido.altura_poco|formato_br }} m</p>
+            <p><strong>Pavimentos:</strong> {{ pedido.pavimentos }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-6">
+        <h6 class="border-bottom pb-2 mb-3">Portas e Cabine</h6>
+        
+        <!-- Portas -->
+        <div class="card mb-3">
+          <div class="card-header bg-warning text-dark">
+            <h6 class="mb-0">Portas</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-12">
+                <strong>Porta da Cabine:</strong><br>
+                <small>
+                  {{ pedido.get_modelo_porta_cabine_display }} - {{ pedido.get_material_porta_cabine_display }}
+                  {% if pedido.folhas_porta_cabine %} - {{ pedido.folhas_porta_cabine }} folhas{% endif %}<br>
+                  {{ pedido.largura_porta_cabine|formato_br }}m x {{ pedido.altura_porta_cabine|formato_br }}m
+                </small>
+              </div>
+            </div>
+            <hr class="my-2">
+            <div class="row">
+              <div class="col-12">
+                <strong>Porta do Pavimento:</strong><br>
+                <small>
+                  {{ pedido.get_modelo_porta_pavimento_display }} - {{ pedido.get_material_porta_pavimento_display }}
+                  {% if pedido.folhas_porta_pavimento %} - {{ pedido.folhas_porta_pavimento }} folhas{% endif %}<br>
+                  {{ pedido.largura_porta_pavimento|formato_br }}m x {{ pedido.altura_porta_pavimento|formato_br }}m
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cabine -->
+        <div class="card mb-3">
+          <div class="card-header bg-success text-white">
+            <h6 class="mb-0">Cabine</h6>
+          </div>
+          <div class="card-body">
+            <p><strong>Material:</strong> {{ pedido.get_material_cabine_display }}</p>
+            <p><strong>Espessura:</strong> {{ pedido.get_espessura_cabine_display }}</p>
+            <p><strong>Altura:</strong> {{ pedido.altura_cabine|formato_br }} m</p>
+            <p><strong>Saída:</strong> {{ pedido.get_saida_cabine_display }}</p>
+            <p><strong>Piso:</strong> {{ pedido.get_piso_cabine_display }}</p>
+            {% if pedido.material_piso_cabine %}
+              <p><strong>Material do Piso:</strong> {{ pedido.get_material_piso_cabine_display }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Valores Comerciais -->
+    {% if pedido.preco_venda_calculado or pedido.preco_venda_final %}
+    <div class="row mt-4">
+      <div class="col-12">
+        <h6 class="border-bottom pb-2 mb-3">Valores Comerciais</h6>
+        <div class="card">
+          <div class="card-body">
+            <div class="row">
+              {% if pedido.custo_producao %}
+              <div class="col-md-3">
+                <div class="text-center">
+                  <h6 class="text-muted">Custo Produção</h6>
+                  <h5 class="text-primary">R$ {{ pedido.custo_producao|formato_br }}</h5>
+                </div>
+              </div>
+              {% endif %}
+              
+              {% if pedido.preco_venda_calculado %}
+              <div class="col-md-3">
+                <div class="text-center">
+                  <h6 class="text-muted">Preço Calculado</h6>
+                  <h5 class="text-info">R$ {{ pedido.preco_venda_calculado|formato_br }}</h5>
+                </div>
+              </div>
+              {% endif %}
+              
+              {% if pedido.preco_venda_final %}
+              <div class="col-md-3">
+                <div class="text-center">
+                  <h6 class="text-muted">Preço Final</h6>
+                  <h5 class="text-success">R$ {{ pedido.preco_venda_final|formato_br }}</h5>
+                </div>
+              </div>
+              {% endif %}
+              
+              {% if pedido.percentual_desconto %}
+              <div class="col-md-3">
+                <div class="text-center">
+                  <h6 class="text-muted">Desconto</h6>
+                  <h5 class="text-warning">{{ pedido.percentual_desconto|formato_br }}%</h5>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Histórico de Status -->
+    {% if pedido.historico.exists %}
+    <div class="row mt-4">
+      <div class="col-12">
+        <h6 class="border-bottom pb-2 mb-3">Histórico de Status</h6>
+        <div class="timeline">
+          {% for hist in pedido.historico.all %}
+          <div class="timeline-item">
+            <div class="timeline-marker"></div>
+            <div class="timeline-content">
+              <h6 class="timeline-title">
+                {% if hist.status_anterior %}
+                  {{ hist.status_anterior }} → {{ hist.status_novo }}
+                {% else %}
+                  Criado como {{ hist.status_novo }}
+                {% endif %}
+              </h6>
+              <p class="timeline-subtitle">{{ hist.data_mudanca|date:"d/m/Y H:i" }} - {{ hist.usuario.get_full_name|default:hist.usuario.username }}</p>
+              {% if hist.observacao %}
+                <p class="timeline-text">{{ hist.observacao }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Anexos -->
+    {% if pedido.anexos.exists %}
+    <div class="row mt-4">
+      <div class="col-12">
+        <h6 class="border-bottom pb-2 mb-3">Anexos</h6>
+        <div class="row">
+          {% for anexo in pedido.anexos.all %}
+          <div class="col-md-4 mb-3">
+            <div class="card">
+              <div class="card-body">
+                <h6 class="card-title">{{ anexo.nome }}</h6>
+                <p class="card-text">
+                  <small class="text-muted">
+                    {{ anexo.get_tipo_display }} - {{ anexo.tamanho_formatado }}<br>
+                    {{ anexo.enviado_em|date:"d/m/Y H:i" }}
+                  </small>
+                </p>
+                <a href="{{ anexo.arquivo.url }}" class="btn btn-sm btn-primary" target="_blank">
+                  <i class="fas fa-download me-1"></i> Download
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -2rem;
+  width: 12px;
+  height: 12px;
+  background-color: #007bff;
+  border-radius: 50%;
+  top: 0.5rem;
+}
+
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: -1.75rem;
+  top: 1.25rem;
+  width: 2px;
+  height: calc(100% + 0.5rem);
+  background-color: #dee2e6;
+}
+
+.timeline-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-subtitle {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.timeline-text {
+  font-size: 0.85rem;
+  margin-bottom: 0;
+}
+</style>
+{% endblock %}

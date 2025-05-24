@@ -24,7 +24,6 @@ class PedidoClienteForm(forms.ModelForm):
         self.fields['cliente'].required = True
         self.fields['nome_projeto'].required = True
 
-
 class PedidoElevadorForm(forms.ModelForm):
     """Form para dados do elevador"""
     
@@ -51,6 +50,10 @@ class PedidoElevadorForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['capacidade_pessoas'].required = False
+        
+        # ⭐ CORREÇÃO: Tornar capacidade não obrigatória no formulário
+        # pois será calculada automaticamente para elevador de passageiro
+        self.fields['capacidade'].required = False
         
         # Valores padrão
         if not self.instance.pk:
@@ -81,6 +84,12 @@ class PedidoElevadorForm(forms.ModelForm):
                 })
             # Calcular capacidade em kg baseada no número de pessoas
             cleaned_data['capacidade'] = capacidade_pessoas * 80
+        else:
+            # Para outros tipos de elevador, capacidade é obrigatória
+            if not capacidade or capacidade <= 0:
+                raise forms.ValidationError({
+                    'capacidade': 'Capacidade em kg é obrigatória para este tipo de elevador.'
+                })
         
         # Validar campos de tração para hidráulico
         if acionamento == 'Hidraulico':
@@ -89,9 +98,33 @@ class PedidoElevadorForm(forms.ModelForm):
         elif acionamento == 'Carretel':
             cleaned_data['contrapeso'] = ''
         
+        # Validações de dimensões
+        largura_poco = cleaned_data.get('largura_poco')
+        comprimento_poco = cleaned_data.get('comprimento_poco')
+        altura_poco = cleaned_data.get('altura_poco')
+        pavimentos = cleaned_data.get('pavimentos')
+        
+        if largura_poco and largura_poco <= 0:
+            raise forms.ValidationError({
+                'largura_poco': 'A largura do poço deve ser maior que zero.'
+            })
+            
+        if comprimento_poco and comprimento_poco <= 0:
+            raise forms.ValidationError({
+                'comprimento_poco': 'O comprimento do poço deve ser maior que zero.'
+            })
+            
+        if altura_poco and altura_poco <= 0:
+            raise forms.ValidationError({
+                'altura_poco': 'A altura do poço deve ser maior que zero.'
+            })
+            
+        if pavimentos and pavimentos < 2:
+            raise forms.ValidationError({
+                'pavimentos': 'O número de pavimentos deve ser pelo menos 2.'
+            })
+        
         return cleaned_data
-
-
 class PedidoPortasForm(forms.ModelForm):
     """Form para dados das portas"""
     
@@ -359,3 +392,34 @@ class PedidoFiltroForm(forms.Form):
             'placeholder': 'Buscar por número, projeto ou cliente...'
         })
     )
+
+class ClienteCreateForm(forms.ModelForm):
+    """Form simplificado para criar cliente via portal vendedor"""
+    
+    class Meta:
+        model = Cliente
+        fields = [
+            'tipo_pessoa', 'nome', 'nome_fantasia', 'cpf_cnpj',
+            'telefone', 'email', 'contato_principal',
+            'endereco', 'numero', 'bairro', 'cidade', 'estado', 'cep'
+        ]
+        widgets = {
+            'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
+            'cpf_cnpj': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'contato_principal': forms.TextInput(attrs={'class': 'form-control'}),
+            'endereco': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'estado': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2'}),
+            'cep': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nome'].required = True
+        self.fields['tipo_pessoa'].required = True

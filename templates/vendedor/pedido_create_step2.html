@@ -220,6 +220,7 @@
 
 {% block extra_js %}
 <script>
+// JavaScript completo para pedido_create_step2.html
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('elevadorForm');
     const modeloSelect = document.getElementById('{{ form.modelo_elevador.id_for_label }}');
@@ -236,26 +237,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const alturaInput = document.getElementById('{{ form.altura_poco.id_for_label }}');
     const pavimentosInput = document.getElementById('{{ form.pavimentos.id_for_label }}');
     
-    // Função para atualizar campos baseado no modelo
+    // ⭐ FUNÇÃO CORRIGIDA: Atualizar campos baseado no modelo
     function updateModelo() {
         const modelo = modeloSelect.value;
         
         if (modelo === 'Passageiro') {
             capacidadePessoasDiv.style.display = 'block';
             capacidadeInput.disabled = true;
+            capacidadeInput.style.backgroundColor = '#e9ecef';
+            capacidadeInput.setAttribute('readonly', true);
             updateCapacidade();
         } else {
             capacidadePessoasDiv.style.display = 'none';
             capacidadeInput.disabled = false;
+            capacidadeInput.style.backgroundColor = '';
+            capacidadeInput.removeAttribute('readonly');
             capacidadePessoasInput.value = '';
         }
     }
     
-    // Função para calcular capacidade em kg
+    // ⭐ FUNÇÃO CORRIGIDA: Calcular capacidade em kg
     function updateCapacidade() {
         if (modeloSelect.value === 'Passageiro' && capacidadePessoasInput.value) {
             const pessoas = parseInt(capacidadePessoasInput.value) || 1;
             capacidadeInput.value = pessoas * 80;
+            
+            // Garantir que o campo esteja visualmente preenchido
+            capacidadeInput.style.backgroundColor = '#e9ecef';
+            capacidadeInput.setAttribute('readonly', true);
         }
     }
     
@@ -306,12 +315,7 @@ document.addEventListener('DOMContentLoaded', function() {
     alturaInput.addEventListener('input', updateCalculos);
     pavimentosInput.addEventListener('input', updateCalculos);
     
-    // Inicializar
-    updateModelo();
-    updateAcionamento();
-    updateCalculos();
-    
-    // Validação do formulário
+    // ⭐ VALIDAÇÃO CORRIGIDA DO FORMULÁRIO
     form.addEventListener('submit', function(e) {
         const modelo = modeloSelect.value;
         const capacidade = parseFloat(capacidadeInput.value) || 0;
@@ -320,20 +324,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const altura = parseFloat(alturaInput.value) || 0;
         const pavimentos = parseInt(pavimentosInput.value) || 0;
         
-        if (modelo === 'Passageiro' && !capacidadePessoasInput.value) {
-            e.preventDefault();
-            alert('Para elevador de passageiro, informe o número de pessoas.');
-            capacidadePessoasInput.focus();
-            return;
+        // Validação específica para elevador de passageiro
+        if (modelo === 'Passageiro') {
+            const pessoas = parseInt(capacidadePessoasInput.value) || 0;
+            if (pessoas <= 0) {
+                e.preventDefault();
+                alert('Para elevador de passageiro, informe o número de pessoas.');
+                capacidadePessoasInput.focus();
+                return;
+            }
+            // Garantir que a capacidade seja calculada antes do envio
+            capacidadeInput.value = pessoas * 80;
+        } else {
+            // Para outros tipos, validar capacidade manual
+            if (capacidade <= 0) {
+                e.preventDefault();
+                alert('A capacidade deve ser maior que zero.');
+                capacidadeInput.focus();
+                return;
+            }
         }
         
-        if (capacidade <= 0) {
-            e.preventDefault();
-            alert('A capacidade deve ser maior que zero.');
-            capacidadeInput.focus();
-            return;
-        }
-        
+        // Validações gerais
         if (largura <= 0 || comprimento <= 0 || altura <= 0) {
             e.preventDefault();
             alert('As dimensões do poço devem ser maiores que zero.');
@@ -346,7 +358,23 @@ document.addEventListener('DOMContentLoaded', function() {
             pavimentosInput.focus();
             return;
         }
+        
+        // Debug: verificar se capacidade está definida
+        console.log('Modelo:', modelo);
+        console.log('Capacidade final:', capacidadeInput.value);
+        
+        // Se chegou até aqui, tudo está OK para submissão
     });
+    
+    // Inicializar todas as funções
+    updateModelo();
+    updateAcionamento();
+    updateCalculos();
+    
+    // Auto-focus no primeiro campo
+    if (modeloSelect) {
+        modeloSelect.focus();
+    }
 });
 </script>
 {% endblock %}

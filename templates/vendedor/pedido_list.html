@@ -114,7 +114,8 @@
                         <i class="fas fa-copy me-2"></i>Duplicar
                       </a></li>
                       {% if pedido.pode_gerar_orcamento %}
-                      <li><a class="dropdown-item" href="{% url 'vendedor:pedido_gerar_orcamento' pedido.pk %}">
+                      <!-- ⭐ CORREÇÃO: URL corrigida -->
+                      <li><a class="dropdown-item" href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" target="_blank">
                         <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
                       </a></li>
                       {% endif %}
