@@ -1,0 +1,376 @@
+{% extends 'vendedor/base_vendedor.html' %}
+{% load formato_br %}
+{% block title %}Pedido {{ pedido.numero }} - Resumo | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-chart-line me-2"></i>Pedido {{ pedido.numero }} - Resumo da Simulação
+    </h5>
+    <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="card-header bg-white">
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-success">✓ 1. Cliente</small>
+      <small class="text-success">✓ 2. Elevador</small>
+      <small class="text-success">✓ 3. Portas</small>
+      <small class="text-success">✓ 4. Cabine</small>
+      <small class="text-success fw-bold">5. Resumo</small>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="border-bottom pb-1 mb-3">Configurações</h6>
+        
+        {% for pagina, dados in respostas_agrupadas.items %}
+          <div class="card mb-3 card-collapsible">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center collapse-header" data-bs-toggle="collapse" data-bs-target="#collapse-{{ forloop.counter }}" aria-expanded="false">
+              {{ pagina }}
+              <i class="fas fa-chevron-down collapse-icon"></i>
+            </div>
+            <div class="collapse" id="collapse-{{ forloop.counter }}">
+              <div class="card-body">
+                {% if pagina == "Portas" %}
+                  <h6 class="border-bottom pb-1 mb-2">Portas de Cabine</h6>
+                  {% for chave, valor in dados.items %}
+                    {% if "Pavimento" not in chave %}
+                      <p><strong>{{ chave }}:</strong> {{ valor }}</p>
+                    {% endif %}
+                  {% endfor %}
+                  
+                  <h6 class="border-bottom pb-1 mt-3 mb-2">Portas de Pavimento</h6>
+                  {% for chave, valor in dados.items %}
+                    {% if "Pavimento" in chave %}
+                      <p><strong>{{ chave }}:</strong> {{ valor }}</p>
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                  {% for chave, valor in dados.items %}
+                    <p><strong>{{ chave }}:</strong> {{ valor }}</p>
+                  {% endfor %}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="alert alert-warning">
+            Nenhuma informação disponível. Por favor, complete todas as etapas da simulação.
+          </div>
+        {% endfor %}
+      </div>
+      
+      <div class="col-md-6">
+        <h6 class="border-bottom pb-1 mb-3">Cálculos</h6>
+        
+        <!-- Ficha Técnica - Todos podem ver -->
+        <div class="card mb-3 card-collapsible">
+          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center collapse-header" data-bs-toggle="collapse" data-bs-target="#collapse-ficha" aria-expanded="false">
+            Ficha Técnica
+            <i class="fas fa-chevron-down collapse-icon"></i>
+          </div>
+          <div class="collapse" id="collapse-ficha">
+            <div class="card-body">
+              {% if dimensionamento.cab %}
+                <p><strong>Dimensões Cabine:</strong> {{ dimensionamento.cab.largura|formato_br }}m L x 
+                  {{ dimensionamento.cab.compr|formato_br }}m C x 
+                  {{ dimensionamento.cab.altura|formato_br }}m A</p>
+                <p><strong>Capacidade e Tração Cabine:</strong> 
+                  {{ dimensionamento.cab.capacidade|formato_br }} kg, 
+                  {{ dimensionamento.cab.tracao|formato_br }} kg</p>
+              {% else %}
+                <p class="text-danger">Dados de dimensionamento não disponíveis.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Dimensionamento - Somente engenharia e admin -->
+        {% if user_level in 'engenharia,admin' %}
+        <div class="card mb-3 card-collapsible">
+          <div class="card-header bg-info text-white d-flex justify-content-between align-items-center collapse-header" data-bs-toggle="collapse" data-bs-target="#collapse-dimensionamento" aria-expanded="false">
+            Dimensionamento
+            <i class="fas fa-chevron-down collapse-icon"></i>
+          </div>
+          <div class="collapse" id="collapse-dimensionamento">
+            <div class="card-body dimensionamento-highlights">
+              {% if explicacao %}
+                <div id="explicacaoFormatada"></div>
+                <div id="explicacaoOriginal" style="display: none;">{{ explicacao }}</div>
+              {% else %}
+                <p class="text-danger">Explicação de dimensionamento não disponível.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Custo Produção - Somente engenharia e admin -->
+        {% if user_level in 'engenharia,admin' %}
+        <div class="card mb-3 card-collapsible">
+          <div class="card-header bg-info text-white d-flex justify-content-between align-items-center collapse-header" data-bs-toggle="collapse" data-bs-target="#collapse-componentes" aria-expanded="false">
+            Custo Produção
+            <i class="fas fa-chevron-down collapse-icon"></i>
+          </div>
+          <div class="collapse" id="collapse-componentes">
+            <div class="card-body">
+              {% if grupos %}
+                {% for grupo_nome, subgrupos in grupos.items %}
+                  <h6 class="border-bottom pb-1 mb-2">{{ grupo_nome }}</h6>
+                  {% for subgrupo_nome, itens in subgrupos.items %}
+                    <p class="mb-1"><strong>{{ subgrupo_nome }}</strong></p>
+                    <ul class="mb-3">
+                      {% for item in itens %}
+                        <li>
+                          <strong>{{ item.descricao }}</strong> ({{ item.codigo }}) - 
+                          {{ item.quantidade|formato_br }} {{ item.unidade }},
+                          Custo: R$ {{ item.custo_total|formato_br }}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% endfor %}
+                {% endfor %}
+                <div class="alert alert-info">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Custo produção:</h4>
+                    <h3 class="mb-0">R$ <span id="custo-producao">{{ custo_total|formato_br }}</span></h3>
+                  </div>
+                </div>
+              {% else %}
+                <p class="text-danger">Dados de componentes não disponíveis.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Formação Preço - Somente admin -->
+        {% if user_level == 'admin' %}
+        <div class="card mb-3 card-collapsible">
+          <div class="card-header bg-success text-white d-flex justify-content-between align-items-center collapse-header" data-bs-toggle="collapse" data-bs-target="#collapse-formacao-preco" aria-expanded="false">
+            Formação Preço
+            <i class="fas fa-chevron-down collapse-icon"></i>
+          </div>
+          <div class="collapse" id="collapse-formacao-preco">
+            <div class="card-body">
+              <div class="mb-3">
+                <table class="table table-borderless">
+                  <tbody>
+                    <tr>
+                      <td class="text-start fw-bold">Custo de produção</td>
+                      <td class="text-end fw-bold">R$ <span id="valor-custo-producao">{{ formacao_preco.custo_producao|formato_br }}</span></td>
+                    </tr>
+                    <tr>
+                      <td class="text-start">Margem ({{ formacao_preco.percentual_margem|floatformat:1 }}%)</td>
+                      <td class="text-end">R$ <span id="valor-margem">{{ formacao_preco.valor_margem|formato_br }}</span></td>
+                    </tr>
+                    <tr>
+                      <td class="text-start">Desconto (<span id="percentual-desconto-interno">{{ formacao_preco.percentual_desconto|floatformat:1 }}</span>%)</td>
+                      <td class="text-end">-R$ <span id="valor-desconto-interno">{{ formacao_preco.valor_desconto|formato_br }}</span></td>
+                    </tr>
+                    <tr>
+                      <td class="text-start fw-bold">Base Cálculo Comissão</td>
+                      <td class="text-end fw-bold">R$ <span id="base-calculo-comissao">{{ formacao_preco.base_calculo_comissao|formato_br }}</span></td>
+                    </tr>
+                    <tr>
+                      <td class="text-start">Comissão ({{ formacao_preco.percentual_comissao|floatformat:1 }}%)</td>
+                      <td class="text-end">R$ <span id="valor-comissao">{{ formacao_preco.valor_comissao|formato_br }}</span></td>
+                    </tr>
+                    <tr class="bg-light">
+                      <td class="text-start fw-bold">Preço sem impostos</td>
+                      <td class="text-end fw-bold">R$ <span id="valor-preco-sem-impostos">{{ formacao_preco.preco_sem_impostos|formato_br }}</span></td>
+                    </tr>
+                    <tr>
+                      <td class="text-start">Impostos ({{ formacao_preco.percentual_impostos|floatformat:1 }}%)</td>
+                      <td class="text-end">R$ <span id="valor-impostos">{{ formacao_preco.valor_impostos|formato_br }}</span></td>
+                    </tr>
+                    <tr class="bg-light">
+                      <td class="text-start fw-bold">Preço com impostos</td>
+                      <td class="text-end fw-bold">R$ <span id="valor-preco-com-impostos">{{ formacao_preco.preco_com_impostos|formato_br }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Preço calculado, preço final e desconto -->
+        <div class="alert alert-warning py-2 mb-3">
+          <div class="row align-items-center">
+            <div class="col-md-3">
+              <small class="mb-0 text-start">Preço S/Impostos</small>
+            </div>
+            <div class="col-md-3 text-center">
+              <span class="fw-bold">R$ <span id="preco-calculado">{{ formacao_preco.preco_sem_impostos|formato_br }}</span></span>
+            </div>
+            <div class="col-md-3 text-center">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text">R$</span>
+                <input type="text" class="form-control text-end" id="preco-final" value="{{ formacao_preco.preco_sem_impostos|formato_br }}">
+              </div>
+            </div>
+            <div class="col-md-3 text-center">
+              <span class="small me-1">Desconto</span>
+              <span class="fw-bold"><span id="percentual-desconto">0</span>%</span>
+            </div>
+          </div>
+          <div id="alerta-desconto" class="mt-1" style="display: none;">
+            <div class="alert alert-danger py-1 mb-0">
+              <small><i class="fas fa-exclamation-triangle"></i> Desconto acima de {{ formacao_preco.alcada_desconto|floatformat:1 }}%</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Botões para geração de PDFs -->
+        <div class="row mt-3">
+          {% if user_level in 'engenharia,admin' %}
+          <div class="col-md-6">
+            <a href="{% url 'vendedor:pdf_proposta' pedido.pk %}" class="btn btn-primary w-100" target="_blank">
+              <i class="fas fa-file-pdf me-1"></i> Demonstrativo Custo
+            </a>
+          </div>
+          {% endif %}
+          
+          <div class="col-md-{% if user_level in 'engenharia,admin' %}6{% else %}12{% endif %}">
+            <a href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" class="btn btn-success w-100" target="_blank">
+              <i class="fas fa-file-invoice me-1"></i> Orçamento Venda
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Botões de Ação -->
+    <div class="d-flex justify-content-between mt-4">
+      <a href="{% url 'vendedor:pedido_step4_cabine' pedido.pk %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Anterior
+      </a>
+      
+      <div>
+        <form method="post" action="{% url 'vendedor:finalizar_pedido' pedido.pk %}" class="d-inline">
+          {% csrf_token %}
+          <input type="hidden" name="desconto_aplicado" id="desconto-hidden" value="0">
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check me-1"></i> Finalizar Pedido
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Código para formatar explicação (igual ao simulador)
+    const explicacaoOriginal = document.getElementById('explicacaoOriginal');
+    const explicacaoFormatada = document.getElementById('explicacaoFormatada');
+    
+    if (explicacaoOriginal && explicacaoFormatada) {
+        const textoOriginal = explicacaoOriginal.textContent;
+        const linhas = textoOriginal.split('\n');
+        
+        linhas.forEach(linha => {
+            if (linha.trim() !== '') {
+                const paragrafo = document.createElement('p');
+                let conteudoLinha = linha;
+                
+                conteudoLinha = conteudoLinha.replace(/&lt;strong&gt;/g, '<strong>');
+                conteudoLinha = conteudoLinha.replace(/&lt;\/strong&gt;/g, '</strong>');
+                
+                conteudoLinha = conteudoLinha.replace(/(\d+\.\d+)/g, function(match) {
+                    const num = parseFloat(match);
+                    if (isNaN(num)) return match;
+                    const numFormatado = num.toFixed(2).replace('.', ',');
+                    return '<span class="highlight-value">' + numFormatado + '</span>';
+                });
+                
+                paragrafo.innerHTML = conteudoLinha;
+                explicacaoFormatada.appendChild(paragrafo);
+            }
+        });
+    }
+
+    // Código para os cabeçalhos colapsáveis
+    const collapseHeaders = document.querySelectorAll('.collapse-header');
+    
+    collapseHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const target = this.getAttribute('data-bs-target');
+            const collapseElement = document.querySelector(target);
+            const icon = this.querySelector('.collapse-icon');
+            
+            collapseElement.classList.toggle('show');
+            
+            if (collapseElement.classList.contains('show')) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                this.setAttribute('aria-expanded', 'true');
+            } else {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                this.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+    
+    // Lógica do desconto (igual ao simulador)
+    function formatarValorBR(valor) {
+        return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    
+    const precoFinalInput = document.getElementById('preco-final');
+    const percentualDescontoElem = document.getElementById('percentual-desconto');
+    const descontoHidden = document.getElementById('desconto-hidden');
+    
+    if (precoFinalInput) {
+        const alcadaDesconto = {{ formacao_preco.alcada_desconto|default:5.0 }};
+        const precoOriginal = {{ formacao_preco.preco_sem_impostos|floatformat:2 }};
+        
+        precoFinalInput.addEventListener('input', function() {
+            const valorDigitado = this.value.replace(/\./g, '').replace(/,/g, '.');
+            const precoFinal = parseFloat(valorDigitado);
+            
+            if (!isNaN(precoFinal) && precoOriginal > 0) {
+                const valorDesconto = precoOriginal - precoFinal;
+                const percentualDesconto = (valorDesconto / precoOriginal) * 100;
+                
+                percentualDescontoElem.textContent = Math.max(0, percentualDesconto).toFixed(1);
+                descontoHidden.value = Math.max(0, percentualDesconto).toFixed(2);
+                
+                const alertaDesconto = document.getElementById('alerta-desconto');
+                if (percentualDesconto > alcadaDesconto && precoFinal < precoOriginal) {
+                    alertaDesconto.style.display = 'block';
+                    this.classList.add('border-danger');
+                } else {
+                    alertaDesconto.style.display = 'none';
+                    this.classList.remove('border-danger');
+                }
+            }
+        });
+        
+        precoFinalInput.addEventListener('blur', function() {
+            const valorDigitado = this.value.replace(/\./g, '').replace(/,/g, '.');
+            const precoFinal = parseFloat(valorDigitado);
+            
+            if (!isNaN(precoFinal)) {
+                this.value = formatarValorBR(precoFinal);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

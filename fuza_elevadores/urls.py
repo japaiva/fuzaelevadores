@@ -22,7 +22,7 @@ urlpatterns = [
     
     # ⚠️ COMENTAR ESTAS LINHAS TEMPORARIAMENTE ⚠️
     # path('producao/', include('producao.urls')),  # ← URLs ainda não criadas
-    # path('vendedor/', include('vendedor.urls')),  # ← App ainda não criado
+    path('vendedor/', include('vendedor.urls')),  # ← App ainda não criado
     
     # APIs e outros apps
     # path('api/', include('api.urls', namespace='api')),  # ← Se não tiver ainda

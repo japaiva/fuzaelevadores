@@ -1,0 +1,641 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Pedido {{ pedido.numero }} - Cabine | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-square me-2"></i>Pedido {{ pedido.numero }} - Dados da Cabine
+    </h5>
+    <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="card-header bg-white">
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemax="100"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-success">✓ 1. Cliente</small>
+      <small class="text-success">✓ 2. Elevador</small>
+      <small class="text-success">✓ 3. Portas</small>
+      <small class="text-success fw-bold">4. Cabine</small>
+      <small class="text-muted">5. Resumo</small>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <form method="post" id="cabineForm">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Material da Cabine -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-palette me-2"></i>
+            Material e Acabamento
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.material_cabine.id_for_label }}" class="form-label">Material da Cabine*</label>
+              {{ form.material_cabine }}
+              {% if form.material_cabine.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.material_cabine.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.espessura_cabine.id_for_label }}" class="form-label">Espessura*</label>
+              {{ form.espessura_cabine }}
+              {% if form.espessura_cabine.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.espessura_cabine.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.saida_cabine.id_for_label }}" class="form-label">Saída*</label>
+              {{ form.saida_cabine }}
+              {% if form.saida_cabine.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.saida_cabine.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Material Outro -->
+            <div id="material-outro-cabine" class="col-12" style="display: none;">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="{{ form.material_cabine_outro.id_for_label }}" class="form-label">Nome do Material</label>
+                  {{ form.material_cabine_outro }}
+                  {% if form.material_cabine_outro.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.material_cabine_outro.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.valor_cabine_outro.id_for_label }}" class="form-label">Valor (R$)</label>
+                  {{ form.valor_cabine_outro }}
+                  {% if form.valor_cabine_outro.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.valor_cabine_outro.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dimensões da Cabine -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-ruler me-2"></i>
+            Dimensões da Cabine
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.altura_cabine.id_for_label }}" class="form-label">Altura (m)*</label>
+              {{ form.altura_cabine }}
+              {% if form.altura_cabine.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.altura_cabine.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Altura interna da cabine
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label">Largura Calculada (m)</label>
+              <input type="text" class="form-control" id="largura-calculada" readonly placeholder="Será calculada">
+              <div class="form-text small text-muted">
+                Baseada nas dimensões do poço
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label">Comprimento Calculado (m)</label>
+              <input type="text" class="form-control" id="comprimento-calculado" readonly placeholder="Será calculado">
+              <div class="form-text small text-muted">
+                Baseado nas dimensões do poço
+              </div>
+            </div>
+          </div>
+          
+          <!-- Visualização das Dimensões -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                  <h6 class="mb-0"><i class="fas fa-cube me-2"></i>Visualização da Cabine</h6>
+                </div>
+                <div class="card-body text-center" style="min-height: 200px;">
+                  <div id="cabine-visualization">
+                    <i class="fas fa-cube fa-3x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">As dimensões aparecerão aqui</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Piso da Cabine -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-th-large me-2"></i>
+            Piso da Cabine
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.piso_cabine.id_for_label }}" class="form-label">Responsável pelo Piso*</label>
+              {{ form.piso_cabine }}
+              {% if form.piso_cabine.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.piso_cabine.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6" id="material-piso-div" style="display: none;">
+              <label for="{{ form.material_piso_cabine.id_for_label }}" class="form-label">Material do Piso</label>
+              {{ form.material_piso_cabine }}
+              {% if form.material_piso_cabine.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.material_piso_cabine.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Material Piso Outro -->
+            <div id="material-piso-outro" class="col-12" style="display: none;">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="{{ form.material_piso_cabine_outro.id_for_label }}" class="form-label">Nome do Material do Piso</label>
+                  {{ form.material_piso_cabine_outro }}
+                  {% if form.material_piso_cabine_outro.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.material_piso_cabine_outro.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="col-md-6">
+                  <label for="{{ form.valor_piso_cabine_outro.id_for_label }}" class="form-label">Valor (R$)</label>
+                  {{ form.valor_piso_cabine_outro }}
+                  {% if form.valor_piso_cabine_outro.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.valor_piso_cabine_outro.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo da Configuração -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-check-circle me-2"></i>
+            Resumo da Configuração da Cabine
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Material e Acabamento</h6>
+              <div id="info-material">
+                <small class="text-muted">Selecione o material acima</small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6>Piso</h6>
+              <div id="info-piso">
+                <small class="text-muted">Selecione as opções de piso acima</small>
+              </div>
+            </div>
+          </div>
+          <hr>
+          <div class="row">
+            <div class="col-12">
+              <h6>Dimensões</h6>
+              <div id="info-dimensoes">
+                <small class="text-muted">As dimensões serão calculadas automaticamente</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertas de Validação -->
+      <div id="alertas-validacao" class="mt-4"></div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'vendedor:pedido_create_step3' pedido.pk %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Anterior
+        </a>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-check me-1"></i> Finalizar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('cabineForm');
+    
+    // Elementos principais
+    const materialCabineSelect = document.getElementById('{{ form.material_cabine.id_for_label }}');
+    const materialOutroCabineDiv = document.getElementById('material-outro-cabine');
+    const alturaCabineInput = document.getElementById('{{ form.altura_cabine.id_for_label }}');
+    const larguraCalculadaInput = document.getElementById('largura-calculada');
+    const comprimentoCalculadoInput = document.getElementById('comprimento-calculado');
+    
+    const pisoCabineSelect = document.getElementById('{{ form.piso_cabine.id_for_label }}');
+    const materialPisoDiv = document.getElementById('material-piso-div');
+    const materialPisoSelect = document.getElementById('{{ form.material_piso_cabine.id_for_label }}');
+    const materialPisoOutroDiv = document.getElementById('material-piso-outro');
+    
+    // Dados do pedido vindos do backend
+    const dadosPedido = {
+        largura_poco: {{ pedido.largura_poco|default:2.0 }},
+        comprimento_poco: {{ pedido.comprimento_poco|default:2.0 }},
+        altura_poco: {{ pedido.altura_poco|default:3.0 }},
+        modelo_elevador: '{{ pedido.modelo_elevador|default:"" }}',
+        acionamento: '{{ pedido.acionamento|default:"" }}',
+        capacidade: {{ pedido.capacidade|default:80 }}
+    };
+    
+    // Função para controlar campo material "Outro"
+    function updateMaterialCabine() {
+        const material = materialCabineSelect.value;
+        
+        if (material === 'Outro') {
+            materialOutroCabineDiv.style.display = 'block';
+        } else {
+            materialOutroCabineDiv.style.display = 'none';
+        }
+        
+        updateResumoMaterial();
+    }
+    
+    // Função para controlar campos do piso
+    function updatePisoCabine() {
+        const piso = pisoCabineSelect.value;
+        const materialPiso = materialPisoSelect ? materialPisoSelect.value : '';
+        
+        if (piso === 'Por conta da empresa') {
+            materialPisoDiv.style.display = 'block';
+            
+            if (materialPiso === 'Outro') {
+                materialPisoOutroDiv.style.display = 'block';
+            } else {
+                materialPisoOutroDiv.style.display = 'none';
+            }
+        } else {
+            materialPisoDiv.style.display = 'none';
+            materialPisoOutroDiv.style.display = 'none';
+        }
+        
+        updateResumoPiso();
+    }
+    
+    // Função principal para calcular dimensões
+    function calcularDimensoesCabine() {
+        const larguraPoco = dadosPedido.largura_poco;
+        const comprimentoPoco = dadosPedido.comprimento_poco;
+        const acionamento = dadosPedido.acionamento;
+        const modelo = dadosPedido.modelo_elevador;
+        
+        // Cálculo das margens conforme tipo de elevador
+        let margemLargura = 0.15;  // 15cm padrão
+        let margemComprimento = 0.15;
+        
+        // Ajustar conforme acionamento
+        if (acionamento === 'Hidraulico') {
+            margemLargura = 0.12;
+            margemComprimento = 0.12;
+        } else if (acionamento === 'Motor') {
+            margemLargura = 0.18;
+            margemComprimento = 0.18;
+        }
+        
+        // Ajustar conforme modelo
+        if (modelo === 'Carga') {
+            margemLargura += 0.05;
+            margemComprimento += 0.05;
+        } else if (modelo === 'Plataforma Acessibilidade') {
+            margemLargura = 0.10;
+            margemComprimento = 0.10;
+        }
+        
+        // Calcular dimensões finais
+        const larguraCabine = Math.max(0.8, larguraPoco - (margemLargura * 2));
+        const comprimentoCabine = Math.max(0.8, comprimentoPoco - (margemComprimento * 2));
+        
+        // Atualizar campos
+        larguraCalculadaInput.value = larguraCabine.toFixed(2);
+        comprimentoCalculadoInput.value = comprimentoCabine.toFixed(2);
+        
+        // Validar e atualizar visualização
+        validarDimensoes(larguraCabine, comprimentoCabine);
+        updateVisualizacaoCabine(larguraCabine, comprimentoCabine);
+        updateResumoDimensoes();
+        
+        return { largura: larguraCabine, comprimento: comprimentoCabine };
+    }
+    
+    // Função para validar dimensões
+    function validarDimensoes(largura, comprimento) {
+        const alertasDiv = document.getElementById('alertas-validacao');
+        const altura = parseFloat(alturaCabineInput.value) || 2.3;
+        let alertas = [];
+        
+        // Validações básicas
+        if (largura < 0.8) {
+            alertas.push({
+                tipo: 'erro',
+                mensagem: 'Largura da cabine muito pequena (mínimo 0.8m)'
+            });
+        }
+        
+        if (comprimento < 0.8) {
+            alertas.push({
+                tipo: 'erro', 
+                mensagem: 'Comprimento da cabine muito pequeno (mínimo 0.8m)'
+            });
+        }
+        
+        if (altura < 2.0) {
+            alertas.push({
+                tipo: 'erro',
+                mensagem: 'Altura da cabine muito baixa (mínimo 2.0m)'
+            });
+        }
+        
+        // Validação de área para passageiro
+        const area = largura * comprimento;
+        const capacidade = dadosPedido.capacidade;
+        
+        if (dadosPedido.modelo_elevador === 'Passageiro') {
+            const pessoas = Math.ceil(capacidade / 80);
+            const areaMinima = pessoas * 1.0; // 1m² por pessoa mínimo
+            
+            if (area < areaMinima) {
+                alertas.push({
+                    tipo: 'aviso',
+                    mensagem: `Área da cabine pode ser pequena para ${pessoas} pessoa(s): ${area.toFixed(2)}m² (recomendado: ${areaMinima.toFixed(2)}m²)`
+                });
+            }
+        }
+        
+        // Limpar alertas anteriores
+        alertasDiv.innerHTML = '';
+        
+        // Mostrar novos alertas
+        alertas.forEach(alerta => {
+            const div = document.createElement('div');
+            div.className = `alert alert-${alerta.tipo === 'erro' ? 'danger' : 'warning'} py-2`;
+            div.innerHTML = `
+                <i class="fas fa-${alerta.tipo === 'erro' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                ${alerta.mensagem}
+            `;
+            alertasDiv.appendChild(div);
+        });
+        
+        return alertas.length === 0 || alertas.every(a => a.tipo !== 'erro');
+    }
+    
+    // Função para atualizar visualização
+    function updateVisualizacaoCabine(largura, comprimento) {
+        const visualization = document.getElementById('cabine-visualization');
+        const altura = parseFloat(alturaCabineInput.value) || 2.3;
+        
+        if (largura && comprimento && altura) {
+            const area = largura * comprimento;
+            const volume = area * altura;
+            
+            visualization.innerHTML = `
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body py-2">
+                                <h5 class="mb-0">${largura.toFixed(2)}m</h5>
+                                <small>Largura</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body py-2">
+                                <h5 class="mb-0">${comprimento.toFixed(2)}m</h5>
+                                <small>Comprimento</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body py-2">
+                                <h5 class="mb-0">${altura.toFixed(2)}m</h5>
+                                <small>Altura</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <div class="card bg-info text-white">
+                            <div class="card-body py-2 text-center">
+                                <h6 class="mb-0">Área: ${area.toFixed(2)}m²</h6>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-info text-white">
+                            <div class="card-body py-2 text-center">
+                                <h6 class="mb-0">Volume: ${volume.toFixed(2)}m³</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            visualization.innerHTML = `
+                <i class="fas fa-cube fa-3x text-muted mb-2"></i>
+                <p class="text-muted mb-0">As dimensões aparecerão aqui</p>
+            `;
+        }
+    }
+    
+    // Funções para atualizar resumos
+    function updateResumoMaterial() {
+        const material = materialCabineSelect.value;
+        const espessura = document.getElementById('{{ form.espessura_cabine.id_for_label }}').value;
+        const saida = document.getElementById('{{ form.saida_cabine.id_for_label }}').value;
+        
+        let info = [];
+        if (material) {
+            if (material === 'Outro') {
+                const nomeOutro = document.getElementById('{{ form.material_cabine_outro.id_for_label }}').value;
+                info.push(`<strong>Material:</strong> ${nomeOutro || 'A definir'}`);
+            } else {
+                info.push(`<strong>Material:</strong> ${material}`);
+            }
+        }
+        if (espessura) info.push(`<strong>Espessura:</strong> ${espessura} mm`);
+        if (saida) info.push(`<strong>Saída:</strong> ${saida}`);
+        
+        document.getElementById('info-material').innerHTML = info.length > 0 ? info.join('<br>') : '<small class="text-muted">Selecione o material acima</small>';
+    }
+    
+    function updateResumoPiso() {
+        const piso = pisoCabineSelect.value;
+        const materialPiso = materialPisoSelect ? materialPisoSelect.value : '';
+        
+        let info = [];
+        if (piso) info.push(`<strong>Responsável:</strong> ${piso}`);
+        
+        if (piso === 'Por conta da empresa' && materialPiso) {
+            if (materialPiso === 'Outro') {
+                const nomeOutro = document.getElementById('{{ form.material_piso_cabine_outro.id_for_label }}').value;
+                info.push(`<strong>Material:</strong> ${nomeOutro || 'A definir'}`);
+            } else {
+                info.push(`<strong>Material:</strong> ${materialPiso}`);
+            }
+        }
+        
+        document.getElementById('info-piso').innerHTML = info.length > 0 ? info.join('<br>') : '<small class="text-muted">Selecione as opções de piso acima</small>';
+    }
+    
+    function updateResumoDimensoes() {
+        const largura = parseFloat(larguraCalculadaInput.value) || 0;
+        const comprimento = parseFloat(comprimentoCalculadoInput.value) || 0;
+        const altura = parseFloat(alturaCabineInput.value) || 0;
+        
+        if (largura && comprimento && altura) {
+            const area = largura * comprimento;
+            const volume = area * altura;
+            
+            document.getElementById('info-dimensoes').innerHTML = `
+                <strong>Cabine:</strong> ${largura.toFixed(2)}m × ${comprimento.toFixed(2)}m × ${altura.toFixed(2)}m<br>
+                <strong>Área:</strong> ${area.toFixed(2)}m² | <strong>Volume:</strong> ${volume.toFixed(2)}m³
+            `;
+        } else {
+            document.getElementById('info-dimensoes').innerHTML = '<small class="text-muted">As dimensões serão calculadas automaticamente</small>';
+        }
+    }
+    
+    // Event listeners
+    materialCabineSelect.addEventListener('change', updateMaterialCabine);
+    pisoCabineSelect.addEventListener('change', updatePisoCabine);
+    if (materialPisoSelect) {
+        materialPisoSelect.addEventListener('change', updatePisoCabine);
+    }
+    
+    // Event listeners para campos que afetam dimensões
+    alturaCabineInput.addEventListener('input', function() {
+        calcularDimensoesCabine();
+    });
+    
+    // Event listeners para campos que afetam resumos
+    ['{{ form.espessura_cabine.id_for_label }}', '{{ form.saida_cabine.id_for_label }}'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', updateResumoMaterial);
+        }
+    });
+    
+    // Validação do formulário
+    form.addEventListener('submit', function(e) {
+        // Validar material "Outro" da cabine
+        if (materialCabineSelect.value === 'Outro') {
+            const nomeOutro = document.getElementById('{{ form.material_cabine_outro.id_for_label }}').value;
+            const valorOutro = document.getElementById('{{ form.valor_cabine_outro.id_for_label }}').value;
+            
+            if (!nomeOutro.trim()) {
+                e.preventDefault();
+                alert('Por favor, informe o nome do material da cabine.');
+                return;
+            }
+            
+            if (!valorOutro || parseFloat(valorOutro) <= 0) {
+                e.preventDefault();
+                alert('Por favor, informe um valor válido para o material da cabine.');
+                return;
+            }
+        }
+        
+        // Validar material "Outro" do piso
+        if (pisoCabineSelect.value === 'Por conta da empresa' && materialPisoSelect && materialPisoSelect.value === 'Outro') {
+            const nomeOutro = document.getElementById('{{ form.material_piso_cabine_outro.id_for_label }}').value;
+            const valorOutro = document.getElementById('{{ form.valor_piso_cabine_outro.id_for_label }}').value;
+            
+            if (!nomeOutro.trim()) {
+                e.preventDefault();
+                alert('Por favor, informe o nome do material do piso.');
+                return;
+            }
+            
+            if (!valorOutro || parseFloat(valorOutro) <= 0) {
+                e.preventDefault();
+                alert('Por favor, informe um valor válido para o material do piso.');
+                return;
+            }
+        }
+        
+        // Validar dimensões
+        const largura = parseFloat(larguraCalculadaInput.value) || 0;
+        const comprimento = parseFloat(comprimentoCalculadoInput.value) || 0;
+        const altura = parseFloat(alturaCabineInput.value) || 0;
+        
+        if (largura < 0.8 || comprimento < 0.8 || altura < 2.0) {
+            e.preventDefault();
+            alert('As dimensões da cabine estão fora dos limites mínimos permitidos.');
+            return;
+        }
+    });
+    
+    // Inicializar
+    updateMaterialCabine();
+    updatePisoCabine();
+    calcularDimensoesCabine();
+});
+</script>
+{% endblock %}

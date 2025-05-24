@@ -1,0 +1,352 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Pedido {{ pedido.numero }} - Elevador | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-building me-2"></i>Pedido {{ pedido.numero }} - Dados do Elevador
+    </h5>
+    <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="card-header bg-white">
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar bg-success" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemax="100"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-success">✓ 1. Cliente</small>
+      <small class="text-success fw-bold">2. Elevador</small>
+      <small class="text-muted">3. Portas</small>
+      <small class="text-muted">4. Cabine</small>
+      <small class="text-muted">5. Resumo</small>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <form method="post" id="elevadorForm">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Bloco de Modelo e Capacidade -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-cogs me-2"></i>
+            Modelo e Capacidade
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.modelo_elevador.id_for_label }}" class="form-label">Modelo do Elevador*</label>
+              {{ form.modelo_elevador }}
+              {% if form.modelo_elevador.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.modelo_elevador.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4" id="capacidade-pessoas-div">
+              <label for="{{ form.capacidade_pessoas.id_for_label }}" class="form-label">Capacidade (Pessoas)</label>
+              {{ form.capacidade_pessoas }}
+              {% if form.capacidade_pessoas.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.capacidade_pessoas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Para elevadores de passageiro
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.capacidade.id_for_label }}" class="form-label">Capacidade (kg)*</label>
+              {{ form.capacidade }}
+              {% if form.capacidade.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.capacidade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Será calculado automaticamente para passageiro
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Acionamento -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-tools me-2"></i>
+            Acionamento e Tração
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.acionamento.id_for_label }}" class="form-label">Acionamento*</label>
+              {{ form.acionamento }}
+              {% if form.acionamento.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.acionamento.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4" id="tracao-div">
+              <label for="{{ form.tracao.id_for_label }}" class="form-label">Tração</label>
+              {{ form.tracao }}
+              {% if form.tracao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.tracao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4" id="contrapeso-div">
+              <label for="{{ form.contrapeso.id_for_label }}" class="form-label">Contrapeso</label>
+              {{ form.contrapeso }}
+              {% if form.contrapeso.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.contrapeso.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Dimensões do Poço -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-ruler-combined me-2"></i>
+            Dimensões do Poço
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="{{ form.largura_poco.id_for_label }}" class="form-label">Largura (m)*</label>
+              {{ form.largura_poco }}
+              {% if form.largura_poco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.largura_poco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.comprimento_poco.id_for_label }}" class="form-label">Comprimento (m)*</label>
+              {{ form.comprimento_poco }}
+              {% if form.comprimento_poco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.comprimento_poco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.altura_poco.id_for_label }}" class="form-label">Altura (m)*</label>
+              {{ form.altura_poco }}
+              {% if form.altura_poco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.altura_poco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.pavimentos.id_for_label }}" class="form-label">Pavimentos*</label>
+              {{ form.pavimentos }}
+              {% if form.pavimentos.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.pavimentos.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Visualização das Dimensões -->
+          <div class="row mt-3">
+            <div class="col-12">
+              <div class="alert alert-info">
+                <h6><i class="fas fa-info-circle me-2"></i>Informações Calculadas</h6>
+                <div class="row">
+                  <div class="col-md-6">
+                    <small><strong>Volume do Poço:</strong> <span id="volume-poco">-</span> m³</small><br>
+                    <small><strong>Área da Base:</strong> <span id="area-poco">-</span> m²</small>
+                  </div>
+                  <div class="col-md-6">
+                    <small><strong>Altura por Pavimento:</strong> <span id="altura-pavimento">-</span> m</small><br>
+                    <small><strong>Percurso:</strong> <span id="percurso">-</span> m</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'vendedor:pedido_create_step1' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Anterior
+        </a>
+        <button type="submit" class="btn btn-success">
+          Próximo <i class="fas fa-arrow-right me-1"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('elevadorForm');
+    const modeloSelect = document.getElementById('{{ form.modelo_elevador.id_for_label }}');
+    const capacidadePessoasDiv = document.getElementById('capacidade-pessoas-div');
+    const capacidadePessoasInput = document.getElementById('{{ form.capacidade_pessoas.id_for_label }}');
+    const capacidadeInput = document.getElementById('{{ form.capacidade.id_for_label }}');
+    const acionamentoSelect = document.getElementById('{{ form.acionamento.id_for_label }}');
+    const tracaoDiv = document.getElementById('tracao-div');
+    const contrapesoDiv = document.getElementById('contrapeso-div');
+    
+    // Campos de dimensões
+    const larguraInput = document.getElementById('{{ form.largura_poco.id_for_label }}');
+    const comprimentoInput = document.getElementById('{{ form.comprimento_poco.id_for_label }}');
+    const alturaInput = document.getElementById('{{ form.altura_poco.id_for_label }}');
+    const pavimentosInput = document.getElementById('{{ form.pavimentos.id_for_label }}');
+    
+    // Função para atualizar campos baseado no modelo
+    function updateModelo() {
+        const modelo = modeloSelect.value;
+        
+        if (modelo === 'Passageiro') {
+            capacidadePessoasDiv.style.display = 'block';
+            capacidadeInput.disabled = true;
+            updateCapacidade();
+        } else {
+            capacidadePessoasDiv.style.display = 'none';
+            capacidadeInput.disabled = false;
+            capacidadePessoasInput.value = '';
+        }
+    }
+    
+    // Função para calcular capacidade em kg
+    function updateCapacidade() {
+        if (modeloSelect.value === 'Passageiro' && capacidadePessoasInput.value) {
+            const pessoas = parseInt(capacidadePessoasInput.value) || 1;
+            capacidadeInput.value = pessoas * 80;
+        }
+    }
+    
+    // Função para atualizar campos baseado no acionamento
+    function updateAcionamento() {
+        const acionamento = acionamentoSelect.value;
+        
+        if (acionamento === 'Hidraulico') {
+            tracaoDiv.style.display = 'none';
+            contrapesoDiv.style.display = 'none';
+        } else if (acionamento === 'Motor') {
+            tracaoDiv.style.display = 'block';
+            contrapesoDiv.style.display = 'block';
+        } else if (acionamento === 'Carretel') {
+            tracaoDiv.style.display = 'block';
+            contrapesoDiv.style.display = 'none';
+        }
+    }
+    
+    // Função para calcular informações do poço
+    function updateCalculos() {
+        const largura = parseFloat(larguraInput.value) || 0;
+        const comprimento = parseFloat(comprimentoInput.value) || 0;
+        const altura = parseFloat(alturaInput.value) || 0;
+        const pavimentos = parseInt(pavimentosInput.value) || 0;
+        
+        // Cálculos
+        const area = largura * comprimento;
+        const volume = area * altura;
+        const alturaPorPavimento = pavimentos > 1 ? altura / (pavimentos - 1) : 0;
+        const percurso = pavimentos > 1 ? altura - alturaPorPavimento : 0;
+        
+        // Atualizar exibição
+        document.getElementById('area-poco').textContent = area.toFixed(2);
+        document.getElementById('volume-poco').textContent = volume.toFixed(2);
+        document.getElementById('altura-pavimento').textContent = alturaPorPavimento.toFixed(2);
+        document.getElementById('percurso').textContent = percurso.toFixed(2);
+    }
+    
+    // Event listeners
+    modeloSelect.addEventListener('change', updateModelo);
+    capacidadePessoasInput.addEventListener('input', updateCapacidade);
+    acionamentoSelect.addEventListener('change', updateAcionamento);
+    
+    // Event listeners para cálculos
+    larguraInput.addEventListener('input', updateCalculos);
+    comprimentoInput.addEventListener('input', updateCalculos);
+    alturaInput.addEventListener('input', updateCalculos);
+    pavimentosInput.addEventListener('input', updateCalculos);
+    
+    // Inicializar
+    updateModelo();
+    updateAcionamento();
+    updateCalculos();
+    
+    // Validação do formulário
+    form.addEventListener('submit', function(e) {
+        const modelo = modeloSelect.value;
+        const capacidade = parseFloat(capacidadeInput.value) || 0;
+        const largura = parseFloat(larguraInput.value) || 0;
+        const comprimento = parseFloat(comprimentoInput.value) || 0;
+        const altura = parseFloat(alturaInput.value) || 0;
+        const pavimentos = parseInt(pavimentosInput.value) || 0;
+        
+        if (modelo === 'Passageiro' && !capacidadePessoasInput.value) {
+            e.preventDefault();
+            alert('Para elevador de passageiro, informe o número de pessoas.');
+            capacidadePessoasInput.focus();
+            return;
+        }
+        
+        if (capacidade <= 0) {
+            e.preventDefault();
+            alert('A capacidade deve ser maior que zero.');
+            capacidadeInput.focus();
+            return;
+        }
+        
+        if (largura <= 0 || comprimento <= 0 || altura <= 0) {
+            e.preventDefault();
+            alert('As dimensões do poço devem ser maiores que zero.');
+            return;
+        }
+        
+        if (pavimentos < 2) {
+            e.preventDefault();
+            alert('O número de pavimentos deve ser pelo menos 2.');
+            pavimentosInput.focus();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

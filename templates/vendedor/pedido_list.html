@@ -1,0 +1,256 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Meus Pedidos | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-list me-2"></i> Meus Pedidos
+    </h5>
+    <div>
+      <a href="{% url 'vendedor:pedido_create_step1' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Pedido
+      </a>
+      <a href="{% url 'vendedor:home' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-header bg-white">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-2">
+        {{ form.status }}
+      </div>
+      <div class="col-md-2">
+        {{ form.modelo_elevador }}
+      </div>
+      <div class="col-md-2">
+        {{ form.cliente }}
+      </div>
+      <div class="col-md-2">
+        {{ form.periodo }}
+      </div>
+      <div class="col-md-3">
+        {{ form.q }}
+      </div>
+      <div class="col-md-1">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+  
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Número</th>
+            <th>Projeto</th>
+            <th>Cliente</th>
+            <th>Modelo</th>
+            <th>Capacidade</th>
+            <th>Status</th>
+            <th>Criado</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pedido in pedidos %}
+            <tr>
+              <td><strong>{{ pedido.numero }}</strong></td>
+              <td>
+                {{ pedido.nome_projeto }}
+                {% if pedido.observacoes %}
+                  <br><small class="text-muted">{{ pedido.observacoes|truncatechars:40 }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {{ pedido.cliente.nome }}
+                {% if pedido.cliente.nome_fantasia %}
+                  <br><small class="text-muted">{{ pedido.cliente.nome_fantasia }}</small>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge bg-secondary">{{ pedido.get_modelo_elevador_display }}</span>
+                {% if pedido.acionamento %}
+                  <br><small class="text-muted">{{ pedido.get_acionamento_display }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {{ pedido.capacidade }} kg
+                {% if pedido.capacidade_pessoas %}
+                  <br><small class="text-muted">{{ pedido.capacidade_pessoas }} pessoas</small>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {{ pedido.status_badge_class }}">
+                  {{ pedido.get_status_display }}
+                </span>
+              </td>
+              <td>
+                {{ pedido.criado_em|date:"d/m/Y" }}
+                <br><small class="text-muted">{{ pedido.criado_em|date:"H:i" }}</small>
+              </td>
+              <td class="text-end">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  {% if pedido.pode_editar %}
+                  <a href="{% url 'vendedor:pedido_edit' pedido.pk %}" class="btn btn-sm btn-outline-success" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                  <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Mais ações">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" href="{% url 'vendedor:pedido_duplicar' pedido.pk %}">
+                        <i class="fas fa-copy me-2"></i>Duplicar
+                      </a></li>
+                      {% if pedido.pode_gerar_orcamento %}
+                      <li><a class="dropdown-item" href="{% url 'vendedor:pedido_gerar_orcamento' pedido.pk %}">
+                        <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
+                      </a></li>
+                      {% endif %}
+                      {% if pedido.status == 'rascunho' %}
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger" href="{% url 'vendedor:pedido_delete' pedido.pk %}">
+                        <i class="fas fa-trash me-2"></i>Excluir
+                      </a></li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4">
+                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum pedido encontrado</h5>
+                <p class="text-muted mb-3">
+                  {% if form.data %}
+                    Tente ajustar os filtros ou
+                  {% endif %}
+                  Comece criando um novo pedido
+                </p>
+                <a href="{% url 'vendedor:pedido_create_step1' %}" class="btn btn-success">
+                  <i class="fas fa-plus me-2"></i>Novo Pedido
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  {% if pedidos.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav aria-label="Navegação de página">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if pedidos.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ pedidos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;&laquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;</span>
+          </li>
+        {% endif %}
+        
+        {% for i in pedidos.paginator.page_range %}
+          {% if pedidos.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% elif i > pedidos.number|add:'-3' and i < pedidos.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if pedidos.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ pedidos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ pedidos.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;&raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Resumo dos Filtros -->
+{% if form.data %}
+<div class="card mt-3">
+  <div class="card-body py-2">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <small class="text-muted">
+          <i class="fas fa-filter me-1"></i>
+          Mostrando {{ pedidos.start_index }}-{{ pedidos.end_index }} de {{ pedidos.paginator.count }} pedidos
+        </small>
+      </div>
+      <div>
+        <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-times me-1"></i>Limpar Filtros
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit do formulário quando filtros mudarem
+    const selects = document.querySelectorAll('select[name="status"], select[name="modelo_elevador"], select[name="cliente"], select[name="periodo"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+    
+    // Confirmação antes de excluir
+    const deleteLinks = document.querySelectorAll('a[href*="/excluir/"]');
+    deleteLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!confirm('Tem certeza que deseja excluir este pedido?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

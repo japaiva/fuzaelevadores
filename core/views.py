@@ -70,8 +70,8 @@ def home_view(request):
             return redirect('gestor:dashboard')
         elif request.user.nivel == 'vendedor':
             return redirect('vendedor:dashboard')
-        elif request.user.nivel == 'compras':
-            return redirect('compras:dashboard')
+        # elif request.user.nivel == 'producao':  # Para quando implementar
+        #     return redirect('producao:dashboard')
         else:
             # Nível de usuário não reconhecido, redireciona para a página inicial padrão
             return render(request, 'home.html')
@@ -97,15 +97,25 @@ def logout_view(request):
         return redirect('gestor:login')
     elif app_context == 'vendedor':
         return redirect('vendedor:login')
-    elif app_context == 'compras':
-        return redirect('compras:login')
+    # elif app_context == 'producao':  # Para quando implementar o portal de produção
+    #     return redirect('producao:login')
     else:
         return redirect('home')
 
+
+# === LOGIN VIEWS PARA CADA PORTAL ===
+
 class GestorLoginView(LoginView):
+    """View de login para o Portal do Gestor"""
     template_name = 'gestor/login.html'
     
     def form_valid(self, form):
+        # Verificar se o usuário tem permissão para acessar o portal do gestor
+        user = form.get_user()
+        if user.nivel not in ['admin', 'gestor']:
+            messages.error(self.request, 'Você não tem permissão para acessar o Portal do Gestor.')
+            return self.form_invalid(form)
+        
         # Definir contexto da aplicação
         self.request.session['app_context'] = 'gestor'
         return super().form_valid(form)
@@ -116,4 +126,54 @@ class GestorLoginView(LoginView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['app_name'] = 'Portal do Gestor - Sistema de Elevadores FUZA'
+        context['portal_type'] = 'gestor'
         return context
+
+
+class VendedorLoginView(LoginView):
+    """View de login para o Portal do Vendedor"""
+    template_name = 'vendedor/login.html'
+    
+    def form_valid(self, form):
+        # Verificar se o usuário tem permissão para acessar o portal do vendedor
+        user = form.get_user()
+        if user.nivel not in ['admin', 'vendedor']:
+            messages.error(self.request, 'Você não tem permissão para acessar o Portal do Vendedor.')
+            return self.form_invalid(form)
+        
+        # Definir contexto da aplicação
+        self.request.session['app_context'] = 'vendedor'
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('vendedor:dashboard')
+ 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['app_name'] = 'Portal do Vendedor - Sistema de Elevadores FUZA'
+        context['portal_type'] = 'vendedor'
+        return context
+
+
+# TODO: Implementar quando o portal de produção for ativado
+# class ProducaoLoginView(LoginView):
+#     """View de login para o Portal de Produção"""
+#     template_name = 'producao/login.html'
+#     
+#     def form_valid(self, form):
+#         user = form.get_user()
+#         if user.nivel not in ['admin', 'producao']:
+#             messages.error(self.request, 'Você não tem permissão para acessar o Portal de Produção.')
+#             return self.form_invalid(form)
+#         
+#         self.request.session['app_context'] = 'producao'
+#         return super().form_valid(form)
+#     
+#     def get_success_url(self):
+#         return reverse_lazy('producao:dashboard')
+#  
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['app_name'] = 'Portal de Produção - Sistema de Elevadores FUZA'
+#         context['portal_type'] = 'producao'
+#         return context

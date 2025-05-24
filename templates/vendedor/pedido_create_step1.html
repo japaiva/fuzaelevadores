@@ -1,0 +1,214 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Novo Pedido - Cliente | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-plus-circle me-2"></i>Novo Pedido - Dados do Cliente
+    </h5>
+    <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="card-header bg-white">
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar bg-success" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemax="100"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-success fw-bold">1. Cliente</small>
+      <small class="text-muted">2. Elevador</small>
+      <small class="text-muted">3. Portas</small>
+      <small class="text-muted">4. Cabine</small>
+      <small class="text-muted">5. Resumo</small>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <form method="post" id="clienteForm">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Bloco de Informações do Cliente -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-user me-2"></i>
+            Informações do Cliente
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente*</label>
+              {{ form.cliente }}
+              {% if form.cliente.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.cliente.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                <a href="{% url 'gestor:cliente_create' %}" target="_blank" class="text-decoration-none">
+                  <i class="fas fa-plus me-1"></i>Cadastrar novo cliente
+                </a>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.faturado_por.id_for_label }}" class="form-label">Faturado por*</label>
+              {{ form.faturado_por }}
+              {% if form.faturado_por.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.faturado_por.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.nome_projeto.id_for_label }}" class="form-label">Nome do Projeto*</label>
+              {{ form.nome_projeto }}
+              {% if form.nome_projeto.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome_projeto.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Ex: "Elevador Residencial - Edifício Solar", "Elevador de Carga - Galpão Industrial"
+              </div>
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações Iniciais</label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small text-muted">
+                Informações importantes sobre o projeto, requisitos especiais, etc.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações do Cliente Selecionado -->
+      <div id="cliente-info" class="card shadow mt-4" style="display: none;">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Dados do Cliente Selecionado
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row" id="cliente-dados">
+            <!-- Será preenchido via JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-times me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-success">
+          Próximo <i class="fas fa-arrow-right me-1"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
+    const clienteInfo = document.getElementById('cliente-info');
+    const clienteDados = document.getElementById('cliente-dados');
+    
+    // Função para carregar informações do cliente
+    function carregarInfoCliente(clienteId) {
+        if (!clienteId) {
+            clienteInfo.style.display = 'none';
+            return;
+        }
+        
+        fetch(`{% url 'vendedor:api_cliente_info' 0 %}`.replace('0', clienteId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const cliente = data.cliente;
+                    clienteDados.innerHTML = `
+                        <div class="col-md-6">
+                            <strong>Nome:</strong> ${cliente.nome}<br>
+                            ${cliente.nome_fantasia ? `<strong>Empresa:</strong> ${cliente.nome_fantasia}<br>` : ''}
+                            ${cliente.telefone ? `<strong>Telefone:</strong> ${cliente.telefone}<br>` : ''}
+                            ${cliente.email ? `<strong>Email:</strong> ${cliente.email}` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            ${cliente.endereco_completo ? `<strong>Endereço:</strong><br>${cliente.endereco_completo}` : 'Endereço não cadastrado'}
+                        </div>
+                    `;
+                    clienteInfo.style.display = 'block';
+                } else {
+                    clienteInfo.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao carregar informações do cliente:', error);
+                clienteInfo.style.display = 'none';
+            });
+    }
+    
+    // Event listener para mudança de cliente
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', function() {
+            carregarInfoCliente(this.value);
+        });
+        
+        // Carregar informações se já houver cliente selecionado
+        if (clienteSelect.value) {
+            carregarInfoCliente(clienteSelect.value);
+        }
+    }
+    
+    // Validação do formulário
+    const form = document.getElementById('clienteForm');
+    form.addEventListener('submit', function(e) {
+        const cliente = document.getElementById('{{ form.cliente.id_for_label }}').value;
+        const projeto = document.getElementById('{{ form.nome_projeto.id_for_label }}').value;
+        
+        if (!cliente) {
+            e.preventDefault();
+            alert('Por favor, selecione um cliente.');
+            return;
+        }
+        
+        if (!projeto.trim()) {
+            e.preventDefault();
+            alert('Por favor, informe o nome do projeto.');
+            return;
+        }
+    });
+    
+    // Auto-focus no primeiro campo
+    if (clienteSelect) {
+        clienteSelect.focus();
+    }
+});
+</script>
+{% endblock %}

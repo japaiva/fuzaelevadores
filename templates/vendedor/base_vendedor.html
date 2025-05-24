@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Portal do Vendedor{% endblock %}
+
+{% block navbar_title %}
+<span class="app-title-text">Portal do Vendedor</span>
+{% endblock %}
+
+{% block nav_items %}
+
+<!-- Divisor vertical -->
+<li class="nav-item">
+  <span class="nav-link" style="border-left: 2px solid #28a745; height: 24px; margin: 8px 15px;"></span>
+</li>
+
+<!-- Menu de Pedidos -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="fas fa-clipboard-list me-1"></i> Pedidos
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><h6 class="dropdown-header">Gerenciar Pedidos</h6></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_create_step1' %}">
+        <i class="fas fa-plus me-2"></i>Novo Pedido
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}">
+        <i class="fas fa-list me-2"></i>Todos os Pedidos
+    </a></li>
+    
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header">Filtros Rápidos</h6></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}?status=rascunho">
+        <i class="fas fa-edit me-2"></i>Rascunhos
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}?status=simulado">
+        <i class="fas fa-calculator me-2"></i>Simulados
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}?status=aprovado">
+        <i class="fas fa-check-circle me-2"></i>Aprovados
+    </a></li>
+  </ul>
+</li>
+
+<!-- Menu de Clientes (acesso rápido) -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="fas fa-users me-1"></i> Clientes
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><h6 class="dropdown-header">Acesso Rápido</h6></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:cliente_list' %}" target="_blank">
+        <i class="fas fa-external-link-alt me-2"></i>Cadastro de Clientes
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:cliente_create' %}" target="_blank">
+        <i class="fas fa-user-plus me-2"></i>Novo Cliente
+    </a></li>
+  </ul>
+</li>
+
+<!-- Menu de Relatórios -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="fas fa-chart-bar me-1"></i> Relatórios
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><h6 class="dropdown-header">Meus Relatórios</h6></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:dashboard' %}">
+        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}?periodo=mes">
+        <i class="fas fa-calendar-alt me-2"></i>Pedidos do Mês
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}?modelo_elevador=Passageiro">
+        <i class="fas fa-users me-2"></i>Elevadores de Passageiro
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}?modelo_elevador=Carga">
+        <i class="fas fa-weight-hanging me-2"></i>Elevadores de Carga
+    </a></li>
+  </ul>
+</li>
+
+{% endblock %}
