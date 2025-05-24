@@ -1,0 +1,22 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Excluir Fornecedor | Portal Comercial{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-warning">
+    <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h4>
+    <p>Deseja realmente excluir o fornecedor <strong>{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</strong>?</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'gestor:fornecedor_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-danger">
+        <i class="fas fa-trash me-1"></i> Confirmar Exclusão
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

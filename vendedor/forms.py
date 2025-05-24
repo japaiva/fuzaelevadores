@@ -3,6 +3,7 @@
 from django import forms
 from .models import Pedido, AnexoPedido
 from core.models import Cliente
+from core.forms import ClienteCreateForm
 
 class PedidoClienteForm(forms.ModelForm):
     """Form para dados do cliente do pedido"""
@@ -392,34 +393,3 @@ class PedidoFiltroForm(forms.Form):
             'placeholder': 'Buscar por número, projeto ou cliente...'
         })
     )
-
-class ClienteCreateForm(forms.ModelForm):
-    """Form simplificado para criar cliente via portal vendedor"""
-    
-    class Meta:
-        model = Cliente
-        fields = [
-            'tipo_pessoa', 'nome', 'nome_fantasia', 'cpf_cnpj',
-            'telefone', 'email', 'contato_principal',
-            'endereco', 'numero', 'bairro', 'cidade', 'estado', 'cep'
-        ]
-        widgets = {
-            'tipo_pessoa': forms.Select(attrs={'class': 'form-select'}),
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
-            'cpf_cnpj': forms.TextInput(attrs={'class': 'form-control'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'contato_principal': forms.TextInput(attrs={'class': 'form-control'}),
-            'endereco': forms.TextInput(attrs={'class': 'form-control'}),
-            'numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'bairro': forms.TextInput(attrs={'class': 'form-control'}),
-            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
-            'estado': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2'}),
-            'cep': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['nome'].required = True
-        self.fields['tipo_pessoa'].required = True

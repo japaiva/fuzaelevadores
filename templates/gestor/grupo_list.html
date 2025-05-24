@@ -53,7 +53,7 @@
             <th>Descrição</th>
             <th>Subgrupos</th>
             <th class="text-center">Status</th>
-            <th class="text-end">Ações</th>
+            <th class="text-center" style="min-width: 140px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -70,17 +70,30 @@
                   {% if grupo.ativo %}Ativo{% else %}Inativo{% endif %}
                 </span>
               </td>
-              <td class="text-end">
-                <a href="{% url 'gestor:subgrupo_list' %}?grupo={{ grupo.id }}" class="btn btn-sm btn-outline-info me-1" title="Ver Subgrupos">
-                  <i class="fas fa-sitemap"></i>
-                </a>
-                <a href="{% url 'gestor:grupo_update' grupo.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <a href="{% url 'gestor:grupo_toggle_status' grupo.id %}" class="btn btn-sm {% if grupo.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
-                   title="{% if grupo.ativo %}Desativar{% else %}Ativar{% endif %}">
-                  <i class="fas {% if grupo.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
-                </a>
+              <td class="text-center">
+                <div class="btn-group" role="group" aria-label="Ações do grupo">
+                  <a href="{% url 'gestor:subgrupo_list' %}?grupo={{ grupo.id }}" 
+                     class="btn btn-outline-info btn-sm" 
+                     title="Ver Subgrupos">
+                    <i class="fas fa-sitemap"></i>
+                  </a>
+                  <a href="{% url 'gestor:grupo_update' grupo.id %}" 
+                     class="btn btn-outline-primary btn-sm" 
+                     title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'gestor:grupo_toggle_status' grupo.id %}" 
+                     class="btn btn-sm {% if grupo.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                     title="{% if grupo.ativo %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if grupo.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                  </a>
+                  <a href="{% url 'gestor:grupo_delete' grupo.id %}" 
+                    class="btn btn-outline-danger btn-sm" 
+                    title="Excluir" 
+                    onclick="return confirm('Tem certeza que deseja excluir este grupo?');">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -143,7 +156,7 @@
             <span class="page-link">&raquo;</span>
           </li>
           <li class="page-item disabled">
-            <span class="page-link">&raquo;&raquo;</span>
+            <span class="page-link">&raquo;</span>
           </li>
         {% endif %}
       </ul>

@@ -64,7 +64,7 @@
             <th>Descrição</th>
             <th>Produtos</th>
             <th class="text-center">Status</th>
-            <th class="text-end">Ações</th>
+            <th class="text-center" style="min-width: 140px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -85,17 +85,30 @@
                   {% if subgrupo.ativo %}Ativo{% else %}Inativo{% endif %}
                 </span>
               </td>
-              <td class="text-end">
-                <a href="{% url 'gestor:produto_list' %}?subgrupo={{ subgrupo.id }}" class="btn btn-sm btn-outline-info me-1" title="Ver Produtos">
-                  <i class="fas fa-boxes"></i>
-                </a>
-                <a href="{% url 'gestor:subgrupo_update' subgrupo.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <a href="{% url 'gestor:subgrupo_toggle_status' subgrupo.id %}" class="btn btn-sm {% if subgrupo.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
-                   title="{% if subgrupo.ativo %}Desativar{% else %}Ativar{% endif %}">
-                  <i class="fas {% if subgrupo.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
-                </a>
+              <td class="text-center">
+                <div class="btn-group" role="group" aria-label="Ações do subgrupo">
+                  <a href="{% url 'gestor:produto_list' %}?subgrupo={{ subgrupo.id }}" 
+                     class="btn btn-outline-info btn-sm" 
+                     title="Ver Produtos">
+                    <i class="fas fa-boxes"></i>
+                  </a>
+                  <a href="{% url 'gestor:subgrupo_update' subgrupo.id %}" 
+                     class="btn btn-outline-primary btn-sm" 
+                     title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'gestor:subgrupo_toggle_status' subgrupo.id %}" 
+                     class="btn btn-sm {% if subgrupo.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                     title="{% if subgrupo.ativo %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if subgrupo.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                  </a>
+                  <a href="{% url 'gestor:subgrupo_delete' subgrupo.id %}" 
+                    class="btn btn-outline-danger btn-sm" 
+                    title="Excluir" 
+                    onclick="return confirm('Tem certeza que deseja excluir este subgrupo?');">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}
@@ -158,7 +171,7 @@
             <span class="page-link">&raquo;</span>
           </li>
           <li class="page-item disabled">
-            <span class="page-link">&raquo;&raquo;</span>
+            <span class="page-link">&raquo;</span>
           </li>
         {% endif %}
       </ul>

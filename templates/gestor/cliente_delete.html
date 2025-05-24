@@ -1,0 +1,17 @@
+<!-- cliente_delete.html -->
+{% extends 'gestor/base_gestor.html' %}
+{% block title %}Excluir Cliente{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="alert alert-warning mt-5">
+    <h4>Confirma a exclusão do cliente <strong>{{ cliente.nome }}</strong>?</h4>
+    <p>Esta ação não pode ser desfeita.</p>
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'gestor:cliente_list' %}" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-danger">Excluir</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

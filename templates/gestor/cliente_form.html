@@ -76,9 +76,6 @@
                   {% for error in form.nome_fantasia.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Para PJ: nome comercial. Para PF: apelido/como é conhecido
-              </div>
             </div>
             
             <div class="col-md-6">
@@ -134,9 +131,6 @@
                   {% for error in form.contato_principal.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Nome da pessoa responsável pelo contato
-              </div>
             </div>
           </div>
         </div>
@@ -243,9 +237,6 @@
                   {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Informações importantes sobre o cliente, preferências, histórico, etc.
-              </div>
             </div>
           </div>
         </div>
@@ -263,83 +254,204 @@
 
 {% block extra_js %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+// Máscara para CPF/CNPJ - VERSÃO DEFINITIVA CORRIGIDA
+document.addEventListener('DOMContentLoaded', function() {
     const tipoPessoaSelect = document.getElementById('{{ form.tipo_pessoa.id_for_label }}');
     const cpfCnpjInput = document.getElementById('{{ form.cpf_cnpj.id_for_label }}');
-    const labelDocumento = document.getElementById('label-documento');
-    
-    // Função para atualizar máscara e label do documento
-    function atualizarDocumento() {
-      const tipoPessoa = tipoPessoaSelect.value;
-      
-      if (tipoPessoa === 'PF') {
-        labelDocumento.textContent = 'CPF';
-        if (typeof IMask !== 'undefined' && cpfCnpjInput) {
-          IMask(cpfCnpjInput, { mask: '000.000.000-00' });
-        }
-      } else if (tipoPessoa === 'PJ') {
-        labelDocumento.textContent = 'CNPJ';
-        if (typeof IMask !== 'undefined' && cpfCnpjInput) {
-          IMask(cpfCnpjInput, { mask: '00.000.000/0000-00' });
-        }
-      } else {
-        labelDocumento.textContent = 'CPF/CNPJ';
-      }
-    }
-    
-    // Aplicar na inicialização e quando mudar
-    if (tipoPessoaSelect) {
-      atualizarDocumento();
-      tipoPessoaSelect.addEventListener('change', atualizarDocumento);
-    }
-    
-    // Máscaras para outros campos
-    if (typeof IMask !== 'undefined') {
-      // CEP
-      const cepInput = document.getElementById('{{ form.cep.id_for_label }}');
-      if (cepInput) {
-        IMask(cepInput, { mask: '00000-000' });
-      }
-      
-      // Telefone
-      const telefoneInput = document.getElementById('{{ form.telefone.id_for_label }}');
-      if (telefoneInput) {
-        IMask(telefoneInput, {
-          mask: [
-            { mask: '(00) 0000-0000' },
-            { mask: '(00) 00000-0000' }
-          ],
-          dispatch: function (appended, dynamicMasked) {
-            const number = (dynamicMasked.value + appended).replace(/\D/g, '');
-            return number.length <= 10
-              ? dynamicMasked.compiledMasks[0]
-              : dynamicMasked.compiledMasks[1];
-          }
-        });
-      }
-    }
-    
-    // Consulta CEP via ViaCEP
     const cepInput = document.getElementById('{{ form.cep.id_for_label }}');
-    if (cepInput) {
-      cepInput.addEventListener('blur', function() {
-        const cep = this.value.replace(/\D/g, '');
-        if (cep.length === 8) {
-          fetch(`https://viacep.com.br/ws/${cep}/json/`)
-            .then(response => response.json())
-            .then(data => {
-              if (!data.erro) {
-                document.getElementById('{{ form.endereco.id_for_label }}').value = data.logradouro;
-                document.getElementById('{{ form.bairro.id_for_label }}').value = data.bairro;
-                document.getElementById('{{ form.cidade.id_for_label }}').value = data.localidade;
-                document.getElementById('{{ form.estado.id_for_label }}').value = data.uf;
-              }
-            })
-            .catch(error => console.log('Erro ao consultar CEP:', error));
-        }
-      });
+    const telefoneInput = document.getElementById('{{ form.telefone.id_for_label }}');
+    
+    // Máscara para telefone com limitação
+    function aplicarMascaraTelefone(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // Limitação: máximo 11 dígitos
+            if (value.length > 11) {
+                value = value.substring(0, 11);
+            }
+            
+            // Aplicar formatação
+            if (value.length <= 10) {
+                // Telefone fixo: (11) 1234-5678
+                value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else {
+                // Celular: (11) 91234-5678
+                value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+            }
+            e.target.value = value;
+        });
+        
+        // Bloquear caracteres não numéricos
+        input.addEventListener('keydown', function(e) {
+            // Permite: backspace, delete, tab, escape, enter, setas
+            if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
+                // Permite: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true)) {
+                return;
+            }
+            // Bloqueia tudo que não for número
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
     }
-  });
+    
+    // Máscara para CEP com limitação
+    function aplicarMascaraCEP(input) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // Limitação: máximo 8 dígitos
+            if (value.length > 8) {
+                value = value.substring(0, 8);
+            }
+            
+            // Aplicar formatação: 12345-678
+            if (value.length > 5) {
+                value = value.replace(/(\d{5})(\d{0,3})/, '$1-$2');
+            }
+            e.target.value = value;
+        });
+        
+        // Bloquear caracteres não numéricos
+        input.addEventListener('keydown', function(e) {
+            if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true)) {
+                return;
+            }
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // Máscara para CPF/CNPJ com limitação
+    function aplicarMascaraCPFCNPJ(input, tipo) {
+        input.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            
+            if (tipo === 'PF') {
+                // Limitação CPF: máximo 11 dígitos
+                if (value.length > 11) {
+                    value = value.substring(0, 11);
+                }
+                // CPF: 000.000.000-00
+                if (value.length >= 10) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+                } else if (value.length >= 7) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+                } else if (value.length >= 4) {
+                    value = value.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+                }
+            } else if (tipo === 'PJ') {
+                // Limitação CNPJ: máximo 14 dígitos
+                if (value.length > 14) {
+                    value = value.substring(0, 14);
+                }
+                // CNPJ: 00.000.000/0000-00
+                if (value.length >= 13) {
+                    value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+                } else if (value.length >= 9) {
+                    value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+                } else if (value.length >= 6) {
+                    value = value.replace(/(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+                } else if (value.length >= 3) {
+                    value = value.replace(/(\d{2})(\d{0,3})/, '$1.$2');
+                }
+            }
+            
+            e.target.value = value;
+        });
+        
+        // Bloquear caracteres não numéricos
+        input.addEventListener('keydown', function(e) {
+            if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true)) {
+                return;
+            }
+            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // Aplicar máscaras iniciais
+    if (telefoneInput) aplicarMascaraTelefone(telefoneInput);
+    if (cepInput) aplicarMascaraCEP(cepInput);
+    
+    // Atualizar máscara do CPF/CNPJ conforme tipo
+    if (tipoPessoaSelect && cpfCnpjInput) {
+        function updateCPFCNPJMask() {
+            const tipo = tipoPessoaSelect.value;
+            
+            // Remover listeners antigos (simplificado)
+            const newInput = cpfCnpjInput.cloneNode(true);
+            cpfCnpjInput.parentNode.replaceChild(newInput, cpfCnpjInput);
+            
+            // Aplicar máscara no novo input
+            aplicarMascaraCPFCNPJ(newInput, tipo);
+            
+            // Atualizar placeholder e maxlength
+            if (tipo === 'PF') {
+                newInput.placeholder = '000.000.000-00';
+                newInput.maxLength = 14;
+            } else if (tipo === 'PJ') {
+                newInput.placeholder = '00.000.000/0000-00';
+                newInput.maxLength = 18;
+            } else {
+                newInput.placeholder = 'CPF ou CNPJ';
+                newInput.maxLength = 18;
+            }
+            
+            // Se tem valor, reformatar
+            if (newInput.value) {
+                const event = new Event('input', { bubbles: true });
+                newInput.dispatchEvent(event);
+            }
+        }
+        
+        tipoPessoaSelect.addEventListener('change', updateCPFCNPJMask);
+        updateCPFCNPJMask(); // Aplicar inicialmente
+    }
+    
+    // Buscar CEP via ViaCEP
+    if (cepInput) {
+        cepInput.addEventListener('blur', function() {
+            const cep = this.value.replace(/\D/g, '');
+            
+            if (cep.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.erro) {
+                            const enderecoInput = document.getElementById('{{ form.endereco.id_for_label }}');
+                            const bairroInput = document.getElementById('{{ form.bairro.id_for_label }}');
+                            const cidadeInput = document.getElementById('{{ form.cidade.id_for_label }}');
+                            const estadoInput = document.getElementById('{{ form.estado.id_for_label }}');
+                            
+                            if (enderecoInput && !enderecoInput.value) enderecoInput.value = data.logradouro;
+                            if (bairroInput && !bairroInput.value) bairroInput.value = data.bairro;
+                            if (cidadeInput && !cidadeInput.value) cidadeInput.value = data.localidade;
+                            if (estadoInput && !estadoInput.value) estadoInput.value = data.uf;
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Erro ao buscar CEP:', error);
+                    });
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
 {% endblock %}

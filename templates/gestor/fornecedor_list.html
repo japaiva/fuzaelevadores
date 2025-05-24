@@ -54,7 +54,7 @@
             <th>Email</th>
             <th>Telefone</th>
             <th class="text-center">Status</th>
-            <th class="text-end">Ações</th>
+            <th class="text-center" style="min-width: 120px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -75,17 +75,22 @@
                   {% if fornecedor.ativo %}Ativo{% else %}Inativo{% endif %}
                 </span>
               </td>
-              <td class="text-end">
-                <a href="{% url 'gestor:fornecedor_detail' fornecedor.id %}" class="btn btn-sm btn-outline-secondary me-1" title="Detalhes">
-                  <i class="fas fa-eye"></i>
-                </a>
-                <a href="{% url 'gestor:fornecedor_update' fornecedor.id %}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
-                  <i class="fas fa-edit"></i>
-                </a>
-                <a href="{% url 'gestor:fornecedor_toggle_status' fornecedor.id %}" class="btn btn-sm {% if fornecedor.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
-                   title="{% if fornecedor.ativo %}Desativar{% else %}Ativar{% endif %}">
-                  <i class="fas {% if fornecedor.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
-                </a>
+              <td class="text-center">
+                <div class="btn-group" role="group" aria-label="Ações do fornecedor">
+                  <a href="{% url 'gestor:fornecedor_update' fornecedor.id %}" 
+                     class="btn btn-outline-primary btn-sm" 
+                     title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'gestor:fornecedor_toggle_status' fornecedor.id %}" 
+                     class="btn btn-sm {% if fornecedor.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                     title="{% if fornecedor.ativo %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if fornecedor.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                  </a>
+                    <a href="{% url 'gestor:fornecedor_delete' fornecedor.pk %}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
               </td>
             </tr>
           {% empty %}

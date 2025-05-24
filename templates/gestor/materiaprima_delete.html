@@ -1,0 +1,132 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Excluir Matéria-Prima | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-trash me-2"></i>
+                        Confirmar Exclusão de Matéria-Prima
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Dados da Matéria-Prima:</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Código:</strong></td>
+                                    <td>{{ produto.codigo }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Nome:</strong></td>
+                                    <td>{{ produto.nome }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Grupo:</strong></td>
+                                    <td>{{ produto.grupo.nome|default:"-" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Status:</strong></td>
+                                    <td>
+                                        {% if produto.status == 'ATIVO' %}
+                                            <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Verificações:</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Usado em produtos:</strong></td>
+                                    <td>
+                                        {% if usado_em_count > 0 %}
+                                            <span class="badge bg-danger">{{ usado_em_count }} produto(s)</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Nenhum</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fornecedores:</strong></td>
+                                    <td>
+                                        {% if fornecedores_count > 0 %}
+                                            <span class="badge bg-warning">{{ fornecedores_count }} fornecedor(es)</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Nenhum</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Estoque atual:</strong></td>
+                                    <td>
+                                        {% if produto.estoque_atual %}
+                                            <span class="badge bg-info">{{ produto.estoque_atual }} {{ produto.unidade_medida }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Zero</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    {% if usado_em_count > 0 %}
+                        <div class="alert alert-danger mt-3">
+                            <i class="fas fa-ban me-2"></i>
+                            <strong>Exclusão bloqueada!</strong> 
+                            Esta matéria-prima não pode ser excluída pois está sendo usada em {{ usado_em_count }} produto(s). 
+                            Remova primeiro todas as referências ou desative o produto.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            {% if fornecedores_count > 0 %}
+                                <strong>Atenção:</strong> Os relacionamentos com {{ fornecedores_count }} fornecedor(es) também serão removidos.
+                            {% else %}
+                                <strong>Pronto para exclusão:</strong> Esta matéria-prima pode ser excluída com segurança.
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'gestor:materiaprima_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Cancelar
+                        </a>
+                        
+                        {% if usado_em_count == 0 %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('Tem certeza que deseja excluir esta matéria-prima? Esta ação não pode ser desfeita!')">
+                                    <i class="fas fa-trash me-2"></i>
+                                    Confirmar Exclusão
+                                </button>
+                            </form>
+                        {% else %}
+                            <button type="button" class="btn btn-danger" disabled>
+                                <i class="fas fa-ban me-2"></i>
+                                Exclusão Bloqueada
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
