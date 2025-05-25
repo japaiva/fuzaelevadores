@@ -64,7 +64,7 @@
           <tr>
             <th>Código</th>
             <th>Nome</th>
-            <th>Grupo</th>
+            <th>Grupo / Subgrupo</th>
             <th>Unidade</th>
             <th>Estoque</th>
             <th class="text-center">Status</th>
@@ -84,7 +84,9 @@
               </td>
               <td>
                 {% if produto.grupo %}
-                  <span class="badge bg-info">{{ produto.grupo.nome }}</span>
+                  <code class="text-primary">
+                    {{ produto.grupo.codigo }}{% if produto.subgrupo %}-{{ produto.subgrupo.codigo }}{% endif %}
+                  </code>
                 {% else %}
                   <span class="text-muted">-</span>
                 {% endif %}

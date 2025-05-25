@@ -45,13 +45,6 @@ urlpatterns = [
     path('fornecedor/<int:pk>/delete/', views.fornecedor_delete, name='fornecedor_delete'),
     path('fornecedores/<int:pk>/alternar-status/', views.fornecedor_toggle_status, name='fornecedor_toggle_status'),
     
-    # CRUD Produtos
-    path('produtos/', views.produto_list, name='produto_list'),
-    path('produtos/novo/', views.produto_create, name='produto_create'),
-    path('produtos/<uuid:pk>/editar/', views.produto_update, name='produto_update'),
-    path('produtos/<uuid:pk>/alternar-status/', views.produto_toggle_status, name='produto_toggle_status'),
-    path('produtos/<uuid:pk>/alternar-disponibilidade/', views.produto_toggle_disponibilidade, name='produto_toggle_disponibilidade'),
-
     # Gestão de fornecedores do produto
     path('produtos/<uuid:pk>/fornecedores/', views.produto_fornecedores, name='produto_fornecedores'),
     path('fornecedor-produto/<int:pk>/toggle/', views.fornecedor_produto_toggle, name='fornecedor_produto_toggle'),
@@ -74,15 +67,10 @@ urlpatterns = [
     # APIs para AJAX
     path('api/subgrupos-por-grupo/<int:grupo_id>/', views.api_subgrupos_por_grupo, name='api_subgrupos_por_grupo'),
     path('api/produto-por-codigo/<str:codigo>/', views.api_produto_por_codigo, name='api_produto_por_codigo'),
-    path('api/proximo-codigo/<str:tipo>/', views.api_proximo_codigo, name='api_proximo_codigo'),
-    path('api/validar-codigo/<str:codigo>/', views.api_validar_codigo, name='api_validar_codigo'),
     
     # Relatórios
     path('relatorios/estoque-baixo/', views.relatorio_estoque_baixo, name='relatorio_estoque_baixo'),
     path('relatorios/produtos-sem-fornecedor/', views.relatorio_produtos_sem_fornecedor, name='relatorio_produtos_sem_fornecedor'),
-    
-    # Configurações do sistema
-    path('configuracoes/sequencias/', views.configurar_sequencias, name='configurar_sequencias'),
     
     # Dashboard analytics (opcional)
     path('analytics/', views.dashboard_analytics, name='dashboard_analytics'),

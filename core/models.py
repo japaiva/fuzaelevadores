@@ -263,78 +263,6 @@ class Fornecedor(models.Model):
     def __str__(self):
         return self.nome_fantasia or self.razao_social
 
-
-class SequenciaProduto(models.Model):
-    """
-    Controla a sequência de códigos para cada tipo de produto
-    """
-    TIPO_CHOICES = [
-        ('MP', 'Matéria Prima'),
-        ('PI', 'Produto Intermediário'),
-        ('PA', 'Produto Acabado'),
-    ]
-    
-    tipo = models.CharField(
-        max_length=2, 
-        choices=TIPO_CHOICES, 
-        unique=True,
-        verbose_name="Tipo de Produto"
-    )
-    prefixo = models.CharField(
-        max_length=5, 
-        verbose_name="Prefixo",
-        help_text="Prefixo usado nos códigos (ex: MP, PI, PA)"
-    )
-    proximo_numero = models.PositiveIntegerField(
-        default=1,
-        verbose_name="Próximo Número"
-    )
-    numero_digitos = models.PositiveIntegerField(
-        default=4,
-        verbose_name="Número de Dígitos",
-        help_text="Quantidade de dígitos para o número sequencial"
-    )
-    
-    # Auditoria
-    criado_em = models.DateTimeField(auto_now_add=True)
-    atualizado_em = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = "Sequência de Produto"
-        verbose_name_plural = "Sequências de Produtos"
-        db_table = 'sequencia_produto'
-    
-    def __str__(self):
-        return f"{self.get_tipo_display()} - {self.prefixo}"
-    
-    @classmethod
-    def obter_proximo_codigo(cls, tipo_produto):
-        """
-        Obtém o próximo código sequencial para o tipo de produto
-        Thread-safe usando select_for_update()
-        """
-        with transaction.atomic():
-            # Obter ou criar a sequência para o tipo
-            sequencia, created = cls.objects.select_for_update().get_or_create(
-                tipo=tipo_produto,
-                defaults={
-                    'prefixo': tipo_produto,
-                    'proximo_numero': 1,
-                    'numero_digitos': 4
-                }
-            )
-            
-            # Gerar o código
-            numero_formatado = str(sequencia.proximo_numero).zfill(sequencia.numero_digitos)
-            codigo = f"{sequencia.prefixo}{numero_formatado}"
-            
-            # Incrementar o próximo número
-            sequencia.proximo_numero += 1
-            sequencia.save()
-            
-            return codigo
-
-
 class Produto(models.Model):
     """
     Modelo unificado para Matéria Prima, Produto Intermediário e Produto Acabado
@@ -428,13 +356,6 @@ class Produto(models.Model):
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
     
-    def gerar_codigo_automatico(self):
-        """
-        Gera código automático baseado no tipo do produto
-        """
-        if not self.codigo and self.tipo:
-            self.codigo = SequenciaProduto.obter_proximo_codigo(self.tipo)
-
     def clean(self):
         """
         Validações personalizadas do produto
@@ -452,16 +373,45 @@ class Produto(models.Model):
             if produtos_existentes.exists():
                 raise ValidationError({'codigo': 'Já existe um produto com este código.'})
 
+    def gerar_proximo_codigo(self):
+        """
+        Gera o próximo código sequencial baseado no tipo
+        Muito mais simples que a versão anterior
+        """
+        if self.tipo == 'MP':
+            prefixo = 'MP'
+        elif self.tipo == 'PI':
+            prefixo = 'PI'
+        elif self.tipo == 'PA':
+            prefixo = 'PA'
+        else:
+            prefixo = 'PR'  # Padrão
+        
+        # Buscar o último código deste tipo
+        ultimo_produto = Produto.objects.filter(
+            codigo__startswith=prefixo
+        ).order_by('codigo').last()
+        
+        if ultimo_produto:
+            # Extrair o número do código (ex: MP0001 -> 1)
+            try:
+                ultimo_numero = int(ultimo_produto.codigo[len(prefixo):])
+                proximo_numero = ultimo_numero + 1
+            except (ValueError, IndexError):
+                proximo_numero = 1
+        else:
+            proximo_numero = 1
+        
+        # Formatar com 4 dígitos: MP0001, MP0002, etc.
+        return f"{prefixo}{proximo_numero:04d}"
+    
     def save(self, *args, **kwargs):
         """
-        Override do save para garantir geração de código
+        Override do save para gerar código automático
         """
-        # Executar validações
-        self.clean()
-        
-        # Gerar código se necessário
-        if not self.codigo and self.tipo:
-            self.gerar_codigo_automatico()
+        # Gerar código se não existir
+        if not self.codigo:
+            self.codigo = self.gerar_proximo_codigo()
         
         super().save(*args, **kwargs)
     

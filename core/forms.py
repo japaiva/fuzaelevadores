@@ -83,41 +83,27 @@ class UsuarioForm(forms.ModelForm):
         
         return user
     
-# Substitua a classe ProdutoForm existente por esta versão:
+# core/forms.py - Versão corrigida do ProdutoForm
 
 class ProdutoForm(forms.ModelForm):
     class Meta:
         model = Produto
         fields = [
-            'tipo', 'codigo', 'nome', 'descricao', 'grupo', 'subgrupo',
-            'especificacoes_tecnicas', 'unidade_medida', 'peso_unitario', 'dimensoes',
-            'controla_estoque', 'estoque_minimo', 'custo_medio', 'preco_venda', 'margem_padrao',
+            'nome', 'descricao', 'grupo', 'subgrupo',
+            'unidade_medida', 'peso_unitario',
+            'controla_estoque', 'estoque_minimo', 'custo_medio',
             'fornecedor_principal', 'prazo_entrega_padrao', 'status', 'disponivel'
         ]
         widgets = {
-            'tipo': forms.Select(attrs={
-                'class': 'form-select', 
-                'onchange': 'gerarCodigoAutomatico()'
-            }),
-            'codigo': forms.TextInput(attrs={
-                'class': 'form-control',
-                'readonly': 'readonly',
-                'placeholder': 'Será gerado automaticamente',
-                'style': 'background-color: #e9ecef;'
-            }),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'grupo': forms.Select(attrs={'class': 'form-select'}),
             'subgrupo': forms.Select(attrs={'class': 'form-select'}),
-            'especificacoes_tecnicas': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'JSON: {"material": "Inox 430", "espessura": "1.2"}'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'peso_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'dimensoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'JSON: {"altura": 2.0, "largura": 1.0}'}),
             'controla_estoque': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'estoque_minimo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'custo_medio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'preco_venda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'margem_padrao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'fornecedor_principal': forms.Select(attrs={'class': 'form-select'}),
             'prazo_entrega_padrao': forms.NumberInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
@@ -129,59 +115,30 @@ class ProdutoForm(forms.ModelForm):
         
         # Campos obrigatórios
         self.fields['grupo'].required = True
-        self.fields['tipo'].required = True
-        
-        # Configuração para código automático
-        if not self.instance.pk:
-            # Produto novo - código será gerado automaticamente
-            self.fields['codigo'].required = False
-            self.fields['codigo'].help_text = 'Será gerado automaticamente baseado no tipo'
-        else:
-            # Produto existente - permitir edição manual do código
-            self.fields['codigo'].widget.attrs.pop('readonly', None)
-            self.fields['codigo'].widget.attrs.pop('style', None)
-            self.fields['codigo'].widget.attrs['placeholder'] = 'Código do produto'
-            self.fields['codigo'].required = True
+        self.fields['nome'].required = True
         
         # Filtrar subgrupos baseado no grupo selecionado
         if 'grupo' in self.data:
+            # Se tem dados do POST, usar o grupo selecionado
             try:
                 grupo_id = int(self.data.get('grupo'))
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.filter(grupo_id=grupo_id, ativo=True)
             except (ValueError, TypeError):
-                pass
+                self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         elif self.instance.pk:
-            # Só verificar grupo se a instância já existe (produto sendo editado)
+            # Se é edição de produto existente, verificar se tem grupo
             try:
-                if self.instance.grupo:
+                if hasattr(self.instance, 'grupo') and self.instance.grupo:
                     self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True)
                 else:
                     self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
             except:
-                # Se der erro ao acessar grupo, deixar queryset vazio
+                # Se der qualquer erro ao acessar grupo, deixar queryset vazio
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         else:
             # Para produtos novos, não mostrar subgrupos até que um grupo seja selecionado
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
 
-    def clean_codigo(self):
-        """Validação do código"""
-        codigo = self.cleaned_data.get('codigo')
-        
-        # Se não forneceu código e é produto novo, não há problema
-        if not codigo and not self.instance.pk:
-            return codigo
-        
-        # Se forneceu código, validar unicidade
-        if codigo:
-            produtos_existentes = Produto.objects.filter(codigo=codigo)
-            if self.instance.pk:
-                produtos_existentes = produtos_existentes.exclude(pk=self.instance.pk)
-            
-            if produtos_existentes.exists():
-                raise forms.ValidationError('Já existe um produto com este código.')
-        
-        return codigo
 class GrupoProdutoForm(forms.ModelForm):
     class Meta:
         model = GrupoProduto

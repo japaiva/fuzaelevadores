@@ -1,6 +1,6 @@
 {% extends 'gestor/base_gestor.html' %}
 
-{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Matéria-Prima | Portal Comercial{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Matéria-Prima | Portal Gestor{% endblock %}
 
 {% block content %}
 <div class="card shadow">
@@ -25,7 +25,7 @@
           {% endfor %}
         </div>
       {% endif %}
-      
+
       <!-- Bloco de Identificação -->
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
@@ -36,30 +36,28 @@
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <!-- Campo Tipo (oculto mas necessário) -->
-            <div style="display: none;">
-              {{ form.tipo }}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.codigo.id_for_label }}" class="form-label">Código*</label>
-              <div class="input-group">
-                {{ form.codigo }}
-                <button type="button" id="btn-editar-codigo" class="btn btn-outline-secondary" 
-                        style="display: none;" title="Editar código manualmente">
-                  <i class="fas fa-edit"></i>
-                </button>
-              </div>
-              <div class="form-text" id="codigo-help">
-                <i class="fas fa-info-circle text-muted me-1"></i>
-                <span id="codigo-status">Será gerado automaticamente: MP####</span>
-              </div>
-              {% if form.codigo.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.codigo.errors %}{{ error }}{% endfor %}
+            {% if form.instance.pk %}
+              <div class="col-md-3">
+                <label class="form-label">Código</label>
+                <div class="form-control-plaintext fw-bold">{{ form.instance.codigo }}</div>
+                <div class="form-text">
+                  <i class="fas fa-info-circle text-muted me-1"></i>
+                  Código gerado automaticamente
                 </div>
-              {% endif %}
-            </div>
+              </div>
+            {% else %}
+              <div class="col-md-3">
+                <label class="form-label">Código</label>
+                <div class="form-control-plaintext text-muted">
+                  <i class="fas fa-cog fa-spin me-1"></i>
+                  Será gerado automaticamente
+                </div>
+                <div class="form-text">
+                  <i class="fas fa-info-circle text-muted me-1"></i>
+                  Formato: MP0001, MP0002...
+                </div>
+              </div>
+            {% endif %}
             
             <div class="col-md-9">
               <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
@@ -127,7 +125,7 @@
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label for="{{ form.unidade_medida.id_for_label }}" class="form-label">Unidade de Medida*</label>
               {{ form.unidade_medida }}
               {% if form.unidade_medida.errors %}
@@ -137,22 +135,12 @@
               {% endif %}
             </div>
             
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label for="{{ form.peso_unitario.id_for_label }}" class="form-label">Peso Unitário (kg)</label>
               {{ form.peso_unitario }}
               {% if form.peso_unitario.errors %}
                 <div class="text-danger small mt-1">
                   {% for error in form.peso_unitario.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-4">
-              <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
-              {{ form.prazo_entrega_padrao }}
-              {% if form.prazo_entrega_padrao.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
@@ -180,7 +168,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-6">
+            <div class="col-md-3">
               <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo Médio</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
@@ -189,6 +177,16 @@
               {% if form.custo_medio.errors %}
                 <div class="text-danger small mt-1">
                   {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-3">
+              <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
+              {{ form.prazo_entrega_padrao }}
+              {% if form.prazo_entrega_padrao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
@@ -211,11 +209,6 @@
                 {{ form.controla_estoque }}
                 <label class="form-check-label" for="{{ form.controla_estoque.id_for_label }}">Controla Estoque</label>
               </div>
-              {% if form.controla_estoque.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.controla_estoque.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
             </div>
             
             <div class="col-md-3">
@@ -232,7 +225,7 @@
               {% if form.instance.pk %}
                 <label class="form-label">Estoque Atual</label>
                 <div class="form-control-plaintext fw-bold {% if form.instance.estoque_atual <= form.instance.estoque_minimo %}text-danger{% else %}text-success{% endif %}">
-                  {{ form.instance.estoque_atual }} {{ form.instance.unidade_medida }}
+                  {{ form.instance.estoque_atual }} {{ form.instance.get_unidade_medida_display }}
                 </div>
               {% endif %}
             </div>
@@ -254,11 +247,6 @@
                 {{ form.disponivel }}
                 <label class="form-check-label" for="{{ form.disponivel.id_for_label }}">Disponível para Uso</label>
               </div>
-              {% if form.disponivel.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.disponivel.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
             </div>
           </div>
         </div>
@@ -278,79 +266,6 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ========================================
-    // CÓDIGO AUTOMÁTICO PARA MATÉRIA-PRIMA
-    // ========================================
-    
-    function gerarCodigoAutomatico() {
-        const codigoInput = document.getElementById('{{ form.codigo.id_for_label }}');
-        const codigoStatus = document.getElementById('codigo-status');
-        const btnEditar = document.getElementById('btn-editar-codigo');
-        
-        // Para matéria-prima, sempre usar tipo MP
-        const tipo = 'MP';
-        
-        // Se é produto novo
-        if (!{{ form.instance.pk|yesno:"true,false" }}) {
-            // Buscar próximo código via AJAX
-            fetch(`/gestor/api/proximo-codigo/${tipo}/`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.codigo) {
-                        codigoInput.value = data.codigo;
-                        codigoInput.setAttribute('readonly', 'readonly');
-                        codigoInput.style.backgroundColor = '#e9ecef';
-                        
-                        codigoStatus.innerHTML = `<span class="text-success">Código gerado: <strong>${data.codigo}</strong></span>`;
-                        btnEditar.style.display = 'block';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro ao gerar código:', error);
-                    
-                    // Permitir edição manual em caso de erro
-                    codigoInput.removeAttribute('readonly');
-                    codigoInput.style.backgroundColor = '';
-                    codigoInput.placeholder = 'Digite o código manualmente';
-                    
-                    codigoStatus.innerHTML = '<span class="text-warning">Erro ao gerar código. Digite manualmente.</span>';
-                });
-        } else {
-            // Para edição, mostrar botão de editar
-            btnEditar.style.display = 'block';
-        }
-    }
-    
-    // Função para alternar entre automático e manual
-    window.toggleCodigoManual = function() {
-        const codigoInput = document.getElementById('{{ form.codigo.id_for_label }}');
-        const btnEditar = document.getElementById('btn-editar-codigo');
-        const codigoStatus = document.getElementById('codigo-status');
-        
-        if (codigoInput.hasAttribute('readonly')) {
-            // Ativar edição manual
-            codigoInput.removeAttribute('readonly');
-            codigoInput.style.backgroundColor = '';
-            codigoInput.focus();
-            
-            btnEditar.innerHTML = '<i class="fas fa-robot"></i>';
-            btnEditar.title = 'Voltar para automático';
-            btnEditar.className = 'btn btn-outline-warning';
-            
-            codigoStatus.innerHTML = '<span class="text-warning">Modo manual ativo</span>';
-        } else {
-            // Voltar para automático
-            gerarCodigoAutomatico();
-            
-            btnEditar.innerHTML = '<i class="fas fa-edit"></i>';
-            btnEditar.title = 'Editar código manualmente';
-            btnEditar.className = 'btn btn-outline-secondary';
-        }
-    };
-    
-    // Adicionar evento ao botão
-    document.getElementById('btn-editar-codigo').addEventListener('click', toggleCodigoManual);
-    
     // ========================================
     // SUBGRUPOS DINÂMICOS
     // ========================================
@@ -380,43 +295,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // ========================================
-    // VALIDAÇÕES DE CAMPOS NUMÉRICOS
-    // ========================================
-    
-    const numeroInputs = document.querySelectorAll('input[type="number"]');
-    numeroInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            if (this.value < 0) {
-                this.value = 0;
-            }
-        });
-    });
-    
-    // ========================================
-    // INICIALIZAR CÓDIGO AUTOMÁTICO
-    // ========================================
-    
-    gerarCodigoAutomatico();
 });
 </script>
-
-<style>
-.btn-editar-codigo {
-    transition: all 0.3s ease;
-}
-
-.btn-editar-codigo:hover {
-    transform: scale(1.1);
-}
-
-.form-text i {
-    font-size: 0.875em;
-}
-
-#codigo-help {
-    font-size: 0.875rem;
-}
-</style>
 {% endblock %}

@@ -16,8 +16,7 @@ from django.db.models.deletion import ProtectedError
 from core.models import (
     Usuario, Produto, GrupoProduto, SubgrupoProduto, Fornecedor,
     EspecificacaoElevador, OpcaoEspecificacao, RegraComponente,
-    ComponenteDerivado, SimulacaoElevador, Cliente, ParametrosGerais,
-    SequenciaProduto
+    ComponenteDerivado, SimulacaoElevador, Cliente, ParametrosGerais
 )
 from core.forms import (
     UsuarioForm, ProdutoForm, GrupoProdutoForm, SubgrupoProdutoForm, 
@@ -459,150 +458,6 @@ def fornecedor_toggle_status(request, pk):
     
     return redirect('gestor:fornecedor_list')
 
-
-# =============================================================================
-# CRUD PRODUTOS
-# =============================================================================
-
-@login_required
-def produto_list(request):
-    produtos_list = Produto.objects.select_related('grupo', 'subgrupo', 'fornecedor_principal').order_by('codigo')
-    
-    # Filtros
-    tipo = request.GET.get('tipo')
-    if tipo:
-        produtos_list = produtos_list.filter(tipo=tipo)
-    
-    grupo_id = request.GET.get('grupo')
-    if grupo_id:
-        produtos_list = produtos_list.filter(grupo_id=grupo_id)
-    
-    status = request.GET.get('status')
-    if status == 'ativo':
-        produtos_list = produtos_list.filter(status='ATIVO')
-    elif status == 'inativo':
-        produtos_list = produtos_list.filter(status='INATIVO')
-    elif status == 'disponivel':
-        produtos_list = produtos_list.filter(disponivel=True)
-    elif status == 'indisponivel':
-        produtos_list = produtos_list.filter(disponivel=False)
-    
-    query = request.GET.get('q')
-    if query:
-        produtos_list = produtos_list.filter(
-            Q(codigo__icontains=query) | 
-            Q(nome__icontains=query) |
-            Q(descricao__icontains=query)
-        )
-    
-    # Paginação
-    paginator = Paginator(produtos_list, 20)
-    page = request.GET.get('page', 1)
-    
-    try:
-        produtos = paginator.page(page)
-    except PageNotAnInteger:
-        produtos = paginator.page(1)
-    except EmptyPage:
-        produtos = paginator.page(paginator.num_pages)
-    
-    # Para os filtros
-    grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
-    
-    return render(request, 'gestor/produto_list.html', {
-        'produtos': produtos,
-        'grupos': grupos,
-        'tipo_filtro': tipo,
-        'grupo_filtro': grupo_id,
-        'status_filtro': status,
-        'query': query
-    })
-
-@login_required
-def produto_create(request):
-    if request.method == 'POST':
-        form = ProdutoForm(request.POST)
-        if form.is_valid():
-            produto = form.save(commit=False)
-            produto.criado_por = request.user
-            produto.atualizado_por = request.user
-            produto.save()
-            messages.success(request, f'Produto "{produto.nome}" criado com sucesso.')
-            #return redirect('gestor:produto_detail', pk=produto.pk)
-            return redirect('gestor:produto_list') 
-    else:
-        form = ProdutoForm()
-    return render(request, 'gestor/produto_form.html', {'form': form})
-
-@login_required
-def produto_update(request, pk):
-    produto = get_object_or_404(Produto, pk=pk)
-    if request.method == 'POST':
-        form = ProdutoForm(request.POST, instance=produto)
-        if form.is_valid():
-            produto = form.save(commit=False)
-            produto.atualizado_por = request.user
-            produto.save()
-            messages.success(request, f'Produto "{produto.nome}" atualizado com sucesso.')
-            #return redirect('gestor:produto_detail', pk=produto.pk)
-            return redirect('gestor:produto_list') 
-    else:
-        form = ProdutoForm(instance=produto)
-    return render(request, 'gestor/produto_form.html', {'form': form, 'produto': produto})
-
-#@login_required
-#def produto_detail(request, pk):
-#    produto = get_object_or_404(Produto, pk=pk)
-#    
-#    # Componentes que usam este produto
-#    usado_em = produto.usado_em.select_related('produto_pai').all()
-#    
-#    # Componentes deste produto (se for PI ou PA)
-#    if produto.tipo in ['PI', 'PA']:
-#        componentes = produto.componentes.select_related('produto_filho').all()
-#    else:
-#        componentes = []
-#    
-#    # Derivados deste produto
-#    derivados = produto.derivados.select_related('componente_destino').all()
-#    
-#    context = {
-#        'produto': produto,
-#        'usado_em': usado_em,
-#       'componentes': componentes,
-#       'derivados': derivados,
-#        'disponibilidade_info': produto.disponibilidade_info
-#    }
-#    return render(request, 'gestor/produto_detail.html', context)
-
-@login_required
-def produto_toggle_status(request, pk):
-    produto = get_object_or_404(Produto, pk=pk)
-    
-    if produto.status == 'ATIVO':
-        produto.status = 'INATIVO'
-        status_text = "desativado"
-    else:
-        produto.status = 'ATIVO'
-        status_text = "ativado"
-    
-    produto.save()
-    messages.success(request, f'Produto "{produto.nome}" {status_text} com sucesso.')
-    
-    return redirect('gestor:produto_list')
-
-@login_required
-def produto_toggle_disponibilidade(request, pk):
-    produto = get_object_or_404(Produto, pk=pk)
-    produto.disponivel = not produto.disponivel
-    produto.save()
-    
-    status_text = "disponibilizado" if produto.disponivel else "indisponibilizado"
-    messages.success(request, f'Produto "{produto.nome}" {status_text} com sucesso.')
-    
-    #return redirect('gestor:produto_detail', pk=pk)
-    return redirect('gestor:produto_list') 
-
 # =============================================================================
 # APIs AJAX
 # =============================================================================
@@ -797,8 +652,9 @@ def cliente_toggle_status(request, pk):
     
     return redirect('gestor:cliente_list')
 
-
-# Substitua as views de matéria-prima no gestor/views.py
+# =============================================================================
+# CRUD MATÉRIAS-PRIMAS (TIPO = PI) 
+# =============================================================================
 
 @login_required
 def materiaprima_list(request):
@@ -854,60 +710,44 @@ def materiaprima_list(request):
 
 @login_required
 def materiaprima_create(request):
-    """Criar nova matéria-prima"""
+    """Criar nova matéria-prima - SIMPLIFICADO"""
     if request.method == 'POST':
-        # Debug
-        print("Dados POST recebidos:", request.POST)
-        
         form = ProdutoForm(request.POST)
         
-        # Forçar tipo como MP
-        form.instance.tipo = 'MP'
-        
         if form.is_valid():
-            print("Form é válido")
             produto = form.save(commit=False)
-            produto.tipo = 'MP'  # Garantir que seja MP
+            produto.tipo = 'MP'  # Forçar tipo MP
             produto.criado_por = request.user
             produto.atualizado_por = request.user
-            
-            # Gerar código se não fornecido
-            if not produto.codigo:
-                produto.gerar_codigo_automatico()
-            
+            # O código será gerado automaticamente no save()
             produto.save()
-            messages.success(request, f'Matéria-prima "{produto.nome}" criada com sucesso.')
+            
+            messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" criada com sucesso.')
             return redirect('gestor:materiaprima_list') 
         else:
-            print("Erros do form:", form.errors)
             messages.error(request, 'Erro ao criar matéria-prima. Verifique os dados informados.')
     else:
-        # Inicializar com tipo MP
-        form = ProdutoForm(initial={'tipo': 'MP'})
+        form = ProdutoForm()
     
     return render(request, 'gestor/materiaprima_form.html', {'form': form})
 
 @login_required
 def materiaprima_update(request, pk):
-    """Editar matéria-prima"""
+    """Editar matéria-prima - SIMPLIFICADO"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
     
     if request.method == 'POST':
-        # Debug
-        print("Dados POST recebidos:", request.POST)
-        
         form = ProdutoForm(request.POST, instance=produto)
         
         if form.is_valid():
-            print("Form é válido")
             produto = form.save(commit=False)
             produto.tipo = 'MP'  # Garantir que continue sendo MP
             produto.atualizado_por = request.user
             produto.save()
-            messages.success(request, f'Matéria-prima "{produto.nome}" atualizada com sucesso.')
+            
+            messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" atualizada com sucesso.')
             return redirect('gestor:materiaprima_list') 
         else:
-            print("Erros do form:", form.errors)
             messages.error(request, 'Erro ao atualizar matéria-prima. Verifique os dados informados.')
     else:
         form = ProdutoForm(instance=produto)
@@ -937,43 +777,19 @@ def materiaprima_toggle_status(request, pk):
 
 @login_required
 def materiaprima_delete(request, pk):
-    """Excluir matéria-prima"""
+    """Excluir matéria-prima - SIMPLIFICADO igual ao fornecedor"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
     
     if request.method == 'POST':
-        nome_produto = produto.nome
-        codigo_produto = produto.codigo
-        
         try:
-            # Verificar se pode ser excluído (não está sendo usado)
-            usado_em = produto.usado_em.count()
-            if usado_em > 0:
-                messages.error(request, 
-                    f'Não é possível excluir a matéria-prima "{nome_produto}" pois ela está sendo usada em {usado_em} produto(s).')
-                return redirect('gestor:materiaprima_list')
-            
-            # Verificar fornecedores
-            fornecedores = produto.fornecedores_produto.count()
-            if fornecedores > 0:
-                # Remover relacionamentos com fornecedores primeiro
-                produto.fornecedores_produto.all().delete()
-            
             produto.delete()
-            messages.success(request, 
-                f'Matéria-prima "{codigo_produto} - {nome_produto}" excluída com sucesso.')
-            
+            messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" excluída com sucesso.')
         except Exception as e:
             messages.error(request, f'Erro ao excluir matéria-prima: {str(e)}')
         
         return redirect('gestor:materiaprima_list')
     
-    # GET - Mostrar confirmação
-    context = {
-        'produto': produto,
-        'usado_em_count': produto.usado_em.count(),
-        'fornecedores_count': produto.fornecedores_produto.count()
-    }
-    return render(request, 'gestor/materiaprima_delete.html', context)
+    return render(request, 'gestor/materiaprima_delete.html', {'produto': produto})
 
 # =============================================================================
 # CRUD PRODUTOS INTERMEDIÁRIOS (TIPO = PI) - Para implementar depois
@@ -1039,60 +855,6 @@ def parametros_gerais_view(request):
         form = ParametrosGeraisForm(instance=parametros)
     return render(request, 'gestor/parametros_gerais.html', {'form': form})
 
-
-# =============================================================================
-# API PARA CÓDIGO AUTOMÁTICO
-# =============================================================================
-
-@login_required
-def api_proximo_codigo(request, tipo):
-    """
-    API para obter o próximo código para um tipo de produto
-    """
-    if request.user.nivel not in ['admin', 'gestor']:
-        return JsonResponse({'error': 'Sem permissão'}, status=403)
-    
-    try:
-        # Só gera o código, não incrementa ainda (isso acontece no save)
-        sequencia, created = SequenciaProduto.objects.get_or_create(
-            tipo=tipo,
-            defaults={
-                'prefixo': tipo,
-                'proximo_numero': 1,
-                'numero_digitos': 4
-            }
-        )
-        
-        numero_formatado = str(sequencia.proximo_numero).zfill(sequencia.numero_digitos)
-        codigo_previsto = f"{sequencia.prefixo}{numero_formatado}"
-        
-        return JsonResponse({
-            'codigo': codigo_previsto,
-            'tipo': tipo,
-            'prefixo': sequencia.prefixo,
-            'numero': sequencia.proximo_numero
-        })
-        
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-# =============================================================================
-# API PARA VALIDAR CÓDIGO ÚNICO
-# =============================================================================
-
-@login_required  
-def api_validar_codigo(request, codigo):
-    """
-    API para validar se um código já existe
-    """
-    exists = Produto.objects.filter(codigo=codigo).exists()
-    
-    return JsonResponse({
-        'exists': exists,
-        'valid': not exists,
-        'message': 'Código já existe' if exists else 'Código disponível'
-    })
-
 # =============================================================================
 # RELATÓRIOS E ESTATÍSTICAS
 # =============================================================================
@@ -1128,42 +890,6 @@ def relatorio_produtos_sem_fornecedor(request):
     
     return render(request, 'gestor/relatorio_produtos_sem_fornecedor.html', context)
 
-# =============================================================================
-# CONFIGURAÇÕES DO SISTEMA
-# =============================================================================
-
-@login_required
-def configurar_sequencias(request):
-    """
-    Tela para configurar as sequências de códigos
-    """
-    if request.user.nivel not in ['admin']:
-        messages.error(request, 'Apenas administradores podem acessar esta página.')
-        return redirect('gestor:dashboard')
-    
-    sequencias = SequenciaProduto.objects.all().order_by('tipo')
-    
-    if request.method == 'POST':
-        # Processar alterações nas sequências
-        for sequencia in sequencias:
-            proximo_numero = request.POST.get(f'proximo_numero_{sequencia.tipo}')
-            prefixo = request.POST.get(f'prefixo_{sequencia.tipo}')
-            numero_digitos = request.POST.get(f'numero_digitos_{sequencia.tipo}')
-            
-            if proximo_numero and prefixo and numero_digitos:
-                sequencia.proximo_numero = int(proximo_numero)
-                sequencia.prefixo = prefixo
-                sequencia.numero_digitos = int(numero_digitos)
-                sequencia.save()
-        
-        messages.success(request, 'Sequências atualizadas com sucesso!')
-        return redirect('gestor:configurar_sequencias')
-    
-    context = {
-        'sequencias': sequencias,
-    }
-    
-    return render(request, 'gestor/configurar_sequencias.html', context)
 
 # =============================================================================
 # DASHBOARD COM GRÁFICOS (OPCIONAL)
