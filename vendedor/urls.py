@@ -1,4 +1,4 @@
-# vendedor/urls.py - VERSÃO CORRIGIDA
+# vendedor/urls.py - VERSÃO 2 ETAPAS
 from django.urls import path
 from . import views
 from core.views import VendedorLoginView
@@ -20,17 +20,10 @@ urlpatterns = [
     path('pedidos/<uuid:pk>/excluir/', views.pedido_delete, name='pedido_delete'),
     path('pedidos/<uuid:pk>/duplicar/', views.pedido_duplicar, name='pedido_duplicar'),
     
-    # Workflow unificado (criação + edição)
-    path('pedidos/novo/cliente/', views.pedido_step1_cliente, name='pedido_step1'),  # pk=None (criação)
-    path('pedidos/<uuid:pk>/cliente/', views.pedido_step1_cliente, name='pedido_step1'),  # com pk (edição)
-    path('pedidos/<uuid:pk>/elevador/', views.pedido_step2_elevador, name='pedido_step2'),
-    path('pedidos/<uuid:pk>/portas/', views.pedido_step3_portas, name='pedido_step3'),
-    path('pedidos/<uuid:pk>/cabine/', views.pedido_step4_cabine, name='pedido_step4'),
-    
-    # ⭐ REMOVIDO: path('pedidos/<uuid:pk>/resumo/', views.pedido_resumo, name='pedido_resumo'),
-    
-    # Finalização
-    path('pedidos/<uuid:pk>/finalizar/', views.finalizar_pedido, name='finalizar_pedido'),
+    # Workflow em 2 etapas (criação + edição)
+    path('pedidos/novo/cliente-elevador/', views.pedido_step1, name='pedido_step1'),  # pk=None (criação)
+    path('pedidos/<uuid:pk>/cliente-elevador/', views.pedido_step1, name='pedido_step1'),  # com pk (edição)
+    path('pedidos/<uuid:pk>/cabine-portas/', views.pedido_step2, name='pedido_step2'),
     
     # Ações do pedido
     path('pedidos/<uuid:pk>/alterar-status/', views.pedido_change_status, name='pedido_change_status'),
@@ -48,5 +41,4 @@ urlpatterns = [
     
     # APIs AJAX
     path('api/cliente/<int:cliente_id>/', views.api_cliente_info, name='api_cliente_info'),
-    path('api/stats/', views.api_pedido_stats, name='api_pedido_stats'),
 ]

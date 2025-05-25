@@ -2,9 +2,9 @@
 
 {% block title %}
   {% if editing %}
-    Editar Pedido {{ pedido.numero }} - Cliente | Portal do Vendedor
+    Editar Pedido {{ pedido.numero }} - Cliente/Elevador | Portal do Vendedor
   {% else %}
-    Novo Pedido - Cliente | Portal do Vendedor
+    Novo Pedido - Cliente/Elevador | Portal do Vendedor
   {% endif %}
 {% endblock %}
 
@@ -13,9 +13,9 @@
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">
       {% if editing %}
-        <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Dados do Cliente
+        <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Cliente/Elevador
       {% else %}
-        <i class="fas fa-plus-circle me-2"></i>Novo Pedido - Dados do Cliente
+        <i class="fas fa-plus-circle me-2"></i>Novo Pedido - Cliente/Elevador
       {% endif %}
     </h5>
     <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
@@ -26,13 +26,11 @@
   <!-- Progress Bar -->
   <div class="card-header bg-white">
     <div class="progress" style="height: 6px;">
-      <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemax="100"></div>
+      <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemax="100"></div>
     </div>
     <div class="d-flex justify-content-between mt-2">
-      <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">1. Cliente</small>
-      <small class="text-muted">2. Elevador</small>
-      <small class="text-muted">3. Portas</small>
-      <small class="text-muted">4. Cabine</small>
+      <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">1. Cliente/Elevador</small>
+      <small class="text-muted">2. Cabine/Portas</small>
     </div>
   </div>
   
@@ -45,7 +43,7 @@
     </div>
     {% endif %}
 
-    <form method="post" id="clienteForm">
+    <form method="post" id="clienteElevadorForm">
       {% csrf_token %}
 
       {% if form.non_field_errors %}
@@ -56,12 +54,12 @@
         </div>
       {% endif %}
       
-      <!-- Bloco de Informações do Cliente -->
-      <div class="card shadow mt-4">
-        <div class="card-header bg-light">
-          <h5 class="card-title mb-0">
-            Informações do Cliente
-          </h5>
+      <!-- Bloco 1: Informações do Cliente -->
+      <div class="card shadow-sm border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <h6 class="card-title mb-0">
+            Cliente
+          </h6>
         </div>
         <div class="card-body">
           <div class="row g-3">
@@ -113,7 +111,135 @@
         </div>
       </div>
 
+      <!-- Bloco 2: Elevador (Modelo e Capacidade + Acionamento) -->
+      <div class="card shadow-sm border-success mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">
+            Elevador
+          </h6>
+        </div>
+        <div class="card-body">
+          <!-- Modelo e Capacidade -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="{{ form.modelo_elevador.id_for_label }}" class="form-label">Modelo do Elevador*</label>
+              {{ form.modelo_elevador }}
+              {% if form.modelo_elevador.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.modelo_elevador.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4" id="capacidade-pessoas-div">
+              <label for="{{ form.capacidade_pessoas.id_for_label }}" class="form-label">Capacidade (Pessoas)</label>
+              {{ form.capacidade_pessoas }}
+              {% if form.capacidade_pessoas.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.capacidade_pessoas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.capacidade.id_for_label }}" class="form-label">Capacidade (kg)*</label>
+              {{ form.capacidade }}
+              {% if form.capacidade.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.capacidade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
 
+          <!-- Acionamento e Tração -->
+          <hr>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.acionamento.id_for_label }}" class="form-label">Acionamento*</label>
+              {{ form.acionamento }}
+              {% if form.acionamento.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.acionamento.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4" id="tracao-div">
+              <label for="{{ form.tracao.id_for_label }}" class="form-label">Tração</label>
+              {{ form.tracao }}
+              {% if form.tracao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.tracao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4" id="contrapeso-div">
+              <label for="{{ form.contrapeso.id_for_label }}" class="form-label">Contrapeso</label>
+              {{ form.contrapeso }}
+              {% if form.contrapeso.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.contrapeso.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 3: Poço -->
+      <div class="card shadow-sm border-info mb-4">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">
+            Poço
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="{{ form.largura_poco.id_for_label }}" class="form-label">Largura (m)*</label>
+              {{ form.largura_poco }}
+              {% if form.largura_poco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.largura_poco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.comprimento_poco.id_for_label }}" class="form-label">Comprimento (m)*</label>
+              {{ form.comprimento_poco }}
+              {% if form.comprimento_poco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.comprimento_poco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.altura_poco.id_for_label }}" class="form-label">Altura (m)*</label>
+              {{ form.altura_poco }}
+              {% if form.altura_poco.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.altura_poco.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.pavimentos.id_for_label }}" class="form-label">Pavimentos*</label>
+              {{ form.pavimentos }}
+              {% if form.pavimentos.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.pavimentos.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4">
@@ -128,7 +254,7 @@
   </div>
 </div>
 
-<!-- Modal para Novo Cliente (mesmo da criação) -->
+<!-- Modal para Novo Cliente -->
 <div class="modal fade" id="clienteModal" tabindex="-1" aria-labelledby="clienteModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -167,73 +293,52 @@
 
 {% block extra_js %}
 <script>
-// Mesmo JavaScript da criação, mas adaptado para edição
 document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('clienteElevadorForm');
+    
+    // Elementos do cliente
     const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
-    const clienteInfo = document.getElementById('cliente-info');
-    const clienteDados = document.getElementById('cliente-dados');
     const btnNovoCliente = document.getElementById('btnNovoCliente');
     let clienteModal;
+    
+    // Elementos do elevador
+    const modeloSelect = document.getElementById('{{ form.modelo_elevador.id_for_label }}');
+    const capacidadePessoasDiv = document.getElementById('capacidade-pessoas-div');
+    const capacidadePessoasInput = document.getElementById('{{ form.capacidade_pessoas.id_for_label }}');
+    const capacidadeInput = document.getElementById('{{ form.capacidade.id_for_label }}');
+    const acionamentoSelect = document.getElementById('{{ form.acionamento.id_for_label }}');
+    const tracaoDiv = document.getElementById('tracao-div');
+    const contrapesoDiv = document.getElementById('contrapeso-div');
+    
+    // Elementos do poço
+    const larguraInput = document.getElementById('{{ form.largura_poco.id_for_label }}');
+    const comprimentoInput = document.getElementById('{{ form.comprimento_poco.id_for_label }}');
+    const alturaInput = document.getElementById('{{ form.altura_poco.id_for_label }}');
+    const pavimentosInput = document.getElementById('{{ form.pavimentos.id_for_label }}');
     
     // Inicializar modal
     clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
     
-    // Função para carregar informações do cliente (mesmo código da criação)
+    // === FUNÇÕES DO CLIENTE ===
+    
     function carregarInfoCliente(clienteId) {
-        if (!clienteId) {
-            clienteInfo.style.display = 'none';
-            return;
-        }
+        if (!clienteId) return;
         
         fetch(`{% url 'vendedor:api_cliente_info' 0 %}`.replace('0', clienteId))
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const cliente = data.cliente;
-                    clienteDados.innerHTML = `
-                        <div class="col-md-6">
-                            <strong>Nome:</strong> ${cliente.nome}<br>
-                            ${cliente.nome_fantasia ? `<strong>Empresa:</strong> ${cliente.nome_fantasia}<br>` : ''}
-                            ${cliente.telefone ? `<strong>Telefone:</strong> ${cliente.telefone}<br>` : ''}
-                            ${cliente.email ? `<strong>Email:</strong> ${cliente.email}` : ''}
-                        </div>
-                        <div class="col-md-6">
-                            ${cliente.endereco_completo ? `<strong>Endereço:</strong><br>${cliente.endereco_completo}` : 'Endereço não cadastrado'}
-                        </div>
-                    `;
-                    clienteInfo.style.display = 'block';
-                } else {
-                    clienteInfo.style.display = 'none';
+                    console.log('Cliente carregado:', data.cliente.nome);
                 }
             })
             .catch(error => {
                 console.error('Erro ao carregar informações do cliente:', error);
-                clienteInfo.style.display = 'none';
             });
     }
-    
-    // Event listener para mudança de cliente
-    if (clienteSelect) {
-        clienteSelect.addEventListener('change', function() {
-            carregarInfoCliente(this.value);
-        });
-        
-        // Carregar informações se já houver cliente selecionado (para edição)
-        if (clienteSelect.value) {
-            carregarInfoCliente(clienteSelect.value);
-        }
-    }
-        
-    // Event listener para botão novo cliente
-    btnNovoCliente.addEventListener('click', function(e) {
-        e.preventDefault();
-        abrirModalCliente();
-    });
     
     function abrirModalCliente() {
         const modalContent = document.getElementById('modal-form-content');
         
-        // Mostrar loading
         modalContent.innerHTML = `
             <div class="text-center">
                 <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
@@ -241,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        // Carregar formulário via AJAX
         fetch('{% url "vendedor:cliente_create_ajax" %}')
             .then(response => response.text())
             .then(html => {
@@ -259,19 +363,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // Event listener para salvar cliente
-    document.getElementById('clienteModalForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        salvarClienteModal(e);
-    });
-    
     function salvarClienteModal(e) {
         const form = e.target;
         const formData = new FormData(form);
         const submitBtn = document.getElementById('btnSalvarCliente');
         const errorDiv = document.getElementById('modal-errors');
         
-        // Desabilitar botão
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
         errorDiv.style.display = 'none';
@@ -286,15 +383,10 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Adicionar novo cliente ao select
                 const option = new Option(data.cliente.nome, data.cliente.id, true, true);
                 clienteSelect.add(option);
                 clienteSelect.value = data.cliente.id;
-                
-                // Disparar evento change para carregar informações
                 clienteSelect.dispatchEvent(new Event('change'));
-                
-                // Fechar modal
                 clienteModal.hide();
                 
                 // Mostrar mensagem de sucesso
@@ -309,7 +401,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cardBody = document.querySelector('.card-body');
                 cardBody.insertBefore(alertDiv, cardBody.firstChild);
                 
-                // Remover alerta após 5 segundos
                 setTimeout(() => {
                     if (alertDiv.parentNode) {
                         alertDiv.remove();
@@ -317,7 +408,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 5000);
                 
             } else {
-                // Mostrar erros
                 errorDiv.innerHTML = '';
                 for (const [field, errors] of Object.entries(data.errors)) {
                     errors.forEach(error => {
@@ -333,15 +423,112 @@ document.addEventListener('DOMContentLoaded', function() {
             errorDiv.style.display = 'block';
         })
         .finally(() => {
-            // Reabilitar botão
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-save me-1"></i>Salvar Cliente';
         });
     }
     
-    // Validação do formulário principal
-    const form = document.getElementById('clienteForm');
+    // === FUNÇÕES DO ELEVADOR ===
+    
+    function updateModelo() {
+        const modelo = modeloSelect.value;
+        
+        if (modelo === 'Passageiro') {
+            capacidadePessoasDiv.style.display = 'block';
+            capacidadeInput.disabled = true;
+            capacidadeInput.style.backgroundColor = '#e9ecef';
+            capacidadeInput.setAttribute('readonly', true);
+            updateCapacidade();
+        } else {
+            capacidadePessoasDiv.style.display = 'none';
+            capacidadeInput.disabled = false;
+            capacidadeInput.style.backgroundColor = '';
+            capacidadeInput.removeAttribute('readonly');
+            capacidadePessoasInput.value = '';
+        }
+    }
+    
+    function updateCapacidade() {
+        if (modeloSelect.value === 'Passageiro' && capacidadePessoasInput.value) {
+            const pessoas = parseInt(capacidadePessoasInput.value) || 1;
+            capacidadeInput.value = pessoas * 80;
+            capacidadeInput.style.backgroundColor = '#e9ecef';
+            capacidadeInput.setAttribute('readonly', true);
+        }
+    }
+    
+    function updateAcionamento() {
+        const acionamento = acionamentoSelect.value;
+        
+        if (acionamento === 'Hidraulico') {
+            tracaoDiv.style.display = 'none';
+            contrapesoDiv.style.display = 'none';
+        } else if (acionamento === 'Motor') {
+            tracaoDiv.style.display = 'block';
+            contrapesoDiv.style.display = 'block';
+        } else if (acionamento === 'Carretel') {
+            tracaoDiv.style.display = 'block';
+            contrapesoDiv.style.display = 'none';
+        }
+    }
+    
+    // === FUNÇÕES DO POÇO ===
+    
+    function updateCalculos() {
+        const largura = parseFloat(larguraInput.value) || 0;
+        const comprimento = parseFloat(comprimentoInput.value) || 0;
+        const altura = parseFloat(alturaInput.value) || 0;
+        const pavimentos = parseInt(pavimentosInput.value) || 0;
+        
+        const area = largura * comprimento;
+        const volume = area * altura;
+        const alturaPorPavimento = pavimentos > 1 ? altura / (pavimentos - 1) : 0;
+        const percurso = pavimentos > 1 ? altura - alturaPorPavimento : 0;
+        
+        document.getElementById('area-poco').textContent = area.toFixed(2).replace('.', ',') + ' m²';
+        document.getElementById('volume-poco').textContent = volume.toFixed(2).replace('.', ',') + ' m³';
+        document.getElementById('altura-pavimento').textContent = alturaPorPavimento.toFixed(2).replace('.', ',') + ' m';
+        document.getElementById('percurso').textContent = percurso.toFixed(2).replace('.', ',') + ' m';
+    }
+    
+    // === EVENT LISTENERS ===
+    
+    // Cliente
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', function() {
+            carregarInfoCliente(this.value);
+        });
+        
+        if (clienteSelect.value) {
+            carregarInfoCliente(clienteSelect.value);
+        }
+    }
+    
+    btnNovoCliente.addEventListener('click', function(e) {
+        e.preventDefault();
+        abrirModalCliente();
+    });
+    
+    document.getElementById('clienteModalForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        salvarClienteModal(e);
+    });
+    
+    // Elevador
+    modeloSelect.addEventListener('change', updateModelo);
+    capacidadePessoasInput.addEventListener('input', updateCapacidade);
+    acionamentoSelect.addEventListener('change', updateAcionamento);
+    
+    // Poço
+    larguraInput.addEventListener('input', updateCalculos);
+    comprimentoInput.addEventListener('input', updateCalculos);
+    alturaInput.addEventListener('input', updateCalculos);
+    pavimentosInput.addEventListener('input', updateCalculos);
+    
+    // === VALIDAÇÃO DO FORMULÁRIO ===
+    
     form.addEventListener('submit', function(e) {
+        // Validar cliente
         const cliente = clienteSelect.value;
         const projeto = document.getElementById('{{ form.nome_projeto.id_for_label }}').value;
         
@@ -358,9 +545,55 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('{{ form.nome_projeto.id_for_label }}').focus();
             return;
         }
+        
+        // Validar elevador
+        const modelo = modeloSelect.value;
+        const capacidade = parseFloat(capacidadeInput.value) || 0;
+        
+        if (modelo === 'Passageiro') {
+            const pessoas = parseInt(capacidadePessoasInput.value) || 0;
+            if (pessoas <= 0) {
+                e.preventDefault();
+                alert('Para elevador de passageiro, informe o número de pessoas.');
+                capacidadePessoasInput.focus();
+                return;
+            }
+            capacidadeInput.value = pessoas * 80;
+        } else {
+            if (capacidade <= 0) {
+                e.preventDefault();
+                alert('A capacidade deve ser maior que zero.');
+                capacidadeInput.focus();
+                return;
+            }
+        }
+        
+        // Validar poço
+        const largura = parseFloat(larguraInput.value) || 0;
+        const comprimento = parseFloat(comprimentoInput.value) || 0;
+        const altura = parseFloat(alturaInput.value) || 0;
+        const pavimentos = parseInt(pavimentosInput.value) || 0;
+        
+        if (largura <= 0 || comprimento <= 0 || altura <= 0) {
+            e.preventDefault();
+            alert('As dimensões do poço devem ser maiores que zero.');
+            return;
+        }
+        
+        if (pavimentos < 2) {
+            e.preventDefault();
+            alert('O número de pavimentos deve ser pelo menos 2.');
+            pavimentosInput.focus();
+            return;
+        }
     });
     
-    // Auto-focus no primeiro campo
+    // === INICIALIZAÇÃO ===
+    
+    updateModelo();
+    updateAcionamento();
+    updateCalculos();
+    
     if (clienteSelect) {
         clienteSelect.focus();
     }
