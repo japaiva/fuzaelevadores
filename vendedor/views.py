@@ -82,102 +82,146 @@ def dashboard(request):
 # WORKFLOW DO PEDIDO = SIMULAÇÃO INTEGRADA
 # =============================================================================
 
-
-# vendedor/views.py
-# SUBSTITUIR a função pedido_step1_cliente existente por esta versão corrigida
-
-import logging
-logger = logging.getLogger(__name__)
+# Substitua as views no vendedor/views.py por estas versões unificadas
 
 @login_required
-def pedido_step1_cliente(request):
-    """Etapa 1: Dados do Cliente - VERSÃO CORRIGIDA COM VALORES PADRÃO"""
+def pedido_edit(request, pk):
+    """Editar pedido existente - redireciona para step 1"""
+    pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
+    
+    pode_editar, mensagem = validar_permissoes_vendedor(request.user, pedido)
+    if not pode_editar:
+        messages.error(request, mensagem)
+        return redirect('vendedor:pedido_detail', pk=pedido.pk)
+    
+    # Redirecionar para o primeiro passo (agora unificado)
+    return redirect('vendedor:pedido_step1', pk=pedido.pk)
+
+
+@login_required
+def pedido_step1_cliente(request, pk=None):
+    """Etapa 1: Dados do Cliente - UNIFICADO (criação + edição)"""
+    
+    # Determinar se é criação ou edição
+    if pk:
+        # EDIÇÃO
+        pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
+        pode_editar, mensagem = validar_permissoes_vendedor(request.user, pedido)
+        if not pode_editar:
+            messages.error(request, mensagem)
+            return redirect('vendedor:pedido_detail', pk=pedido.pk)
+        editing = True
+    else:
+        # CRIAÇÃO
+        pedido = None
+        editing = False
     
     if request.method == 'POST':
-        form = PedidoClienteForm(request.POST)
-        if form.is_valid():
-            try:
-                pedido = form.save(commit=False)
-                pedido.vendedor = request.user
-                pedido.atualizado_por = request.user
-                pedido.status = 'rascunho'
-                
-                # ⭐ CORREÇÃO: Definir valores padrão obrigatórios para evitar NULL
-                # Estes valores serão atualizados nos próximos steps
-                
-                # === DADOS DO ELEVADOR (Step 2) ===
-                pedido.capacidade = 80.00  # 1 pessoa = 80kg
-                pedido.capacidade_pessoas = 1  # Valor padrão
-                pedido.modelo_elevador = 'Passageiro'  # Mais comum
-                pedido.acionamento = 'Motor'  # Mais comum
-                pedido.tracao = '1x1'  # Padrão para motor
-                pedido.contrapeso = 'Lateral'  # Padrão
-                
-                # Dimensões do poço - valores padrão realistas
-                pedido.largura_poco = 2.00  # 2 metros
-                pedido.comprimento_poco = 2.00  # 2 metros  
-                pedido.altura_poco = 3.00  # 3 metros
-                pedido.pavimentos = 2  # Térreo + 1º andar
-                
-                # === DADOS DAS PORTAS (Step 3) ===
-                # Porta da Cabine
-                pedido.modelo_porta_cabine = 'Automática'
-                pedido.material_porta_cabine = 'Inox'
-                pedido.folhas_porta_cabine = '2'
-                pedido.largura_porta_cabine = 0.80  # 80cm padrão
-                pedido.altura_porta_cabine = 2.00   # 2m padrão
-                
-                # Porta do Pavimento  
-                pedido.modelo_porta_pavimento = 'Automática'
-                pedido.material_porta_pavimento = 'Inox'
-                pedido.folhas_porta_pavimento = '2'
-                pedido.largura_porta_pavimento = 0.80  # 80cm padrão
-                pedido.altura_porta_pavimento = 2.00   # 2m padrão
-                
-                # === DADOS DA CABINE (Step 4) ===
-                pedido.material_cabine = 'Inox 430'  # Material mais comum
-                pedido.espessura_cabine = '1,2'      # 1,2mm padrão
-                pedido.saida_cabine = 'Padrão'       # Saída padrão
-                pedido.altura_cabine = 2.30          # 2,3m padrão
-                pedido.piso_cabine = 'Por conta do cliente'  # Mais comum
-                
-                logger.info(f"Criando pedido para cliente {pedido.cliente.nome}")
-                pedido.save()
-                logger.info(f"Pedido {pedido.numero} criado com sucesso")
-                
-                # Registrar no histórico
-                HistoricoPedido.objects.create(
-                    pedido=pedido,
-                    status_novo='rascunho',
-                    observacao='Pedido criado com valores padrão - a serem configurados nos próximos passos',
-                    usuario=request.user
-                )
-                
-                messages.success(request, f'Pedido {pedido.numero} criado com sucesso.')
-                return redirect('vendedor:pedido_create_step2', pk=pedido.pk)
-                
-            except Exception as e:
-                logger.error(f"Erro ao criar pedido: {str(e)}")
-                messages.error(request, f'Erro ao criar pedido: {str(e)}')
-                
+        if editing:
+            # EDIÇÃO
+            form = PedidoClienteForm(request.POST, instance=pedido)
+            if form.is_valid():
+                try:
+                    pedido = form.save(commit=False)
+                    pedido.atualizado_por = request.user
+                    pedido.save()
+                    
+                    HistoricoPedido.objects.create(
+                        pedido=pedido,
+                        status_novo=pedido.status,
+                        observacao='Dados do cliente atualizados',
+                        usuario=request.user
+                    )
+                    
+                    messages.success(request, 'Dados do cliente atualizados com sucesso.')
+                    return redirect('vendedor:pedido_step2', pk=pedido.pk)
+                    
+                except Exception as e:
+                    logger.error(f"Erro ao atualizar pedido {pedido.numero}: {str(e)}")
+                    messages.error(request, f'Erro ao atualizar pedido: {str(e)}')
         else:
+            # CRIAÇÃO
+            form = PedidoClienteForm(request.POST)
+            if form.is_valid():
+                try:
+                    pedido = form.save(commit=False)
+                    pedido.vendedor = request.user
+                    pedido.atualizado_por = request.user
+                    pedido.status = 'rascunho'
+                    
+                    # Definir valores padrão obrigatórios (mesmo código anterior)
+                    pedido.capacidade = 80.00
+                    pedido.capacidade_pessoas = 1
+                    pedido.modelo_elevador = 'Passageiro'
+                    pedido.acionamento = 'Motor'
+                    pedido.tracao = '1x1'
+                    pedido.contrapeso = 'Lateral'
+                    pedido.largura_poco = 2.00
+                    pedido.comprimento_poco = 2.00
+                    pedido.altura_poco = 3.00
+                    pedido.pavimentos = 2
+                    
+                    # Dados das portas padrão
+                    pedido.modelo_porta_cabine = 'Automática'
+                    pedido.material_porta_cabine = 'Inox'
+                    pedido.folhas_porta_cabine = '2'
+                    pedido.largura_porta_cabine = 0.80
+                    pedido.altura_porta_cabine = 2.00
+                    pedido.modelo_porta_pavimento = 'Automática'
+                    pedido.material_porta_pavimento = 'Inox'
+                    pedido.folhas_porta_pavimento = '2'
+                    pedido.largura_porta_pavimento = 0.80
+                    pedido.altura_porta_pavimento = 2.00
+                    
+                    # Dados da cabine padrão
+                    pedido.material_cabine = 'Inox 430'
+                    pedido.espessura_cabine = '1,2'
+                    pedido.saida_cabine = 'Padrão'
+                    pedido.altura_cabine = 2.30
+                    pedido.piso_cabine = 'Por conta do cliente'
+                    
+                    logger.info(f"Criando pedido para cliente {pedido.cliente.nome}")
+                    pedido.save()
+                    logger.info(f"Pedido {pedido.numero} criado com sucesso")
+                    
+                    HistoricoPedido.objects.create(
+                        pedido=pedido,
+                        status_novo='rascunho',
+                        observacao='Pedido criado com valores padrão',
+                        usuario=request.user
+                    )
+                    
+                    messages.success(request, f'Pedido {pedido.numero} criado com sucesso.')
+                    return redirect('vendedor:pedido_step2', pk=pedido.pk)
+                    
+                except Exception as e:
+                    logger.error(f"Erro ao criar pedido: {str(e)}")
+                    messages.error(request, f'Erro ao criar pedido: {str(e)}')
+                    
+        if form.errors:
             logger.warning(f"Form inválido: {form.errors}")
             messages.error(request, 'Por favor, corrija os erros no formulário.')
     else:
-        form = PedidoClienteForm()
+        # GET request
+        if editing:
+            form = PedidoClienteForm(instance=pedido)
+        else:
+            form = PedidoClienteForm()
     
     # Buscar clientes para o select
     clientes = Cliente.objects.filter(ativo=True).order_by('nome')
     
-    return render(request, 'vendedor/pedido_create_step1.html', {
+    return render(request, 'vendedor/pedido_step1.html', {
         'form': form,
+        'pedido': pedido,  # None para criação, objeto para edição
         'clientes': clientes,
+        'editing': editing,
     })
 
 
 @login_required
 def pedido_step2_elevador(request, pk):
-    """Etapa 2: Dados do Elevador - USA template pedido_create_step2.html"""
+    """Etapa 2: Dados do Elevador - UNIFICADO (criação + edição)"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     # Validar permissões
@@ -185,6 +229,9 @@ def pedido_step2_elevador(request, pk):
     if not pode_editar:
         messages.error(request, mensagem)
         return redirect('vendedor:pedido_detail', pk=pedido.pk)
+    
+    # Determinar se é edição (pedido já tem mais dados preenchidos)
+    editing = pedido.status != 'rascunho' or bool(pedido.preco_venda_calculado)
     
     if request.method == 'POST':
         form = PedidoElevadorForm(request.POST, instance=pedido)
@@ -198,19 +245,23 @@ def pedido_step2_elevador(request, pk):
             pedido.atualizado_por = request.user
             pedido.save()
             
-            return redirect('vendedor:pedido_create_step3', pk=pedido.pk)
+            if editing:
+                messages.success(request, 'Dados do elevador atualizados com sucesso.')
+            
+            return redirect('vendedor:pedido_step3', pk=pedido.pk)
     else:
         form = PedidoElevadorForm(instance=pedido)
     
-    return render(request, 'vendedor/pedido_create_step2.html', {
+    return render(request, 'vendedor/pedido_step2.html', {
         'form': form,
         'pedido': pedido,
+        'editing': editing,
     })
 
 
 @login_required
 def pedido_step3_portas(request, pk):
-    """Etapa 3: Dados das Portas - USA template pedido_create_step3.html"""
+    """Etapa 3: Dados das Portas - UNIFICADO (criação + edição)"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     # Validar permissões
@@ -218,6 +269,8 @@ def pedido_step3_portas(request, pk):
     if not pode_editar:
         messages.error(request, mensagem)
         return redirect('vendedor:pedido_detail', pk=pedido.pk)
+    
+    editing = pedido.status != 'rascunho' or bool(pedido.preco_venda_calculado)
     
     if request.method == 'POST':
         form = PedidoPortasForm(request.POST, instance=pedido)
@@ -226,19 +279,25 @@ def pedido_step3_portas(request, pk):
             pedido.atualizado_por = request.user
             pedido.save()
             
-            return redirect('vendedor:pedido_create_step4', pk=pedido.pk)
+            if editing:
+                messages.success(request, 'Dados das portas atualizados com sucesso.')
+            
+            return redirect('vendedor:pedido_step4', pk=pedido.pk)
     else:
         form = PedidoPortasForm(instance=pedido)
     
-    return render(request, 'vendedor/pedido_create_step3.html', {
+    return render(request, 'vendedor/pedido_step3.html', {
         'form': form,
         'pedido': pedido,
+        'editing': editing,
     })
 
 
+# Substitua estas views no vendedor/views.py
+
 @login_required
 def pedido_step4_cabine(request, pk):
-    """Etapa 4: Dados da Cabine - USA template pedido_create_step4.html"""
+    """Etapa 4: Dados da Cabine - UNIFICADO (criação + edição)"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     # Validar permissões
@@ -247,104 +306,108 @@ def pedido_step4_cabine(request, pk):
         messages.error(request, mensagem)
         return redirect('vendedor:pedido_detail', pk=pedido.pk)
     
+    editing = pedido.status != 'rascunho' or bool(pedido.preco_venda_calculado)
+    
     if request.method == 'POST':
         form = PedidoCabineForm(request.POST, instance=pedido)
         if form.is_valid():
             pedido = form.save(commit=False)
             
-            # EXECUTAR CÁLCULOS USANDO OS NOVOS SERVICES
+            # EXECUTAR CÁLCULOS (mesmo código anterior)
             try:
-                # Extrair especificações do pedido
                 especificacoes = extrair_especificacoes_do_pedido(pedido)
-                
-                # Calcular dimensionamento usando o service
                 dimensionamento, explicacao = DimensionamentoService.calcular_dimensionamento_completo(especificacoes)
                 
-                # Salvar dimensões calculadas no pedido
                 if 'cab' in dimensionamento:
                     pedido.largura_cabine_calculada = dimensionamento['cab']['largura']
                     pedido.comprimento_cabine_calculado = dimensionamento['cab']['compr']
                     pedido.capacidade_cabine_calculada = dimensionamento['cab']['capacidade']
                     pedido.tracao_cabine_calculada = dimensionamento['cab']['tracao']
                 
-                # Salvar dados calculados
                 pedido.dimensionamento_detalhado = dimensionamento
                 pedido.explicacao_calculo = explicacao
                 
-                # Calcular custo base (temporário - depois implementar componentes)
-                custo_base = 15000.0  # Valor base temporário
-                
-                # Calcular formação de preço usando o service
+                custo_base = 15000.0
                 formacao_preco = PricingService.calcular_formacao_preco(custo_base, pedido.faturado_por)
                 
-                # Salvar valores comerciais
                 pedido.custo_producao = custo_base
                 pedido.preco_venda_calculado = formacao_preco['preco_sem_impostos']
                 pedido.formacao_preco = formacao_preco
                 
+                # ⭐ MUDANÇA: Atualizar status para simulado
+                if pedido.status == 'rascunho':
+                    pedido.status = 'simulado'
+                
                 logger.info(f"Cálculos executados com sucesso para pedido {pedido.numero}")
                 
             except Exception as e:
-                logger.error(f"Erro ao calcular dimensionamento para pedido {pedido.numero}: {str(e)}")
-                messages.warning(request, 'Houve um problema nos cálculos. Verifique os dados inseridos.')
-                # Mesmo com erro, salva o pedido para não perder os dados
+                logger.error(f"Erro ao calcular dimensionamento: {str(e)}")
+                messages.warning(request, 'Houve um problema nos cálculos.')
             
             pedido.atualizado_por = request.user
             pedido.save()
             
-            return redirect('vendedor:pedido_resumo', pk=pedido.pk)
+            if editing:
+                messages.success(request, 'Dados da cabine atualizados e cálculos refeitos.')
+            else:
+                messages.success(request, 'Pedido simulado com sucesso!')
+            
+            # ⭐ MUDANÇA: Redirecionar para detail em vez de resumo
+            return redirect('vendedor:pedido_detail', pk=pedido.pk)
     else:
         form = PedidoCabineForm(instance=pedido)
     
-    return render(request, 'vendedor/pedido_create_step4.html', {
+    return render(request, 'vendedor/pedido_step4.html', {
         'form': form,
         'pedido': pedido,
+        'editing': editing,
     })
 
 
 @login_required
-def pedido_resumo(request, pk):
-    """Etapa 5: Resumo Final - USA template pedido_resumo.html"""
+def pedido_detail(request, pk):
+    """Detalhes do pedido - VERSÃO UNIFICADA (antigo detail + resumo)"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
-    # Extrair especificações para exibição usando as funções do core
-    especificacoes = extrair_especificacoes_do_pedido(pedido)
-    especificacoes_agrupadas = agrupar_respostas_por_pagina(especificacoes)
+    # Extrair especificações para exibição (se houver)
+    especificacoes = {}
+    if pedido.cliente:  # Só tenta extrair se tem dados básicos
+        try:
+            especificacoes = extrair_especificacoes_do_pedido(pedido)
+        except Exception as e:
+            logger.warning(f"Erro ao extrair especificações do pedido {pedido.numero}: {str(e)}")
     
     # Usar dados já calculados e salvos no pedido
     dimensionamento = pedido.dimensionamento_detalhado or {}
     formacao_preco = pedido.formacao_preco or {}
+    explicacao = pedido.explicacao_calculo or ''
     
-    # Preparar grupos de componentes (vazio por enquanto)
-    grupos = {}
-    componentes = pedido.componentes_calculados or {}
+    # Histórico do pedido
+    historico = pedido.historico.all()[:10]
     
-    # Se não tiver formação de preço, calcular uma básica
-    if not formacao_preco and pedido.custo_producao:
-        formacao_preco = PricingService.calcular_formacao_preco(
-            float(pedido.custo_producao), 
-            pedido.faturado_por
-        )
+    # Anexos do pedido
+    anexos = pedido.anexos.all().order_by('-enviado_em')
+    
+    # Determinar nível do usuário para exibir dados
+    user_level = getattr(request.user, 'nivel', 'vendedor')
     
     context = {
         'pedido': pedido,
-        'respostas': especificacoes,
-        'respostas_agrupadas': especificacoes_agrupadas,
+        'especificacoes': especificacoes,
         'dimensionamento': dimensionamento,
-        'explicacao': pedido.explicacao_calculo or '',
-        'componentes': componentes,
-        'grupos': grupos,
-        'custo_total': pedido.custo_producao or 0,
+        'explicacao': explicacao,
         'formacao_preco': formacao_preco,
-        'user_level': getattr(request.user, 'nivel', 'vendedor'),
+        'historico': historico,
+        'anexos': anexos,
+        'user_level': user_level,
     }
     
-    return render(request, 'vendedor/pedido_resumo.html', context)
+    return render(request, 'vendedor/pedido_detail.html', context)
 
 
 @login_required
 def finalizar_pedido(request, pk):
-    """Finalizar pedido após o resumo"""
+    """Finalizar pedido com desconto - VERSÃO SIMPLIFICADA"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     if request.method == 'POST':
@@ -392,7 +455,7 @@ def finalizar_pedido(request, pk):
         
         return redirect('vendedor:pedido_detail', pk=pedido.pk)
     
-    return redirect('vendedor:pedido_resumo', pk=pk)
+    return redirect('vendedor:pedido_detail', pk=pk)
 
 
 # =============================================================================
@@ -433,11 +496,37 @@ def pedido_list(request):
     }
     return render(request, 'vendedor/pedido_list.html', context)
 
-
 @login_required
 def pedido_detail(request, pk):
-    """Detalhes do pedido"""
+    """Detalhes do pedido - VERSÃO UNIFICADA (antigo detail + resumo)"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
+    
+    # Extrair especificações para exibição (se houver)
+    especificacoes = {}
+    if pedido.cliente:  # Só tenta extrair se tem dados básicos
+        try:
+            especificacoes = extrair_especificacoes_do_pedido(pedido)
+        except Exception as e:
+            logger.warning(f"Erro ao extrair especificações do pedido {pedido.numero}: {str(e)}")
+    
+    # Usar dados já calculados e salvos no pedido
+    dimensionamento = pedido.dimensionamento_detalhado or {}
+    formacao_preco = pedido.formacao_preco or {}
+    explicacao = pedido.explicacao_calculo or ''
+    
+    # Calcular áreas e volumes para exibição
+    area_poco = 0
+    volume_poco = 0
+    area_cabine = 0
+    
+    if pedido.largura_poco and pedido.comprimento_poco:
+        area_poco = float(pedido.largura_poco) * float(pedido.comprimento_poco)
+        
+        if pedido.altura_poco:
+            volume_poco = area_poco * float(pedido.altura_poco)
+    
+    if pedido.largura_cabine_calculada and pedido.comprimento_cabine_calculado:
+        area_cabine = float(pedido.largura_cabine_calculada) * float(pedido.comprimento_cabine_calculado)
     
     # Histórico do pedido
     historico = pedido.historico.all()[:10]
@@ -445,11 +534,24 @@ def pedido_detail(request, pk):
     # Anexos do pedido
     anexos = pedido.anexos.all().order_by('-enviado_em')
     
+    # Determinar nível do usuário para exibir dados
+    user_level = getattr(request.user, 'nivel', 'vendedor')
+    
     context = {
         'pedido': pedido,
+        'especificacoes': especificacoes,
+        'dimensionamento': dimensionamento,
+        'explicacao': explicacao,
+        'formacao_preco': formacao_preco,
         'historico': historico,
         'anexos': anexos,
+        'user_level': user_level,
+        # Valores calculados para o template
+        'area_poco': area_poco,
+        'volume_poco': volume_poco,
+        'area_cabine': area_cabine,
     }
+    
     return render(request, 'vendedor/pedido_detail.html', context)
 
 
@@ -464,25 +566,72 @@ def pedido_edit(request, pk):
         return redirect('vendedor:pedido_detail', pk=pedido.pk)
     
     # Redirecionar para o primeiro passo da edição
-    return redirect('vendedor:pedido_create_step2', pk=pedido.pk)
-
+    return redirect('vendedor:pedido_step1', pk=pedido.pk)
 
 @login_required
 def pedido_delete(request, pk):
-    """Excluir pedido (apenas rascunhos)"""
+    """Excluir pedido com validações de segurança"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
-    if pedido.status != 'rascunho':
-        messages.error(request, 'Apenas pedidos em rascunho podem ser excluídos.')
+    # Verificar se o pedido pode ser excluído
+    if pedido.status not in ['rascunho', 'simulado']:
+        messages.error(request, 
+            f'Não é possível excluir o pedido {pedido.numero}. '
+            f'Apenas pedidos em rascunho ou simulado podem ser excluídos.'
+        )
+        return redirect('vendedor:pedido_detail', pk=pedido.pk)
+    
+    # Verificar se há restrições adicionais (futuramente)
+    restricoes = []
+    
+    # Exemplo de restrições que podem ser implementadas:
+    # if pedido.anexos.exists():
+    #     restricoes.append(f"Possui {pedido.anexos.count()} anexo(s) associado(s)")
+    
+    # if pedido.preco_venda_final and pedido.preco_venda_final > 0:
+    #     restricoes.append("Já possui valores comerciais definidos")
+    
+    # Se houver restrições críticas, bloquear exclusão
+    if restricoes:
+        messages.error(request, 
+            f'Não é possível excluir o pedido {pedido.numero}:\n' + 
+            '\n'.join([f"• {r}" for r in restricoes])
+        )
         return redirect('vendedor:pedido_detail', pk=pedido.pk)
     
     if request.method == 'POST':
-        numero = pedido.numero
-        pedido.delete()
-        messages.success(request, f'Pedido {numero} excluído com sucesso.')
-        return redirect('vendedor:pedido_list')
+        try:
+            numero = pedido.numero
+            nome_projeto = pedido.nome_projeto
+            
+            # Log da exclusão antes de apagar
+            logger.info(
+                f"Pedido {numero} ({nome_projeto}) excluído pelo usuário {request.user.username}"
+            )
+            
+            # Excluir pedido (cascata remove histórico e anexos automaticamente)
+            pedido.delete()
+            
+            messages.success(request, 
+                f'Pedido {numero} - {nome_projeto} excluído com sucesso.'
+            )
+            return redirect('vendedor:pedido_list')
+            
+        except Exception as e:
+            logger.error(f"Erro ao excluir pedido {pedido.numero}: {str(e)}")
+            messages.error(request, 
+                f'Erro ao excluir pedido: {str(e)}. Tente novamente.'
+            )
+            return redirect('vendedor:pedido_detail', pk=pedido.pk)
     
-    return render(request, 'vendedor/pedido_confirm_delete.html', {'pedido': pedido})
+    # GET request - mostrar página de confirmação
+    context = {
+        'pedido': pedido,
+        'pode_excluir': True,  # Já passou pelas validações acima
+        'restricoes': restricoes,
+    }
+    
+    return render(request, 'vendedor/pedido_confirm_delete.html', context)
 
 
 @login_required

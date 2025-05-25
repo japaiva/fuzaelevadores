@@ -1,33 +1,51 @@
 {% extends 'vendedor/base_vendedor.html' %}
 
-{% block title %}Novo Pedido - Cliente | Portal do Vendedor{% endblock %}
+{% block title %}
+  {% if editing %}
+    Editar Pedido {{ pedido.numero }} - Cliente | Portal do Vendedor
+  {% else %}
+    Novo Pedido - Cliente | Portal do Vendedor
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">
-      <i class="fas fa-plus-circle me-2"></i>Novo Pedido - Dados do Cliente
+      {% if editing %}
+        <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Dados do Cliente
+      {% else %}
+        <i class="fas fa-plus-circle me-2"></i>Novo Pedido - Dados do Cliente
+      {% endif %}
     </h5>
-    <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="fas fa-arrow-left me-1"></i> Voltar
+    <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> {% if editing %}Cancelar{% else %}Voltar{% endif %}
     </a>
   </div>
   
   <!-- Progress Bar -->
   <div class="card-header bg-white">
     <div class="progress" style="height: 6px;">
-      <div class="progress-bar bg-success" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemax="100"></div>
+      <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemax="100"></div>
     </div>
     <div class="d-flex justify-content-between mt-2">
-      <small class="text-success fw-bold">1. Cliente</small>
+      <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">1. Cliente</small>
       <small class="text-muted">2. Elevador</small>
       <small class="text-muted">3. Portas</small>
       <small class="text-muted">4. Cabine</small>
-      <small class="text-muted">5. Resumo</small>
     </div>
   </div>
   
   <div class="card-body">
+    {% if editing %}
+    <!-- Alerta de edição -->
+    <div class="alert alert-warning">
+      <i class="fas fa-info-circle me-2"></i>
+      <strong>Modo de Edição:</strong> Você está editando um pedido existente. 
+      As alterações serão salvas e os cálculos podem ser recalculados.
+    </div>
+    {% endif %}
+
     <form method="post" id="clienteForm">
       {% csrf_token %}
 
@@ -120,10 +138,10 @@
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4">
-        <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-times me-1"></i> Cancelar
+        <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary">
+          <i class="fas fa-times me-1"></i> {% if editing %}Cancelar{% else %}Cancelar{% endif %}
         </a>
-        <button type="submit" class="btn btn-success">
+        <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
           Próximo <i class="fas fa-arrow-right me-1"></i>
         </button>
       </div>
@@ -131,7 +149,7 @@
   </div>
 </div>
 
-<!-- Modal para Novo Cliente -->
+<!-- Modal para Novo Cliente (mesmo da criação) -->
 <div class="modal fade" id="clienteModal" tabindex="-1" aria-labelledby="clienteModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -145,7 +163,6 @@
       <form id="clienteModalForm">
         {% csrf_token %}
         <div class="modal-body">
-          <!-- Formulário será carregado via AJAX -->
           <div id="modal-form-content">
             <div class="text-center">
               <i class="fas fa-spinner fa-spin fa-2x text-muted mb-3"></i>
@@ -171,6 +188,7 @@
 
 {% block extra_js %}
 <script>
+// Mesmo JavaScript da criação, mas adaptado para edição
 document.addEventListener('DOMContentLoaded', function() {
     const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
     const clienteInfo = document.getElementById('cliente-info');
@@ -181,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar modal
     clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
     
-    // Função para carregar informações do cliente
+    // Função para carregar informações do cliente (mesmo código da criação)
     function carregarInfoCliente(clienteId) {
         if (!clienteId) {
             clienteInfo.style.display = 'none';
@@ -221,12 +239,12 @@ document.addEventListener('DOMContentLoaded', function() {
             carregarInfoCliente(this.value);
         });
         
-        // Carregar informações se já houver cliente selecionado
+        // Carregar informações se já houver cliente selecionado (para edição)
         if (clienteSelect.value) {
             carregarInfoCliente(clienteSelect.value);
         }
     }
-    
+        
     // Event listener para botão novo cliente
     btnNovoCliente.addEventListener('click', function(e) {
         e.preventDefault();

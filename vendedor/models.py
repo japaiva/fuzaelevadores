@@ -401,17 +401,34 @@ class Pedido(models.Model):
         return f"{self.numero} - {self.nome_projeto}"
     
     def save(self, *args, **kwargs):
-        # Gerar número automático se não existir
+        """Salvar com número automático"""
         if not self.numero:
-            self.numero = self.gerar_numero_pedido()
+            # Gerar número sequencial SEM prefixo PED para economizar espaço
+            from datetime import datetime
+            
+            ano_atual = datetime.now().year
+            ultimo_pedido = Pedido.objects.filter(
+                criado_em__year=ano_atual
+            ).order_by('-numero').first()
+            
+            if ultimo_pedido:
+                # Extrair número sequencial do último pedido
+                try:
+                    # Se o número atual tem PED, remover
+                    numero_limpo = ultimo_pedido.numero.replace('PED', '').replace(str(ano_atual), '')
+                    ultimo_numero = int(numero_limpo)
+                    novo_numero = ultimo_numero + 1
+                except ValueError:
+                    # Se não conseguir extrair, começar do 1
+                    novo_numero = 1
+            else:
+                novo_numero = 1
+            
+            # Formato: 2025001, 2025002, etc. (ano + sequencial de 3 dígitos)
+            self.numero = f'{ano_atual}{novo_numero:03d}'
+        
         super().save(*args, **kwargs)
-    
-    def gerar_numero_pedido(self):
-        """Gera um número único para o pedido"""
-        ano = datetime.now().year
-        count = Pedido.objects.filter(criado_em__year=ano).count() + 1
-        return f"PED{ano}{count:04d}"
-    
+
     @property
     def status_badge_class(self):
         """Retorna classe CSS para badge de status"""
@@ -428,6 +445,7 @@ class Pedido(models.Model):
         }
         return badges.get(self.status, 'bg-secondary')
     
+
     @property
     def pode_editar(self):
         """Verifica se o pedido ainda pode ser editado"""
@@ -442,6 +460,13 @@ class Pedido(models.Model):
     def pode_gerar_orcamento(self):
         """Verifica se pode gerar orçamento"""
         return self.status in ['simulado', 'orcamento_gerado']
+    
+    @property
+    def pode_excluir(self):
+        """Verifica se o pedido pode ser excluído"""
+        return self.status in ['rascunho', 'simulado']
+    
+
     
     @property
     def resumo_elevador(self):

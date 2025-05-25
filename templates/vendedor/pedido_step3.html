@@ -1,12 +1,22 @@
 {% extends 'vendedor/base_vendedor.html' %}
 
-{% block title %}Pedido {{ pedido.numero }} - Portas | Portal do Vendedor{% endblock %}
+{% block title %}
+  {% if editing %}
+    Editar Pedido {{ pedido.numero }} - Portas | Portal do Vendedor
+  {% else %}
+    Pedido {{ pedido.numero }} - Portas | Portal do Vendedor
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">
-      <i class="fas fa-door-open me-2"></i>Pedido {{ pedido.numero }} - Dados das Portas
+      {% if editing %}
+        <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Dados das Portas
+      {% else %}
+        <i class="fas fa-door-open me-2"></i>Pedido {{ pedido.numero }} - Dados das Portas
+      {% endif %}
     </h5>
     <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary btn-sm">
       <i class="fas fa-arrow-left me-1"></i> Voltar
@@ -16,18 +26,25 @@
   <!-- Progress Bar -->
   <div class="card-header bg-white">
     <div class="progress" style="height: 6px;">
-      <div class="progress-bar bg-success" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemax="100"></div>
+      <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemax="100"></div>
     </div>
     <div class="d-flex justify-content-between mt-2">
       <small class="text-success">✓ 1. Cliente</small>
       <small class="text-success">✓ 2. Elevador</small>
-      <small class="text-success fw-bold">3. Portas</small>
+      <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">3. Portas</small>
       <small class="text-muted">4. Cabine</small>
-      <small class="text-muted">5. Resumo</small>
     </div>
   </div>
   
   <div class="card-body">
+    {% if editing %}
+    <!-- Alerta de edição -->
+    <div class="alert alert-warning">
+      <i class="fas fa-info-circle me-2"></i>
+      <strong>Modo de Edição:</strong> Alterações nas configurações das portas podem afetar os cálculos de dimensionamento.
+    </div>
+    {% endif %}
+
     <form method="post" id="portasForm">
       {% csrf_token %}
 
@@ -251,10 +268,10 @@
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4">
-        <a href="{% url 'vendedor:pedido_create_step2' pedido.pk %}" class="btn btn-outline-secondary">
+        <a href="{% url 'vendedor:pedido_step2' pedido.pk %}" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-left me-1"></i> Anterior
         </a>
-        <button type="submit" class="btn btn-success">
+        <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
           Próximo <i class="fas fa-arrow-right me-1"></i>
         </button>
       </div>

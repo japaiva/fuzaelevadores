@@ -1,12 +1,22 @@
 {% extends 'vendedor/base_vendedor.html' %}
 
-{% block title %}Pedido {{ pedido.numero }} - Elevador | Portal do Vendedor{% endblock %}
+{% block title %}
+  {% if editing %}
+    Editar Pedido {{ pedido.numero }} - Elevador | Portal do Vendedor
+  {% else %}
+    Pedido {{ pedido.numero }} - Elevador | Portal do Vendedor
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">
-      <i class="fas fa-building me-2"></i>Pedido {{ pedido.numero }} - Dados do Elevador
+      {% if editing %}
+        <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Dados do Elevador
+      {% else %}
+        <i class="fas fa-building me-2"></i>Pedido {{ pedido.numero }} - Dados do Elevador
+      {% endif %}
     </h5>
     <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary btn-sm">
       <i class="fas fa-arrow-left me-1"></i> Voltar
@@ -16,18 +26,25 @@
   <!-- Progress Bar -->
   <div class="card-header bg-white">
     <div class="progress" style="height: 6px;">
-      <div class="progress-bar bg-success" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemax="100"></div>
+      <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemax="100"></div>
     </div>
     <div class="d-flex justify-content-between mt-2">
       <small class="text-success">✓ 1. Cliente</small>
-      <small class="text-success fw-bold">2. Elevador</small>
+      <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">2. Elevador</small>
       <small class="text-muted">3. Portas</small>
       <small class="text-muted">4. Cabine</small>
-      <small class="text-muted">5. Resumo</small>
     </div>
   </div>
   
   <div class="card-body">
+    {% if editing %}
+    <!-- Alerta de edição -->
+    <div class="alert alert-warning">
+      <i class="fas fa-info-circle me-2"></i>
+      <strong>Modo de Edição:</strong> Alterações nos dados do elevador podem afetar os cálculos finais.
+    </div>
+    {% endif %}
+
     <form method="post" id="elevadorForm">
       {% csrf_token %}
 
@@ -205,10 +222,10 @@
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4">
-        <a href="{% url 'vendedor:pedido_create_step1' %}" class="btn btn-outline-secondary">
+        <a href="{% url 'vendedor:pedido_step1' pedido.pk %}" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-left me-1"></i> Anterior
         </a>
-        <button type="submit" class="btn btn-success">
+        <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
           Próximo <i class="fas fa-arrow-right me-1"></i>
         </button>
       </div>
@@ -220,7 +237,7 @@
 
 {% block extra_js %}
 <script>
-// JavaScript completo para pedido_create_step2.html
+// JavaScript completo para pedido_step2.html (mesmo código anterior)
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('elevadorForm');
     const modeloSelect = document.getElementById('{{ form.modelo_elevador.id_for_label }}');
@@ -237,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const alturaInput = document.getElementById('{{ form.altura_poco.id_for_label }}');
     const pavimentosInput = document.getElementById('{{ form.pavimentos.id_for_label }}');
     
-    // ⭐ FUNÇÃO CORRIGIDA: Atualizar campos baseado no modelo
+    // Funções (mesmo código anterior - não mudou nada)
     function updateModelo() {
         const modelo = modeloSelect.value;
         
@@ -256,19 +273,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // ⭐ FUNÇÃO CORRIGIDA: Calcular capacidade em kg
     function updateCapacidade() {
         if (modeloSelect.value === 'Passageiro' && capacidadePessoasInput.value) {
             const pessoas = parseInt(capacidadePessoasInput.value) || 1;
             capacidadeInput.value = pessoas * 80;
-            
-            // Garantir que o campo esteja visualmente preenchido
             capacidadeInput.style.backgroundColor = '#e9ecef';
             capacidadeInput.setAttribute('readonly', true);
         }
     }
     
-    // Função para atualizar campos baseado no acionamento
     function updateAcionamento() {
         const acionamento = acionamentoSelect.value;
         
@@ -284,20 +297,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Função para calcular informações do poço
     function updateCalculos() {
         const largura = parseFloat(larguraInput.value) || 0;
         const comprimento = parseFloat(comprimentoInput.value) || 0;
         const altura = parseFloat(alturaInput.value) || 0;
         const pavimentos = parseInt(pavimentosInput.value) || 0;
         
-        // Cálculos
         const area = largura * comprimento;
         const volume = area * altura;
         const alturaPorPavimento = pavimentos > 1 ? altura / (pavimentos - 1) : 0;
         const percurso = pavimentos > 1 ? altura - alturaPorPavimento : 0;
         
-        // Atualizar exibição
         document.getElementById('area-poco').textContent = area.toFixed(2);
         document.getElementById('volume-poco').textContent = volume.toFixed(2);
         document.getElementById('altura-pavimento').textContent = alturaPorPavimento.toFixed(2);
@@ -309,13 +319,12 @@ document.addEventListener('DOMContentLoaded', function() {
     capacidadePessoasInput.addEventListener('input', updateCapacidade);
     acionamentoSelect.addEventListener('change', updateAcionamento);
     
-    // Event listeners para cálculos
     larguraInput.addEventListener('input', updateCalculos);
     comprimentoInput.addEventListener('input', updateCalculos);
     alturaInput.addEventListener('input', updateCalculos);
     pavimentosInput.addEventListener('input', updateCalculos);
     
-    // ⭐ VALIDAÇÃO CORRIGIDA DO FORMULÁRIO
+    // Validação do formulário (mesmo código anterior)
     form.addEventListener('submit', function(e) {
         const modelo = modeloSelect.value;
         const capacidade = parseFloat(capacidadeInput.value) || 0;
@@ -324,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const altura = parseFloat(alturaInput.value) || 0;
         const pavimentos = parseInt(pavimentosInput.value) || 0;
         
-        // Validação específica para elevador de passageiro
         if (modelo === 'Passageiro') {
             const pessoas = parseInt(capacidadePessoasInput.value) || 0;
             if (pessoas <= 0) {
@@ -333,10 +341,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 capacidadePessoasInput.focus();
                 return;
             }
-            // Garantir que a capacidade seja calculada antes do envio
             capacidadeInput.value = pessoas * 80;
         } else {
-            // Para outros tipos, validar capacidade manual
             if (capacidade <= 0) {
                 e.preventDefault();
                 alert('A capacidade deve ser maior que zero.');
@@ -345,7 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Validações gerais
         if (largura <= 0 || comprimento <= 0 || altura <= 0) {
             e.preventDefault();
             alert('As dimensões do poço devem ser maiores que zero.');
@@ -358,20 +363,13 @@ document.addEventListener('DOMContentLoaded', function() {
             pavimentosInput.focus();
             return;
         }
-        
-        // Debug: verificar se capacidade está definida
-        console.log('Modelo:', modelo);
-        console.log('Capacidade final:', capacidadeInput.value);
-        
-        // Se chegou até aqui, tudo está OK para submissão
     });
     
-    // Inicializar todas as funções
+    // Inicializar
     updateModelo();
     updateAcionamento();
     updateCalculos();
     
-    // Auto-focus no primeiro campo
     if (modeloSelect) {
         modeloSelect.focus();
     }
