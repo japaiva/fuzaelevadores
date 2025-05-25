@@ -41,8 +41,7 @@
     <!-- Alerta de edição -->
     <div class="alert alert-warning">
       <i class="fas fa-info-circle me-2"></i>
-      <strong>Modo de Edição:</strong> Você está editando um pedido existente. 
-      As alterações serão salvas e os cálculos podem ser recalculados.
+      <strong>Editando pedido:</strong> Valores podem ser recalculados.
     </div>
     {% endif %}
 
@@ -61,7 +60,6 @@
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
-            <i class="fas fa-user me-2"></i>
             Informações do Cliente
           </h5>
         </div>
@@ -100,9 +98,6 @@
                   {% for error in form.nome_projeto.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Ex: "Elevador Residencial - Edifício Solar", "Elevador de Carga - Galpão Industrial"
-              </div>
             </div>
             
             <div class="col-12">
@@ -113,28 +108,12 @@
                   {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Informações importantes sobre o projeto, requisitos especiais, etc.
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Informações do Cliente Selecionado -->
-      <div id="cliente-info" class="card shadow mt-4" style="display: none;">
-        <div class="card-header bg-info text-white">
-          <h6 class="card-title mb-0">
-            <i class="fas fa-info-circle me-2"></i>
-            Dados do Cliente Selecionado
-          </h6>
-        </div>
-        <div class="card-body">
-          <div class="row" id="cliente-dados">
-            <!-- Será preenchido via JavaScript -->
-          </div>
-        </div>
-      </div>
+
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4">

@@ -41,7 +41,7 @@
     <!-- Alerta de edição -->
     <div class="alert alert-warning">
       <i class="fas fa-info-circle me-2"></i>
-      <strong>Modo de Edição:</strong> Alterações nos dados do elevador podem afetar os cálculos finais.
+      <strong>Editando pedido:</strong> Valores podem ser recalculados.
     </div>
     {% endif %}
 
@@ -60,7 +60,6 @@
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
-            <i class="fas fa-cogs me-2"></i>
             Modelo e Capacidade
           </h5>
         </div>
@@ -84,9 +83,6 @@
                   {% for error in form.capacidade_pessoas.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Para elevadores de passageiro
-              </div>
             </div>
             
             <div class="col-md-4">
@@ -97,9 +93,6 @@
                   {% for error in form.capacidade.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <div class="form-text small text-muted">
-                Será calculado automaticamente para passageiro
-              </div>
             </div>
           </div>
         </div>
@@ -109,7 +102,6 @@
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
-            <i class="fas fa-tools me-2"></i>
             Acionamento e Tração
           </h5>
         </div>
@@ -152,7 +144,6 @@
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
-            <i class="fas fa-ruler-combined me-2"></i>
             Dimensões do Poço
           </h5>
         </div>
@@ -199,26 +190,7 @@
             </div>
           </div>
           
-          <!-- Visualização das Dimensões -->
-          <div class="row mt-3">
-            <div class="col-12">
-              <div class="alert alert-info">
-                <h6><i class="fas fa-info-circle me-2"></i>Informações Calculadas</h6>
-                <div class="row">
-                  <div class="col-md-6">
-                    <small><strong>Volume do Poço:</strong> <span id="volume-poco">-</span> m³</small><br>
-                    <small><strong>Área da Base:</strong> <span id="area-poco">-</span> m²</small>
-                  </div>
-                  <div class="col-md-6">
-                    <small><strong>Altura por Pavimento:</strong> <span id="altura-pavimento">-</span> m</small><br>
-                    <small><strong>Percurso:</strong> <span id="percurso">-</span> m</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4">

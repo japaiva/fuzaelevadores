@@ -133,7 +133,6 @@ def pedido_step1_cliente(request, pk=None):
                         usuario=request.user
                     )
                     
-                    messages.success(request, 'Dados do cliente atualizados com sucesso.')
                     return redirect('vendedor:pedido_step2', pk=pedido.pk)
                     
                 except Exception as e:
@@ -244,9 +243,7 @@ def pedido_step2_elevador(request, pk):
             
             pedido.atualizado_por = request.user
             pedido.save()
-            
-            if editing:
-                messages.success(request, 'Dados do elevador atualizados com sucesso.')
+        
             
             return redirect('vendedor:pedido_step3', pk=pedido.pk)
     else:
@@ -278,9 +275,6 @@ def pedido_step3_portas(request, pk):
             pedido = form.save(commit=False)
             pedido.atualizado_por = request.user
             pedido.save()
-            
-            if editing:
-                messages.success(request, 'Dados das portas atualizados com sucesso.')
             
             return redirect('vendedor:pedido_step4', pk=pedido.pk)
     else:
@@ -346,12 +340,7 @@ def pedido_step4_cabine(request, pk):
             
             pedido.atualizado_por = request.user
             pedido.save()
-            
-            if editing:
-                messages.success(request, 'Dados da cabine atualizados e cálculos refeitos.')
-            else:
-                messages.success(request, 'Pedido simulado com sucesso!')
-            
+                        
             # ⭐ MUDANÇA: Redirecionar para detail em vez de resumo
             return redirect('vendedor:pedido_detail', pk=pedido.pk)
     else:

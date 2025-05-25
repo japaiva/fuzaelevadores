@@ -41,7 +41,7 @@
     <!-- Alerta de edição -->
     <div class="alert alert-warning">
       <i class="fas fa-info-circle me-2"></i>
-      <strong>Modo de Edição:</strong> Alterações nas configurações das portas podem afetar os cálculos de dimensionamento.
+      <strong>Editando pedido:</strong> Valores podem ser recalculados.
     </div>
     {% endif %}
 
@@ -60,7 +60,6 @@
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
-            <i class="fas fa-door-closed me-2"></i>
             Porta da Cabine
           </h5>
         </div>
@@ -152,7 +151,6 @@
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
-            <i class="fas fa-door-open me-2"></i>
             Porta do Pavimento
           </h5>
         </div>
@@ -235,32 +233,6 @@
                   {% for error in form.altura_porta_pavimento.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Informações das Portas -->
-      <div class="card shadow mt-4">
-        <div class="card-header bg-info text-white">
-          <h6 class="card-title mb-0">
-            <i class="fas fa-info-circle me-2"></i>
-            Informações das Portas
-          </h6>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <h6>Porta da Cabine</h6>
-              <div id="info-porta-cabine">
-                <small class="text-muted">Selecione as configurações acima</small>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <h6>Porta do Pavimento</h6>
-              <div id="info-porta-pavimento">
-                <small class="text-muted">Selecione as configurações acima</small>
-              </div>
             </div>
           </div>
         </div>
