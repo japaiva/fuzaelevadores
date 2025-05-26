@@ -35,13 +35,6 @@
   </div>
   
   <div class="card-body">
-    {% if editing %}
-    <!-- Alerta de edição -->
-    <div class="alert alert-warning">
-      <i class="fas fa-info-circle me-2"></i>
-      <strong>Editando pedido:</strong> Valores podem ser recalculados.
-    </div>
-    {% endif %}
 
     <form method="post" id="clienteElevadorForm">
       {% csrf_token %}
