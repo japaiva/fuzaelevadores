@@ -4,130 +4,19 @@
 
 {% block content %}
 <div class="container mt-4">
-  <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-      <div class="alert alert-warning">
-        <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h4>
-        <p>Deseja realmente excluir o pedido <strong>{{ pedido.numero }} - {{ pedido.nome_projeto }}</strong>?</p>
-        
-        <!-- Informações do Pedido -->
-        <div class="card bg-light mb-3">
-          <div class="card-body">
-            <div class="row">
-              <div class="col-sm-6">
-                <p class="mb-2"><strong>Cliente:</strong> {{ pedido.cliente.nome }}</p>
-                <p class="mb-2"><strong>Modelo:</strong> {{ pedido.get_modelo_elevador_display }}</p>
-                <p class="mb-2"><strong>Status:</strong> 
-                  <span class="badge {{ pedido.status_badge_class }}">{{ pedido.get_status_display }}</span>
-                </p>
-              </div>
-              <div class="col-sm-6">
-                <p class="mb-2"><strong>Capacidade:</strong> {{ pedido.capacidade }} kg</p>
-                <p class="mb-2"><strong>Criado em:</strong> {{ pedido.criado_em|date:"d/m/Y H:i" }}</p>
-                <p class="mb-2"><strong>Vendedor:</strong> {{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</p>
-              </div>
-            </div>
-            
-            {% if pedido.observacoes %}
-            <div class="mt-3">
-              <strong>Observações:</strong>
-              <p class="text-muted mb-0">{{ pedido.observacoes|truncatewords:20 }}</p>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <!-- Aviso sobre exclusão -->
-        <div class="alert alert-info">
-          <h6 class="alert-heading">
-            <i class="fas fa-info-circle me-2"></i>Informações sobre a exclusão:
-          </h6>
-          <ul class="mb-0">
-            <li>Esta ação não pode ser desfeita</li>
-            <li>Todas as especificações técnicas serão perdidas</li>
-            <li>Configurações de portas e cabine serão removidas</li>
-            <li>Cálculos e dimensionamentos serão perdidos</li>
-            {% if pedido.status == 'simulado' %}
-            <li><strong>Atenção:</strong> Valores comerciais calculados serão perdidos</li>
-            {% endif %}
-            {% if pedido.anexos.exists %}
-            <li>{{ pedido.anexos.count }} anexo(s) associado(s) serão removidos</li>
-            {% endif %}
-            {% if pedido.historico.exists %}
-            <li>Histórico de alterações será removido</li>
-            {% endif %}
-          </ul>
-        </div>
+  <div class="alert alert-warning">
+    <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h4>
+    <p>Deseja realmente excluir o pedido <strong>{{ pedido.numero }} - {{ pedido.nome_projeto }}</strong>?</p>
 
-        <form method="post">
-          {% csrf_token %}
-          <div class="d-flex justify-content-between">
-            <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-secondary">
-              <i class="fas fa-arrow-left me-1"></i> Cancelar
-            </a>
-            <button type="submit" class="btn btn-danger">
-              <i class="fas fa-trash me-1"></i> Confirmar Exclusão
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-danger">
+        <i class="fas fa-trash me-1"></i> Confirmar Exclusão
+      </button>
+    </form>
   </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Foco no botão cancelar por segurança
-    const cancelBtn = document.querySelector('a[href*="pedido_list"]');
-    if (cancelBtn) {
-        cancelBtn.focus();
-    }
-    
-    // Confirmação adicional antes de submeter
-    const form = document.querySelector('form');
-    form.addEventListener('submit', function(e) {
-        const confirmed = confirm(
-            'ÚLTIMA CONFIRMAÇÃO:\n\n' +
-            'Tem CERTEZA ABSOLUTA que deseja excluir o pedido {{ pedido.numero }}?\n\n' +
-            'Esta ação é IRREVERSÍVEL!'
-        );
-        
-        if (!confirmed) {
-            e.preventDefault();
-        }
-    });
-    
-    // Adicionar efeito visual no botão de exclusão
-    const deleteBtn = document.querySelector('button[type="submit"]');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('mouseover', function() {
-            this.classList.add('btn-danger');
-            this.classList.remove('btn-outline-danger');
-        });
-    }
-});
-</script>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.alert-warning {
-    border-left: 4px solid #ffc107;
-}
-
-.alert-info {
-    border-left: 4px solid #17a2b8;
-}
-
-.btn-danger:hover {
-    transform: scale(1.02);
-    transition: transform 0.1s ease;
-}
-
-.card-body {
-    position: relative;
-}
-</style>
 {% endblock %}

@@ -1,4 +1,4 @@
-# vendedor/views.py - VERSÃO 2 ETAPAS
+# vendedor/views.py - VERSÃO COMPLETA CORRIGIDA
 
 import logging
 from datetime import datetime, timedelta
@@ -14,8 +14,7 @@ from django.views.decorators.http import require_POST
 from django.urls import reverse
 
 # IMPORTS CORRIGIDOS - usando os services do core
-from core.services.dimensionamento import DimensionamentoService
-from core.services.pricing import PricingService
+from core.services.calculo_pedido import CalculoPedidoService
 from core.utils.formatters import extrair_especificacoes_do_pedido, agrupar_respostas_por_pagina, safe_decimal, safe_int
 
 from .models import Pedido, HistoricoPedido, AnexoPedido
@@ -75,6 +74,55 @@ def dashboard(request):
         'pedidos_recentes': pedidos_recentes,
     }
     return render(request, 'vendedor/dashboard.html', context)
+
+
+# =============================================================================
+# NOVA VIEW PARA EXECUTAR CÁLCULOS DIRETAMENTE
+# =============================================================================
+
+@login_required
+def pedido_calcular(request, pk):
+    """Executa os cálculos do pedido sem ir para edição"""
+    pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
+    
+    # Validar permissões
+    pode_editar, mensagem = validar_permissoes_vendedor(request.user, pedido)
+    if not pode_editar:
+        messages.error(request, mensagem)
+        return redirect('vendedor:pedido_detail', pk=pedido.pk)
+    
+    # Verificar se pode calcular
+    if not pedido.pode_calcular():
+        messages.error(request, 'Pedido não tem dados suficientes para cálculo. Complete as especificações primeiro.')
+        return redirect('vendedor:pedido_step1', pk=pedido.pk)
+    
+    try:
+        logger.info(f"Iniciando cálculos para pedido {pedido.numero}")
+        
+        # Executar cálculos usando o service
+        resultado = CalculoPedidoService.calcular_completo(pedido)
+        
+        if resultado['success']:
+            # Registrar no histórico
+            HistoricoPedido.objects.create(
+                pedido=pedido,
+                status_anterior=pedido.status,
+                status_novo='simulado',
+                observacao='Cálculos executados com sucesso',
+                usuario=request.user
+            )
+            
+            messages.success(request, f'Cálculos do pedido {pedido.numero} executados com sucesso!')
+            logger.info(f"Cálculos executados com sucesso para pedido {pedido.numero}")
+        else:
+            messages.error(request, 'Erro nos cálculos. Tente novamente.')
+            logger.error(f"Erro nos cálculos do pedido {pedido.numero}")
+            
+    except Exception as e:
+        logger.error(f"Erro ao calcular pedido {pedido.numero}: {str(e)}")
+        messages.error(request, f'Erro nos cálculos: {str(e)}')
+    
+    return redirect('vendedor:pedido_detail', pk=pedido.pk)
 
 
 # =============================================================================
@@ -206,7 +254,7 @@ def pedido_step1(request, pk=None):
 
 @login_required
 def pedido_step2(request, pk):
-    """Etapa 2: Cabine + Portas - UNIFICADO com cálculos"""
+    """Etapa 2: Cabine + Portas - CORRIGIDO para executar cálculos automáticos"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     # Validar permissões
@@ -222,47 +270,34 @@ def pedido_step2(request, pk):
         if form.is_valid():
             pedido = form.save(commit=False)
             
-            # EXECUTAR CÁLCULOS AUTOMÁTICOS
+            # EXECUTAR CÁLCULOS AUTOMÁTICOS SEMPRE
             try:
-                especificacoes = extrair_especificacoes_do_pedido(pedido)
-                dimensionamento, explicacao = DimensionamentoService.calcular_dimensionamento_completo(especificacoes)
+                logger.info(f"Iniciando cálculos para pedido {pedido.numero}")
                 
-                if 'cab' in dimensionamento:
-                    pedido.largura_cabine_calculada = dimensionamento['cab']['largura']
-                    pedido.comprimento_cabine_calculado = dimensionamento['cab']['compr']
-                    pedido.capacidade_cabine_calculada = dimensionamento['cab']['capacidade']
-                    pedido.tracao_cabine_calculada = dimensionamento['cab']['tracao']
+                # Usar o service de cálculo completo
+                resultado = CalculoPedidoService.calcular_completo(pedido)
                 
-                pedido.dimensionamento_detalhado = dimensionamento
-                pedido.explicacao_calculo = explicacao
-                
-                # Calcular preços
-                custo_base = 15000.0
-                formacao_preco = PricingService.calcular_formacao_preco(custo_base, pedido.faturado_por)
-                
-                pedido.custo_producao = custo_base
-                pedido.preco_venda_calculado = formacao_preco['preco_sem_impostos']
-                pedido.formacao_preco = formacao_preco
-                
-                # Atualizar status para simulado
-                if pedido.status == 'rascunho':
-                    pedido.status = 'simulado'
-                
-                logger.info(f"Cálculos executados com sucesso para pedido {pedido.numero}")
+                if resultado['success']:
+                    logger.info(f"Cálculos executados com sucesso para pedido {pedido.numero}")
+                    messages.success(request, f'Pedido {pedido.numero} calculado com sucesso!')
+                else:
+                    logger.warning(f"Problemas nos cálculos do pedido {pedido.numero}")
+                    messages.warning(request, 'Pedido salvo, mas houve problemas nos cálculos.')
                 
             except Exception as e:
-                logger.error(f"Erro ao calcular dimensionamento: {str(e)}")
-                messages.warning(request, 'Houve um problema nos cálculos.')
-            
-            pedido.atualizado_por = request.user
-            pedido.save()
+                logger.error(f"Erro ao calcular dimensionamento para pedido {pedido.numero}: {str(e)}")
+                messages.warning(request, f'Pedido salvo, mas erro nos cálculos: {str(e)}')
+                
+                # Salvar mesmo com erro nos cálculos
+                pedido.atualizado_por = request.user
+                pedido.save()
             
             # Registrar no histórico
             HistoricoPedido.objects.create(
                 pedido=pedido,
-                status_anterior='rascunho',
+                status_anterior='rascunho' if not editing else pedido.status,
                 status_novo=pedido.status,
-                observacao='Pedido finalizado com cálculos automáticos',
+                observacao='Especificações finalizadas e cálculos executados',
                 usuario=request.user
             )
             
@@ -278,7 +313,7 @@ def pedido_step2(request, pk):
 
 
 # =============================================================================
-# GESTÃO DE PEDIDOS - MANTÉM IGUAL
+# GESTÃO DE PEDIDOS
 # =============================================================================
 
 @login_required
@@ -318,23 +353,34 @@ def pedido_list(request):
 
 @login_required
 def pedido_detail(request, pk):
-    """Detalhes do pedido - VERSÃO UNIFICADA (antigo detail + resumo)"""
+    """Detalhes do pedido - VERSÃO CORRIGIDA com debug dos dados"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
-    # Extrair especificações para exibição (se houver)
-    especificacoes = {}
-    if pedido.cliente:  # Só tenta extrair se tem dados básicos
-        try:
-            especificacoes = extrair_especificacoes_do_pedido(pedido)
-        except Exception as e:
-            logger.warning(f"Erro ao extrair especificações do pedido {pedido.numero}: {str(e)}")
+    # DEBUG: Log dos dados para diagnóstico
+    logger.info(f"Carregando detalhes do pedido {pedido.numero}")
+    logger.info(f"Status: {pedido.status}")
+    logger.info(f"Tem ficha_tecnica: {bool(pedido.ficha_tecnica)}")
+    logger.info(f"Tem dimensionamento_detalhado: {bool(pedido.dimensionamento_detalhado)}")
+    logger.info(f"Tem formacao_preco: {bool(pedido.formacao_preco)}")
+    logger.info(f"Tem explicacao_calculo: {bool(pedido.explicacao_calculo)}")
+    logger.info(f"Custo produção: {pedido.custo_producao}")
+    logger.info(f"Preço calculado: {pedido.preco_venda_calculado}")
     
-    # Usar dados já calculados e salvos no pedido
+    # Usar dados já salvos no pedido (dados persistidos)
+    ficha_tecnica = pedido.ficha_tecnica or {}
     dimensionamento = pedido.dimensionamento_detalhado or {}
     formacao_preco = pedido.formacao_preco or {}
     explicacao = pedido.explicacao_calculo or ''
     
-    # Calcular áreas e volumes para exibição
+    # DEBUG: Log do conteúdo dos dados
+    if ficha_tecnica:
+        logger.info(f"Ficha técnica keys: {list(ficha_tecnica.keys())}")
+    if dimensionamento:
+        logger.info(f"Dimensionamento keys: {list(dimensionamento.keys())}")
+    if formacao_preco:
+        logger.info(f"Formação preço keys: {list(formacao_preco.keys())}")
+    
+    # Calcular áreas e volumes para exibição (se tiver dados)
     area_poco = 0
     volume_poco = 0
     area_cabine = 0
@@ -348,23 +394,15 @@ def pedido_detail(request, pk):
     if pedido.largura_cabine_calculada and pedido.comprimento_cabine_calculado:
         area_cabine = float(pedido.largura_cabine_calculada) * float(pedido.comprimento_cabine_calculado)
     
-    # Histórico do pedido
-    historico = pedido.historico.all()[:10]
-    
-    # Anexos do pedido
-    anexos = pedido.anexos.all().order_by('-enviado_em')
-    
     # Determinar nível do usuário para exibir dados
     user_level = getattr(request.user, 'nivel', 'vendedor')
     
     context = {
         'pedido': pedido,
-        'especificacoes': especificacoes,
+        'ficha_tecnica': ficha_tecnica,
         'dimensionamento': dimensionamento,
         'explicacao': explicacao,
         'formacao_preco': formacao_preco,
-        'historico': historico,
-        'anexos': anexos,
         'user_level': user_level,
         # Valores calculados para o template
         'area_poco': area_poco,
@@ -441,7 +479,7 @@ def pedido_duplicar(request, pk):
 
 
 # =============================================================================
-# APIS AJAX - MANTÉM IGUAL
+# APIS AJAX
 # =============================================================================
 
 @login_required
@@ -529,20 +567,58 @@ def cliente_create_ajax(request):
 
 
 # =============================================================================
-# VIEWS TEMPORÁRIAS
+# GERAÇÃO DE PDFs
 # =============================================================================
 
 @login_required
 def gerar_pdf_orcamento(request, pk):
-    """Gerar PDF do orçamento"""
+    """Gerar PDF do orçamento comercial"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
-    messages.info(request, 'Geração de PDF em desenvolvimento.')
-    return redirect('vendedor:pedido_detail', pk=pk)
+    
+    try:
+        # Usar dados persistidos do pedido
+        formacao_preco = pedido.formacao_preco or {}
+        ficha_tecnica = pedido.ficha_tecnica or {}
+        
+        # Verificar se tem dados suficientes
+        if not formacao_preco or not pedido.preco_venda_calculado:
+            messages.warning(request, 'Execute os cálculos do pedido antes de gerar o orçamento.')
+            return redirect('vendedor:pedido_detail', pk=pk)
+        
+        # Preparar dados para o PDF
+        dados_orcamento = {
+            'pedido': pedido,
+            'cliente': pedido.cliente,
+            'formacao_preco': formacao_preco,
+            'ficha_tecnica': ficha_tecnica,
+            'username': request.user.username,
+        }
+        
+        # TEMPORÁRIO: Mostrar mensagem até implementar o service
+        messages.info(request, 'Geração de PDF de orçamento em desenvolvimento.')
+        return redirect('vendedor:pedido_detail', pk=pk)
+        
+        # TODO: Implementar quando o service estiver pronto
+        # from core.services.pdf_service import gerar_pdf_orcamento_comercial
+        # pdf_bytes = gerar_pdf_orcamento_comercial(dados_orcamento)
+        # 
+        # if pdf_bytes:
+        #     response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        #     response['Content-Disposition'] = f'attachment; filename="orcamento_{pedido.numero}.pdf"'
+        #     return response
+        # else:
+        #     messages.error(request, 'Erro ao gerar PDF do orçamento.')
+        #     return redirect('vendedor:pedido_detail', pk=pk)
+            
+    except Exception as e:
+        logger.error(f"Erro ao gerar PDF orçamento para pedido {pedido.numero}: {str(e)}")
+        messages.error(request, 'Erro interno ao gerar PDF. Tente novamente.')
+        return redirect('vendedor:pedido_detail', pk=pk)
 
 
 @login_required
 def gerar_pdf_demonstrativo(request, pk):
-    """Gerar PDF da proposta técnica"""
+    """Gerar PDF do demonstrativo técnico/custo"""
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     # Verificar permissão para dados técnicos
@@ -550,24 +626,72 @@ def gerar_pdf_demonstrativo(request, pk):
         messages.error(request, 'Você não tem permissão para acessar dados técnicos.')
         return redirect('vendedor:pedido_detail', pk=pk)
     
-    messages.info(request, 'Geração de PDF em desenvolvimento.')
-    return redirect('vendedor:pedido_detail', pk=pk)
+    try:
+        # Usar dados persistidos do pedido
+        dimensionamento = pedido.dimensionamento_detalhado or {}
+        explicacao = pedido.explicacao_calculo or ''
+        custos_detalhados = pedido.custos_detalhados or {}
+        componentes = pedido.componentes_calculados or {}
+        
+        # Verificar se tem dados suficientes
+        if not dimensionamento or not custos_detalhados:
+            messages.warning(request, 'Execute os cálculos do pedido antes de gerar o demonstrativo.')
+            return redirect('vendedor:pedido_detail', pk=pk)
+        
+        # Preparar dados para o PDF
+        dados_demonstrativo = {
+            'pedido': pedido,
+            'cliente': pedido.cliente,
+            'dimensionamento': dimensionamento,
+            'explicacao': explicacao,
+            'custos_detalhados': custos_detalhados,
+            'componentes': componentes,
+            'custo_total': pedido.custo_producao,
+            'username': request.user.username,
+        }
+        
+        # TEMPORÁRIO: Mostrar mensagem até implementar o service
+        messages.info(request, 'Geração de PDF demonstrativo em desenvolvimento.')
+        return redirect('vendedor:pedido_detail', pk=pk)
+        
+        # TODO: Implementar quando o service estiver pronto
+        # from core.services.pdf_service import gerar_pdf_demonstrativo_tecnico
+        # pdf_bytes = gerar_pdf_demonstrativo_tecnico(dados_demonstrativo)
+        # 
+        # if pdf_bytes:
+        #     response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        #     response['Content-Disposition'] = f'attachment; filename="demonstrativo_{pedido.numero}.pdf"'
+        #     return response
+        # else:
+        #     messages.error(request, 'Erro ao gerar PDF do demonstrativo.')
+        #     return redirect('vendedor:pedido_detail', pk=pk)
+            
+    except Exception as e:
+        logger.error(f"Erro ao gerar PDF demonstrativo para pedido {pedido.numero}: {str(e)}")
+        messages.error(request, 'Erro interno ao gerar PDF. Tente novamente.')
+        return redirect('vendedor:pedido_detail', pk=pk)
 
+
+# =============================================================================
+# VIEWS TEMPORÁRIAS (em desenvolvimento)
+# =============================================================================
 
 @login_required
 def pedido_change_status(request, pk):
-    messages.info(request, 'Funcionalidade em desenvolvimento.')
+    """Alterar status do pedido"""
+    messages.info(request, 'Funcionalidade de alteração de status em desenvolvimento.')
     return redirect('vendedor:pedido_detail', pk=pk)
 
 
 @login_required  
 def pedido_anexo_upload(request, pk):
-    messages.info(request, 'Funcionalidade em desenvolvimento.')
+    """Upload de anexos do pedido"""
+    messages.info(request, 'Funcionalidade de upload de anexos em desenvolvimento.')
     return redirect('vendedor:pedido_detail', pk=pk)
 
 
 @login_required
 def pedido_anexo_delete(request, pk, anexo_id):
-    messages.info(request, 'Funcionalidade em desenvolvimento.')
+    """Excluir anexo do pedido"""
+    messages.info(request, 'Funcionalidade de exclusão de anexos em desenvolvimento.')
     return redirect('vendedor:pedido_detail', pk=pk)
-
