@@ -32,6 +32,7 @@ class DimensionamentoService:
             contrapeso = especificacoes.get("Contrapeso", "")
             modelo = especificacoes.get("Modelo do Elevador", "")
             capacidade_original = float(especificacoes.get("Capacidade", 0))
+            capacidade_pessoas = especificacoes.get("Capacidade (pessoas)", 0)
             saida = especificacoes.get("Saída", "")
             
             # Calcular largura
@@ -48,11 +49,14 @@ class DimensionamentoService:
             largura = round(largura, 2)
             comprimento = round(comprimento, 2)
             
-            # Calcular capacidade e tração
+
+            # Calcular capacidade e tração com base em número de pessoas, se disponível
             capacidade_cabine, tracao_cabine = DimensionamentoService._calcular_capacidade_tracao(
-                capacidade_original, modelo
+                capacidade_original=capacidade_original,
+                modelo=modelo,
+                capacidade_pessoas=capacidade_pessoas
             )
-            
+
             # Calcular chapas
             chapas_info = ChapasService.calcular_chapas_cabine(altura, largura, comprimento)
             
@@ -129,19 +133,20 @@ class DimensionamentoService:
             comprimento -= 0.23
             
         return comprimento
-    
+        
     @staticmethod
-    def _calcular_capacidade_tracao(capacidade_original, modelo):
+    def _calcular_capacidade_tracao(capacidade_original, modelo,capacidade_pessoas):
         """Calcula capacidade e tração da cabine"""
         if "Passageiro" in modelo:
-            capacidade_cabine = capacidade_original * 80
+            capacidade_cabine = capacidade_pessoas * 80  # 80 kg por pessoa
+
         else:
             capacidade_cabine = capacidade_original
-            
+
         tracao_cabine = capacidade_cabine / 2 + 500
         
         return capacidade_cabine, tracao_cabine
-    
+        
     @staticmethod
     def _gerar_explicacao(largura_poco, comprimento_poco, altura, largura, comprimento,
                          modelo_porta, folhas_porta, contrapeso, saida, modelo,
@@ -152,7 +157,7 @@ class DimensionamentoService:
         explicacoes = []
         
         # Dimensões da cabine
-        explicacoes.append(f"{formato_negrito('Dimensões Cabine:')}")
+        explicacoes.append(f"\n{formato_negrito('Dimensões Cabine:')}")
         
         sub_largura = 0.42 if largura_poco <= 1.5 else 0.48
         explicacoes.append(f"Largura: Poço = {formato_seguro(largura_poco)}m - ({formato_seguro(sub_largura)}m)"
@@ -182,14 +187,22 @@ class DimensionamentoService:
         explicacoes.append(f"Altura: Informada pelo usuário = {formato_seguro(altura)}m")
         
         # Capacidade e tração
-        explicacoes.append(f"{formato_negrito('Capacidade e Tração Cabine:')}")
-        explicacoes.append(f"{'pessoas' if 'Passageiro' in modelo else 'kg'} {formato_seguro(capacidade_original)} "
-                          f"{'* 80 kg' if 'Passageiro' in modelo else ''} = {formato_seguro(capacidade_cabine)} kg")
-        explicacoes.append(f"(Capacidade Cabine / 2) + 500 = {formato_seguro(tracao_cabine)} kg")
+        explicacoes.append(f"\n{formato_negrito('Capacidade e Tração Cabine:')}")
+
+        if "Passageiro" in modelo:
+            # Extrair capacidade_pessoas das especificações
+            capacidade_pessoas = capacidade_original/80  # Este é o número de pessoas no caso de elevadores de passageiros
+            explicacoes.append(f"Capacidade: {int(capacidade_pessoas)} pessoas * 80 kg = {formato_seguro(capacidade_cabine)} kg")
+        else:
+            explicacoes.append(f"Capacidade: {formato_seguro(capacidade_original)} kg (valor informado)")
+            
         
+        
+        explicacoes.append(f"Tração: (Capacidade Cabine / 2) + 500 = {formato_seguro(tracao_cabine)} kg")
+
         # Informações sobre painéis e chapas
         if isinstance(chapas_info, dict):
-            explicacoes.append(f"{formato_negrito('Painéis Corpo Cabine:')}")
+            explicacoes.append(f"\n{formato_negrito('Painéis Corpo Cabine:')}")
             explicacoes.append(f"Laterais: {chapas_info['num_paineis_lateral']} de "
                               f"{formato_seguro(chapas_info['largura_painel_lateral']*100)}cm "
                               f"(com dobras {formato_seguro((chapas_info['largura_painel_lateral']+0.085)*100)}cm), "
@@ -205,14 +218,14 @@ class DimensionamentoService:
                               f"(com dobras {formato_seguro((chapas_info['largura_painel_teto']+0.085)*100)}cm), "
                               f"{formato_seguro(chapas_info['altura_painel_teto'])}m altura")
             
-            explicacoes.append(f"{formato_negrito('Chapas Corpo Cabine:')}")
+            explicacoes.append(f"\n{formato_negrito('Chapas Corpo Cabine:')}")
             explicacoes.append(f"Laterais e Teto: {chapas_info['num_chapalt']} chapas, "
                               f"sobra/chapa = {formato_seguro(chapas_info['sobra_chapalt']*100)} cm")
             explicacoes.append(f"Fundo: {chapas_info['num_chapaf']} chapas, "
                               f"sobra/chapa = {formato_seguro(chapas_info['sobra_chapaf']*100)} cm")
             explicacoes.append(f"Reserva: 2 chapas. Total: {chapas_info['num_chapatot']} chapas")
             
-            explicacoes.append(f"{formato_negrito('Chapas Piso Cabine:')}")
+            explicacoes.append(f"\n{formato_negrito('Chapas Piso Cabine:')}")
             explicacoes.append(f"{chapas_info['num_chapa_piso']} chapa(s)")
         else:
             explicacoes.append(f"Erro no cálculo de chapas: {chapas_info}")

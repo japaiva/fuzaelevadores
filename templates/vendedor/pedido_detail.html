@@ -49,37 +49,22 @@
     <ul class="nav nav-tabs" id="pedidoTabs" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="especificacoes-tab" data-bs-toggle="tab" data-bs-target="#especificacoes" type="button">
-          <i class="fas fa-cog me-1"></i>Especificações
+          Especificações
         </button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="dimensionamento-tab" data-bs-toggle="tab" data-bs-target="#dimensionamento" type="button">
-          <i class="fas fa-ruler me-1"></i>Ficha Técnica
-          {% if dimensionamento %}
-            <span class="badge bg-success ms-1">✓</span>
-          {% else %}
-            <span class="badge bg-secondary ms-1">-</span>
-          {% endif %}
+          Ficha Técnica
         </button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="custos-tab" data-bs-toggle="tab" data-bs-target="#custos" type="button">
-          <i class="fas fa-dollar-sign me-1"></i>Custo Produção
-          {% if pedido.custo_producao %}
-            <span class="badge bg-success ms-1">✓</span>
-          {% else %}
-            <span class="badge bg-secondary ms-1">-</span>
-          {% endif %}
+          Custo Produção
         </button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="precos-tab" data-bs-toggle="tab" data-bs-target="#precos" type="button">
-          <i class="fas fa-money-bill-wave me-1"></i>Preços
-          {% if formacao_preco %}
-            <span class="badge bg-success ms-1">✓</span>
-          {% else %}
-            <span class="badge bg-secondary ms-1">-</span>
-          {% endif %}
+          Preços
         </button>
       </li>
     </ul>
@@ -340,7 +325,7 @@
             <div class="card shadow-sm border-warning mb-4">
               <div class="card-header bg-warning text-dark">
                 <h6 class="card-title mb-0">
-                  <i class="fas fa-cube me-2"></i>Ficha Técnica
+                  Ficha Técnica
                 </h6>
               </div>
               <div class="card-body">
@@ -387,7 +372,7 @@
                 <div class="card shadow-sm border-info mb-4">
                   <div class="card-header bg-info text-white">
                     <h6 class="card-title mb-0">
-                      <i class="fas fa-layer-group me-2"></i>Chapas Metálicas
+                      Chapas Metálicas
                     </h6>
                   </div>
                   <div class="card-body">
@@ -418,7 +403,7 @@
                 <div class="card shadow-sm border-secondary mb-4">
                   <div class="card-header bg-secondary text-white">
                     <h6 class="card-title mb-0">
-                      <i class="fas fa-th-large me-2"></i>Painéis
+                      Painéis
                     </h6>
                   </div>
                   <div class="card-body">
@@ -430,11 +415,17 @@
                       <span class="text-muted">Painéis do Fundo</span>
                       <span class="fw-bold">{{ dimensionamento.cab.pnl.fundo|default:"0" }}</span>
                     </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted">Painéis do Teto</span>
+                      <span class="fw-bold">{{ dimensionamento.cab.pnl.teto|default:"0" }}</span>
+                    </div>
                     <hr class="my-2">
                     <div class="d-flex justify-content-between align-items-center">
                       <span class="text-muted fw-bold">Total de Painéis</span>
-                      {% if dimensionamento.cab.pnl.lateral and dimensionamento.cab.pnl.fundo %}
-                        <span class="fw-bold text-secondary fs-5">{{ dimensionamento.cab.pnl.lateral|add:dimensionamento.cab.pnl.fundo }}</span>
+                      {% if dimensionamento.cab.pnl.lateral and dimensionamento.cab.pnl.fundo and dimensionamento.cab.pnl.teto %}
+                        <span class="fw-bold text-secondary fs-5">
+                          {{ dimensionamento.cab.pnl.lateral|add:dimensionamento.cab.pnl.fundo|add:dimensionamento.cab.pnl.teto }}
+                        </span>
                       {% else %}
                         <span class="fw-bold text-secondary fs-5">0</span>
                       {% endif %}
@@ -450,12 +441,14 @@
             <div class="card shadow-sm border-dark mb-4">
               <div class="card-header bg-dark text-white">
                 <h6 class="card-title mb-0">
-                  <i class="fas fa-info-circle me-2"></i>Explicação dos Cálculos
+                  Explicação dos Cálculos
                 </h6>
               </div>
               <div class="card-body">
                 <div class="bg-light p-3 rounded">
-                  <pre class="mb-0" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.4;">{{ explicacao }}</pre>
+                  <pre class="mb-0" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.4;">
+            {{ explicacao|safe }}
+                  </pre>
                 </div>
               </div>
             </div>

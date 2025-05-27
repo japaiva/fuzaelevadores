@@ -174,6 +174,7 @@ def extrair_especificacoes_do_pedido(pedido) -> Dict[str, Any]:
     # === DADOS DO ELEVADOR ===
     especificacoes["Modelo do Elevador"] = pedido.modelo_elevador
     especificacoes["Capacidade"] = safe_decimal(pedido.capacidade)
+    especificacoes["Capacidade (pessoas)"] = safe_int(pedido.capacidade_pessoas)
     especificacoes["Acionamento"] = pedido.acionamento
     especificacoes["Tração"] = pedido.tracao or ""
     especificacoes["Contrapeso"] = pedido.contrapeso or ""
