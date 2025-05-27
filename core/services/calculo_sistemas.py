@@ -1,4 +1,4 @@
-# core/services/calculos/calculo_sistemas.py - APENAS COMPONENTES REAIS
+# core/services/calculos/calculo_sistemas.py - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL
 
 import logging
 from decimal import Decimal
@@ -10,18 +10,20 @@ logger = logging.getLogger(__name__)
 class CalculoSistemasService:
     """
     Serviço para cálculo dos sistemas complementares
-    APENAS componentes que existem no arquivo original
+    CORRIGIDO seguindo calculations.py original
     """
     
     @staticmethod
     def calcular_custo_sistemas(pedido, dimensionamento, custos_db) -> Dict[str, Any]:
-        """Calcula custos dos sistemas complementares - APENAS COMPONENTES REAIS"""
+        """Calcula custos dos sistemas complementares - VERSÃO CORRIGIDA"""
         componentes = {}
         total = Decimal('0')
         
         comprimento_cabine = dimensionamento.get('cab', {}).get('compr', 0)
         
-        # Iluminação
+        # === ILUMINAÇÃO ===
+        
+        # Iluminação (seguindo lógica original)
         qtd_lampadas = 2 if comprimento_cabine <= 1.80 else 4
         codigo_lampada = "MP0174"  # CC01 → MP0174
         
@@ -43,55 +45,29 @@ class CalculoSistemasService:
             }
             total += valor_lampadas
         
+        # === VENTILAÇÃO ===
+        
         # Ventilação (só para elevador de passageiro)
         if 'Passageiro' in pedido.modelo_elevador:
+            qtd_ventiladores = 1
             codigo_ventilador = "MP0175"  # CC02 → MP0175
+            
             if codigo_ventilador in custos_db:
                 produto_ventilador = custos_db[codigo_ventilador]
                 valor_unitario_ventilador = produto_ventilador.custo_medio or produto_ventilador.preco_venda or Decimal('200')
+                valor_ventiladores = Decimal(str(qtd_ventiladores)) * valor_unitario_ventilador
                 
                 componentes[codigo_ventilador] = {
                     'codigo': codigo_ventilador,
                     'descricao': produto_ventilador.nome,
                     'categoria': produto_ventilador.grupo.nome if produto_ventilador.grupo else 'ELETRICO',
                     'subcategoria': produto_ventilador.subgrupo.nome if produto_ventilador.subgrupo else 'Ventilação',
-                    'quantidade': 1,
+                    'quantidade': qtd_ventiladores,
                     'unidade': produto_ventilador.unidade_medida,
                     'valor_unitario': float(valor_unitario_ventilador),
-                    'valor_total': float(valor_unitario_ventilador),
+                    'valor_total': float(valor_ventiladores),
                     'explicacao': "Ventilador para elevador de passageiro"
                 }
-                total += valor_unitario_ventilador
+                total += valor_ventiladores
         
         return {'componentes': componentes, 'total': total}
-    
-    # =============================================================================
-    # MÉTODOS AUXILIARES
-    # =============================================================================
-    
-    @staticmethod
-    def _calcular_componente_customizado(pedido, codigo_base: str, quantidade: float, tipo_material: str) -> Dict[str, Any]:
-        """Calcula componente com material customizado (Outro)"""
-        if tipo_material == "porta_cabine":
-            nome_material = pedido.material_porta_cabine_outro
-            valor_material = pedido.valor_porta_cabine_outro or Decimal('0')
-        elif tipo_material == "porta_pavimento":
-            nome_material = pedido.material_porta_pavimento_outro
-            valor_material = pedido.valor_porta_pavimento_outro or Decimal('0')
-        else:
-            nome_material = "Material Customizado"
-            valor_material = Decimal('0')
-        
-        valor_total = Decimal(str(quantidade)) * valor_material
-        
-        return {
-            'codigo': f"MP0999_{tipo_material}",
-            'descricao': nome_material or "Material Customizado",
-            'categoria': 'CUSTOMIZADO',
-            'subcategoria': 'Material Outro',
-            'quantidade': quantidade,
-            'unidade': 'un',
-            'valor_unitario': float(valor_material),
-            'valor_total': float(valor_total),
-            'explicacao': f"Material customizado: {nome_material} - {quantidade} unidades"
-        }

@@ -1,4 +1,4 @@
-# core/services/calculos/calculo_tracao.py - CÁLCULO COMPLETO DA TRAÇÃO
+# core/services/calculos/calculo_tracao.py - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL
 
 import logging
 from decimal import Decimal
@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 class CalculoTracaoService:
     """
     Serviço para cálculo completo do sistema de tração
-    Replica EXATAMENTE a lógica do arquivo original
+    CORRIGIDO seguindo calculations.py original
     """
     
     @staticmethod
     def calcular_custo_tracao(pedido, dimensionamento, custos_db) -> Dict[str, Any]:
-        """Calcula custos de tração - VERSÃO COMPLETA"""
+        """Calcula custos de tração - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL"""
         componentes = {}
         total = Decimal('0')
         
@@ -23,8 +23,33 @@ class CalculoTracaoService:
         tracao_cabine = dimensionamento.get('cab', {}).get('tracao', 0)
         largura_cabine = dimensionamento.get('cab', {}).get('largura', 0)
         
-        if pedido.acionamento == 'Motor':
-            # Motor e sistema de tração
+        # === ACIONAMENTO ===
+        
+        if pedido.acionamento == 'Hidraulico':
+            # Sistema hidráulico
+            codigo_hidraulico = "MP0118"  # MO01 → MP0118
+            if codigo_hidraulico in custos_db:
+                produto_hidraulico = custos_db[codigo_hidraulico]
+                valor_unitario_hidraulico = produto_hidraulico.custo_medio or produto_hidraulico.preco_venda or Decimal('3000')
+                
+                componentes[codigo_hidraulico] = {
+                    'codigo': codigo_hidraulico,
+                    'descricao': produto_hidraulico.nome,
+                    'categoria': produto_hidraulico.grupo.nome if produto_hidraulico.grupo else 'HIDRAULICO',
+                    'subcategoria': produto_hidraulico.subgrupo.nome if produto_hidraulico.subgrupo else 'Acionamento',
+                    'quantidade': 1,
+                    'unidade': produto_hidraulico.unidade_medida,
+                    'valor_unitario': float(valor_unitario_hidraulico),
+                    'valor_total': float(valor_unitario_hidraulico),
+                    'explicacao': "Sistema hidráulico completo"
+                }
+                total += valor_unitario_hidraulico
+        
+        elif pedido.acionamento == 'Motor':
+            
+            # === TRACIONAMENTO ===
+            
+            # Motor elétrico (MO02 → MP0119)
             codigo_motor = "MP0119"  # MO02 → MP0119 (Motor 7,5 cv - 630 kg)
             if codigo_motor in custos_db:
                 produto_motor = custos_db[codigo_motor]
@@ -34,7 +59,7 @@ class CalculoTracaoService:
                     'codigo': codigo_motor,
                     'descricao': produto_motor.nome,
                     'categoria': produto_motor.grupo.nome if produto_motor.grupo else 'MOTOR',
-                    'subcategoria': produto_motor.subgrupo.nome if produto_motor.subgrupo else 'Acionamento',
+                    'subcategoria': produto_motor.subgrupo.nome if produto_motor.subgrupo else 'Tracionamento',
                     'quantidade': 1,
                     'unidade': produto_motor.unidade_medida,
                     'valor_unitario': float(valor_unitario_motor),
@@ -45,30 +70,34 @@ class CalculoTracaoService:
             
             # Polias (se tração 2x1)
             if pedido.tracao == "2x1":
-                qtd_polias = 2 if largura_cabine > 2 else 1
-                codigo_polia = "MP0134"  # PE13 → MP0134
+                qtd_polias = 1
+                if largura_cabine > 2:
+                    qtd_polias = 2
                 
-                if codigo_polia in custos_db:
-                    produto_polia = custos_db[codigo_polia]
-                    valor_unitario_polia = produto_polia.custo_medio or produto_polia.preco_venda or Decimal('300')
-                    valor_polias = Decimal(str(qtd_polias)) * valor_unitario_polia
+                if qtd_polias > 0:
+                    codigo_polia = "MP0134"  # PE13 → MP0134
                     
-                    componentes[codigo_polia] = {
-                        'codigo': codigo_polia,
-                        'descricao': produto_polia.nome,
-                        'categoria': produto_polia.grupo.nome if produto_polia.grupo else 'TRACAO',
-                        'subcategoria': produto_polia.subgrupo.nome if produto_polia.subgrupo else 'Polias',
-                        'quantidade': qtd_polias,
-                        'unidade': produto_polia.unidade_medida,
-                        'valor_unitario': float(valor_unitario_polia),
-                        'valor_total': float(valor_polias),
-                        'explicacao': f"Polias para tração 2x1: {qtd_polias} unidades ({'2 se largura > 2m' if qtd_polias == 2 else '1 se largura <= 2m'})"
-                    }
-                    total += valor_polias
+                    if codigo_polia in custos_db:
+                        produto_polia = custos_db[codigo_polia]
+                        valor_unitario_polia = produto_polia.custo_medio or produto_polia.preco_venda or Decimal('300')
+                        valor_polias = Decimal(str(qtd_polias)) * valor_unitario_polia
+                        
+                        componentes[codigo_polia] = {
+                            'codigo': codigo_polia,
+                            'descricao': produto_polia.nome,
+                            'categoria': produto_polia.grupo.nome if produto_polia.grupo else 'TRACAO',
+                            'subcategoria': produto_polia.subgrupo.nome if produto_polia.subgrupo else 'Tracionamento',
+                            'quantidade': qtd_polias,
+                            'unidade': produto_polia.unidade_medida,
+                            'valor_unitario': float(valor_unitario_polia),
+                            'valor_total': float(valor_polias),
+                            'explicacao': f"Polias para tração 2x1: {qtd_polias} unidades ({'2 se largura > 2m' if qtd_polias == 2 else '1 se largura <= 2m'})"
+                        }
+                        total += valor_polias
                 
                 # Travessa da polia (se 2 polias)
                 if qtd_polias > 1:
-                    codigo_travessa_polia = "MP0136"  # PE15 → MP0136 (Cabo aço 3/8 usado como travessa)
+                    codigo_travessa_polia = "MP0136"  # PE15 → MP0136
                     if codigo_travessa_polia in custos_db:
                         produto_travessa_polia = custos_db[codigo_travessa_polia]
                         valor_unitario_travessa = produto_travessa_polia.custo_medio or produto_travessa_polia.preco_venda or Decimal('20')
@@ -79,8 +108,8 @@ class CalculoTracaoService:
                             'codigo': codigo_travessa_polia,
                             'descricao': produto_travessa_polia.nome,
                             'categoria': produto_travessa_polia.grupo.nome if produto_travessa_polia.grupo else 'TRACAO',
-                            'subcategoria': produto_travessa_polia.subgrupo.nome if produto_travessa_polia.subgrupo else 'Cabo Aço',
-                            'quantidade': comprimento_travessa,
+                            'subcategoria': produto_travessa_polia.subgrupo.nome if produto_travessa_polia.subgrupo else 'Tracionamento',
+                            'quantidade': float(comprimento_travessa),
                             'unidade': produto_travessa_polia.unidade_medida,
                             'valor_unitario': float(valor_unitario_travessa),
                             'valor_total': float(valor_travessa_polia),
@@ -105,7 +134,7 @@ class CalculoTracaoService:
                     'codigo': codigo_cabo,
                     'descricao': produto_cabo.nome,
                     'categoria': produto_cabo.grupo.nome if produto_cabo.grupo else 'TRACAO',
-                    'subcategoria': produto_cabo.subgrupo.nome if produto_cabo.subgrupo else 'Cabo Aço',
+                    'subcategoria': produto_cabo.subgrupo.nome if produto_cabo.subgrupo else 'Tracionamento',
                     'quantidade': comprimento_cabo,
                     'unidade': produto_cabo.unidade_medida,
                     'valor_unitario': float(valor_unitario_cabo),
@@ -113,6 +142,8 @@ class CalculoTracaoService:
                     'explicacao': f"Cabo de aço: {comprimento_cabo:.1f}m ({'2x altura' if pedido.tracao == '2x1' else 'altura'} + 5m)"
                 }
                 total += valor_cabo
+            
+            # === CONTRAPESO ===
             
             # Contrapeso
             contrapeso_tipo = CalculoTracaoService._determinar_tipo_contrapeso(pedido, tracao_cabine)
@@ -124,7 +155,7 @@ class CalculoTracaoService:
                     'codigo': contrapeso_tipo,
                     'descricao': produto_contrapeso.nome,
                     'categoria': produto_contrapeso.grupo.nome if produto_contrapeso.grupo else 'CONTRAPESO',
-                    'subcategoria': produto_contrapeso.subgrupo.nome if produto_contrapeso.subgrupo else 'Estrutura',
+                    'subcategoria': produto_contrapeso.subgrupo.nome if produto_contrapeso.subgrupo else 'Contrapeso',
                     'quantidade': 1,
                     'unidade': produto_contrapeso.unidade_medida,
                     'valor_unitario': float(valor_unitario_contrapeso),
@@ -144,7 +175,7 @@ class CalculoTracaoService:
                     'codigo': codigo_pedra,
                     'descricao': produto_pedra.nome,
                     'categoria': produto_pedra.grupo.nome if produto_pedra.grupo else 'CONTRAPESO',
-                    'subcategoria': produto_pedra.subgrupo.nome if produto_pedra.subgrupo else 'Pedras',
+                    'subcategoria': produto_pedra.subgrupo.nome if produto_pedra.subgrupo else 'Contrapeso',
                     'quantidade': qtd_pedras,
                     'unidade': produto_pedra.unidade_medida,
                     'valor_unitario': float(valor_unitario_pedra),
@@ -152,6 +183,8 @@ class CalculoTracaoService:
                     'explicacao': f"Pedras contrapeso: {qtd_pedras} unidades (tração {tracao_cabine:.0f}kg)"
                 }
                 total += valor_pedras
+            
+            # === GUIAS ===
             
             # Guias do elevador
             codigo_guia_elevador = "MP0142"  # PE21 → MP0142
@@ -165,7 +198,7 @@ class CalculoTracaoService:
                     'codigo': codigo_guia_elevador,
                     'descricao': produto_guia.nome,
                     'categoria': produto_guia.grupo.nome if produto_guia.grupo else 'GUIAS',
-                    'subcategoria': produto_guia.subgrupo.nome if produto_guia.subgrupo else 'Guias Elevador',
+                    'subcategoria': produto_guia.subgrupo.nome if produto_guia.subgrupo else 'Guia',
                     'quantidade': qtd_guias,
                     'unidade': produto_guia.unidade_medida,
                     'valor_unitario': float(valor_unitario_guia),
@@ -186,7 +219,7 @@ class CalculoTracaoService:
                     'codigo': codigo_suporte_guia,
                     'descricao': produto_suporte.nome,
                     'categoria': produto_suporte.grupo.nome if produto_suporte.grupo else 'GUIAS',
-                    'subcategoria': produto_suporte.subgrupo.nome if produto_suporte.subgrupo else 'Suportes Guia',
+                    'subcategoria': produto_suporte.subgrupo.nome if produto_suporte.subgrupo else 'Guia',
                     'quantidade': qtd_suportes,
                     'unidade': produto_suporte.unidade_medida,
                     'valor_unitario': float(valor_unitario_suporte),
@@ -208,7 +241,7 @@ class CalculoTracaoService:
                         'codigo': codigo_guia_contrapeso,
                         'descricao': produto_guia_cp.nome,
                         'categoria': produto_guia_cp.grupo.nome if produto_guia_cp.grupo else 'GUIAS',
-                        'subcategoria': produto_guia_cp.subgrupo.nome if produto_guia_cp.subgrupo else 'Guias Contrapeso',
+                        'subcategoria': produto_guia_cp.subgrupo.nome if produto_guia_cp.subgrupo else 'Guia',
                         'quantidade': qtd_guias_cp,
                         'unidade': produto_guia_cp.unidade_medida,
                         'valor_unitario': float(valor_unitario_guia_cp),
@@ -229,7 +262,7 @@ class CalculoTracaoService:
                         'codigo': codigo_suporte_guia_cp,
                         'descricao': produto_suporte_cp.nome,
                         'categoria': produto_suporte_cp.grupo.nome if produto_suporte_cp.grupo else 'GUIAS',
-                        'subcategoria': produto_suporte_cp.subgrupo.nome if produto_suporte_cp.subgrupo else 'Suportes Guia',
+                        'subcategoria': produto_suporte_cp.subgrupo.nome if produto_suporte_cp.subgrupo else 'Guia',
                         'quantidade': qtd_suportes_cp,
                         'unidade': produto_suporte_cp.unidade_medida,
                         'valor_unitario': float(valor_unitario_suporte_cp),
@@ -237,26 +270,6 @@ class CalculoTracaoService:
                         'explicacao': f"Suportes guia contrapeso: {qtd_suportes_cp} unidades (4 + pavimentos * 2)"
                     }
                     total += valor_suportes_cp
-        
-        elif pedido.acionamento == 'Hidraulico':
-            # Sistema hidráulico
-            codigo_hidraulico = "MP0118"  # MO01 → MP0118
-            if codigo_hidraulico in custos_db:
-                produto_hidraulico = custos_db[codigo_hidraulico]
-                valor_unitario_hidraulico = produto_hidraulico.custo_medio or produto_hidraulico.preco_venda or Decimal('3000')
-                
-                componentes[codigo_hidraulico] = {
-                    'codigo': codigo_hidraulico,
-                    'descricao': produto_hidraulico.nome,
-                    'categoria': produto_hidraulico.grupo.nome if produto_hidraulico.grupo else 'HIDRAULICO',
-                    'subcategoria': produto_hidraulico.subgrupo.nome if produto_hidraulico.subgrupo else 'Sistema Completo',
-                    'quantidade': 1,
-                    'unidade': produto_hidraulico.unidade_medida,
-                    'valor_unitario': float(valor_unitario_hidraulico),
-                    'valor_total': float(valor_unitario_hidraulico),
-                    'explicacao': "Sistema hidráulico completo"
-                }
-                total += valor_unitario_hidraulico
         
         # Parafusos gerais para tração
         codigo_parafuso_tracao = "MP0115"  # FE03 → MP0115
@@ -270,7 +283,7 @@ class CalculoTracaoService:
                 'codigo': codigo_parafuso_tracao,
                 'descricao': produto_parafuso.nome,
                 'categoria': produto_parafuso.grupo.nome if produto_parafuso.grupo else 'FIXACAO',
-                'subcategoria': produto_parafuso.subgrupo.nome if produto_parafuso.subgrupo else 'Parafusos',
+                'subcategoria': produto_parafuso.subgrupo.nome if produto_parafuso.subgrupo else 'Guia',
                 'quantidade': qtd_parafusos,
                 'unidade': produto_parafuso.unidade_medida,
                 'valor_unitario': float(valor_unitario_parafuso),

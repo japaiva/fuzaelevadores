@@ -1,4 +1,4 @@
-# core/services/calculos/calculo_cabine.py - CÁLCULO COMPLETO DA CABINE
+# core/services/calculos/calculo_cabine.py - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL
 
 import logging
 from decimal import Decimal
@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 class CalculoCabineService:
     """
     Serviço especializado no cálculo de componentes da cabine
-    Replica EXATAMENTE a lógica do arquivo original
+    CORRIGIDO para seguir a lógica original do calculations.py
     """
     
     @staticmethod
     def calcular_custo_cabine(pedido, dimensionamento, custos_db) -> Dict[str, Any]:
-        """Calcula custos da cabine - VERSÃO COMPLETA"""
+        """Calcula custos da cabine - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL"""
         componentes = {}
         total = Decimal('0')
         
@@ -26,9 +26,9 @@ class CalculoCabineService:
             if pedido.material_cabine == "Outro":
                 # Material customizado
                 componente_customizado = CalculoCabineService._calcular_componente_customizado(
-                    pedido, "CH99", qtd_chapas_corpo, "cabine"
+                    pedido, "MP0999", qtd_chapas_corpo, "cabine"
                 )
-                componentes["CH99_cabine"] = componente_customizado
+                componentes["MP0999_cabine"] = componente_customizado
                 total += componente_customizado['valor_total']
             else:
                 # Material padrão
@@ -43,7 +43,7 @@ class CalculoCabineService:
                         'codigo': codigo_chapa,
                         'descricao': produto.nome,
                         'categoria': produto.grupo.nome if produto.grupo else 'MATERIAL',
-                        'subcategoria': produto.subgrupo.nome if produto.subgrupo else 'Corpo Cabine',
+                        'subcategoria': produto.subgrupo.nome if produto.subgrupo else 'Chapas',
                         'quantidade': qtd_chapas_corpo,
                         'unidade': produto.unidade_medida,
                         'valor_unitario': float(valor_unitario),
@@ -52,7 +52,7 @@ class CalculoCabineService:
                     }
                     total += valor_total
                     
-                    # Componente adicional para corte/dobra se for Inox
+                    # Componente adicional para corte/dobra se for Inox ou Alumínio
                     if 'Inox' in pedido.material_cabine:
                         codigo_adicional = 'MP0111'  # CH50 → MP0111 (Corte/dobra inox)
                         if codigo_adicional in custos_db:
@@ -60,7 +60,26 @@ class CalculoCabineService:
                             valor_unitario_adicional = produto_adicional.custo_medio or produto_adicional.preco_venda or Decimal('50')
                             valor_adicional = Decimal(str(qtd_chapas_corpo)) * valor_unitario_adicional
                             
-                            componentes[f"{codigo_adicional}_cabine"] = {
+                            componentes[f"{codigo_adicional}_corte"] = {
+                                'codigo': codigo_adicional,
+                                'descricao': produto_adicional.nome,
+                                'categoria': produto_adicional.grupo.nome if produto_adicional.grupo else 'SERVICO',
+                                'subcategoria': produto_adicional.subgrupo.nome if produto_adicional.subgrupo else 'Corte/Dobra',
+                                'quantidade': qtd_chapas_corpo,
+                                'unidade': produto_adicional.unidade_medida,
+                                'valor_unitario': float(valor_unitario_adicional),
+                                'valor_total': float(valor_adicional),
+                                'explicacao': f"Corte/dobra para {qtd_chapas_corpo} chapas de {pedido.material_cabine}"
+                            }
+                            total += valor_adicional
+                    elif 'Alumínio' in pedido.material_cabine:
+                        codigo_adicional = 'MP0112'  # CH51 → MP0112 (Corte/dobra alumínio)
+                        if codigo_adicional in custos_db:
+                            produto_adicional = custos_db[codigo_adicional]
+                            valor_unitario_adicional = produto_adicional.custo_medio or produto_adicional.preco_venda or Decimal('45')
+                            valor_adicional = Decimal(str(qtd_chapas_corpo)) * valor_unitario_adicional
+                            
+                            componentes[f"{codigo_adicional}_corte"] = {
                                 'codigo': codigo_adicional,
                                 'descricao': produto_adicional.nome,
                                 'categoria': produto_adicional.grupo.nome if produto_adicional.grupo else 'SERVICO',
@@ -73,41 +92,7 @@ class CalculoCabineService:
                             }
                             total += valor_adicional
         
-        # Chapas do piso (se por conta da empresa)
-        if pedido.piso_cabine == "Por conta da empresa":
-            qtd_chapas_piso = dimensionamento.get('cab', {}).get('chp', {}).get('piso', 0)
-            
-            if qtd_chapas_piso > 0:
-                if pedido.material_piso_cabine == "Outro":
-                    # Material customizado do piso
-                    componente_piso_customizado = CalculoCabineService._calcular_componente_customizado(
-                        pedido, "CH99", qtd_chapas_piso, "piso"
-                    )
-                    componentes["CH99_piso"] = componente_piso_customizado
-                    total += componente_piso_customizado['valor_total']
-                else:
-                    # Material padrão do piso
-                    codigo_piso = CalculoCabineService._determinar_codigo_piso(pedido.material_piso_cabine)
-                    
-                    if codigo_piso and codigo_piso in custos_db:
-                        produto_piso = custos_db[codigo_piso]
-                        valor_unitario_piso = produto_piso.custo_medio or produto_piso.preco_venda or Decimal('80')
-                        valor_piso = Decimal(str(qtd_chapas_piso)) * valor_unitario_piso
-                        
-                        componentes[f"{codigo_piso}_piso"] = {
-                            'codigo': codigo_piso,
-                            'descricao': produto_piso.nome,
-                            'categoria': produto_piso.grupo.nome if produto_piso.grupo else 'MATERIAL',
-                            'subcategoria': produto_piso.subgrupo.nome if produto_piso.subgrupo else 'Piso Cabine',
-                            'quantidade': qtd_chapas_piso,
-                            'unidade': produto_piso.unidade_medida,
-                            'valor_unitario': float(valor_unitario_piso),
-                            'valor_total': float(valor_piso),
-                            'explicacao': f"Chapas piso cabine: {qtd_chapas_piso} unidades"
-                        }
-                        total += valor_piso
-        
-        # Parafusos das chapas
+        # Parafusos das chapas do corpo
         codigo_parafuso_chapa = "MP0113"  # FE01 → MP0113
         if codigo_parafuso_chapa in custos_db:
             produto_parafuso = custos_db[codigo_parafuso_chapa]
@@ -132,6 +117,70 @@ class CalculoCabineService:
                 }
                 total += valor_parafusos
         
+        # Chapas do piso - SEMPRE calcular (seguindo lógica original)
+        qtd_chapas_piso = dimensionamento.get('cab', {}).get('chp', {}).get('piso', 0)
+        
+        if qtd_chapas_piso > 0:
+            # Determinar código do piso baseado na lógica original
+            if pedido.piso_cabine == "Por conta da empresa":
+                if pedido.material_piso_cabine == "Antiderrapante":
+                    codigo_piso = "MP0109"  # CH09 → MP0109
+                elif pedido.material_piso_cabine == "Outro":
+                    codigo_piso = "MP0999"  # Material customizado
+                else:
+                    codigo_piso = "MP0110"  # CH10 → MP0110 (padrão)
+            else:
+                # Por conta do cliente - mas ainda precisa das chapas base
+                codigo_piso = "MP0110"  # CH10 → MP0110
+            
+            if codigo_piso == "MP0999":
+                # Material customizado do piso
+                componente_piso_customizado = CalculoCabineService._calcular_componente_customizado(
+                    pedido, "MP0999", qtd_chapas_piso, "piso"
+                )
+                componentes["MP0999_piso"] = componente_piso_customizado
+                total += componente_piso_customizado['valor_total']
+            else:
+                # Material padrão do piso
+                if codigo_piso in custos_db:
+                    produto_piso = custos_db[codigo_piso]
+                    valor_unitario_piso = produto_piso.custo_medio or produto_piso.preco_venda or Decimal('80')
+                    valor_piso = Decimal(str(qtd_chapas_piso)) * valor_unitario_piso
+                    
+                    componentes[codigo_piso] = {
+                        'codigo': codigo_piso,
+                        'descricao': produto_piso.nome,
+                        'categoria': produto_piso.grupo.nome if produto_piso.grupo else 'MATERIAL',
+                        'subcategoria': produto_piso.subgrupo.nome if produto_piso.subgrupo else 'Chapas Piso',
+                        'quantidade': qtd_chapas_piso,
+                        'unidade': produto_piso.unidade_medida,
+                        'valor_unitario': float(valor_unitario_piso),
+                        'valor_total': float(valor_piso),
+                        'explicacao': f"Chapas piso cabine: {qtd_chapas_piso} unidades"
+                    }
+                    total += valor_piso
+            
+            # Parafusos para o piso
+            codigo_parafuso_piso = "MP0116"  # FE04 → MP0116
+            if codigo_parafuso_piso in custos_db:
+                produto_parafuso_piso = custos_db[codigo_parafuso_piso]
+                valor_unitario_parafuso_piso = produto_parafuso_piso.custo_medio or produto_parafuso_piso.preco_venda or Decimal('1.5')
+                qtd_parafusos_piso = 13 * qtd_chapas_piso
+                valor_parafusos_piso = Decimal(str(qtd_parafusos_piso)) * valor_unitario_parafuso_piso
+                
+                componentes[codigo_parafuso_piso] = {
+                    'codigo': codigo_parafuso_piso,
+                    'descricao': produto_parafuso_piso.nome,
+                    'categoria': produto_parafuso_piso.grupo.nome if produto_parafuso_piso.grupo else 'FIXACAO',
+                    'subcategoria': produto_parafuso_piso.subgrupo.nome if produto_parafuso_piso.subgrupo else 'Parafusos',
+                    'quantidade': qtd_parafusos_piso,
+                    'unidade': produto_parafuso_piso.unidade_medida,
+                    'valor_unitario': float(valor_unitario_parafuso_piso),
+                    'valor_total': float(valor_parafusos_piso),
+                    'explicacao': f"Parafusos piso: 13 x {qtd_chapas_piso} = {qtd_parafusos_piso}"
+                }
+                total += valor_parafusos_piso
+        
         return {'componentes': componentes, 'total': total}
     
     # =============================================================================
@@ -141,6 +190,7 @@ class CalculoCabineService:
     @staticmethod
     def _determinar_codigo_chapa(material_cabine: str, espessura_cabine: str) -> str:
         """Determina o código da chapa baseado no material e espessura"""
+        # Conversão seguindo a lógica original: CH01-CH08 → MP0101-MP0108
         if "Inox 304" in material_cabine:
             return "MP0103" if espessura_cabine == "1,2" else "MP0104"  # CH03 → MP0103, CH04 → MP0104
         elif "Inox 430" in material_cabine:
@@ -149,18 +199,7 @@ class CalculoCabineService:
             return "MP0105" if espessura_cabine == "1,2" else "MP0106"  # CH05 → MP0105, CH06 → MP0106
         elif "Alumínio" in material_cabine:
             return "MP0107" if espessura_cabine == "1,2" else "MP0108"  # CH07 → MP0107, CH08 → MP0108
-        elif material_cabine == "Outro":
-            return "MP0999"  # Código para material customizado
         return None
-    
-    @staticmethod
-    def _determinar_codigo_piso(material_piso: str) -> str:
-        """Determina o código do piso baseado no material"""
-        if material_piso == "Antiderrapante":
-            return "MP0109"  # CH09 → MP0109
-        elif material_piso == "Outro":
-            return "MP0999"  # Código para material customizado
-        return "MP0110"  # CH10 → MP0110 (Padrão)
     
     @staticmethod
     def _calcular_componente_customizado(pedido, codigo_base: str, quantidade: float, tipo_material: str) -> Dict[str, Any]:

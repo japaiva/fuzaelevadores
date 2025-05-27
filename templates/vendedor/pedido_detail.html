@@ -35,7 +35,6 @@
     <div class="card-header bg-white">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
           <small class="text-muted ms-2">Cliente: {{ pedido.cliente.nome }}</small>
         </div>
         <div class="text-end">
@@ -469,7 +468,9 @@
         </div>
       </div>
 
-      <!-- ABA CUSTO PRODUÇÃO -->
+
+
+      <!-- ABA CUSTO PRODUÇÃO - VERSÃO COMPLETA CORRIGIDA -->
       <div class="tab-pane fade" id="custos" role="tabpanel">
         <div class="card-body">
           {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.custo_instalacao %}
@@ -522,153 +523,383 @@
               </div>
             </div>
 
-            <!-- Detalhamento por Componente -->
-            {% if pedido.custos_detalhados %}
-            <div class="card shadow-sm border-info mb-4">
-              <div class="card-header bg-info text-white">
-                <h6 class="card-title mb-0">
-                  <i class="fas fa-list-ul me-2"></i>Detalhamento por Componente
-                </h6>
-              </div>
-              <div class="card-body">
-                {% for categoria, dados in pedido.custos_detalhados.items %}
-                  {% if dados %}
-                    <div class="mb-4">
-                      <h6 class="text-info border-bottom pb-2">{{ categoria|title }}</h6>
-                      
-                      <!-- Verificar se dados é uma lista de itens ou um valor simples -->
-                      {% if dados|length > 0 and dados.0.nome or dados.0.codigo %}
-                        <!-- Lista de componentes detalhados -->
-                        <div class="table-responsive">
-                          <table class="table table-sm">
-                            <thead class="table-light">
-                              <tr>
-                                <th>Componente</th>
-                                <th class="text-end">Quantidade</th>
-                                <th class="text-end">Valor Unit.</th>
-                                <th class="text-end">Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {% for item in dados %}
-                              <tr>
-                                <td>
-                                  {% if item.nome %}
-                                    {{ item.nome }}
-                                  {% elif item.codigo %}
-                                    {{ item.codigo }}
-                                  {% else %}
-                                    Item
-                                  {% endif %}
-                                </td>
-                                <td class="text-end">
-                                  {% if item.quantidade %}
-                                    {{ item.quantidade|formato_br }}
-                                  {% else %}
-                                    -
-                                  {% endif %}
-                                </td>
-                                <td class="text-end">
-                                  {% if item.valor_unitario %}
-                                    R$ {{ item.valor_unitario|formato_br }}
-                                  {% else %}
-                                    R$ 0,00
-                                  {% endif %}
-                                </td>
-                                <td class="text-end fw-bold">
-                                  {% if item.total %}
-                                    R$ {{ item.total|formato_br }}
-                                  {% else %}
-                                    R$ 0,00
-                                  {% endif %}
-                                </td>
-                              </tr>
-                              {% endfor %}
-                            </tbody>
-                          </table>
-                        </div>
-                      {% else %}
-                        <!-- Valor total simples -->
-                        <div class="alert alert-info">
-                          <h6 class="mb-1">{{ categoria|title }}</h6>
-                          <div class="fw-bold text-primary fs-5">
-                            {% if dados|add:0 %}
-                              R$ {{ dados|formato_br }}
-                            {% else %}
-                              {{ dados }}
-                            {% endif %}
+            <!-- Detalhamento por Grupos de Cálculo -->
+            {% if pedido.custos_detalhados and pedido.custos_detalhados.custos_por_categoria %}
+            <div class="row">
+              
+              <!-- CABINE -->
+              {% if pedido.custos_detalhados.custos_por_categoria.CABINE %}
+              <div class="col-md-6">
+                <div class="card shadow-sm border-warning mb-4">
+                  <div class="card-header bg-warning text-dark">
+                    <h6 class="card-title mb-0">
+                      <i class="fas fa-square me-2"></i>CABINE
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <span class="text-muted fw-bold">Total da Cabine</span>
+                      <span class="fw-bold text-warning fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.CABINE|formato_br }}</span>
+                    </div>
+                    
+                    <!-- Chapas do Corpo -->
+                    {% with chapas_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0101' or comp.codigo == 'MP0102' or comp.codigo == 'MP0103' or comp.codigo == 'MP0104' or comp.codigo == 'MP0105' or comp.codigo == 'MP0106' or comp.codigo == 'MP0107' or comp.codigo == 'MP0108' or comp.codigo == 'MP0111' or comp.codigo == 'MP0112' or comp.codigo == 'MP0113' %}
+                          {% if not chapas_found %}
+                            <h6 class="text-warning border-bottom pb-1 mb-2">Chapas</h6>
+                            {% with chapas_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
                           </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
                         </div>
-                      {% endif %}
-                    </div>
-                  {% endif %}
-                {% endfor %}
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- Componentes Calculados -->
-            {% if pedido.componentes_calculados %}
-            <div class="card shadow-sm border-secondary mb-4">
-              <div class="card-header bg-secondary text-white">
-                <h6 class="card-title mb-0">
-                  <i class="fas fa-cogs me-2"></i>Componentes Utilizados
-                </h6>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  {% for tipo, componentes in pedido.componentes_calculados.items %}
-                    {% if componentes %}
-                    <div class="col-md-6 mb-3">
-                      <h6 class="text-secondary">{{ tipo|title }}</h6>
-                      
-                      <!-- Verificar se componentes é uma lista ou valor simples -->
-                      {% if componentes|length > 0 %}
-                        {% if componentes.0.nome or componentes.0.codigo %}
-                          <!-- Lista de componentes detalhados -->
-                          <ul class="list-group list-group-flush">
-                            {% for comp in componentes %}
-                            <li class="list-group-item d-flex justify-content-between px-0">
-                              <span>
-                                {% if comp.nome %}
-                                  {{ comp.nome }}
-                                {% elif comp.codigo %}
-                                  {{ comp.codigo }}
-                                {% else %}
-                                  Componente
-                                {% endif %}
-                              </span>
-                              <span class="badge bg-secondary">
-                                {% if comp.quantidade %}
-                                  {{ comp.quantidade|formato_br }}
-                                {% else %}
-                                  -
-                                {% endif %}
-                              </span>
-                            </li>
-                            {% endfor %}
-                          </ul>
-                        {% else %}
-                          <!-- Lista simples de valores -->
-                          <ul class="list-group list-group-flush">
-                            {% for item in componentes %}
-                            <li class="list-group-item px-0">
-                              <span class="badge bg-secondary">{{ item }}</span>
-                            </li>
-                            {% endfor %}
-                          </ul>
                         {% endif %}
-                      {% else %}
-                        <!-- Valor único -->
-                        <div class="alert alert-secondary py-2">
-                          {{ componentes }}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Chapas do Piso -->
+                    {% with piso_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0109' or comp.codigo == 'MP0110' or comp.codigo == 'MP0116' %}
+                          {% if not piso_found %}
+                            <h6 class="text-warning border-bottom pb-1 mb-2 mt-3">Chapas Piso</h6>
+                            {% with piso_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
                         </div>
-                      {% endif %}
-                    </div>
-                    {% endif %}
-                  {% endfor %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
                 </div>
               </div>
+              {% endif %}
+
+              <!-- CARRINHO -->
+              {% if pedido.custos_detalhados.custos_por_categoria.CARRINHO %}
+              <div class="col-md-6">
+                <div class="card shadow-sm border-info mb-4">
+                  <div class="card-header bg-info text-white">
+                    <h6 class="card-title mb-0">
+                      <i class="fas fa-truck me-2"></i>CARRINHO
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <span class="text-muted fw-bold">Total do Carrinho</span>
+                      <span class="fw-bold text-info fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.CARRINHO|formato_br }}</span>
+                    </div>
+                    
+                    <!-- Chassi -->
+                    {% with chassi_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0122' or comp.codigo == 'MP0123' or comp.codigo == 'MP0124' or comp.codigo == 'MP0125' or comp.codigo == 'MP0126' or comp.codigo == 'MP0127' or comp.codigo == 'MP0114' and 'chassi' in comp.explicacao|lower %}
+                          {% if not chassi_found %}
+                            <h6 class="text-info border-bottom pb-1 mb-2">Chassi</h6>
+                            {% with chassi_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Plataforma -->
+                    {% with plataforma_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0128' or comp.codigo == 'MP0129' or comp.codigo == 'MP0130' or comp.codigo == 'MP0131' or comp.codigo == 'MP0132' or comp.codigo == 'MP0133' or comp.codigo == 'MP0114' and 'plataforma' in comp.explicacao|lower %}
+                          {% if not plataforma_found %}
+                            <h6 class="text-info border-bottom pb-1 mb-2 mt-3">Plataforma</h6>
+                            {% with plataforma_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Barra Roscada -->
+                    {% with barra_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0146' or comp.codigo == 'MP0147' or comp.codigo == 'MP0148' or comp.codigo == 'MP0113' and 'barra' in comp.explicacao|lower or comp.codigo == 'MP0114' and 'barra' in comp.explicacao|lower %}
+                          {% if not barra_found %}
+                            <h6 class="text-info border-bottom pb-1 mb-2 mt-3">Barra Roscada</h6>
+                            {% with barra_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- TRAÇÃO -->
+              {% if pedido.custos_detalhados.custos_por_categoria.TRACAO %}
+              <div class="col-md-6">
+                <div class="card shadow-sm border-danger mb-4">
+                  <div class="card-header bg-danger text-white">
+                    <h6 class="card-title mb-0">
+                      <i class="fas fa-cogs me-2"></i>TRAÇÃO
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <span class="text-muted fw-bold">Total da Tração</span>
+                      <span class="fw-bold text-danger fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.TRACAO|formato_br }}</span>
+                    </div>
+                    
+                    <!-- Acionamento -->
+                    {% with acionamento_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0118' or comp.codigo == 'MP0119' %}
+                          {% if not acionamento_found %}
+                            <h6 class="text-danger border-bottom pb-1 mb-2">Acionamento</h6>
+                            {% with acionamento_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Tracionamento -->
+                    {% with tracionamento_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0134' or comp.codigo == 'MP0135' or comp.codigo == 'MP0136' %}
+                          {% if not tracionamento_found %}
+                            <h6 class="text-danger border-bottom pb-1 mb-2 mt-3">Tracionamento</h6>
+                            {% with tracionamento_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Contrapeso -->
+                    {% with contrapeso_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0137' or comp.codigo == 'MP0138' or comp.codigo == 'MP0139' or comp.codigo == 'MP0140' or comp.codigo == 'MP0141' %}
+                          {% if not contrapeso_found %}
+                            <h6 class="text-danger border-bottom pb-1 mb-2 mt-3">Contrapeso</h6>
+                            {% with contrapeso_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Guias -->
+                    {% with guias_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0142' or comp.codigo == 'MP0143' or comp.codigo == 'MP0144' or comp.codigo == 'MP0145' or comp.codigo == 'MP0115' %}
+                          {% if not guias_found %}
+                            <h6 class="text-danger border-bottom pb-1 mb-2 mt-3">Guias</h6>
+                            {% with guias_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- SISTEMAS COMPLEMENTARES -->
+              {% if pedido.custos_detalhados.custos_por_categoria.SIST_COMPLEMENTARES %}
+              <div class="col-md-6">
+                <div class="card shadow-sm border-secondary mb-4">
+                  <div class="card-header bg-secondary text-white">
+                    <h6 class="card-title mb-0">
+                      <i class="fas fa-lightbulb me-2"></i>SISTEMAS COMPLEMENTARES
+                    </h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <span class="text-muted fw-bold">Total dos Sistemas</span>
+                      <span class="fw-bold text-secondary fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.SIST_COMPLEMENTARES|formato_br }}</span>
+                    </div>
+                    
+                    <!-- Iluminação -->
+                    {% with iluminacao_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0174' %}
+                          {% if not iluminacao_found %}
+                            <h6 class="text-secondary border-bottom pb-1 mb-2">Iluminação</h6>
+                            {% with iluminacao_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                    
+                    <!-- Ventilação -->
+                    {% with ventilacao_found=False %}
+                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
+                        {% if comp.codigo == 'MP0175' %}
+                          {% if not ventilacao_found %}
+                            <h6 class="text-secondary border-bottom pb-1 mb-2 mt-3">Ventilação</h6>
+                            {% with ventilacao_found=True %}{% endwith %}
+                          {% endif %}
+                        <div class="mb-2">
+                          <div class="d-flex justify-content-between">
+                            <span class="small">
+                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
+                            </span>
+                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
+                          </div>
+                          <div class="d-flex justify-content-between text-muted">
+                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
+                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
+                          </div>
+                          {% if comp.explicacao %}
+                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
+                          {% endif %}
+                        </div>
+                        {% endif %}
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
             </div>
             {% endif %}
 
