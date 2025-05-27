@@ -261,7 +261,6 @@ def pedido_step1(request, pk=None):
                         usuario=request.user
                     )
                     
-                    messages.success(request, f'Pedido {pedido.numero} criado com sucesso.')
                     return redirect('vendedor:pedido_step2', pk=pedido.pk)
                     
                 except Exception as e:
@@ -317,7 +316,6 @@ def pedido_step2(request, pk):
                     
                     if resultado['success']:
                         logger.info(f"Cálculos executados com sucesso no step 2")
-                        messages.success(request, f'Pedido {pedido.numero} calculado e salvo com sucesso!')
                     else:
                         logger.warning(f"Problemas nos cálculos do pedido {pedido.numero}")
                         messages.warning(request, 'Pedido salvo, mas houve problemas nos cálculos.')
