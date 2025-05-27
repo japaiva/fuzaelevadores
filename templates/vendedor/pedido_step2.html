@@ -6,129 +6,98 @@
   {% else %}
     Pedido {{ pedido.numero }} - Cabine/Portas | Portal do Vendedor
   {% endif %}
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  function toggleOutro(selectId, divId) {
-    const select = document.getElementById(selectId);
-    const div = document.getElementById(divId);
-    if (select && div) {
-      const check = () => {
-        div.style.display = select.value === 'Outro' ? 'block' : 'none';
-      };
-      select.addEventListener('change', check);
-      check();
-    }
-  }
-
-  toggleOutro('{{ form.material_cabine.id_for_label }}', 'material-outro-cabine');
-  toggleOutro('{{ form.material_piso_cabine.id_for_label }}', 'material-piso-outro');
-  toggleOutro('{{ form.material_porta_cabine.id_for_label }}', 'material-outro-porta-cabine');
-  toggleOutro('{{ form.material_porta_pavimento.id_for_label }}', 'material-outro-porta-pavimento');
-
-  const pisoSelect = document.getElementById('{{ form.piso_cabine.id_for_label }}');
-  const pisoMaterialDiv = document.getElementById('material-piso-div');
-  if (pisoSelect && pisoMaterialDiv) {
-    const checkPiso = () => {
-      pisoMaterialDiv.style.display = pisoSelect.value === 'Por conta da empresa' ? 'block' : 'none';
-    };
-    pisoSelect.addEventListener('change', checkPiso);
-    checkPiso();
-  }
-});
-</script>
 {% endblock %}
 
 {% block content %}
-<div class="container"><div class="card shadow">
-<div class="card-header bg-light d-flex justify-content-between align-items-center">
-<h5 class="card-title mb-0">
-      {% if editing %}
-        <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Cabine/Portas
-      {% else %}
-        <i class="fas fa-square me-2"></i>Pedido {{ pedido.numero }} - Cabine/Portas
-      {% endif %}
-    </h5>
-<a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_detail' pedido.pk %}">
-<i class="fas fa-arrow-left me-1"></i> Voltar
-    </a>
-</div>
-<!-- Progress Bar -->
-<div class="card-header bg-white">
-<div class="progress" style="height: 6px;">
-<div aria-valuemax="100" aria-valuenow="100" class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 100%"></div>
-</div>
-<div class="d-flex justify-content-between mt-2">
-<small class="text-success">✓ 1. Cliente/Elevador</small>
-<small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">2. Cabine/Portas</small>
-</div>
-</div>
-<div class="card-body">
+<div class="container">
+  <div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        {% if editing %}
+          <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Cabine/Portas
+        {% else %}
+          <i class="fas fa-square me-2"></i>Pedido {{ pedido.numero }} - Cabine/Portas
+        {% endif %}
+      </h5>
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_detail' pedido.pk %}">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="card-header bg-white">
+      <div class="progress" style="height: 6px;">
+        <div aria-valuemax="100" aria-valuenow="100" class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 100%"></div>
+      </div>
+      <div class="d-flex justify-content-between mt-2">
+        <small class="text-success">✓ 1. Cliente/Elevador</small>
+        <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">2. Cabine/Portas</small>
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <form id="cabinePortasForm" method="post">
+        {% csrf_token %}
 
-    <form id="cabinePortasForm" method="post">
-      {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <p class="mb-0">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- Bloco 1: Cabine -->
+        <div class="card shadow-sm border-primary mb-4">
+          <div class="card-header bg-primary text-white">
+            <h6 class="card-title mb-0">Cabine</h6>
+          </div>
+          <div class="card-body">
+            <!-- Material, Acabamento e Altura da Cabine -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.material_cabine.id_for_label }}">Material da Cabine*</label>
+                {{ form.material_cabine }}
+                {% if form.material_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.material_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.espessura_cabine.id_for_label }}">Espessura*</label>
+                {{ form.espessura_cabine }}
+                {% if form.espessura_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.espessura_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.saida_cabine.id_for_label }}">Saída*</label>
+                {{ form.saida_cabine }}
+                {% if form.saida_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.saida_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.altura_cabine.id_for_label }}">Altura da Cabine (m)*</label>
+                {{ form.altura_cabine }}
+                {% if form.altura_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.altura_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
 
-      {% if form.non_field_errors %}
-        <div class="alert alert-danger">
-          {% for error in form.non_field_errors %}
-            <p class="mb-0">{{ error }}</p>
-          {% endfor %}
-        </div>
-      {% endif %}
-      
-      <!-- Bloco 1: Cabine -->
-<div class="card shadow-sm border-primary mb-4">
-<div class="card-header bg-primary text-white">
-<h6 class="card-title mb-0">
-            Cabine
-          </h6>
-</div>
-<div class="card-body">
-<!-- Material, Acabamento e Altura da Cabine -->
-<div class="row g-3 mb-4">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_cabine.id_for_label }}">Material da Cabine*</label>
-              {{ form.material_cabine }}
-              {% if form.material_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.material_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.espessura_cabine.id_for_label }}">Espessura*</label>
-              {{ form.espessura_cabine }}
-              {% if form.espessura_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.espessura_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.saida_cabine.id_for_label }}">Saída*</label>
-              {{ form.saida_cabine }}
-              {% if form.saida_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.saida_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.altura_cabine.id_for_label }}">Altura da Cabine (m)*</label>
-              {{ form.altura_cabine }}
-              {% if form.altura_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.altura_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-</div>
-
-<!-- Material Outro -->
-<div class="col-12" id="material-outro-cabine" style="display: none;">
-<div class="row g-3 mb-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_cabine_outro.id_for_label }}">Nome do Material</label>
+            <!-- Material Outro -->
+            <div class="col-12" id="material-outro-cabine" style="display: none;">
+              <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                  <label class="form-label" for="{{ form.material_cabine_outro.id_for_label }}">Nome do Material</label>
                   {{ form.material_cabine_outro }}
                   {% if form.material_cabine_outro.errors %}
                     <div class="text-danger small mt-1">
@@ -136,8 +105,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                   {% endif %}
                 </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.valor_cabine_outro.id_for_label }}">Valor (R$)</label>
+                <div class="col-md-3">
+                  <label class="form-label" for="{{ form.valor_cabine_outro.id_for_label }}">Valor (R$)</label>
                   {{ form.valor_cabine_outro }}
                   {% if form.valor_cabine_outro.errors %}
                     <div class="text-danger small mt-1">
@@ -145,303 +114,240 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                   {% endif %}
                 </div>
-</div>
-</div>
+              </div>
+            </div>
 
-<!-- Piso da Cabine -->
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.piso_cabine.id_for_label }}">Responsável pelo Piso*</label>
-              {{ form.piso_cabine }}
-              {% if form.piso_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.piso_cabine.errors %}{{ error }}{% endfor %}
+            <!-- Piso da Cabine -->
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.piso_cabine.id_for_label }}">Responsável pelo Piso*</label>
+                {{ form.piso_cabine }}
+                {% if form.piso_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.piso_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3" id="material-piso-div" style="display: none;">
+                <label class="form-label" for="{{ form.material_piso_cabine.id_for_label }}">Material do Piso</label>
+                {{ form.material_piso_cabine }}
+                {% if form.material_piso_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.material_piso_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <!-- Material Piso Outro -->
+              <div class="col-12" id="material-piso-outro" style="display: none;">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label" for="{{ form.material_piso_cabine_outro.id_for_label }}">Nome do Material do Piso</label>
+                    {{ form.material_piso_cabine_outro }}
+                    {% if form.material_piso_cabine_outro.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.material_piso_cabine_outro.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="{{ form.valor_piso_cabine_outro.id_for_label }}">Valor (R$)</label>
+                    {{ form.valor_piso_cabine_outro }}
+                    {% if form.valor_piso_cabine_outro.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.valor_piso_cabine_outro.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
                 </div>
-              {% endif %}
+              </div>
             </div>
-<div class="col-md-3" id="material-piso-div" style="display: none;">
-<label class="form-label" for="{{ form.material_piso_cabine.id_for_label }}">Material do Piso</label>
-              {{ form.material_piso_cabine }}
-              {% if form.material_piso_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.material_piso_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<!-- Material Piso Outro -->
-<div class="col-12" id="material-piso-outro" style="display: none;">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_piso_cabine_outro.id_for_label }}">Nome do Material do Piso</label>
-                  {{ form.material_piso_cabine_outro }}
-                  {% if form.material_piso_cabine_outro.errors %}
-                    <div class="text-danger small mt-1">
-                      {% for error in form.material_piso_cabine_outro.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.valor_piso_cabine_outro.id_for_label }}">Valor (R$)</label>
-                  {{ form.valor_piso_cabine_outro }}
-                  {% if form.valor_piso_cabine_outro.errors %}
-                    <div class="text-danger small mt-1">
-                      {% for error in form.valor_piso_cabine_outro.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-</div>
-</div>
-</div>
-</div>
-</div>
+          </div>
+        </div>
 
-<!-- Porta da Cabine -->
-<div class="card shadow-sm border-success mb-4">
-<div class="card-header bg-success text-white">
-<h6 class="card-title mb-0">
-            Porta da Cabine
-          </h6>
-</div>
-<div class="card-body">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.modelo_porta_cabine.id_for_label }}">Modelo*</label>
-              {{ form.modelo_porta_cabine }}
-              {% if form.modelo_porta_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.modelo_porta_cabine.errors %}{{ error }}{% endfor %}
+        <!-- Porta da Cabine -->
+        <div class="card shadow-sm border-success mb-4">
+          <div class="card-header bg-success text-white">
+            <h6 class="card-title mb-0">Porta da Cabine</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.modelo_porta_cabine.id_for_label }}">Modelo*</label>
+                {{ form.modelo_porta_cabine }}
+                {% if form.modelo_porta_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.modelo_porta_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.material_porta_cabine.id_for_label }}">Material*</label>
+                {{ form.material_porta_cabine }}
+                {% if form.material_porta_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.material_porta_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3" id="folhas-cabine-div">
+                <label class="form-label" for="{{ form.folhas_porta_cabine.id_for_label }}">Folhas</label>
+                {{ form.folhas_porta_cabine }}
+                {% if form.folhas_porta_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.folhas_porta_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3"></div>
+              
+              <!-- Material Outro - Cabine -->
+              <div class="col-12" id="material-outro-porta-cabine" style="display: none;">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label" for="{{ form.material_porta_cabine_outro.id_for_label }}">Nome do Material</label>
+                    {{ form.material_porta_cabine_outro }}
+                    {% if form.material_porta_cabine_outro.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.material_porta_cabine_outro.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="{{ form.valor_porta_cabine_outro.id_for_label }}">Valor (R$)</label>
+                    {{ form.valor_porta_cabine_outro }}
+                    {% if form.valor_porta_cabine_outro.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.valor_porta_cabine_outro.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
                 </div>
-              {% endif %}
+              </div>
+              
+              <!-- Dimensões -->
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.largura_porta_cabine.id_for_label }}">Largura (m)*</label>
+                {{ form.largura_porta_cabine }}
+                {% if form.largura_porta_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.largura_porta_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.altura_porta_cabine.id_for_label }}">Altura (m)*</label>
+                {{ form.altura_porta_cabine }}
+                {% if form.altura_porta_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.altura_porta_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_porta_cabine.id_for_label }}">Material*</label>
-              {{ form.material_porta_cabine }}
-              {% if form.material_porta_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.material_porta_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3" id="folhas-cabine-div">
-<label class="form-label" for="{{ form.folhas_porta_cabine.id_for_label }}">Folhas</label>
-              {{ form.folhas_porta_cabine }}
-              {% if form.folhas_porta_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.folhas_porta_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3"></div>
-<!-- Material Outro - Cabine -->
-<div class="col-12" id="material-outro-porta-cabine" style="display: none;">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_porta_cabine_outro.id_for_label }}">Nome do Material</label>
-                  {{ form.material_porta_cabine_outro }}
-                  {% if form.material_porta_cabine_outro.errors %}
-                    <div class="text-danger small mt-1">
-                      {% for error in form.material_porta_cabine_outro.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.valor_porta_cabine_outro.id_for_label }}">Valor (R$)</label>
-                  {{ form.valor_porta_cabine_outro }}
-                  {% if form.valor_porta_cabine_outro.errors %}
-                    <div class="text-danger small mt-1">
-                      {% for error in form.valor_porta_cabine_outro.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-</div>
-</div>
-<!-- Dimensões -->
-<div class="col-md-3">
-<label class="form-label" for="{{ form.largura_porta_cabine.id_for_label }}">Largura (m)*</label>
-              {{ form.largura_porta_cabine }}
-              {% if form.largura_porta_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.largura_porta_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.altura_porta_cabine.id_for_label }}">Altura (m)*</label>
-              {{ form.altura_porta_cabine }}
-              {% if form.altura_porta_cabine.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.altura_porta_cabine.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-</div>
-</div>
-</div>
+          </div>
+        </div>
 
-<!-- Porta do Pavimento -->
-<div class="card shadow-sm border-warning mb-4">
-<div class="card-header bg-warning text-dark">
-<h6 class="card-title mb-0">
-            Porta do Pavimento
-          </h6>
-</div>
-<div class="card-body">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.modelo_porta_pavimento.id_for_label }}">Modelo*</label>
-              {{ form.modelo_porta_pavimento }}
-              {% if form.modelo_porta_pavimento.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.modelo_porta_pavimento.errors %}{{ error }}{% endfor %}
+        <!-- Porta do Pavimento -->
+        <div class="card shadow-sm border-warning mb-4">
+          <div class="card-header bg-warning text-dark">
+            <h6 class="card-title mb-0">Porta do Pavimento</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.modelo_porta_pavimento.id_for_label }}">Modelo*</label>
+                {{ form.modelo_porta_pavimento }}
+                {% if form.modelo_porta_pavimento.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.modelo_porta_pavimento.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.material_porta_pavimento.id_for_label }}">Material*</label>
+                {{ form.material_porta_pavimento }}
+                {% if form.material_porta_pavimento.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.material_porta_pavimento.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3" id="folhas-pavimento-div">
+                <label class="form-label" for="{{ form.folhas_porta_pavimento.id_for_label }}">Folhas</label>
+                {{ form.folhas_porta_pavimento }}
+                {% if form.folhas_porta_pavimento.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.folhas_porta_pavimento.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3"></div>
+              
+              <!-- Material Outro - Pavimento -->
+              <div class="col-12" id="material-outro-porta-pavimento" style="display: none;">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label" for="{{ form.material_porta_pavimento_outro.id_for_label }}">Nome do Material</label>
+                    {{ form.material_porta_pavimento_outro }}
+                    {% if form.material_porta_pavimento_outro.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.material_porta_pavimento_outro.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="{{ form.valor_porta_pavimento_outro.id_for_label }}">Valor (R$)</label>
+                    {{ form.valor_porta_pavimento_outro }}
+                    {% if form.valor_porta_pavimento_outro.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.valor_porta_pavimento_outro.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
                 </div>
-              {% endif %}
+              </div>
+              
+              <!-- Dimensões -->
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.largura_porta_pavimento.id_for_label }}">Largura (m)*</label>
+                {{ form.largura_porta_pavimento }}
+                {% if form.largura_porta_pavimento.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.largura_porta_pavimento.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.altura_porta_pavimento.id_for_label }}">Altura (m)*</label>
+                {{ form.altura_porta_pavimento }}
+                {% if form.altura_porta_pavimento.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.altura_porta_pavimento.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_porta_pavimento.id_for_label }}">Material*</label>
-              {{ form.material_porta_pavimento }}
-              {% if form.material_porta_pavimento.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.material_porta_pavimento.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3" id="folhas-pavimento-div">
-<label class="form-label" for="{{ form.folhas_porta_pavimento.id_for_label }}">Folhas</label>
-              {{ form.folhas_porta_pavimento }}
-              {% if form.folhas_porta_pavimento.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.folhas_porta_pavimento.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3"></div>
-<!-- Material Outro - Pavimento -->
-<div class="col-12" id="material-outro-porta-pavimento" style="display: none;">
-<div class="row g-3">
-<div class="col-md-3">
-<label class="form-label" for="{{ form.material_porta_pavimento_outro.id_for_label }}">Nome do Material</label>
-                  {{ form.material_porta_pavimento_outro }}
-                  {% if form.material_porta_pavimento_outro.errors %}
-                    <div class="text-danger small mt-1">
-                      {% for error in form.material_porta_pavimento_outro.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.valor_porta_pavimento_outro.id_for_label }}">Valor (R$)</label>
-                  {{ form.valor_porta_pavimento_outro }}
-                  {% if form.valor_porta_pavimento_outro.errors %}
-                    <div class="text-danger small mt-1">
-                      {% for error in form.valor_porta_pavimento_outro.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-</div>
-</div>
-<!-- Dimensões -->
-<div class="col-md-3">
-<label class="form-label" for="{{ form.largura_porta_pavimento.id_for_label }}">Largura (m)*</label>
-              {{ form.largura_porta_pavimento }}
-              {% if form.largura_porta_pavimento.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.largura_porta_pavimento.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-<div class="col-md-3">
-<label class="form-label" for="{{ form.altura_porta_pavimento.id_for_label }}">Altura (m)*</label>
-              {{ form.altura_porta_pavimento }}
-              {% if form.altura_porta_pavimento.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.altura_porta_pavimento.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-</div>
-</div>
-</div>
+          </div>
+        </div>
 
-<!-- Cálculos Dinâmicos -->
-<div class="card shadow-sm border-info mb-4">
-<div class="card-header bg-info text-white">
-<h6 class="card-title mb-0">
-            Dimensões da Cabine
-          </h6>
+        <!-- Botões de ação -->
+        <div class="d-flex justify-content-between mt-4 mb-4">
+          <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1' pedido.pk %}">
+            <i class="fas fa-arrow-left me-1"></i> Anterior
+          </a>
+          <button class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}" type="submit">
+            {% if editing %}
+              <i class="fas fa-save me-1"></i> Salvar Alterações
+            {% else %}
+              <i class="fas fa-check me-1"></i> Finalizar
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
-<div class="card-body">
-<div class="row text-center" id="dimensoes-calculadas">
-<div class="col-md-4">
-<div class="border rounded p-3 bg-light">
-<strong class="d-block text-primary fs-5" id="largura-calculada">1,85 m</strong>
-<small class="text-muted">Largura da Cabine</small>
-</div>
-</div>
-<div class="col-md-4">
-<div class="border rounded p-3 bg-light">
-<strong class="d-block text-primary fs-5" id="comprimento-calculado">1,85 m</strong>
-<small class="text-muted">Comprimento da Cabine</small>
-</div>
-</div>
-<div class="col-md-4">
-<div class="border rounded p-3 bg-light">
-<strong class="d-block text-primary fs-5" id="altura-calculada">2,30 m</strong>
-<small class="text-muted">Altura da Cabine</small>
-</div>
-</div>
-</div>
-
-</div>
-</div>
-
-<div id="alertas-validacao"></div>
-
-<!-- Botões de ação -->
-<div class="d-flex justify-content-between mt-4 mb-4">
-<a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1' pedido.pk %}">
-<i class="fas fa-arrow-left me-1"></i> Anterior
-        </a>
-<button class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}" type="submit">
-          {% if editing %}
-            <i class="fas fa-save me-1"></i> Salvar Alterações
-          {% else %}
-            <i class="fas fa-check me-1"></i> Finalizar
-          {% endif %}
-        </button>
-</div>
-
-    </form>
-</div></div></div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  function toggleOutro(selectId, divId) {
-    const select = document.getElementById(selectId);
-    const div = document.getElementById(divId);
-    if (select && div) {
-      const check = () => {
-        div.style.display = select.value === 'Outro' ? 'block' : 'none';
-      };
-      select.addEventListener('change', check);
-      check();
-    }
-  }
-
-  toggleOutro('{{ form.material_cabine.id_for_label }}', 'material-outro-cabine');
-  toggleOutro('{{ form.material_piso_cabine.id_for_label }}', 'material-piso-outro');
-  toggleOutro('{{ form.material_porta_cabine.id_for_label }}', 'material-outro-porta-cabine');
-  toggleOutro('{{ form.material_porta_pavimento.id_for_label }}', 'material-outro-porta-pavimento');
-
-  const pisoSelect = document.getElementById('{{ form.piso_cabine.id_for_label }}');
-  const pisoMaterialDiv = document.getElementById('material-piso-div');
-  if (pisoSelect && pisoMaterialDiv) {
-    const checkPiso = () => {
-      pisoMaterialDiv.style.display = pisoSelect.value === 'Por conta da empresa' ? 'block' : 'none';
-    };
-    pisoSelect.addEventListener('change', checkPiso);
-    checkPiso();
-  }
-});
-</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -452,7 +358,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Elementos da cabine
     const materialCabineSelect = document.getElementById('{{ form.material_cabine.id_for_label }}');
     const materialOutroCabineDiv = document.getElementById('material-outro-cabine');
-    const alturaCabineInput = document.getElementById('{{ form.altura_cabine.id_for_label }}');
     
     const pisoCabineSelect = document.getElementById('{{ form.piso_cabine.id_for_label }}');
     const materialPisoDiv = document.getElementById('material-piso-div');
@@ -470,18 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const materialPortaPavimentoSelect = document.getElementById('{{ form.material_porta_pavimento.id_for_label }}');
     const folhasPavimentoDiv = document.getElementById('folhas-pavimento-div');
     const materialOutroPortaPavimentoDiv = document.getElementById('material-outro-porta-pavimento');
-    
-    // Dados do pedido vindos do backend
-    const dadosPedido = {
-        largura_poco: {{ pedido.largura_poco|default:2.0 }},
-        comprimento_poco: {{ pedido.comprimento_poco|default:2.0 }},
-        altura_poco: {{ pedido.altura_poco|default:3.0 }},
-        modelo_elevador: '{{ pedido.modelo_elevador|default:"" }}',
-        acionamento: '{{ pedido.acionamento|default:"" }}',
-        capacidade: {{ pedido.capacidade|default:80 }}
-    };
-    
-    console.log('Dados do pedido:', dadosPedido);
     
     // === FUNÇÕES DA CABINE ===
     
@@ -548,125 +441,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // === CÁLCULOS ===
-    
-    function calcularDimensoesCabine() {
-        const larguraPoco = dadosPedido.largura_poco;
-        const comprimentoPoco = dadosPedido.comprimento_poco;
-        const acionamento = dadosPedido.acionamento;
-        const modelo = dadosPedido.modelo_elevador;
-        
-        // CORREÇÃO: Pegar altura atual do input sempre
-        const altura = parseFloat(alturaCabineInput ? alturaCabineInput.value : 2.3) || 2.3;
-        
-        // Cálculo das margens conforme tipo de elevador
-        let margemLargura = 0.15;  // 15cm padrão
-        let margemComprimento = 0.15;
-        
-        // Ajustar conforme acionamento
-        if (acionamento === 'Hidraulico') {
-            margemLargura = 0.12;
-            margemComprimento = 0.12;
-        } else if (acionamento === 'Motor') {
-            margemLargura = 0.18;
-            margemComprimento = 0.18;
-        }
-        
-        // Ajustar conforme modelo
-        if (modelo === 'Carga') {
-            margemLargura += 0.05;
-            margemComprimento += 0.05;
-        } else if (modelo === 'Plataforma Acessibilidade') {
-            margemLargura = 0.10;
-            margemComprimento = 0.10;
-        }
-        
-        // Calcular dimensões finais
-        const larguraCabine = Math.max(0.8, larguraPoco - (margemLargura * 2));
-        const comprimentoCabine = Math.max(0.8, comprimentoPoco - (margemComprimento * 2));
-        const area = larguraCabine * comprimentoCabine;
-        const volume = area * altura;
-        
-        // Atualizar visualização
-        const larguraEl = document.getElementById('largura-calculada');
-        const comprimentoEl = document.getElementById('comprimento-calculado');
-        const alturaEl = document.getElementById('altura-calculada');
-        const areaEl = document.getElementById('area-cabine');
-        const volumeEl = document.getElementById('volume-cabine');
-        
-        if (larguraEl) larguraEl.textContent = larguraCabine.toFixed(2).replace('.', ',') + ' m';
-        if (comprimentoEl) comprimentoEl.textContent = comprimentoCabine.toFixed(2).replace('.', ',') + ' m';
-        if (alturaEl) alturaEl.textContent = altura.toFixed(2).replace('.', ',') + ' m';
-        if (areaEl) areaEl.textContent = area.toFixed(2).replace('.', ',') + ' m²';
-        if (volumeEl) volumeEl.textContent = volume.toFixed(2).replace('.', ',') + ' m³';
-        
-        // Validar dimensões
-        validarDimensoes(larguraCabine, comprimentoCabine, altura);
-        
-        return { largura: larguraCabine, comprimento: comprimentoCabine, altura: altura };
-    }
-    
-    function validarDimensoes(largura, comprimento, altura) {
-        const alertasDiv = document.getElementById('alertas-validacao');
-        if (!alertasDiv) return true;
-        
-        let alertas = [];
-        
-        // Validações básicas
-        if (largura < 0.8) {
-            alertas.push({
-                tipo: 'erro',
-                mensagem: 'Largura da cabine muito pequena (mínimo 0.8m)'
-            });
-        }
-        
-        if (comprimento < 0.8) {
-            alertas.push({
-                tipo: 'erro', 
-                mensagem: 'Comprimento da cabine muito pequeno (mínimo 0.8m)'
-            });
-        }
-        
-        if (altura < 2.0) {
-            alertas.push({
-                tipo: 'erro',
-                mensagem: 'Altura da cabine muito baixa (mínimo 2.0m)'
-            });
-        }
-        
-        // Validação de área para passageiro
-        const area = largura * comprimento;
-        const capacidade = dadosPedido.capacidade;
-        
-        if (dadosPedido.modelo_elevador === 'Passageiro') {
-            const pessoas = Math.ceil(capacidade / 80);
-            const areaMinima = pessoas * 1.0; // 1m² por pessoa mínimo
-            
-            if (area < areaMinima) {
-                alertas.push({
-                    tipo: 'aviso',
-                    mensagem: `Área da cabine pode ser pequena para ${pessoas} pessoa(s): ${area.toFixed(2)}m² (recomendado: ${areaMinima.toFixed(2)}m²)`
-                });
-            }
-        }
-        
-        // Limpar alertas anteriores
-        alertasDiv.innerHTML = '';
-        
-        // Mostrar novos alertas
-        alertas.forEach(alerta => {
-            const div = document.createElement('div');
-            div.className = `alert alert-${alerta.tipo === 'erro' ? 'danger' : 'warning'} py-2`;
-            div.innerHTML = `
-                <i class="fas fa-${alerta.tipo === 'erro' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-                ${alerta.mensagem}
-            `;
-            alertasDiv.appendChild(div);
-        });
-        
-        return alertas.length === 0 || alertas.every(a => a.tipo !== 'erro');
-    }
-    
     // === FUNÇÃO PARA CAMPOS "OUTRO" ===
     
     function toggleOutro(selectId, divId) {
@@ -694,14 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (materialPisoSelect) {
         materialPisoSelect.addEventListener('change', updatePisoCabine);
-    }
-    
-    // CORREÇÃO: Múltiplos eventos para altura da cabine
-    if (alturaCabineInput) {
-        alturaCabineInput.addEventListener('input', calcularDimensoesCabine);
-        alturaCabineInput.addEventListener('change', calcularDimensoesCabine);
-        alturaCabineInput.addEventListener('blur', calcularDimensoesCabine);
-        alturaCabineInput.addEventListener('keyup', calcularDimensoesCabine);
     }
     
     // Portas
@@ -778,28 +544,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
-            
-            // Validar dimensões finais
-            const dimensoes = calcularDimensoesCabine();
-            if (dimensoes.largura < 0.8 || dimensoes.comprimento < 0.8 || dimensoes.altura < 2.0) {
-                e.preventDefault();
-                alert('As dimensões da cabine estão fora dos limites mínimos permitidos.');
-                return;
-            }
         });
     }
     
-    // === INICIALIZAÇÃO CORRIGIDA ===
+    // === INICIALIZAÇÃO ===
     
     updateMaterialCabine();
     updatePisoCabine();
     updatePortaCabine();
     updatePortaPavimento();
-    
-    // Garantir que os cálculos sejam executados após DOM estar completamente pronto
-    setTimeout(() => {
-        calcularDimensoesCabine();
-    }, 100);
     
     console.log('JavaScript inicializado com sucesso');
 });

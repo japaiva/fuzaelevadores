@@ -53,18 +53,8 @@
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="ficha-tab" data-bs-toggle="tab" data-bs-target="#ficha" type="button">
-          <i class="fas fa-file-alt me-1"></i>Ficha Técnica
-          {% if ficha_tecnica %}
-            <span class="badge bg-success ms-1">✓</span>
-          {% else %}
-            <span class="badge bg-secondary ms-1">-</span>
-          {% endif %}
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
         <button class="nav-link" id="dimensionamento-tab" data-bs-toggle="tab" data-bs-target="#dimensionamento" type="button">
-          <i class="fas fa-ruler me-1"></i>Dimensionamento
+          <i class="fas fa-ruler me-1"></i>Ficha Técnica
           {% if dimensionamento %}
             <span class="badge bg-success ms-1">✓</span>
           {% else %}
@@ -110,20 +100,20 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label class="form-label text-muted">Cliente</label>
-                  <div class="form-control-plaintext">{{ pedido.cliente.nome }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.cliente.nome }}</strong></div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label text-muted">Faturado por</label>
-                  <div class="form-control-plaintext">{{ pedido.get_faturado_por_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_faturado_por_display }}</strong></div>
                 </div>
                 <div class="col-12">
                   <label class="form-label text-muted">Nome do Projeto</label>
-                  <div class="form-control-plaintext">{{ pedido.nome_projeto }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.nome_projeto }}</strong></div>
                 </div>
                 {% if pedido.observacoes %}
                 <div class="col-12">
                   <label class="form-label text-muted">Observações</label>
-                  <div class="form-control-plaintext">{{ pedido.observacoes }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.observacoes }}</strong></div>
                 </div>
                 {% endif %}
               </div>
@@ -139,32 +129,32 @@
               <div class="row g-3">
                 <div class="col-md-4">
                   <label class="form-label text-muted">Modelo do Elevador</label>
-                  <div class="form-control-plaintext">{{ pedido.get_modelo_elevador_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_modelo_elevador_display }}</strong></div>
                 </div>
                 {% if pedido.capacidade_pessoas %}
                 <div class="col-md-4">
                   <label class="form-label text-muted">Capacidade (Pessoas)</label>
-                  <div class="form-control-plaintext">{{ pedido.capacidade_pessoas }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.capacidade_pessoas }}</strong></div>
                 </div>
                 {% endif %}
                 <div class="col-md-4">
                   <label class="form-label text-muted">Capacidade (kg)</label>
-                  <div class="form-control-plaintext">{{ pedido.capacidade|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.capacidade|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-4">
                   <label class="form-label text-muted">Acionamento</label>
-                  <div class="form-control-plaintext">{{ pedido.get_acionamento_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_acionamento_display }}</strong></div>
                 </div>
                 {% if pedido.tracao %}
                 <div class="col-md-4">
                   <label class="form-label text-muted">Tração</label>
-                  <div class="form-control-plaintext">{{ pedido.get_tracao_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_tracao_display }}</strong></div>
                 </div>
                 {% endif %}
                 {% if pedido.contrapeso %}
                 <div class="col-md-4">
                   <label class="form-label text-muted">Contrapeso</label>
-                  <div class="form-control-plaintext">{{ pedido.get_contrapeso_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_contrapeso_display }}</strong></div>
                 </div>
                 {% endif %}
               </div>
@@ -180,46 +170,19 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label text-muted">Largura (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.largura_poco|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.largura_poco|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Comprimento (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.comprimento_poco|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.comprimento_poco|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Altura (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.altura_poco|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.altura_poco|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Pavimentos</label>
-                  <div class="form-control-plaintext">{{ pedido.pavimentos }}</div>
-                </div>
-              </div>
-              
-              <hr class="my-3">
-              
-              <div class="row text-center">
-                <div class="col-md-4">
-                  <div class="border rounded p-3 bg-light">
-                    <strong class="d-block text-info fs-5">{{ area_poco|formato_br|default:"0,00" }} m²</strong>
-                    <small class="text-muted">Área do Poço</small>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="border rounded p-3 bg-light">
-                    <strong class="d-block text-info fs-5">{{ volume_poco|formato_br|default:"0,00" }} m³</strong>
-                    <small class="text-muted">Volume do Poço</small>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="border rounded p-3 bg-light">
-                    {% if pedido.altura_poco and pedido.pavimentos and pedido.pavimentos > 1 %}
-                      <strong class="d-block text-info fs-5">{{ pedido.altura_poco|div:pedido.pavimentos|formato_br }} m</strong>
-                    {% else %}
-                      <strong class="d-block text-info fs-5">0,00 m</strong>
-                    {% endif %}
-                    <small class="text-muted">Altura p/ Pavimento</small>
-                  </div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.pavimentos }}</strong></div>
                 </div>
               </div>
             </div>
@@ -234,26 +197,26 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label text-muted">Material da Cabine</label>
-                  <div class="form-control-plaintext">{{ pedido.get_material_cabine_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_material_cabine_display }}</strong></div>
                   {% if pedido.material_cabine == 'Outro' and pedido.valor_cabine_outro %}
                     <small class="text-muted">Valor: R$ {{ pedido.valor_cabine_outro|formato_br }}</small>
                   {% endif %}
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Espessura</label>
-                  <div class="form-control-plaintext">{{ pedido.get_espessura_cabine_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_espessura_cabine_display }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Saída</label>
-                  <div class="form-control-plaintext">{{ pedido.get_saida_cabine_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_saida_cabine_display }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Altura da Cabine (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.altura_cabine|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.altura_cabine|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label text-muted">Responsável pelo Piso</label>
-                  <div class="form-control-plaintext">{{ pedido.get_piso_cabine_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_piso_cabine_display }}</strong></div>
                   {% if pedido.piso_cabine == 'Por conta da empresa' %}
                     <div class="mt-2">
                       <small class="text-muted">Material: {{ pedido.get_material_piso_cabine_display }}</small>
@@ -283,8 +246,8 @@
                 </div>
                 <div class="col-md-4">
                   <div class="border rounded p-3 bg-light">
-                    <strong class="d-block text-warning fs-5">{{ area_cabine|formato_br|default:"0,00" }} m²</strong>
-                    <small class="text-muted">Área da Cabine</small>
+                    <strong class="d-block text-warning fs-5">{{ pedido.altura_cabine|formato_br }} m</strong>
+                    <small class="text-muted">Altura da Cabine</small>
                   </div>
                 </div>
               </div>
@@ -301,11 +264,11 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label text-muted">Modelo</label>
-                  <div class="form-control-plaintext">{{ pedido.get_modelo_porta_cabine_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_modelo_porta_cabine_display }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Material</label>
-                  <div class="form-control-plaintext">{{ pedido.get_material_porta_cabine_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_material_porta_cabine_display }}</strong></div>
                   {% if pedido.material_porta_cabine == 'Outro' and pedido.valor_porta_cabine_outro %}
                     <small class="text-muted">Valor: R$ {{ pedido.valor_porta_cabine_outro|formato_br }}</small>
                   {% endif %}
@@ -313,16 +276,16 @@
                 {% if pedido.modelo_porta_cabine == 'Automática' and pedido.folhas_porta_cabine %}
                 <div class="col-md-3">
                   <label class="form-label text-muted">Folhas</label>
-                  <div class="form-control-plaintext">{{ pedido.folhas_porta_cabine }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.folhas_porta_cabine }}</strong></div>
                 </div>
                 {% endif %}
                 <div class="col-md-3">
                   <label class="form-label text-muted">Largura (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.largura_porta_cabine|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.largura_porta_cabine|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Altura (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.altura_porta_cabine|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.altura_porta_cabine|formato_br }}</strong></div>
                 </div>
               </div>
             </div>
@@ -337,11 +300,11 @@
               <div class="row g-3">
                 <div class="col-md-3">
                   <label class="form-label text-muted">Modelo</label>
-                  <div class="form-control-plaintext">{{ pedido.get_modelo_porta_pavimento_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_modelo_porta_pavimento_display }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Material</label>
-                  <div class="form-control-plaintext">{{ pedido.get_material_porta_pavimento_display }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.get_material_porta_pavimento_display }}</strong></div>
                   {% if pedido.material_porta_pavimento == 'Outro' and pedido.valor_porta_pavimento_outro %}
                     <small class="text-muted">Valor: R$ {{ pedido.valor_porta_pavimento_outro|formato_br }}</small>
                   {% endif %}
@@ -349,16 +312,16 @@
                 {% if pedido.modelo_porta_pavimento == 'Automática' and pedido.folhas_porta_pavimento %}
                 <div class="col-md-3">
                   <label class="form-label text-muted">Folhas</label>
-                  <div class="form-control-plaintext">{{ pedido.folhas_porta_pavimento }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.folhas_porta_pavimento }}</strong></div>
                 </div>
                 {% endif %}
                 <div class="col-md-3">
                   <label class="form-label text-muted">Largura (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.largura_porta_pavimento|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.largura_porta_pavimento|formato_br }}</strong></div>
                 </div>
                 <div class="col-md-3">
                   <label class="form-label text-muted">Altura (m)</label>
-                  <div class="form-control-plaintext">{{ pedido.altura_porta_pavimento|formato_br }}</div>
+                  <div class="form-control-plaintext"><strong>{{ pedido.altura_porta_pavimento|formato_br }}</strong></div>
                 </div>
               </div>
             </div>
@@ -367,126 +330,23 @@
         </div>
       </div>
 
-      <!-- ABA FICHA TÉCNICA -->
-      <div class="tab-pane fade" id="ficha" role="tabpanel">
-        <div class="card-body">
-          {% if ficha_tecnica %}
-            
-            <!-- Dimensões da Cabine -->
-            {% if ficha_tecnica.dimensoes_cabine %}
-            <div class="card shadow-sm border-primary mb-4">
-              <div class="card-header bg-primary text-white">
-                <h6 class="card-title mb-0">Dimensões da Cabine</h6>
-              </div>
-              <div class="card-body">
-                <div class="row text-center">
-                  <div class="col-md-3">
-                    <div class="border rounded p-3 bg-light">
-                      <strong class="d-block text-primary fs-4">{{ ficha_tecnica.dimensoes_cabine.largura|formato_br|default:"0,00" }} m</strong>
-                      <small class="text-muted">Largura</small>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="border rounded p-3 bg-light">
-                      <strong class="d-block text-primary fs-4">{{ ficha_tecnica.dimensoes_cabine.comprimento|formato_br|default:"0,00" }} m</strong>
-                      <small class="text-muted">Comprimento</small>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="border rounded p-3 bg-light">
-                      <strong class="d-block text-primary fs-4">{{ ficha_tecnica.dimensoes_cabine.altura|formato_br|default:"0,00" }} m</strong>
-                      <small class="text-muted">Altura</small>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="border rounded p-3 bg-light">
-                      <strong class="d-block text-primary fs-4">{{ ficha_tecnica.dimensoes_cabine.area|formato_br|default:"0,00" }} m²</strong>
-                      <small class="text-muted">Área</small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- Capacidade e Tração -->
-            {% if ficha_tecnica.capacidade_tracao %}
-            <div class="card shadow-sm border-success mb-4">
-              <div class="card-header bg-success text-white">
-                <h6 class="card-title mb-0">Capacidade e Tração</h6>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-6">
-                    <label class="form-label text-muted">Capacidade da Cabine</label>
-                    <div class="form-control-plaintext h5 text-success">{{ ficha_tecnica.capacidade_tracao.capacidade_cabine|formato_br|default:"0" }} kg</div>
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label text-muted">Tração da Cabine</label>
-                    <div class="form-control-plaintext h5 text-success">{{ ficha_tecnica.capacidade_tracao.tracao_cabine|formato_br|default:"0" }} kg</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- Materiais -->
-            {% if ficha_tecnica.paineis_chapas %}
-            <div class="card shadow-sm border-info mb-4">
-              <div class="card-header bg-info text-white">
-                <h6 class="card-title mb-0">Materiais e Componentes</h6>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-4">
-                    <label class="form-label text-muted">Chapas do Corpo</label>
-                    <div class="form-control-plaintext">{{ ficha_tecnica.paineis_chapas.chapas_corpo|default:"0" }}</div>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label text-muted">Chapas do Piso</label>
-                    <div class="form-control-plaintext">{{ ficha_tecnica.paineis_chapas.chapas_piso|default:"0" }}</div>
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label text-muted">Total de Chapas</label>
-                    <div class="form-control-plaintext fw-bold">{{ ficha_tecnica.paineis_chapas.chapas_total|default:"0" }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-
-          {% else %}
-            <div class="text-center p-5">
-              <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
-              <h5 class="text-muted">Ficha Técnica Indisponível</h5>
-              <p class="text-muted">Execute os cálculos para gerar a ficha técnica detalhada.</p>
-              {% if pedido.pode_calcular %}
-                <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-primary">
-                  <i class="fas fa-calculator"></i> Executar Cálculos
-                </a>
-              {% endif %}
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- ABA DIMENSIONAMENTO -->
+      <!-- ABA DIMENSIONAMENTO/FICHA TÉCNICA -->
       <div class="tab-pane fade" id="dimensionamento" role="tabpanel">
         <div class="card-body">
           {% if dimensionamento %}
             
-            <!-- Dados da Cabine -->
+            <!-- Ficha Técnica da Cabine -->
             {% if dimensionamento.cab %}
             <div class="card shadow-sm border-warning mb-4">
               <div class="card-header bg-warning text-dark">
                 <h6 class="card-title mb-0">
-                  <i class="fas fa-cube me-2"></i>Dimensionamento da Cabine
+                  <i class="fas fa-cube me-2"></i>Ficha Técnica
                 </h6>
               </div>
               <div class="card-body">
                 <div class="row">
                   <div class="col-md-6">
-                    <h6 class="text-warning border-bottom pb-2">Dimensões Físicas</h6>
+                    <h6 class="text-warning border-bottom pb-2">Dimensões da Cabine</h6>
                     <div class="row g-3">
                       <div class="col-6">
                         <label class="form-label text-muted small">Largura</label>
@@ -499,14 +359,6 @@
                       <div class="col-6">
                         <label class="form-label text-muted small">Altura</label>
                         <div class="form-control-plaintext fw-bold">{{ dimensionamento.cab.altura|formato_br|default:"0,00" }} m</div>
-                      </div>
-                      <div class="col-6">
-                        <label class="form-label text-muted small">Área</label>
-                        {% if dimensionamento.cab.largura and dimensionamento.cab.compr %}
-                          <div class="form-control-plaintext fw-bold text-warning">{{ dimensionamento.cab.largura|mul:dimensionamento.cab.compr|formato_br }} m²</div>
-                        {% else %}
-                          <div class="form-control-plaintext fw-bold text-warning">0,00 m²</div>
-                        {% endif %}
                       </div>
                     </div>
                   </div>
@@ -612,8 +464,8 @@
           {% else %}
             <div class="text-center p-5">
               <i class="fas fa-ruler fa-3x text-muted mb-3"></i>
-              <h5 class="text-muted">Dimensionamento Indisponível</h5>
-              <p class="text-muted">Execute os cálculos para gerar o dimensionamento detalhado dos componentes.</p>
+              <h5 class="text-muted">Ficha Técnica Indisponível</h5>
+              <p class="text-muted">Execute os cálculos para gerar a ficha técnica detalhada dos componentes.</p>
               {% if pedido.pode_calcular %}
                 <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-primary">
                   <i class="fas fa-calculator"></i> Executar Cálculos
@@ -999,7 +851,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Log dos dados para debug (apenas no console)
     console.log('=== PEDIDO {{ pedido.numero }} ===');
     console.log('Status:', '{{ pedido.status }}');
-    console.log('Tem ficha técnica:', {{ ficha_tecnica|yesno:"true,false" }});
     console.log('Tem dimensionamento:', {{ dimensionamento|yesno:"true,false" }});
     console.log('Tem formação preço:', {{ formacao_preco|yesno:"true,false" }});
     console.log('Custo produção:', '{{ pedido.custo_producao|default:"null" }}');
