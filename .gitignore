@@ -6,6 +6,7 @@ __pycache__/
 .Python
 db.sqlite3
 db.sqlite3-journal
+docker-compose.yml
 
 # Ambiente virtual
 .venv/
