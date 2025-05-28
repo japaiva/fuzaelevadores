@@ -734,15 +734,17 @@ def pedido_anexo_delete(request, pk, anexo_id):
 # =============================================================================
 # vendedor/views.py - APENAS LEITURA DOS PARÂMETROS EXISTENTES
 
+# vendedor/views.py - APENAS O TRECHO DA API DE DADOS DE PRECIFICAÇÃO
+
 @login_required
 def api_dados_precificacao(request, pk):
     """
-    API para retornar dados de precificação do pedido - APENAS LEITURA
+    API para retornar dados de precificação do pedido - CORRIGIDA PARA USAR ParametrosGerais
     """
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
     try:
-        # BUSCAR PARÂMETROS EXISTENTES DO BANCO
+        # BUSCAR PARÂMETROS DO MODELO ParametrosGerais
         from core.models import ParametrosGerais
         
         parametros_obj = ParametrosGerais.objects.first()
@@ -753,39 +755,28 @@ def api_dados_precificacao(request, pk):
                 'error': 'Parâmetros gerais não encontrados no sistema'
             })
         
-        # MAPEAR PARÂMETROS EXISTENTES
-        parametros = {
-            'comissao': float(parametros_obj.comissao_padrao),
-            'margem': float(parametros_obj.margem_padrao),
-            'fat.Elevadores': float(parametros_obj.faturamento_elevadores),
-            'fat.Fuza': float(parametros_obj.faturamento_fuza),
-            'fat.Manutenção': float(parametros_obj.faturamento_manutencao),
-            'desc.alcada1': float(parametros_obj.desconto_alcada_1),
-            'desc.alcada2': float(parametros_obj.desconto_alcada_2),
-        }
-        
-        # PERCENTUAL DE IMPOSTOS BASEADO NO FATURADO_POR
+        # MAPEAR PERCENTUAL DE IMPOSTOS BASEADO NO FATURADO_POR
         impostos_por_faturamento = {
-            'Elevadores': parametros['fat.Elevadores'],
-            'Fuza': parametros['fat.Fuza'], 
-            'Manutenção': parametros['fat.Manutenção'],
+            'Elevadores': float(parametros_obj.faturamento_elevadores or 10.0),
+            'Fuza': float(parametros_obj.faturamento_fuza or 8.0), 
+            'Manutenção': float(parametros_obj.faturamento_manutencao or 5.0),
         }
         
         # ALÇADA BASEADA NO NÍVEL DO USUÁRIO
         user_level = getattr(request.user, 'nivel', 'vendedor')
         
         if user_level in ['admin', 'gestor']:
-            alcada_maxima = parametros['desc.alcada2']
+            alcada_maxima = float(parametros_obj.desconto_alcada_2 or 15.0)
             alcada_tipo = 'gestor'
         else:
-            alcada_maxima = parametros['desc.alcada1']
+            alcada_maxima = float(parametros_obj.desconto_alcada_1 or 5.0)
             alcada_tipo = 'vendedor'
         
         # DADOS DO PEDIDO
         dados_pedido = {
             'custoProducao': float(pedido.custo_producao or 0),
-            'percentualMargem': parametros['margem'],
-            'percentualComissao': parametros['comissao'],
+            'percentualMargem': float(parametros_obj.margem_padrao or 30.0),
+            'percentualComissao': float(parametros_obj.comissao_padrao or 3.0),
             'percentualImpostos': impostos_por_faturamento.get(pedido.faturado_por, 10.0),
             'precoCalculado': float(pedido.preco_venda_calculado or 0),
             'precoNegociado': float(pedido.preco_negociado or pedido.preco_venda_calculado or 0),
@@ -795,16 +786,27 @@ def api_dados_precificacao(request, pk):
             'userLevel': user_level,
         }
         
+        # PARÂMETROS FORMATADOS PARA O JAVASCRIPT
+        parametros_formatados = {
+            'margem': float(parametros_obj.margem_padrao or 30.0),
+            'comissao': float(parametros_obj.comissao_padrao or 3.0),
+            'alcada1': float(parametros_obj.desconto_alcada_1 or 5.0),
+            'alcada2': float(parametros_obj.desconto_alcada_2 or 15.0),
+            'fat_elevadores': float(parametros_obj.faturamento_elevadores or 10.0),
+            'fat_fuza': float(parametros_obj.faturamento_fuza or 8.0),
+            'fat_manutencao': float(parametros_obj.faturamento_manutencao or 5.0),
+        }
+        
         logger.info(f"Parâmetros carregados - Pedido {pedido.numero}:")
-        logger.info(f"  - Margem: {parametros['margem']}%")
-        logger.info(f"  - Comissão: {parametros['comissao']}%")
+        logger.info(f"  - Margem: {dados_pedido['percentualMargem']}%")
+        logger.info(f"  - Comissão: {dados_pedido['percentualComissao']}%")
         logger.info(f"  - Impostos ({pedido.faturado_por}): {dados_pedido['percentualImpostos']}%")
         logger.info(f"  - Alçada {alcada_tipo}: {alcada_maxima}%")
         
         return JsonResponse({
             'success': True,
             'dados': dados_pedido,
-            'parametros': parametros
+            'parametros': parametros_formatados
         })
         
     except Exception as e:
@@ -813,6 +815,88 @@ def api_dados_precificacao(request, pk):
             'success': False,
             'error': f'Erro ao carregar parâmetros: {str(e)}'
         })
+
+
+@login_required
+@require_POST
+def api_salvar_preco_negociado(request, pk):
+    """
+    API para salvar preço negociado - COM VALIDAÇÃO DE ALÇADA CORRIGIDA
+    """
+    pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
+    
+    pode_editar, mensagem = validar_permissoes_vendedor(request.user, pedido)
+    if not pode_editar:
+        return JsonResponse({'success': False, 'error': mensagem})
+    
+    try:
+        data = json.loads(request.body)
+        preco_negociado = Decimal(str(data.get('preco_negociado')))
+        
+        # BUSCAR PARÂMETROS PARA VALIDAÇÃO
+        from core.models import ParametrosGerais
+        parametros_obj = ParametrosGerais.objects.first()
+        
+        if not parametros_obj:
+            return JsonResponse({'success': False, 'error': 'Parâmetros não encontrados'})
+        
+        # DETERMINAR ALÇADA DO USUÁRIO
+        user_level = getattr(request.user, 'nivel', 'vendedor')
+        alcada_maxima = float(parametros_obj.desconto_alcada_2 or 15.0 if user_level in ['admin', 'gestor'] 
+                             else parametros_obj.desconto_alcada_1 or 5.0)
+        
+        # VALIDAR DESCONTO
+        preco_original = pedido.preco_venda_calculado or Decimal('0')
+        if preco_original <= 0:
+            return JsonResponse({'success': False, 'error': 'Preço calculado não encontrado'})
+        
+        percentual_desconto = ((preco_original - preco_negociado) / preco_original) * 100
+        
+        if percentual_desconto > Decimal(str(alcada_maxima)):
+            return JsonResponse({
+                'success': False,
+                'error': f'Desconto {percentual_desconto:.1f}% acima da alçada ({alcada_maxima}%)'
+            })
+        
+        # CALCULAR PREÇO FINAL COM IMPOSTOS
+        impostos_por_tipo = {
+            'Elevadores': float(parametros_obj.faturamento_elevadores or 10.0),
+            'Fuza': float(parametros_obj.faturamento_fuza or 8.0),
+            'Manutenção': float(parametros_obj.faturamento_manutencao or 5.0),
+        }
+        
+        percentual_impostos = Decimal(str(impostos_por_tipo.get(pedido.faturado_por, 10.0)))
+        preco_final = preco_negociado * (1 + percentual_impostos / 100)
+        
+        # SALVAR
+        pedido.preco_negociado = preco_negociado
+        pedido.preco_venda_final = preco_final
+        pedido.percentual_desconto = percentual_desconto
+        pedido.atualizado_por = request.user
+        pedido.save()
+        
+        # HISTÓRICO
+        HistoricoPedido.objects.create(
+            pedido=pedido,
+            status_anterior=pedido.status,
+            status_novo=pedido.status,
+            observacao=f'Preço negociado: R$ {preco_negociado:,.2f} ({percentual_desconto:.1f}% desconto)',
+            usuario=request.user
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Preço salvo com sucesso',
+            'dados': {
+                'preco_negociado': float(preco_negociado),
+                'preco_final': float(preco_final),
+                'percentual_desconto': float(percentual_desconto)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao salvar preço: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 @login_required

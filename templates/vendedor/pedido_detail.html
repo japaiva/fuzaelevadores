@@ -6,21 +6,20 @@
 
 {% block content %}
 <div class="container">
-  <!-- HEADER -->
   <div class="card shadow">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
       <h5 class="card-title mb-0">
-        <i class="fas fa-eye me-2"></i>Pedido {{ pedido.numero }} - {{ pedido.nome_projeto }}
+        <i class="fas fa-clipboard-check me-2"></i>Pedido {{ pedido.numero }} - {{ pedido.nome_projeto }}
       </h5>
       <div>
         {% if pedido.pode_calcular %}
-        <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-warning">
+        <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-primary">
           <i class="fas fa-calculator"></i> Calcular
         </a>
         {% endif %}
         
         {% if pedido.pode_editar %}
-        <a href="{% url 'vendedor:pedido_step1' pedido.pk %}" class="btn btn-light">
+        <a href="{% url 'vendedor:pedido_step1' pedido.pk %}" class="btn btn-outline-secondary">
           <i class="fas fa-edit"></i> Editar
         </a>
         {% endif %}
@@ -31,23 +30,25 @@
       </div>
     </div>
     
-    <!-- Status e Progress -->
     <div class="card-header bg-white">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          <small class="text-muted ms-2">Cliente: {{ pedido.cliente.nome }}</small>
+          <small class="text-muted">{{ pedido.get_modelo_elevador_display }} - {{ pedido.capacidade }} kg</small>
         </div>
         <div class="text-end">
-          <small class="text-muted">Vendedor: {{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</small><br>
           <small class="text-muted">Criado em: {{ pedido.criado_em|date:"d/m/Y H:i" }}</small>
         </div>
       </div>
     </div>
 
-    <!-- TABS -->
     <ul class="nav nav-tabs" id="pedidoTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="especificacoes-tab" data-bs-toggle="tab" data-bs-target="#especificacoes" type="button">
+        <button class="nav-link active" id="resumo-tab" data-bs-toggle="tab" data-bs-target="#resumo" type="button">
+          Resumo Pedido
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="especificacoes-tab" data-bs-toggle="tab" data-bs-target="#especificacoes" type="button">
           Especificações
         </button>
       </li>
@@ -61,21 +62,170 @@
           Custo Produção
         </button>
       </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="precos-tab" data-bs-toggle="tab" data-bs-target="#precos" type="button">
-          Preços
-        </button>
-      </li>
     </ul>
 
-    <!-- TAB CONTENT -->
     <div class="tab-content" id="pedidoTabContent">
-      
-      <!-- ABA ESPECIFICAÇÕES -->
-      <div class="tab-pane fade show active" id="especificacoes" role="tabpanel">
+
+      <div class="tab-pane fade show active" id="resumo" role="tabpanel">
+        <div class="card-body">
+          
+          <div class="card shadow-sm border-primary mb-4">
+            <div class="card-header bg-primary text-white">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">Dados do Pedido</h6>
+                <span class="badge bg-light text-primary fs-6">{{ pedido.numero }}</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Data</label>
+                      <div class="form-control-plaintext">{{ pedido.criado_em|date:"d/m/Y" }}</div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Vendedor</label>
+                      <div class="form-control-plaintext">{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label text-muted small">Cliente</label>
+                      <div class="form-control-plaintext"><strong>{{ pedido.cliente.nome }}</strong></div>
+                      {% if pedido.cliente.nome_fantasia %}
+                        <small class="text-muted">{{ pedido.cliente.nome_fantasia }}</small>
+                      {% endif %}
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label text-muted small">Projeto</label>
+                      <div class="form-control-plaintext"><strong>{{ pedido.nome_projeto }}</strong></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-6">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label text-muted small">Valor Base (Sem Impostos)</label>
+                      <div class="form-control-plaintext text-info"><strong>R$ {{ pedido.preco_venda_calculado|formato_br|default:"0,00" }}</strong></div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label text-muted small">
+                        <strong>Valor Projeto (Sem Impostos)</strong>
+                        {% if pedido.pode_editar %}<i class="fas fa-edit ms-1 text-primary"></i>{% endif %}
+                      </label>
+                      <div class="valor-projeto-container">
+                        {% if pedido.pode_editar %}
+                          <div class="input-group">
+                            <span class="input-group-text bg-primary text-white">R$</span>
+                            <input type="text" class="form-control valor-projeto-input" 
+                                  id="valorProjeto" 
+                                  value="{{ pedido.preco_negociado|formato_br|default:'' }}" 
+                                  placeholder="0,00">
+                          </div>
+                          <div id="descontoInfo" class="mt-1"></div>
+                        {% else %}
+                          <div class="form-control-plaintext text-success">
+                            <strong>R$ {{ pedido.preco_negociado|formato_br|default:pedido.preco_venda_calculado|formato_br }}</strong>
+                          </div>
+                          {% if pedido.percentual_desconto > 0 %}
+                            <small class="text-muted">
+                              <i class="fas fa-tag me-1"></i>
+                              Desconto: {{ pedido.percentual_desconto|floatformat:1 }}%
+                            </small>
+                          {% endif %}
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row mt-3">
+                {% if pedido.pode_editar %}
+                <div class="col-md-6 mb-2">
+                  <button class="btn btn-primary w-100" id="btnSalvarPedido">
+                    <i class="fas fa-save me-1"></i>Salvar Pedido
+                  </button>
+                </div>
+                <div class="col-md-6 mb-2">
+                  <a href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" class="btn btn-outline-success w-100">
+                    <i class="fas fa-print me-1"></i>Imprimir Orçamento
+                  </a>
+                </div>
+                {% else %}
+                <div class="col-12">
+                  <div class="alert alert-info alert-sm mb-0">
+                    <i class="fas fa-lock me-2"></i>
+                    Pedido não pode mais ser editado. Status: <strong>{{ pedido.get_status_display }}</strong>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          {% if pedido.custo_producao or pedido.preco_venda_calculado %}
+          <div class="card shadow-sm border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
+              <div class="collapse-toggle d-flex justify-content-between align-items-center" 
+                  data-bs-toggle="collapse" data-bs-target="#formacaoPreco" 
+                  aria-expanded="false" aria-controls="formacaoPreco" style="cursor: pointer;">
+                <h6 class="card-title mb-0">Formação de Preço (Detalhes)</h6>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </div>
+            
+            <div class="collapse" id="formacaoPreco">
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table formacao-table mb-0">
+                    <tbody>
+                      <tr>
+                        <td>Custo de produção</td>
+                        <td class="valor-column" id="custoProducaoFormacao">R$ {{ pedido.custo_producao|formato_br|default:"0,00" }}</td>
+                        </tr>
+                      <tr>
+                        <td>Margem (<span class="text-primary" id="percMargem">30.0%</span>)</td>
+                        <td class="valor-column text-primary" id="valorMargem">R$ 0,00</td>
+                        </tr>
+                      <tr id="rowDesconto" class="d-none">
+                        <td class="text-info">Desconto (<span id="percDesconto">0.0%</span>)</td>
+                        <td class="valor-column text-info">-R$ <span id="valorDesconto">0,00</span></td>
+                        </tr>
+                      <tr>
+                        <td>Base Cálculo Comissão</td>
+                        <td class="valor-column" id="baseComissao">R$ 0,00</td>
+                        </tr>
+                      <tr>
+                        <td>Comissão (<span class="text-info" id="percComissao">3.0%</span>)</td>
+                        <td class="valor-column text-info" id="valorComissao">R$ 0,00</td>
+                        </tr>
+                      <tr class="total-row">
+                        <td class="fw-bold">Valor Final (Sem Impostos)</td>
+                        <td class="valor-column text-success" id="valorFinalFormacao">R$ 0,00</td>
+                        </tr>
+                      <tr>
+                        <td>Impostos (<span class="text-secondary" id="percImpostos">10.0%</span>)</td>
+                        <td class="valor-column text-secondary" id="valorImpostos">R$ 0,00</td>
+                        </tr>
+                      <tr class="total-row bg-success text-white">
+                        <td class="fw-bold">Preço Final (Com Impostos)</td>
+                        <td class="valor-column" id="precoComImpostosFormacao">R$ 0,00</td>
+                        </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="especificacoes" role="tabpanel">
         <div class="card-body">
 
-          <!-- Cliente e Projeto -->
           <div class="card shadow-sm border-primary mb-4">
             <div class="card-header bg-primary text-white">
               <h6 class="card-title mb-0">Cliente e Projeto</h6>
@@ -104,9 +254,8 @@
             </div>
           </div>
 
-          <!-- Elevador -->
-          <div class="card shadow-sm border-success mb-4">
-            <div class="card-header bg-success text-white">
+          <div class="card shadow-sm border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
               <h6 class="card-title mb-0">Elevador</h6>
             </div>
             <div class="card-body">
@@ -145,7 +294,6 @@
             </div>
           </div>
 
-          <!-- Poço -->
           <div class="card shadow-sm border-info mb-4">
             <div class="card-header bg-info text-white">
               <h6 class="card-title mb-0">Poço</h6>
@@ -172,9 +320,8 @@
             </div>
           </div>
 
-          <!-- Cabine -->
-          <div class="card shadow-sm border-warning mb-4">
-            <div class="card-header bg-warning text-dark">
+          <div class="card shadow-sm border-dark mb-4">
+            <div class="card-header bg-dark text-white">
               <h6 class="card-title mb-0">Cabine</h6>
             </div>
             <div class="card-body">
@@ -212,25 +359,24 @@
                 </div>
               </div>
 
-              <!-- Dimensões Calculadas da Cabine -->
               {% if pedido.largura_cabine_calculada and pedido.comprimento_cabine_calculado %}
               <hr class="my-3">
               <div class="row text-center">
                 <div class="col-md-4">
                   <div class="border rounded p-3 bg-light">
-                    <strong class="d-block text-warning fs-5">{{ pedido.largura_cabine_calculada|formato_br }} m</strong>
+                    <strong class="d-block text-dark fs-5">{{ pedido.largura_cabine_calculada|formato_br }} m</strong>
                     <small class="text-muted">Largura da Cabine</small>
                   </div>
                 </div>
                 <div class="col-md-4">
                   <div class="border rounded p-3 bg-light">
-                    <strong class="d-block text-warning fs-5">{{ pedido.comprimento_cabine_calculado|formato_br }} m</strong>
+                    <strong class="d-block text-dark fs-5">{{ pedido.comprimento_cabine_calculado|formato_br }} m</strong>
                     <small class="text-muted">Comprimento da Cabine</small>
                   </div>
                 </div>
                 <div class="col-md-4">
                   <div class="border rounded p-3 bg-light">
-                    <strong class="d-block text-warning fs-5">{{ pedido.altura_cabine|formato_br }} m</strong>
+                    <strong class="d-block text-dark fs-5">{{ pedido.altura_cabine|formato_br }} m</strong>
                     <small class="text-muted">Altura da Cabine</small>
                   </div>
                 </div>
@@ -239,9 +385,8 @@
             </div>
           </div>
 
-          <!-- Porta da Cabine -->
-          <div class="card shadow-sm border-success mb-4">
-            <div class="card-header bg-success text-white">
+          <div class="card shadow-sm border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
               <h6 class="card-title mb-0">Porta da Cabine</h6>
             </div>
             <div class="card-body">
@@ -275,9 +420,8 @@
             </div>
           </div>
 
-          <!-- Porta do Pavimento -->
-          <div class="card shadow-sm border-danger mb-4">
-            <div class="card-header bg-danger text-white">
+          <div class="card shadow-sm border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
               <h6 class="card-title mb-0">Porta do Pavimento</h6>
             </div>
             <div class="card-body">
@@ -313,16 +457,14 @@
 
         </div>
       </div>
-
-      <!-- ABA DIMENSIONAMENTO/FICHA TÉCNICA -->
+      
       <div class="tab-pane fade" id="dimensionamento" role="tabpanel">
         <div class="card-body">
-          {% if dimensionamento %}
+          {% if dimensionamento or pedido.dimensionamento_detalhado or pedido.ficha_tecnica %}
             
-            <!-- Ficha Técnica da Cabine -->
-            {% if dimensionamento.cab %}
-            <div class="card shadow-sm border-warning mb-4">
-              <div class="card-header bg-warning text-dark">
+            {% if dimensionamento.cab or pedido.largura_cabine_calculada %}
+            <div class="card shadow-sm border-dark mb-4">
+              <div class="card-header bg-dark text-white">
                 <h6 class="card-title mb-0">
                   Ficha Técnica
                 </h6>
@@ -330,32 +472,62 @@
               <div class="card-body">
                 <div class="row">
                   <div class="col-md-6">
-                    <h6 class="text-warning border-bottom pb-2">Dimensões da Cabine</h6>
+                    <h6 class="text-dark border-bottom pb-2">Dimensões da Cabine</h6>
                     <div class="row g-3">
                       <div class="col-6">
                         <label class="form-label text-muted small">Largura</label>
-                        <div class="form-control-plaintext fw-bold">{{ dimensionamento.cab.largura|formato_br|default:"0,00" }} m</div>
+                        <div class="form-control-plaintext fw-bold">
+                          {% if dimensionamento.cab.largura %}
+                            {{ dimensionamento.cab.largura|formato_br }} m
+                          {% else %}
+                            {{ pedido.largura_cabine_calculada|formato_br|default:"0,00" }} m
+                          {% endif %}
+                        </div>
                       </div>
                       <div class="col-6">
                         <label class="form-label text-muted small">Comprimento</label>
-                        <div class="form-control-plaintext fw-bold">{{ dimensionamento.cab.compr|formato_br|default:"0,00" }} m</div>
+                        <div class="form-control-plaintext fw-bold">
+                          {% if dimensionamento.cab.compr %}
+                            {{ dimensionamento.cab.compr|formato_br }} m
+                          {% else %}
+                            {{ pedido.comprimento_cabine_calculado|formato_br|default:"0,00" }} m
+                          {% endif %}
+                        </div>
                       </div>
                       <div class="col-6">
                         <label class="form-label text-muted small">Altura</label>
-                        <div class="form-control-plaintext fw-bold">{{ dimensionamento.cab.altura|formato_br|default:"0,00" }} m</div>
+                        <div class="form-control-plaintext fw-bold">
+                          {% if dimensionamento.cab.altura %}
+                            {{ dimensionamento.cab.altura|formato_br }} m
+                          {% else %}
+                            {{ pedido.altura_cabine|formato_br|default:"0,00" }} m
+                          {% endif %}
+                        </div>
                       </div>
                     </div>
                   </div>
                   <div class="col-md-6">
-                    <h6 class="text-warning border-bottom pb-2">Capacidades</h6>
+                    <h6 class="text-dark border-bottom pb-2">Capacidades</h6>
                     <div class="row g-3">
                       <div class="col-12">
                         <label class="form-label text-muted small">Capacidade de Carga</label>
-                        <div class="form-control-plaintext fw-bold text-success fs-5">{{ dimensionamento.cab.capacidade|formato_br|default:"0" }} kg</div>
+                        <div class="form-control-plaintext fw-bold text-success fs-5">
+                          {% if dimensionamento.cab.capacidade %}
+                            {{ dimensionamento.cab.capacidade|formato_br }} kg
+                          {% else %}
+                            {{ pedido.capacidade_cabine_calculada|formato_br|default:pedido.capacidade|formato_br }} kg
+                          {% endif %}
+                        </div>
                       </div>
                       <div class="col-12">
                         <label class="form-label text-muted small">Tração Necessária</label>
-                        <div class="form-control-plaintext fw-bold text-info fs-5">{{ dimensionamento.cab.tracao|formato_br|default:"0" }} kg</div>
+                        <div class="form-control-plaintext fw-bold text-primary fs-5">
+                          {% if dimensionamento.cab.tracao %}
+                            {{ dimensionamento.cab.tracao|formato_br }} kg
+                          {% else %}
+                            {{ pedido.tracao_cabine_calculada|formato_br|default:"0" }} kg
+                          {% endif %}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -364,7 +536,6 @@
             </div>
             {% endif %}
 
-            <!-- Componentes Estruturais -->
             <div class="row">
               {% if dimensionamento.cab.chp %}
               <div class="col-md-6">
@@ -435,8 +606,8 @@
               {% endif %}
             </div>
 
-            <!-- Explicação Técnica -->
-            {% if explicacao %}
+
+            {% if explicacao or pedido.explicacao_calculo %}
             <div class="card shadow-sm border-dark mb-4">
               <div class="card-header bg-dark text-white">
                 <h6 class="card-title mb-0">
@@ -446,7 +617,7 @@
               <div class="card-body">
                 <div class="bg-light p-3 rounded">
                   <pre class="mb-0" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.4;">
-            {{ explicacao|safe }}
+                    {% if explicacao %}{{ explicacao|safe }}{% else %}{{ pedido.explicacao_calculo|safe }}{% endif %}
                   </pre>
                 </div>
               </div>
@@ -468,12 +639,10 @@
         </div>
       </div>
 
-      <!-- ABA CUSTO PRODUÇÃO - VERSÃO EXPANDIDA COM EXPLICAÇÕES DETALHADAS -->
       <div class="tab-pane fade" id="custos" role="tabpanel">
         <div class="card-body">
-          {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.custo_instalacao %}
+          {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.custo_instalacao or pedido.componentes_calculados %}
             
-            <!-- RESUMO GERAL -->
             <div class="card shadow-sm border-success mb-4">
               <div class="card-header bg-success text-white">
                 <h6 class="card-title mb-0">
@@ -503,7 +672,7 @@
                   {% if pedido.custo_instalacao %}
                   <div class="col-md-3">
                     <div class="border rounded p-3 bg-light">
-                      <strong class="d-block text-warning fs-4">R$ {{ pedido.custo_instalacao|formato_br }}</strong>
+                      <strong class="d-block text-dark fs-4">R$ {{ pedido.custo_instalacao|formato_br }}</strong>
                       <small class="text-muted">Instalação (10%)</small>
                     </div>
                   </div>
@@ -521,36 +690,33 @@
               </div>
             </div>
 
-            <!-- DETALHAMENTO POR CATEGORIA - VERSÃO EXPANDIDA -->
             {% if pedido.componentes_calculados %}
             <div class="accordion" id="custosAccordion">
               
-              <!-- CABINE EXPANDIDA -->
               {% if pedido.componentes_calculados.CABINE %}
-              <div class="accordion-item border-warning">
+              <div class="accordion-item border-dark">
                 <h2 class="accordion-header" id="cabineHeader">
-                  <button class="accordion-button collapsed bg-warning text-dark" type="button" 
+                  <button class="accordion-button collapsed bg-dark text-white" type="button" 
                           data-bs-toggle="collapse" data-bs-target="#cabineCollapse">
                     <div class="d-flex justify-content-between w-100 me-3">
                       <span><strong>CABINE</strong> </span>
-                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.CABINE.total_categoria|formato_br }}</span>
+                      <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.CABINE.total_categoria|formato_br }}</span>
                     </div>
                   </button>
                 </h2>
                 <div id="cabineCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
                   <div class="accordion-body">
                     
-                    <!-- Subcategorias da Cabine -->
                     {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.CABINE.items %}
                     {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
                     
-                    <div class="card border-warning mb-3">
+                    <div class="card border-dark mb-3">
                       <div class="card-header bg-light">
                         <div class="d-flex justify-content-between align-items-center">
-                          <h6 class="mb-0 text-warning">
+                          <h6 class="mb-0 text-dark">
                             {% if 'chapas' in subcategoria_nome %}Chapas{% elif 'piso' in subcategoria_nome %}Piso{% elif 'fixacao' in subcategoria_nome %}Fixação{% else %}{{ subcategoria_nome|title }}{% endif %}
                           </h6>
-                          <span class="badge bg-warning text-dark">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                          <span class="badge bg-dark text-white">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
                         </div>
                       </div>
                       <div class="card-body">
@@ -566,7 +732,6 @@
                                 <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
                                 <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
                                 
-                                <!-- EXPLICAÇÃO TÉCNICA -->
                                 {% if comp.explicacao %}
                                 <div class="mt-2 p-2 bg-light rounded">
                                   <small class="text-primary">
@@ -586,7 +751,7 @@
                               {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
                             </div>
                             <div class="progress mt-1" style="height: 4px;">
-                              <div class="progress-bar bg-warning" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100 }}%"></div>
+                              <div class="progress-bar bg-dark" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100 }}%"></div>
                             </div>
                             <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100|floatformat:1 }}% da cabine</small>
                           </div>
@@ -604,7 +769,6 @@
               </div>
               {% endif %}
 
-              <!-- CARRINHO EXPANDIDO -->
               {% if pedido.componentes_calculados.CARRINHO %}
               <div class="accordion-item border-info">
                 <h2 class="accordion-header" id="carrinhoHeader">
@@ -612,7 +776,7 @@
                           data-bs-toggle="collapse" data-bs-target="#carrinhoCollapse">
                     <div class="d-flex justify-content-between w-100 me-3">
                       <span><strong>CARRINHO</strong></span>
-                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.CARRINHO.total_categoria|formato_br }}</span>
+                      <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.CARRINHO.total_categoria|formato_br }}</span>
                     </div>
                   </button>
                 </h2>
@@ -681,15 +845,14 @@
               </div>
               {% endif %}
 
-              <!-- TRAÇÃO EXPANDIDA -->
               {% if pedido.componentes_calculados.TRACAO %}
-              <div class="accordion-item border-danger">
+              <div class="accordion-item border-primary">
                 <h2 class="accordion-header" id="tracaoHeader">
-                  <button class="accordion-button collapsed bg-danger text-white" type="button" 
+                  <button class="accordion-button collapsed bg-primary text-white" type="button" 
                           data-bs-toggle="collapse" data-bs-target="#tracaoCollapse">
                     <div class="d-flex justify-content-between w-100 me-3">
                       <span><strong>TRAÇÃO</strong></span>
-                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.TRACAO.total_categoria|formato_br }}</span>
+                      <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.TRACAO.total_categoria|formato_br }}</span>
                     </div>
                   </button>
                 </h2>
@@ -699,13 +862,13 @@
                     {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.TRACAO.items %}
                     {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
                     
-                    <div class="card border-danger mb-3">
+                    <div class="card border-primary mb-3">
                       <div class="card-header bg-light">
                         <div class="d-flex justify-content-between align-items-center">
-                          <h6 class="mb-0 text-danger">
+                          <h6 class="mb-0 text-primary">
                             {% if 'acionamento' in subcategoria_nome %}Acionamento{% elif 'tracionamento' in subcategoria_nome %}Tracionamento{% elif 'contrapeso' in subcategoria_nome %}Contrapeso{% elif 'guias' in subcategoria_nome %}Guias{% else %}{{ subcategoria_nome|title }}{% endif %}
                           </h6>
-                          <span class="badge bg-danger">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                          <span class="badge bg-primary">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
                         </div>
                       </div>
                       <div class="card-body">
@@ -740,7 +903,7 @@
                               {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
                             </div>
                             <div class="progress mt-1" style="height: 4px;">
-                              <div class="progress-bar bg-danger" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100 }}%"></div>
+                              <div class="progress-bar bg-primary" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100 }}%"></div>
                             </div>
                             <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100|floatformat:1 }}% da tração</small>
                           </div>
@@ -758,7 +921,6 @@
               </div>
               {% endif %}
 
-              <!-- SISTEMAS COMPLEMENTARES EXPANDIDO -->
               {% if pedido.componentes_calculados.SIST_COMPLEMENTARES %}
               <div class="accordion-item border-secondary">
                 <h2 class="accordion-header" id="sistemasHeader">
@@ -766,7 +928,7 @@
                           data-bs-toggle="collapse" data-bs-target="#sistemasCollapse">
                     <div class="d-flex justify-content-between w-100 me-3">
                       <span><strong>SISTEMAS COMPLEMENTARES</strong></span>
-                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|formato_br }}</span>
+                      <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|formato_br }}</span>
                     </div>
                   </button>
                 </h2>
@@ -853,209 +1015,12 @@
         </div>
       </div>
 
-
-      <!-- ABA PREÇOS - VERSÃO ÚNICA INTEGRADA COM PARÂMETROS -->
-      <div class="tab-pane fade" id="precos" role="tabpanel">
-        <div class="card-body">
-          
-          <!-- SEÇÃO 1: FECHAMENTO DO PEDIDO -->
-          <div class="price-section bg-white mb-4 p-4 border border-success">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-              <h5 class="text-success mb-0">
-                <i class="fas fa-handshake me-2"></i>Fechamento do Pedido
-              </h5>
-              <div class="badge bg-success fs-6" id="statusBadge">Carregando...</div>
-            </div>
-            
-            <div class="row g-4">
-              <!-- Preço Base -->
-              <div class="col-md-6">
-                <div class="bg-light p-4 rounded">
-                  <label class="form-label text-muted mb-2">Preço Calculado (Sem Impostos)</label>
-                  <div class="price-display text-primary" id="precoCalculado">
-                    R$ {{ pedido.preco_venda_calculado|formato_br|default:"0,00" }}
-                  </div>
-                  <small class="text-muted">Base do sistema de cálculo</small>
-                </div>
-              </div>
-              
-              <!-- Preço Editável -->
-              <div class="col-md-6">
-                <label class="form-label text-success mb-2">
-                  <strong>Preço Final (Sem Impostos)</strong>
-                  <i class="fas fa-edit ms-1"></i>
-                </label>
-                <div class="input-group">
-                  <span class="input-group-text bg-success text-white">R$</span>
-                  <input type="text" class="form-control price-input" 
-                        id="precoFinalSemImpostos" 
-                        value="{{ pedido.preco_negociado|formato_br|default:pedido.preco_venda_calculado|formato_br }}" 
-                        placeholder="0,00"
-                        {% if not pedido.pode_editar %}disabled{% endif %}>
-                </div>
-                <div id="alcadaAlert" class="mt-2"></div>
-              </div>
-              
-              <!-- Desconto Calculado -->
-              <div class="col-md-4">
-                <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
-                  <div class="text-warning fs-4 fw-bold" id="percentualDesconto">
-                    {{ pedido.percentual_desconto|default:"0.0"|floatformat:1 }}%
-                  </div>
-                  <small class="text-muted">Desconto Aplicado</small>
-                </div>
-              </div>
-              
-              <!-- Margem Visual -->
-              <div class="col-md-8">
-                <label class="form-label text-muted small">Margem de Lucro</label>
-                <div class="margin-indicator">
-                  <div class="margin-pointer" id="margemPointer" style="left: 75%;"></div>
-                </div>
-                <div class="d-flex justify-content-between small text-muted">
-                  <span>Prejuízo</span>
-                  <span>Baixa</span>
-                  <span>Boa</span>
-                  <span>Excelente</span>
-                </div>
-              </div>
-              
-              <!-- Preço Final com Impostos -->
-              <div class="col-12">
-                <div class="border-top pt-4">
-                  <div class="row align-items-center">
-                    <div class="col-md-8">
-                      <h5 class="text-success mb-1">
-                        <i class="fas fa-money-bill-wave me-2"></i>Preço Final para o Cliente
-                      </h5>
-                      <small class="text-muted">Valor com impostos inclusos - Faturado por: <strong>{{ pedido.get_faturado_por_display }}</strong></small>
-                    </div>
-                    <div class="col-md-4 text-end">
-                      <div class="price-display text-success" id="precoComImpostos">
-                        R$ {{ pedido.preco_venda_final|formato_br|default:pedido.preco_venda_calculado|formato_br }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Botões de Ação -->
-            {% if pedido.pode_editar %}
-            <div class="row mt-4">
-              <div class="col-md-6">
-                <button class="btn btn-save-price w-100" id="btnSalvarPreco">
-                  <i class="fas fa-save me-2"></i>Salvar Preço
-                </button>
-              </div>
-              <div class="col-md-6">
-                <a href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" class="btn btn-outline-success w-100">
-                  <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
-                </a>
-              </div>
-            </div>
-            {% else %}
-            <div class="alert alert-info mt-4">
-              <i class="fas fa-lock me-2"></i>
-              Pedido não pode mais ser editado. Status atual: <strong>{{ pedido.get_status_display }}</strong>
-            </div>
-            {% endif %}
-          </div>
-          
-          <!-- SEÇÃO 2: FORMAÇÃO DE PREÇO (DROPDOWN) -->
-          <div class="price-section bg-white border border-dark">
-            <div class="collapse-toggle p-4" data-bs-toggle="collapse" data-bs-target="#formacaoPreco" 
-                aria-expanded="false" aria-controls="formacaoPreco">
-              <div class="d-flex justify-content-between align-items-center">
-                <h5 class="text-dark mb-0">
-                  <i class="fas fa-chart-line me-2"></i>Formação de Preço Detalhada
-                </h5>
-                <i class="fas fa-chevron-down text-dark"></i>
-              </div>
-            </div>
-            
-            <div class="collapse" id="formacaoPreco">
-              <div class="border-top p-4">
-                <div class="table-responsive">
-                  <table class="table formacao-table mb-0">
-                    <tbody>
-                      <tr>
-                        <td>Custo de produção</td>
-                        <td class="valor-column" id="custoProducaoFormacao">R$ {{ pedido.custo_producao|formato_br|default:"0,00" }}</td>
-                        <td class="text-muted small">Base do cálculo</td>
-                      </tr>
-                      <tr>
-                        <td>Margem (<span class="text-primary" id="percMargem">30.0%</span>)</td>
-                        <td class="valor-column text-primary" id="valorMargem">R$ 0,00</td>
-                        <td class="text-muted small">Lucro da empresa</td>
-                      </tr>
-                      <tr id="rowDesconto" class="d-none">
-                        <td class="text-warning">Desconto (<span id="percDesconto">0.0%</span>)</td>
-                        <td class="valor-column text-warning">-R$ <span id="valorDesconto">0,00</span></td>
-                        <td class="text-muted small">Desconto comercial</td>
-                      </tr>
-                      <tr>
-                        <td>Base Cálculo Comissão</td>
-                        <td class="valor-column" id="baseComissao">R$ 0,00</td>
-                        <td class="text-muted small">Base para comissão</td>
-                      </tr>
-                      <tr>
-                        <td>Comissão (<span class="text-info" id="percComissao">3.0%</span>)</td>
-                        <td class="valor-column text-info" id="valorComissao">R$ 0,00</td>
-                        <td class="text-muted small">Comissão vendedor</td>
-                      </tr>
-                      <tr class="total-row">
-                        <td class="fw-bold">Preço sem impostos</td>
-                        <td class="valor-column text-success" id="precoSemImpostosFormacao">R$ 0,00</td>
-                        <td class="text-muted small">Subtotal</td>
-                      </tr>
-                      <tr>
-                        <td>Impostos (<span class="text-secondary" id="percImpostos">10.0%</span>)</td>
-                        <td class="valor-column text-secondary" id="valorImpostos">R$ 0,00</td>
-                        <td class="text-muted small">ICMS, PIS, COFINS</td>
-                      </tr>
-                      <tr class="total-row">
-                        <td class="fw-bold">Preço com impostos</td>
-                        <td class="valor-column text-success" id="precoComImpostosFormacao">R$ 0,00</td>
-                        <td class="text-muted small">Valor final</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                
-                <!-- Alertas da Formação -->
-                <div class="mt-3" id="alertasFormacao"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Botões de Ação Finais -->
-          <div class="row mt-4">
-            <div class="col-md-6">
-              <a href="{% url 'vendedor:pdf_demonstrativo' pedido.pk %}" class="btn btn-primary w-100">
-                <i class="fas fa-file-pdf me-2"></i> Demonstrativo Técnico
-              </a>
-            </div>
-            <div class="col-md-6">
-              {% if pedido.status == 'simulado' %}
-              <button class="btn btn-warning w-100" onclick="alert('Funcionalidade em desenvolvimento')">
-                <i class="fas fa-paper-plane me-2"></i> Enviar ao Cliente
-              </button>
-              {% endif %}
-            </div>
-          </div>
-          
-        </div>
-      </div>
-
     </div>
-  </div>
-
   </div>
 </div>
 
 <script>
-class GerenciadorPrecos {
+class GerenciadorPedido {
     constructor() {
         this.dados = {};
         this.parametros = {};
@@ -1064,7 +1029,7 @@ class GerenciadorPrecos {
     
     async carregarDados() {
         try {
-            console.log('🔄 Carregando parâmetros do sistema...');
+            console.log('🔄 Carregando parâmetros do pedido...');
             
             const response = await fetch(`/vendedor/api/pedido/{{ pedido.pk }}/dados-precificacao/`);
             const resultado = await response.json();
@@ -1072,91 +1037,100 @@ class GerenciadorPrecos {
             if (resultado.success) {
                 this.dados = resultado.dados;
                 this.parametros = resultado.parametros;
-                
-                console.log('✅ Parâmetros carregados:', {
-                    margem: this.dados.percentualMargem + '%',
-                    comissao: this.dados.percentualComissao + '%',
-                    impostos: this.dados.percentualImpostos + '% (' + this.dados.faturadoPor + ')',
-                    alcada: this.dados.alcadaMaxima + '% (' + this.dados.alcadaTipo + ')',
-                    usuario: this.dados.userLevel
-                });
-                
                 this.init();
             } else {
                 console.error('❌ Erro:', resultado.error);
-                this.mostrarErro('Erro ao carregar parâmetros: ' + resultado.error);
             }
         } catch (error) {
             console.error('💥 Erro de conexão:', error);
-            this.mostrarErro('Erro de conexão com o servidor');
-        }
-    }
-    
-    mostrarErro(mensagem) {
-        alert(mensagem);
-        // Desabilitar funcionalidades se não conseguir carregar parâmetros
-        const btnSalvar = document.getElementById('btnSalvarPreco');
-        if (btnSalvar) {
-            btnSalvar.disabled = true;
-            btnSalvar.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Erro nos Parâmetros';
         }
     }
     
     init() {
-        // Configurar eventos
-        const inputPreco = document.getElementById('precoFinalSemImpostos');
-        if (inputPreco) {
-            inputPreco.addEventListener('input', (e) => this.onPrecoChange(e));
-            inputPreco.addEventListener('blur', (e) => this.formatarInput(e));
-            this.formatarInput({target: inputPreco});
+        // Configurar eventos do input de valor
+        const inputValor = document.getElementById('valorProjeto');
+        if (inputValor) {
+            inputValor.addEventListener('input', (e) => this.onValorChange(e));
+            inputValor.addEventListener('blur', (e) => this.formatarInput(e));
+            
+            // Inicializar com valor atual, se houver preco_negociado
+            if (this.dados.precoNegociado) {
+                inputValor.value = this.formatarMoeda(this.dados.precoNegociado);
+            } else {
+                inputValor.value = this.formatarMoeda(this.dados.precoCalculado || 0); // Define o valor base se não houver negociado
+            }
+            this.onValorChange({target: inputValor}); // Dispara para calcular desconto e formação de preço
         }
         
-        const btnSalvar = document.getElementById('btnSalvarPreco');
+        // Configurar botão de salvar
+        const btnSalvar = document.getElementById('btnSalvarPedido');
         if (btnSalvar) {
-            btnSalvar.addEventListener('click', () => this.salvarPreco());
+            btnSalvar.addEventListener('click', () => this.salvarPedido());
         }
         
-        // Atualizar interface
-        this.atualizarPercentuais();
-        this.atualizarCalculos();
+        // Atualizar formação de preço
+        this.atualizarFormacaoPreco();
         
-        console.log('✅ Sistema inicializado');
+        console.log('✅ Gerenciador de pedido inicializado');
     }
     
-    atualizarPercentuais() {
-        // Atualizar percentuais na formação de preço
-        const elementos = {
-            'percMargem': this.dados.percentualMargem,
-            'percComissao': this.dados.percentualComissao,
-            'percImpostos': this.dados.percentualImpostos
-        };
-        
-        Object.entries(elementos).forEach(([id, valor]) => {
-            const elem = document.getElementById(id);
-            if (elem) elem.textContent = `${valor.toFixed(1)}%`;
-        });
-        
-        // Custo de produção
-        const custoElem = document.getElementById('custoProducaoFormacao');
-        if (custoElem) {
-            custoElem.textContent = `R$ ${this.formatarMoeda(this.dados.custoProducao)}`;
-        }
-        
-        // Preço calculado
-        const precoCalculadoElem = document.getElementById('precoCalculado');
-        if (precoCalculadoElem) {
-            precoCalculadoElem.textContent = `R$ ${this.formatarMoeda(this.dados.precoCalculado)}`;
-        }
-    }
-    
-    onPrecoChange(event) {
+    onValorChange(event) {
         let valor = event.target.value.replace(/[^\d,]/g, '').replace(',', '.');
         
         if (valor) {
-            const precoFloat = parseFloat(valor);
-            if (!isNaN(precoFloat)) {
-                this.atualizarCalculos(precoFloat);
+            const valorFloat = parseFloat(valor);
+            if (!isNaN(valorFloat)) {
+                this.verificarDesconto(valorFloat);
+                this.atualizarFormacaoPreco(valorFloat);
             }
+        }
+    }
+    
+    verificarDesconto(valorProjeto) {
+        const valorBase = this.dados.precoCalculado || 0;
+        const desconto = valorBase - valorProjeto;
+        const percentualDesconto = valorBase > 0 ? (desconto / valorBase) * 100 : 0;
+        
+        const descontoInfo = document.getElementById('descontoInfo');
+        const btnSalvar = document.getElementById('btnSalvarPedido');
+        
+        if (!descontoInfo || !btnSalvar) return;
+        
+        // Usar alçada 1
+        const alcadaMaxima = this.parametros.alcada1 || 0; // Alçada 1
+        
+        if (percentualDesconto > alcadaMaxima) {
+            // Fora da alçada
+            descontoInfo.innerHTML = `
+                <div class="alert alert-danger p-2">
+                    <small>
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Desconto de ${percentualDesconto.toFixed(1)}% excede a alçada de ${alcadaMaxima}%
+                    </small>
+                </div>
+            `;
+            btnSalvar.disabled = true;
+            btnSalvar.classList.add('btn-danger');
+            btnSalvar.classList.remove('btn-primary');
+        } else if (percentualDesconto > 0.1) {
+            // Dentro da alçada mas com desconto
+            descontoInfo.innerHTML = `
+                <div class="alert alert-info p-2">
+                    <small>
+                        <i class="fas fa-tag me-1"></i>
+                        Desconto: ${percentualDesconto.toFixed(1)}% (dentro da alçada)
+                    </small>
+                </div>
+            `;
+            btnSalvar.disabled = false;
+            btnSalvar.classList.remove('btn-danger');
+            btnSalvar.classList.add('btn-primary');
+        } else {
+            // Sem desconto significativo
+            descontoInfo.innerHTML = '';
+            btnSalvar.disabled = false;
+            btnSalvar.classList.remove('btn-danger');
+            btnSalvar.classList.add('btn-primary');
         }
     }
     
@@ -1165,116 +1139,53 @@ class GerenciadorPrecos {
         let valor = input.value.replace(/[^\d,]/g, '');
         
         if (valor) {
-            const precoFloat = parseFloat(valor.replace(',', '.'));
-            if (!isNaN(precoFloat)) {
-                input.value = this.formatarMoeda(precoFloat);
+            const valorFloat = parseFloat(valor.replace(',', '.'));
+            if (!isNaN(valorFloat)) {
+                input.value = this.formatarMoeda(valorFloat);
             }
         }
     }
     
-    atualizarCalculos(precoFinal = null) {
-        if (precoFinal === null) {
-            precoFinal = this.dados.precoNegociado || this.dados.precoCalculado;
+    atualizarFormacaoPreco(valorProjeto = null) {
+        if (!valorProjeto) {
+            valorProjeto = this.dados.precoNegociado || this.dados.precoCalculado || 0;
         }
         
-        // Calcular desconto
-        const desconto = this.dados.precoCalculado - precoFinal;
-        const percentualDesconto = this.dados.precoCalculado > 0 ? 
-            (desconto / this.dados.precoCalculado) * 100 : 0;
+        // Atualizar percentuais na formação de preço
+        const elementos = {
+            'percMargem': this.parametros?.percentualMargem || 30,
+            'percComissao': this.parametros?.percentualComissao || 3
+        };
         
-        // Verificar alçada
-        this.verificarAlcada(percentualDesconto);
+        Object.entries(elementos).forEach(([id, valor]) => {
+            const elem = document.getElementById(id);
+            if (elem) elem.textContent = `${valor.toFixed(1)}%`;
+        });
         
-        // Atualizar displays
-        this.atualizarDisplays(precoFinal, percentualDesconto);
-        
-        // Atualizar formação de preço
-        this.atualizarFormacaoPreco(precoFinal, percentualDesconto);
-        
-        // Atualizar indicador de margem
-        this.atualizarIndicadorMargem(precoFinal);
-    }
-    
-    verificarAlcada(percentualDesconto) {
-        const statusBadge = document.getElementById('statusBadge');
-        const alcadaAlert = document.getElementById('alcadaAlert');
-        const btnSalvar = document.getElementById('btnSalvarPreco');
-        
-        if (!statusBadge || !alcadaAlert || !btnSalvar) return;
-        
-        if (percentualDesconto <= this.dados.alcadaMaxima) {
-            // Dentro da alçada
-            statusBadge.className = 'badge bg-success fs-6';
-            statusBadge.textContent = `OK - ${this.dados.alcadaTipo.toUpperCase()}`;
-            
-            alcadaAlert.innerHTML = `
-                <div class="alert alert-success p-2">
-                    <i class="fas fa-check me-2"></i>
-                    <small>Alçada ${this.dados.alcadaTipo}: até ${this.dados.alcadaMaxima}%</small>
-                </div>
-            `;
-            
-            btnSalvar.disabled = false;
-            btnSalvar.classList.remove('btn-danger');
-            btnSalvar.classList.add('btn-save-price');
-            
-        } else {
-            // Fora da alçada
-            statusBadge.className = 'badge bg-danger fs-6';
-            statusBadge.textContent = 'FORA DA ALÇADA';
-            
-            alcadaAlert.innerHTML = `
-                <div class="alert alert-danger p-2">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <small>
-                        Desconto ${percentualDesconto.toFixed(1)}% > Alçada ${this.dados.alcadaTipo} ${this.dados.alcadaMaxima}%
-                    </small>
-                </div>
-            `;
-            
-            btnSalvar.disabled = true;
-            btnSalvar.classList.remove('btn-save-price');
-            btnSalvar.classList.add('btn-danger');
-        }
-    }
-    
-    atualizarDisplays(precoFinal, percentualDesconto) {
-        // Percentual de desconto
-        const elemPercentual = document.getElementById('percentualDesconto');
-        if (elemPercentual) {
-            elemPercentual.textContent = `${percentualDesconto.toFixed(1)}%`;
-            
-            if (percentualDesconto > 0) {
-                elemPercentual.classList.add('discount-badge');
-            } else {
-                elemPercentual.classList.remove('discount-badge');
-            }
+        // Valores básicos
+        const custoElem = document.getElementById('custoProducaoFormacao');
+        if (custoElem) {
+            custoElem.textContent = `R$ ${this.formatarMoeda(this.dados?.custoProducao || 0)}`;
         }
         
-        // Preço com impostos
-        const valorImpostos = precoFinal * (this.dados.percentualImpostos / 100);
-        const precoComImpostos = precoFinal + valorImpostos;
+        // Calcular valores da formação de preço
+        const custoProducao = this.dados?.custoProducao || 0;
+        const percMargem = this.parametros?.percentualMargem || 30;
+        const percComissao = this.parametros?.percentualComissao || 3;
+        const percImpostos = this.parametros?.percentualImpostos || 10;
         
-        const elemPrecoComImpostos = document.getElementById('precoComImpostos');
-        if (elemPrecoComImpostos) {
-            elemPrecoComImpostos.textContent = `R$ ${this.formatarMoeda(precoComImpostos)}`;
-        }
-    }
-    
-    atualizarFormacaoPreco(precoFinal, percentualDesconto) {
-        // Cálculos da formação de preço
-        const valorMargem = this.dados.custoProducao * (this.dados.percentualMargem / 100);
-        const baseComissao = precoFinal / (1 + this.dados.percentualComissao / 100);
-        const valorComissao = precoFinal - baseComissao;
-        const valorImpostos = precoFinal * (this.dados.percentualImpostos / 100);
-        const precoComImpostos = precoFinal + valorImpostos;
+        const valorMargem = custoProducao * (percMargem / 100);
+        const baseComissao = valorProjeto / (1 + percComissao / 100);
+        const valorComissao = valorProjeto - baseComissao;
+        const valorImpostos = valorProjeto * (percImpostos / 100);
+        const precoComImpostos = valorProjeto + valorImpostos;
         
         // Atualizar valores na tabela
         const valores = {
             'valorMargem': valorMargem,
             'baseComissao': baseComissao,
             'valorComissao': valorComissao,
-            'precoSemImpostosFormacao': precoFinal,
+            'valorFinalFormacao': valorProjeto,
             'valorImpostos': valorImpostos,
             'precoComImpostosFormacao': precoComImpostos
         };
@@ -1284,7 +1195,17 @@ class GerenciadorPrecos {
             if (elem) elem.textContent = `R$ ${this.formatarMoeda(valor)}`;
         });
         
+        // Atualizar percentual de impostos
+        const percImpostosElem = document.getElementById('percImpostos');
+        if (percImpostosElem) {
+            percImpostosElem.textContent = `${percImpostos.toFixed(1)}%`;
+        }
+        
         // Mostrar/ocultar linha de desconto
+        const valorBase = this.dados.precoCalculado || 0;
+        const desconto = valorBase - valorProjeto;
+        const percentualDesconto = valorBase > 0 ? (desconto / valorBase) * 100 : 0;
+        
         const rowDesconto = document.getElementById('rowDesconto');
         if (rowDesconto) {
             if (percentualDesconto > 0.1) {
@@ -1294,60 +1215,12 @@ class GerenciadorPrecos {
                 
                 if (percDesconto) percDesconto.textContent = `${percentualDesconto.toFixed(1)}%`;
                 if (valorDesconto) {
-                    const desconto = this.dados.precoCalculado - precoFinal;
                     valorDesconto.textContent = this.formatarMoeda(Math.abs(desconto));
                 }
             } else {
                 rowDesconto.classList.add('d-none');
             }
         }
-        
-        // Atualizar indicador de faturamento
-        this.atualizarIndicadorFaturamento();
-    }
-    
-    atualizarIndicadorMargem(precoFinal) {
-        const margem = precoFinal - this.dados.custoProducao;
-        const percentualMargem = this.dados.custoProducao > 0 ? (margem / this.dados.custoProducao) * 100 : 0;
-        
-        // Calcular posição no indicador (0-100%)
-        let posicao = Math.max(0, Math.min(100, (percentualMargem / 50) * 100));
-        
-        const pointer = document.getElementById('margemPointer');
-        if (pointer) {
-            pointer.style.left = `${posicao}%`;
-            
-            // Cor baseada na margem
-            if (percentualMargem < 10) {
-                pointer.style.background = '#e74c3c'; // Vermelho
-            } else if (percentualMargem < 25) {
-                pointer.style.background = '#f39c12'; // Laranja
-            } else {
-                pointer.style.background = '#27ae60'; // Verde
-            }
-        }
-    }
-    
-    atualizarIndicadorFaturamento() {
-        const alertasFormacao = document.getElementById('alertasFormacao');
-        if (!alertasFormacao) return;
-        
-        const config = {
-            'Elevadores': { cor: 'success', texto: 'Elevadores' },
-            'Fuza': { cor: 'primary', texto: 'Fuza' },
-            'Manutenção': { cor: 'warning', texto: 'Manutenção' }
-        };
-        
-        const cfg = config[this.dados.faturadoPor] || config['Elevadores'];
-        
-        alertasFormacao.innerHTML = `
-            <div class="alert alert-${cfg.cor === 'warning' ? 'warning' : 'info'} p-2">
-                <small>
-                    <i class="fas fa-building me-2"></i>
-                    Faturamento: <strong>${cfg.texto}</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%
-                </small>
-            </div>
-        `;
     }
     
     formatarMoeda(valor) {
@@ -1355,19 +1228,19 @@ class GerenciadorPrecos {
         return valor.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     }
     
-    async salvarPreco() {
-        const inputPreco = document.getElementById('precoFinalSemImpostos');
-        if (!inputPreco) return;
+    async salvarPedido() {
+        const inputValor = document.getElementById('valorProjeto');
+        if (!inputValor) return;
         
-        const valorTexto = inputPreco.value.replace(/[^\d,]/g, '').replace(',', '.');
+        const valorTexto = inputValor.value.replace(/[^\d,]/g, '').replace(',', '.');
         const valor = parseFloat(valorTexto);
         
         if (isNaN(valor) || valor <= 0) {
-            alert('Preço inválido');
+            alert('Valor do projeto inválido');
             return;
         }
         
-        const btn = document.getElementById('btnSalvarPreco');
+        const btn = document.getElementById('btnSalvarPedido');
         const textoOriginal = btn.innerHTML;
         
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
@@ -1387,8 +1260,10 @@ class GerenciadorPrecos {
             
             if (resultado.success) {
                 btn.innerHTML = '<i class="fas fa-check me-2"></i>Salvo!';
-                console.log('✅ Preço salvo:', resultado.dados);
-                
+                // Atualiza o valor negociado nos dados locais após salvar
+                this.dados.precoNegociado = valor; 
+                this.atualizarFormacaoPreco(valor); // Recalcula a formação de preço com o novo valor salvo
+
                 setTimeout(() => {
                     btn.innerHTML = textoOriginal;
                     btn.disabled = false;
@@ -1410,63 +1285,145 @@ class GerenciadorPrecos {
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    // Ativar tooltips do Bootstrap
-    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltips.forEach(tooltip => new bootstrap.Tooltip(tooltip));
-    
-    // Inicializar sistema de preços se estivermos na aba correta
-    if (document.getElementById('precoFinalSemImpostos')) {
-        window.gerenciadorPrecos = new GerenciadorPrecos();
-        console.log('🚀 Sistema de precificação iniciado para pedido {{ pedido.numero }}');
+    // Inicializar gerenciador de pedido
+    if (document.getElementById('valorProjeto')) {
+        window.gerenciadorPedido = new GerenciadorPedido();
     }
+    
+    // Ativar collapse de formação de preço
+    const collapseToggles = document.querySelectorAll('.collapse-toggle');
+    collapseToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const icon = this.querySelector('.fa-chevron-down');
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            
+            if (icon) {
+                icon.style.transform = isExpanded ? 'rotate(0deg)' : 'rotate(180deg)';
+            }
+        });
+    });
 });
 </script>
 
 {% block extra_css %}
 <style>
-.price-section {
+/* Cores mais sóbrias */
+:root {
+    --primary-color: #4A6785; /* Azul mais escuro/sóbrio */
+    --secondary-color: #6c757d; /* Cinza */
+    --info-color: #17a2b8; /* Azul claro */
+    --success-color: #28a745; /* Verde */
+    --dark-color: #343a40; /* Preto */
+    --light-color: #f8f9fa; /* Branco off-white */
+}
+
+.bg-primary { background-color: var(--primary-color) !important; }
+.border-primary { border-color: var(--primary-color) !important; }
+.text-primary { color: var(--primary-color) !important; }
+
+.bg-secondary { background-color: var(--secondary-color) !important; }
+.border-secondary { border-color: var(--secondary-color) !important; }
+.text-secondary { color: var(--secondary-color) !important; }
+
+.bg-info { background-color: var(--info-color) !important; }
+.border-info { border-color: var(--info-color) !important; }
+.text-info { color: var(--info-color) !important; }
+
+.bg-success { background-color: var(--success-color) !important; }
+.border-success { border-color: var(--success-color) !important; }
+.text-success { color: var(--success-color) !important; }
+
+.bg-dark { background-color: var(--dark-color) !important; }
+.border-dark { border-color: var(--dark-color) !important; }
+.text-dark { color: var(--dark-color) !important; }
+
+.bg-light { background-color: var(--light-color) !important; }
+.text-light { color: var(--light-color) !important; }
+
+/* Ajustes para botões */
+.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.btn-primary:hover {
+    background: darken(var(--primary-color), 10%); /* Exemplo de escurecer */
+    border-color: darken(var(--primary-color), 10%);
+}
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-outline-success {
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+.btn-outline-success:hover {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-outline-secondary {
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+
+.pedido-section {
     border-radius: 12px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
 }
 
-.price-section:hover {
+.pedido-section:hover {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.price-display {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #198754;
+.info-card {
+    background: var(--light-color);
+    border-radius: 8px;
+    padding: 1.5rem;
 }
 
-.price-input {
-    font-size: 1.5rem;
+.info-label {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 0.5rem;
+}
+
+.valor-projeto-input {
+    font-size: 1.3rem;
     font-weight: bold;
     text-align: right;
-    border: 2px solid #198754;
+    border: 2px solid var(--primary-color);
     border-radius: 8px;
 }
 
-.price-input:focus {
-    border-color: #20c997;
-    box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
-}
-
-.alcada-warning {
-    background: linear-gradient(45deg, #fff3cd, #ffeaa7);
-    border-left: 4px solid #f39c12;
-}
-
-.alcada-danger {
-    background: linear-gradient(45deg, #f8d7da, #fab1a0);
-    border-left: 4px solid #e74c3c;
+.valor-projeto-input:focus {
+    border-color: darken(var(--primary-color), 10%);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
 }
 
 .formacao-table {
-    font-family: 'Courier New', monospace;
+  font-family: 'Courier New', monospace;
     font-size: 0.9rem;
-    background: #f8f9fa;
+    background: var(--light-color);
 }
 
 .formacao-table td {
@@ -1480,34 +1437,9 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .total-row {
-    background: #e8f5e8;
+    background: rgba(var(--success-color-rgb), 0.1); /* Um verde mais suave para o total */
     font-weight: bold;
-    border-top: 2px solid #198754;
-}
-
-.discount-badge {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-.btn-save-price {
-    background: linear-gradient(45deg, #28a745, #20c997);
-    border: none;
-    color: white;
-    font-weight: bold;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.btn-save-price:hover {
-    background: linear-gradient(45deg, #218838, #1e7e34);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-top: 2px solid var(--success-color);
 }
 
 .collapse-toggle {
@@ -1523,32 +1455,176 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: transform 0.3s ease;
 }
 
-.collapse-toggle[aria-expanded="true"] .fa-chevron-down {
-    transform: rotate(180deg);
+.nav-tabs .nav-link {
+    border-radius: 8px 8px 0 0;
+    margin-right: 4px;
 }
 
-.margin-indicator {
-    height: 6px;
+.nav-tabs .nav-link.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--primary-color), darken(var(--primary-color), 10%));
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, darken(var(--primary-color), 10%), darken(var(--primary-color), 15%));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+    background: linear-gradient(45deg, var(--success-color), darken(var(--success-color), 10%));
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(45deg, darken(var(--success-color), 10%), darken(var(--success-color), 15%));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.alert {
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+/* Accordion customizations */
+.accordion-button {
+    border-radius: 8px !important;
+    font-weight: 600;
+}
+
+.accordion-button.collapsed {
+    border-radius: 8px !important;
+}
+
+.accordion-button:not(.collapsed) {
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.accordion-body {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Progress bars */
+.progress {
+    height: 4px;
+    border-radius: 2px;
+}
+
+.progress-bar {
+    border-radius: 2px;
+}
+
+/* Cards dentro de accordion */
+.accordion-body .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.accordion-body .card-header {
+    border-radius: 8px 8px 0 0;
+}
+
+.accordion-body .card-body {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Badges */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .info-card {
+        padding: 1rem;
+    }
+    
+    .valor-projeto-input {
+        font-size: 1.1rem;
+    }
+    
+    .accordion-button {
+        font-size: 0.9rem;
+    }
+    
+    .formacao-table {
+        font-size: 0.8rem;
+    }
+    
+    .pedido-section {
+        margin-bottom: 2rem;
+    }
+}
+
+/* Melhorias visuais */
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+/* Hover effects para cards */
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+/* Estilos para o tab ativo */
+.tab-pane {
+    min-height: 400px;
+}
+
+/* Loading states */
+.btn[disabled] {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Custom scrollbar para accordion */
+.accordion-body {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.accordion-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.accordion-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
     border-radius: 3px;
-    background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
-    position: relative;
-    margin: 10px 0;
 }
 
-.margin-pointer {
-    position: absolute;
-    top: -2px;
-    width: 10px;
-    height: 10px;
-    background: #2c3e50;
-    border-radius: 50%;
-    transform: translateX(-50%);
+.accordion-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.accordion-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 </style>
 {% endblock %}
 
 {% block extra_js %}
-<!-- CSRF Token para AJAX -->
 {% csrf_token %}
 {% endblock %}
 

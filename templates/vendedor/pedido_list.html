@@ -1,4 +1,5 @@
 {% extends 'vendedor/base_vendedor.html' %}
+{% load formato_br %}
 
 {% block title %}Meus Pedidos | Portal do Vendedor{% endblock %}
 
@@ -6,7 +7,7 @@
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
     <h5 class="card-title mb-0">
-      <i class="fas fa-clipboard-list me-2"></i> Meus Pedidos
+      <i class="fas fa-clipboard-list me-2"></i>Pedidos
     </h5>
     <div>
       <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
@@ -21,16 +22,16 @@
   <div class="card-header bg-white py-2">
     <form method="get" class="row g-2 align-items-center">
       <div class="col-md-2">
-        {{ form.status }}
+        {{ form.cliente }}
       </div>
       <div class="col-md-2">
         {{ form.modelo_elevador }}
       </div>
       <div class="col-md-2">
-        {{ form.cliente }}
+        {{ form.periodo }}
       </div>
       <div class="col-md-2">
-        {{ form.periodo }}
+        {{ form.vendedor }}
       </div>
       <div class="col-md-3">
         {{ form.q }}
@@ -49,13 +50,11 @@
         <thead class="table-light">
           <tr>
             <th width="8%">Número</th>
-            <th width="25%">Projeto</th>
+            <th width="10%">Data</th>
             <th width="20%">Cliente</th>
-            <th width="15%">Modelo</th>
-            <th width="10%">Capacidade</th>
-            <th width="8%">Status</th>
-            <th width="8%">Criado</th>
-            <th width="6%" class="text-end">Ações</th>
+            <th width="30%">Projeto</th>
+            <th width="20%">Valor</th>
+            <th width="5%" class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -64,56 +63,68 @@
               <td>
                 <strong class="text-primary">{{ pedido.numero }}</strong>
               </td>
+
               <td>
-                <div class="text-truncate" style="max-width: 200px;" title="{{ pedido.nome_projeto }}">
-                  {{ pedido.nome_projeto }}
+                <div class="data-info text-center">
+                  <div class="data-principal">
+                    <strong>{{ pedido.criado_em|date:"d/m/Y" }}</strong>
+                  </div>
                 </div>
-                {% if pedido.observacoes %}
-                  <small class="text-muted d-block">{{ pedido.observacoes|truncatechars:30 }}</small>
-                {% endif %}
               </td>
+
               <td>
-                <div class="text-truncate" style="max-width: 150px;" title="{{ pedido.cliente.nome }}">
-                  {{ pedido.cliente.nome }}
+                <div class="client-info">
+                  <div class="text-truncate" style="max-width: 180px;" title="{{ pedido.cliente.nome }}">
+                    <strong>{{ pedido.cliente.nome }}</strong>
+                  </div>
                 </div>
-                {% if pedido.cliente.nome_fantasia %}
-                  <small class="text-muted d-block text-truncate" style="max-width: 150px;" title="{{ pedido.cliente.nome_fantasia }}">
-                    {{ pedido.cliente.nome_fantasia }}
-                  </small>
-                {% endif %}
               </td>
+
+
               <td>
-                <span class="badge bg-secondary">{{ pedido.get_modelo_elevador_display }}</span>
-                {% if pedido.acionamento %}
-                  <br><small class="text-muted">{{ pedido.get_acionamento_display }}</small>
-                {% endif %}
+                <div class="d-flex align-items-start">
+                  <div class="flex-grow-1">
+                    <div class="text-truncate" style="max-width: 250px;" title="{{ pedido.nome_projeto }}">
+                      <strong>{{ pedido.nome_projeto }}</strong>
+                    </div>
+                  </div>
+                </div>
               </td>
+
               <td>
-                <strong>{{ pedido.capacidade }} kg</strong>
-                {% if pedido.capacidade_pessoas %}
-                  <br><small class="text-muted">{{ pedido.capacidade_pessoas }}p</small>
-                {% endif %}
+                <div class="valor-info">
+                  {% if pedido.preco_negociado or pedido.preco_venda_calculado %}
+                    <div class="valor-principal">
+                      <strong class="text-success">
+                      {{ pedido.preco_negociado|default:pedido.preco_venda_calculado|formato_br }}
+                      </strong>
+                    </div>
+
+                  {% else %}
+                    <span class="text-muted">
+                      <i class="fas fa-calculator me-1"></i>Não calculado
+                    </span>
+                  {% endif %}
+                </div>
               </td>
-              <td>
-                <span class="badge {{ pedido.status_badge_class }}">
-                  {{ pedido.get_status_display }}
-                </span>
-              </td>
-              <td>
-                <small>{{ pedido.criado_em|date:"d/m/Y" }}</small>
-                <br><small class="text-muted">{{ pedido.criado_em|date:"H:i" }}</small>
-              </td>
+
+
+
+
+
               <td class="text-end">
                 <div class="btn-group" role="group">
                   <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
                      class="btn btn-sm btn-outline-primary" 
-                     title="Ver Detalhes">
+                     title="Ver Pedido"
+                     data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
                   </a>
                   {% if pedido.pode_editar %}
                   <a href="{% url 'vendedor:pedido_step1' pedido.pk %}" 
                      class="btn btn-sm btn-outline-warning" 
-                     title="Editar">
+                     title="Editar Pedido"
+                     data-bs-toggle="tooltip">
                     <i class="fas fa-edit"></i>
                   </a>
                   {% endif %}
@@ -124,16 +135,23 @@
                             title="Mais ações">
                       <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <ul class="dropdown-menu">
+                    <ul class="dropdown-menu dropdown-menu-end">
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_duplicar' pedido.pk %}">
-                          <i class="fas fa-copy me-2"></i>Duplicar
+                          <i class="fas fa-copy me-2"></i>Duplicar Pedido
                         </a>
                       </li>
-                      {% if pedido.pode_gerar_orcamento %}
+                      {% if pedido.preco_venda_calculado %}
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" target="_blank">
                           <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
+                        </a>
+                      </li>
+                      {% endif %}
+                      {% if pedido.pode_calcular %}
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:pedido_calcular' pedido.pk %}">
+                          <i class="fas fa-calculator me-2"></i>Executar Cálculos
                         </a>
                       </li>
                       {% endif %}
@@ -143,7 +161,7 @@
                         <a class="dropdown-item text-danger" 
                            href="{% url 'vendedor:pedido_delete' pedido.pk %}" 
                            onclick="return confirm('Tem certeza que deseja excluir este pedido?')">
-                          <i class="fas fa-trash me-2"></i>Excluir
+                          <i class="fas fa-trash me-2"></i>Excluir Pedido
                         </a>
                       </li>
                       {% endif %}
@@ -154,18 +172,21 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center py-4">
-                <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
-                <h5 class="text-muted">Nenhum pedido encontrado</h5>
-                <p class="text-muted mb-3">
-                  {% if form.data %}
-                    Tente ajustar os filtros ou
-                  {% endif %}
-                  Comece criando um novo pedido
-                </p>
-                <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success">
-                  <i class="fas fa-plus me-2"></i>Novo Pedido
-                </a>
+              <td colspan="7" class="text-center py-5">
+                <div class="empty-state">
+                  <i class="fas fa-clipboard-list fa-4x text-muted mb-4"></i>
+                  <h5 class="text-muted">Nenhum pedido encontrado</h5>
+                  <p class="text-muted mb-4">
+                    {% if form.data %}
+                      Tente ajustar os filtros ou comece criando um novo pedido.
+                    {% else %}
+                      Comece criando seu primeiro pedido de elevador.
+                    {% endif %}
+                  </p>
+                  <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-lg">
+                    <i class="fas fa-plus me-2"></i>Criar Primeiro Pedido
+                  </a>
+                </div>
               </td>
             </tr>
           {% endfor %}
@@ -175,58 +196,66 @@
   </div>
   
   {% if pedidos.paginator.num_pages > 1 %}
-  <div class="card-footer bg-white py-2">
-    <nav aria-label="Navegação de página">
-      <ul class="pagination pagination-sm justify-content-center mb-0">
-        {% if pedidos.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
-              <span aria-hidden="true">&laquo;&laquo;</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="?page={{ pedidos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
-              <span aria-hidden="true">&laquo;</span>
-            </a>
-          </li>
-        {% else %}
-          <li class="page-item disabled">
-            <span class="page-link">&laquo;&laquo;</span>
-          </li>
-          <li class="page-item disabled">
-            <span class="page-link">&laquo;</span>
-          </li>
-        {% endif %}
-        
-        {% for i in pedidos.paginator.page_range %}
-          {% if pedidos.number == i %}
-            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-          {% elif i > pedidos.number|add:'-3' and i < pedidos.number|add:'3' %}
-            <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+  <div class="card-footer bg-white py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="pagination-info">
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Mostrando {{ pedidos.start_index }}-{{ pedidos.end_index }} de {{ pedidos.paginator.count }} pedidos
+        </small>
+      </div>
+      <nav aria-label="Navegação de página">
+        <ul class="pagination pagination-sm mb-0">
+          {% if pedidos.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ pedidos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;&laquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
+            </li>
           {% endif %}
-        {% endfor %}
-        
-        {% if pedidos.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ pedidos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
-              <span aria-hidden="true">&raquo;</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="?page={{ pedidos.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
-              <span aria-hidden="true">&raquo;&raquo;</span>
-            </a>
-          </li>
-        {% else %}
-          <li class="page-item disabled">
-            <span class="page-link">&raquo;</span>
-          </li>
-          <li class="page-item disabled">
-            <span class="page-link">&raquo;&raquo;</span>
-          </li>
-        {% endif %}
-      </ul>
-    </nav>
+          
+          {% for i in pedidos.paginator.page_range %}
+            {% if pedidos.number == i %}
+              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% elif i > pedidos.number|add:'-3' and i < pedidos.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if pedidos.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ pedidos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ pedidos.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;&raquo;</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
   </div>
   {% endif %}
 </div>
@@ -257,13 +286,45 @@
 {% block extra_css %}
 <style>
 .table-sm td, .table-sm th {
-  padding: 0.5rem 0.25rem;
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
 }
 
 .text-truncate {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.project-info {
+  margin-top: 0.25rem;
+}
+
+.project-info .badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.client-info, .vendedor-info {
+  max-width: 180px;
+}
+
+.valor-info {
+  text-align: right;
+}
+
+.valor-principal {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.data-info {
+  min-width: 80px;
+}
+
+.data-principal {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
 }
 
 .btn-group .btn {
@@ -279,19 +340,126 @@
   border-top-right-radius: 0.375rem;
   border-bottom-right-radius: 0.375rem;
 }
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.pagination-info {
+  flex-grow: 1;
+}
+
+.dropdown-menu {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.card-header form .form-select,
+.card-header form .form-control {
+  font-size: 0.9rem;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Cores dos badges */
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+/* Tooltips */
+[data-bs-toggle="tooltip"] {
+  cursor: pointer;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+  
+  .project-info .badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .btn-group .btn {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .empty-state {
+    padding: 2rem 0.5rem;
+  }
+  
+  .empty-state .fa-4x {
+    font-size: 2.5rem !important;
+  }
+}
+
+/* Hover effects */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Status visual indicators */
+.valor-info .text-success {
+  font-weight: 600;
+}
+
+.text-warning {
+  font-weight: 500;
+}
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
     // Auto-submit do formulário quando filtros mudarem
-    const selects = document.querySelectorAll('select[name="status"], select[name="modelo_elevador"], select[name="cliente"], select[name="periodo"]');
+    const selects = document.querySelectorAll('select[name="cliente"], select[name="modelo_elevador"], select[name="periodo"], select[name="vendedor"]');
     selects.forEach(select => {
         select.addEventListener('change', function() {
             this.form.submit();
         });
     });
+    
+    // Melhorar UX dos dropdowns
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+    
+    // Confirmar exclusões com mais contexto
+    document.querySelectorAll('a[href*="excluir"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            const row = this.closest('tr');
+            const numero = row.querySelector('strong.text-primary').textContent;
+            const projeto = row.querySelector('.text-truncate strong').textContent;
+            
+            const confirmMsg = `Tem certeza que deseja excluir o pedido ${numero}?\n\nProjeto: ${projeto}\n\nEsta ação não pode ser desfeita.`;
+            
+            if (!confirm(confirmMsg)) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    console.log('✅ Lista de pedidos inicializada');
 });
 </script>
 {% endblock %}
