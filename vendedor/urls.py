@@ -42,6 +42,10 @@ urlpatterns = [
     # Geração de PDFs
     path('pedidos/<uuid:pk>/pdf/orcamento/', views.gerar_pdf_orcamento, name='pdf_orcamento'),
     path('pedidos/<uuid:pk>/pdf/demonstrativo/', views.gerar_pdf_demonstrativo, name='pdf_demonstrativo'),
+
+    # APIs de Precificação - ADICIONAR ESTAS 2 LINHAS:
+    path('api/pedido/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_dados_precificacao'),
+    path('api/pedido/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_salvar_preco_negociado'),
     
     # APIs AJAX
     path('api/cliente/<int:cliente_id>/', views.api_cliente_info, name='api_cliente_info'),

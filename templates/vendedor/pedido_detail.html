@@ -853,142 +853,195 @@
         </div>
       </div>
 
-      <!-- ABA PREÇOS -->
+
+      <!-- ABA PREÇOS - VERSÃO ÚNICA INTEGRADA COM PARÂMETROS -->
       <div class="tab-pane fade" id="precos" role="tabpanel">
         <div class="card-body">
           
-          <!-- Resumo Comercial -->
-          <div class="card shadow-sm border-success mb-4">
-            <div class="card-header bg-success text-white">
-              <h6 class="card-title mb-0">
-                <i class="fas fa-money-bill-wave me-2"></i>Resumo Comercial
-              </h6>
+          <!-- SEÇÃO 1: FECHAMENTO DO PEDIDO -->
+          <div class="price-section bg-white mb-4 p-4 border border-success">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h5 class="text-success mb-0">
+                <i class="fas fa-handshake me-2"></i>Fechamento do Pedido
+              </h5>
+              <div class="badge bg-success fs-6" id="statusBadge">Carregando...</div>
             </div>
-            <div class="card-body">
-              {% if pedido.custo_producao or pedido.preco_venda_calculado %}
-                <div class="row text-center">
-                  {% if pedido.custo_producao %}
-                  <div class="col-md-6">
-                    <div class="border rounded p-4 bg-light">
-                      <h6 class="text-muted mb-2">Custo de Produção</h6>
-                      <h3 class="text-primary mb-0">R$ {{ pedido.custo_producao|formato_br }}</h3>
-                    </div>
+            
+            <div class="row g-4">
+              <!-- Preço Base -->
+              <div class="col-md-6">
+                <div class="bg-light p-4 rounded">
+                  <label class="form-label text-muted mb-2">Preço Calculado (Sem Impostos)</label>
+                  <div class="price-display text-primary" id="precoCalculado">
+                    R$ {{ pedido.preco_venda_calculado|formato_br|default:"0,00" }}
                   </div>
-                  {% endif %}
-                  
-                  {% if pedido.preco_venda_calculado %}
-                  <div class="col-md-6">
-                    <div class="border rounded p-4 bg-success text-white">
-                      <h6 class="mb-2">Preço de Venda</h6>
-                      <h3 class="mb-0">R$ {{ pedido.preco_venda_calculado|formato_br }}</h3>
-                    </div>
-                  </div>
-                  {% endif %}
+                  <small class="text-muted">Base do sistema de cálculo</small>
                 </div>
-
-                {% if pedido.custo_producao and pedido.preco_venda_calculado %}
-                <hr class="my-4">
-                <div class="row text-center">
-                  <div class="col-md-6">
-                    <div class="border rounded p-3 bg-light">
-                      <strong class="d-block text-info fs-4">R$ {{ pedido.preco_venda_calculado|sub:pedido.custo_producao|formato_br }}</strong>
-                      <small class="text-muted">Margem de Lucro</small>
-                    </div>
+              </div>
+              
+              <!-- Preço Editável -->
+              <div class="col-md-6">
+                <label class="form-label text-success mb-2">
+                  <strong>Preço Final (Sem Impostos)</strong>
+                  <i class="fas fa-edit ms-1"></i>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text bg-success text-white">R$</span>
+                  <input type="text" class="form-control price-input" 
+                        id="precoFinalSemImpostos" 
+                        value="{{ pedido.preco_negociado|formato_br|default:pedido.preco_venda_calculado|formato_br }}" 
+                        placeholder="0,00"
+                        {% if not pedido.pode_editar %}disabled{% endif %}>
+                </div>
+                <div id="alcadaAlert" class="mt-2"></div>
+              </div>
+              
+              <!-- Desconto Calculado -->
+              <div class="col-md-4">
+                <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
+                  <div class="text-warning fs-4 fw-bold" id="percentualDesconto">
+                    {{ pedido.percentual_desconto|default:"0.0"|floatformat:1 }}%
                   </div>
-                  <div class="col-md-6">
-                    <div class="border rounded p-3 bg-light">
-                      {% if pedido.custo_producao and pedido.custo_producao > 0 %}
-                        <strong class="d-block text-info fs-4">{{ pedido.preco_venda_calculado|sub:pedido.custo_producao|div:pedido.custo_producao|mul:100|floatformat:1 }}%</strong>
-                      {% else %}
-                        <strong class="d-block text-info fs-4">0,0%</strong>
-                      {% endif %}
-                      <small class="text-muted">Margem %</small>
+                  <small class="text-muted">Desconto Aplicado</small>
+                </div>
+              </div>
+              
+              <!-- Margem Visual -->
+              <div class="col-md-8">
+                <label class="form-label text-muted small">Margem de Lucro</label>
+                <div class="margin-indicator">
+                  <div class="margin-pointer" id="margemPointer" style="left: 75%;"></div>
+                </div>
+                <div class="d-flex justify-content-between small text-muted">
+                  <span>Prejuízo</span>
+                  <span>Baixa</span>
+                  <span>Boa</span>
+                  <span>Excelente</span>
+                </div>
+              </div>
+              
+              <!-- Preço Final com Impostos -->
+              <div class="col-12">
+                <div class="border-top pt-4">
+                  <div class="row align-items-center">
+                    <div class="col-md-8">
+                      <h5 class="text-success mb-1">
+                        <i class="fas fa-money-bill-wave me-2"></i>Preço Final para o Cliente
+                      </h5>
+                      <small class="text-muted">Valor com impostos inclusos - Faturado por: <strong>{{ pedido.get_faturado_por_display }}</strong></small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                      <div class="price-display text-success" id="precoComImpostos">
+                        R$ {{ pedido.preco_venda_final|formato_br|default:pedido.preco_venda_calculado|formato_br }}
+                      </div>
                     </div>
                   </div>
                 </div>
-                {% endif %}
-
-              {% else %}
-                <div class="text-center p-4">
-                  <i class="fas fa-money-bill-wave fa-3x text-muted mb-3"></i>
-                  <p class="text-muted">Nenhum preço foi calculado ainda.</p>
-                  {% if pedido.pode_calcular %}
-                    <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-success">
-                      <i class="fas fa-calculator"></i> Calcular Preços
-                    </a>
-                  {% endif %}
-                </div>
-              {% endif %}
+              </div>
             </div>
+            
+            <!-- Botões de Ação -->
+            {% if pedido.pode_editar %}
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <button class="btn btn-save-price w-100" id="btnSalvarPreco">
+                  <i class="fas fa-save me-2"></i>Salvar Preço
+                </button>
+              </div>
+              <div class="col-md-6">
+                <a href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" class="btn btn-outline-success w-100">
+                  <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
+                </a>
+              </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info mt-4">
+              <i class="fas fa-lock me-2"></i>
+              Pedido não pode mais ser editado. Status atual: <strong>{{ pedido.get_status_display }}</strong>
+            </div>
+            {% endif %}
           </div>
-
-          <!-- Formação de Preço Detalhada -->
-          {% if formacao_preco %}
-          <div class="card shadow-sm border-dark mb-4">
-            <div class="card-header bg-dark text-white">
-              <h6 class="card-title mb-0">
-                <i class="fas fa-chart-line me-2"></i>Formação de Preço Detalhada
-              </h6>
+          
+          <!-- SEÇÃO 2: FORMAÇÃO DE PREÇO (DROPDOWN) -->
+          <div class="price-section bg-white border border-dark">
+            <div class="collapse-toggle p-4" data-bs-toggle="collapse" data-bs-target="#formacaoPreco" 
+                aria-expanded="false" aria-controls="formacaoPreco">
+              <div class="d-flex justify-content-between align-items-center">
+                <h5 class="text-dark mb-0">
+                  <i class="fas fa-chart-line me-2"></i>Formação de Preço Detalhada
+                </h5>
+                <i class="fas fa-chevron-down text-dark"></i>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-sm">
-                  <tbody>
-                    <tr>
-                      <td><strong>Custo de Produção</strong></td>
-                      <td class="text-end"><strong>R$ {{ formacao_preco.custo_producao|formato_br|default:"0,00" }}</strong></td>
-                      <td class="text-muted small">Base do cálculo</td>
-                    </tr>
-                    <tr>
-                      <td>Margem de Lucro ({{ formacao_preco.percentual_margem|floatformat:1|default:"0,0" }}%)</td>
-                      <td class="text-end">R$ {{ formacao_preco.valor_margem|formato_br|default:"0,00" }}</td>
-                      <td class="text-muted small">Lucro da empresa</td>
-                    </tr>
-                    {% if formacao_preco.percentual_desconto and formacao_preco.percentual_desconto > 0 %}
-                    <tr class="table-warning">
-                      <td>Desconto Comercial ({{ formacao_preco.percentual_desconto|floatformat:1 }}%)</td>
-                      <td class="text-end">-R$ {{ formacao_preco.valor_desconto|formato_br }}</td>
-                      <td class="text-muted small">Desconto aplicado</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                      <td>Comissão Vendedor ({{ formacao_preco.percentual_comissao|floatformat:1|default:"0,0" }}%)</td>
-                      <td class="text-end">R$ {{ formacao_preco.valor_comissao|formato_br|default:"0,00" }}</td>
-                      <td class="text-muted small">Comissão sobre venda</td>
-                    </tr>
-                    <tr class="table-light">
-                      <td><strong>Preço sem Impostos</strong></td>
-                      <td class="text-end"><strong>R$ {{ formacao_preco.preco_sem_impostos|formato_br|default:"0,00" }}</strong></td>
-                      <td class="text-muted small">Subtotal</td>
-                    </tr>
-                    <tr>
-                      <td>Impostos ({{ formacao_preco.percentual_impostos|floatformat:1|default:"0,0" }}%)</td>
-                      <td class="text-end">R$ {{ formacao_preco.valor_impostos|formato_br|default:"0,00" }}</td>
-                      <td class="text-muted small">ICMS, PIS, COFINS, etc.</td>
-                    </tr>
-                    <tr class="table-success">
-                      <td><strong>Preço Final com Impostos</strong></td>
-                      <td class="text-end"><strong>R$ {{ formacao_preco.preco_com_impostos|formato_br|default:"0,00" }}</strong></td>
-                      <td class="text-muted small">Valor para o cliente</td>
-                    </tr>
-                  </tbody>
-                </table>
+            
+            <div class="collapse" id="formacaoPreco">
+              <div class="border-top p-4">
+                <div class="table-responsive">
+                  <table class="table formacao-table mb-0">
+                    <tbody>
+                      <tr>
+                        <td>Custo de produção</td>
+                        <td class="valor-column" id="custoProducaoFormacao">R$ {{ pedido.custo_producao|formato_br|default:"0,00" }}</td>
+                        <td class="text-muted small">Base do cálculo</td>
+                      </tr>
+                      <tr>
+                        <td>Margem (<span class="text-primary" id="percMargem">30.0%</span>)</td>
+                        <td class="valor-column text-primary" id="valorMargem">R$ 0,00</td>
+                        <td class="text-muted small">Lucro da empresa</td>
+                      </tr>
+                      <tr id="rowDesconto" class="d-none">
+                        <td class="text-warning">Desconto (<span id="percDesconto">0.0%</span>)</td>
+                        <td class="valor-column text-warning">-R$ <span id="valorDesconto">0,00</span></td>
+                        <td class="text-muted small">Desconto comercial</td>
+                      </tr>
+                      <tr>
+                        <td>Base Cálculo Comissão</td>
+                        <td class="valor-column" id="baseComissao">R$ 0,00</td>
+                        <td class="text-muted small">Base para comissão</td>
+                      </tr>
+                      <tr>
+                        <td>Comissão (<span class="text-info" id="percComissao">3.0%</span>)</td>
+                        <td class="valor-column text-info" id="valorComissao">R$ 0,00</td>
+                        <td class="text-muted small">Comissão vendedor</td>
+                      </tr>
+                      <tr class="total-row">
+                        <td class="fw-bold">Preço sem impostos</td>
+                        <td class="valor-column text-success" id="precoSemImpostosFormacao">R$ 0,00</td>
+                        <td class="text-muted small">Subtotal</td>
+                      </tr>
+                      <tr>
+                        <td>Impostos (<span class="text-secondary" id="percImpostos">10.0%</span>)</td>
+                        <td class="valor-column text-secondary" id="valorImpostos">R$ 0,00</td>
+                        <td class="text-muted small">ICMS, PIS, COFINS</td>
+                      </tr>
+                      <tr class="total-row">
+                        <td class="fw-bold">Preço com impostos</td>
+                        <td class="valor-column text-success" id="precoComImpostosFormacao">R$ 0,00</td>
+                        <td class="text-muted small">Valor final</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                
+                <!-- Alertas da Formação -->
+                <div class="mt-3" id="alertasFormacao"></div>
               </div>
             </div>
           </div>
-          {% endif %}
 
-          <!-- Botões de Ação -->
-          <div class="row">
-            <div class="col-md-6">
-              <a href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" class="btn btn-success w-100">
-                <i class="fas fa-file-invoice me-2"></i> Gerar Orçamento
-              </a>
-            </div>
+          <!-- Botões de Ação Finais -->
+          <div class="row mt-4">
             <div class="col-md-6">
               <a href="{% url 'vendedor:pdf_demonstrativo' pedido.pk %}" class="btn btn-primary w-100">
                 <i class="fas fa-file-pdf me-2"></i> Demonstrativo Técnico
               </a>
+            </div>
+            <div class="col-md-6">
+              {% if pedido.status == 'simulado' %}
+              <button class="btn btn-warning w-100" onclick="alert('Funcionalidade em desenvolvimento')">
+                <i class="fas fa-paper-plane me-2"></i> Enviar ao Cliente
+              </button>
+              {% endif %}
             </div>
           </div>
           
@@ -997,15 +1050,419 @@
 
     </div>
   </div>
+
+  </div>
 </div>
 
 <script>
+// Classe para gerenciar preços com integração aos parâmetros
+class GerenciadorPrecos {
+    constructor() {
+        // Dados base do pedido - serão carregados do backend
+        this.dados = {
+            custoProducao: 0,
+            percentualMargem: 0,
+            percentualComissao: 0,
+            percentualImpostos: 0,
+            precoCalculado: 0,
+            alcadaMaxima: 0,
+            faturadoPor: 'Elevadores' // Elevadores, Fuza, ou Manutenção
+        };
+        
+        this.parametros = {}; // Cache dos parâmetros
+        
+        this.carregarDados();
+    }
+    
+    async carregarDados() {
+        try {
+            // Carregar dados do pedido e parâmetros do backend
+            const response = await fetch(`/vendedor/api/pedido/{{ pedido.pk }}/dados-precificacao/`);
+            const dados = await response.json();
+            
+            if (dados.success) {
+                this.dados = dados.dados;
+                this.parametros = dados.parametros;
+                
+                // Aplicar percentual de impostos baseado no "faturado_por"
+                this.aplicarParametrosImpostos();
+                
+                this.init();
+            } else {
+                console.error('Erro ao carregar dados:', dados.error);
+                this.usarDadosDefault();
+            }
+        } catch (error) {
+            console.error('Erro na requisição:', error);
+            this.usarDadosDefault();
+        }
+    }
+    
+    aplicarParametrosImpostos() {
+        // Mapear "faturado_por" para chave do parâmetro
+        const mapeamentoImpostos = {
+            'Elevadores': 'fat.Elevadores',
+            'Fuza': 'fat.Fuza', 
+            'Manutenção': 'fat.Manutenção'
+        };
+        
+        const chaveImposto = mapeamentoImpostos[this.dados.faturadoPor] || 'fat.Elevadores';
+        this.dados.percentualImpostos = this.parametros[chaveImposto] || 10.0;
+        
+        // Outros parâmetros
+        this.dados.percentualComissao = this.parametros['comissao'] || 3.0;
+        this.dados.percentualMargem = this.parametros['margem'] || 30.0;
+        this.dados.alcadaMaxima = this.parametros['desc.alcada1'] || 5.0;
+        
+        console.log('Parâmetros aplicados:', {
+            faturadoPor: this.dados.faturadoPor,
+            impostos: this.dados.percentualImpostos,
+            comissao: this.dados.percentualComissao,
+            margem: this.dados.percentualMargem,
+            alcada: this.dados.alcadaMaxima
+        });
+    }
+    
+    usarDadosDefault() {
+        // Fallback com dados default caso não consiga carregar do backend
+        this.dados = {
+            custoProducao: parseFloat('{{ pedido.custo_producao|default:"0" }}') || 0,
+            percentualMargem: 30.0,
+            percentualComissao: 3.0,
+            percentualImpostos: 10.0, // Default para Elevadores
+            precoCalculado: parseFloat('{{ pedido.preco_venda_calculado|default:"0" }}') || 0,
+            alcadaMaxima: 5.0,
+            faturadoPor: '{{ pedido.faturado_por }}'
+        };
+        
+        this.init();
+    }
+    
+    init() {
+        // Configurar eventos
+        const inputPreco = document.getElementById('precoFinalSemImpostos');
+        if (inputPreco) {
+            inputPreco.addEventListener('input', (e) => this.onPrecoChange(e));
+            inputPreco.addEventListener('blur', (e) => this.formatarInput(e));
+            
+            // Formatar valor inicial
+            this.formatarInput({target: inputPreco});
+        }
+        
+        const btnSalvar = document.getElementById('btnSalvarPreco');
+        if (btnSalvar) {
+            btnSalvar.addEventListener('click', () => this.salvarPreco());
+        }
+        
+        this.atualizarCalculos();
+    }
+    
+    onPrecoChange(event) {
+        // Remove formatação para cálculo
+        let valor = event.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+        
+        if (valor) {
+            const precoFloat = parseFloat(valor);
+            if (!isNaN(precoFloat)) {
+                this.atualizarCalculos(precoFloat);
+            }
+        }
+    }
+    
+    formatarInput(event) {
+        const input = event.target;
+        let valor = input.value.replace(/[^\d,]/g, '');
+        
+        if (valor) {
+            // Converter para float
+            const precoFloat = parseFloat(valor.replace(',', '.'));
+            
+            if (!isNaN(precoFloat)) {
+                // Formatar como moeda brasileira
+                input.value = this.formatarMoeda(precoFloat);
+            }
+        }
+    }
+    
+    atualizarCalculos(precoFinal = null) {
+        if (precoFinal === null) {
+            precoFinal = this.dados.precoCalculado;
+        }
+        
+        // Calcular desconto
+        const desconto = this.dados.precoCalculado - precoFinal;
+        const percentualDesconto = this.dados.precoCalculado > 0 ? (desconto / this.dados.precoCalculado) * 100 : 0;
+        
+        // Verificar alçada
+        this.verificarAlcada(percentualDesconto);
+        
+        // Atualizar displays
+        this.atualizarDisplays(precoFinal, percentualDesconto, desconto);
+        
+        // Atualizar formação de preço
+        this.atualizarFormacaoPreco(precoFinal, percentualDesconto, desconto);
+    }
+    
+    verificarAlcada(percentualDesconto) {
+        const statusBadge = document.getElementById('statusBadge');
+        const alcadaAlert = document.getElementById('alcadaAlert');
+        const btnSalvar = document.getElementById('btnSalvarPreco');
+        
+        if (!statusBadge || !alcadaAlert || !btnSalvar) return;
+        
+        if (percentualDesconto <= this.dados.alcadaMaxima) {
+            // Dentro da alçada
+            statusBadge.className = 'badge bg-success fs-6';
+            statusBadge.textContent = 'Dentro da Alçada';
+            
+            alcadaAlert.innerHTML = '';
+            btnSalvar.disabled = false;
+            btnSalvar.classList.remove('btn-danger');
+            btnSalvar.classList.add('btn-save-price');
+            
+        } else {
+            // Fora da alçada
+            statusBadge.className = 'badge bg-danger fs-6';
+            statusBadge.textContent = 'Fora da Alçada';
+            
+            alcadaAlert.innerHTML = `
+                <div class="alert alcada-danger p-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Desconto acima da alçada!</strong><br>
+                    <small>Desconto máximo permitido: ${this.dados.alcadaMaxima}%. Solicite aprovação do gestor.</small>
+                </div>
+            `;
+            
+            btnSalvar.disabled = true;
+            btnSalvar.classList.remove('btn-save-price');
+            btnSalvar.classList.add('btn-danger');
+        }
+    }
+    
+    atualizarDisplays(precoFinal, percentualDesconto, desconto) {
+        // Percentual de desconto
+        const elemPercentual = document.getElementById('percentualDesconto');
+        if (elemPercentual) {
+            elemPercentual.textContent = `${percentualDesconto.toFixed(1)}%`;
+            
+            if (percentualDesconto > 0) {
+                elemPercentual.classList.add('discount-badge');
+            } else {
+                elemPercentual.classList.remove('discount-badge');
+            }
+        }
+        
+        // Preço com impostos
+        const valorImpostos = precoFinal * (this.dados.percentualImpostos / 100);
+        const precoComImpostos = precoFinal + valorImpostos;
+        
+        const elemPrecoComImpostos = document.getElementById('precoComImpostos');
+        if (elemPrecoComImpostos) {
+            elemPrecoComImpostos.textContent = `R$ ${this.formatarMoeda(precoComImpostos)}`;
+        }
+        
+        // Atualizar indicador de margem
+        this.atualizarIndicadorMargem(precoFinal);
+    }
+    
+    atualizarIndicadorMargem(precoFinal) {
+        const margem = precoFinal - this.dados.custoProducao;
+        const percentualMargem = this.dados.custoProducao > 0 ? (margem / this.dados.custoProducao) * 100 : 0;
+        
+        // Calcular posição no indicador (0-100%)
+        let posicao = 0;
+        if (percentualMargem <= 0) posicao = 0;
+        else if (percentualMargem >= 50) posicao = 100;
+        else posicao = (percentualMargem / 50) * 100;
+        
+        const pointer = document.getElementById('margemPointer');
+        if (pointer) {
+            pointer.style.left = `${posicao}%`;
+            
+            // Mudar cor baseado na margem
+            if (percentualMargem < 10) {
+                pointer.style.background = '#e74c3c';
+            } else if (percentualMargem < 25) {
+                pointer.style.background = '#f39c12';
+            } else {
+                pointer.style.background = '#27ae60';
+            }
+        }
+    }
+    
+    atualizarFormacaoPreco(precoFinal, percentualDesconto, valorDesconto) {
+        // Base de cálculo da comissão
+        const baseComissao = precoFinal / (1 + this.dados.percentualComissao / 100);
+        const valorComissao = baseComissao * (this.dados.percentualComissao / 100);
+        const valorImpostos = precoFinal * (this.dados.percentualImpostos / 100);
+        const precoComImpostos = precoFinal + valorImpostos;
+        const valorMargem = this.dados.custoProducao * (this.dados.percentualMargem / 100);
+        
+        // Atualizar percentuais na tabela
+        const percMargem = document.getElementById('percMargem');
+        const percComissao = document.getElementById('percComissao');
+        const percImpostos = document.getElementById('percImpostos');
+        
+        if (percMargem) percMargem.textContent = `${this.dados.percentualMargem.toFixed(1)}%`;
+        if (percComissao) percComissao.textContent = `${this.dados.percentualComissao.toFixed(1)}%`;
+        if (percImpostos) percImpostos.textContent = `${this.dados.percentualImpostos.toFixed(1)}%`;
+        
+        // Atualizar valores calculados
+        const elementos = {
+            'valorMargem': valorMargem,
+            'baseComissao': baseComissao,
+            'valorComissao': valorComissao,
+            'precoSemImpostosFormacao': precoFinal,
+            'valorImpostos': valorImpostos,
+            'precoComImpostosFormacao': precoComImpostos
+        };
+        
+        Object.entries(elementos).forEach(([id, valor]) => {
+            const elem = document.getElementById(id);
+            if (elem) {
+                elem.textContent = `R$ ${this.formatarMoeda(valor)}`;
+            }
+        });
+        
+        // Mostrar/ocultar linha de desconto
+        const rowDesconto = document.getElementById('rowDesconto');
+        if (rowDesconto) {
+            if (percentualDesconto > 0.1) {
+                rowDesconto.classList.remove('d-none');
+                const percDesconto = document.getElementById('percDesconto');
+                const valorDescontoElem = document.getElementById('valorDesconto');
+                
+                if (percDesconto) percDesconto.textContent = `${percentualDesconto.toFixed(1)}%`;
+                if (valorDescontoElem) valorDescontoElem.textContent = this.formatarMoeda(Math.abs(valorDesconto));
+            } else {
+                rowDesconto.classList.add('d-none');
+            }
+        }
+        
+        // Atualizar indicador de empresa faturadora
+        this.atualizarIndicadorFaturamento();
+    }
+    
+    atualizarIndicadorFaturamento() {
+        const alertasFormacao = document.getElementById('alertasFormacao');
+        if (!alertasFormacao) return;
+        
+        let corBadge = 'success';
+        let textoFaturamento = '';
+        
+        switch(this.dados.faturadoPor) {
+            case 'Elevadores':
+                corBadge = 'success';
+                textoFaturamento = `Faturamento: <strong>Elevadores</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%`;
+                break;
+            case 'Fuza':
+                corBadge = 'primary';
+                textoFaturamento = `Faturamento: <strong>Fuza</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%`;
+                break;
+            case 'Manutenção':
+                corBadge = 'warning';
+                textoFaturamento = `Faturamento: <strong>Manutenção</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%`;
+                break;
+        }
+        
+        alertasFormacao.innerHTML = `
+            <div class="alert alert-${corBadge === 'warning' ? 'warning' : 'info'} alert-dismissible p-2">
+                <small>
+                    <i class="fas fa-building me-2"></i>
+                    ${textoFaturamento}
+                </small>
+            </div>
+        `;
+    }
+    
+    formatarMoeda(valor) {
+        if (isNaN(valor) || valor === null || valor === undefined) return '0,00';
+        return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    
+    async salvarPreco() {
+        const inputPreco = document.getElementById('precoFinalSemImpostos');
+        if (!inputPreco) return;
+        
+        const valorTexto = inputPreco.value.replace(/[^\d,]/g, '').replace(',', '.');
+        const valor = parseFloat(valorTexto);
+        
+        if (isNaN(valor) || valor <= 0) {
+            alert('Por favor, insira um preço válido');
+            return;
+        }
+        
+        // Validar alçada
+        const desconto = this.dados.precoCalculado - valor;
+        const percentualDesconto = this.dados.precoCalculado > 0 ? (desconto / this.dados.precoCalculado) * 100 : 0;
+        
+        if (percentualDesconto > this.dados.alcadaMaxima) {
+            alert(`Desconto de ${percentualDesconto.toFixed(1)}% está acima da alçada máxima de ${this.dados.alcadaMaxima}%`);
+            return;
+        }
+        
+        // Feedback visual
+        const btn = document.getElementById('btnSalvarPreco');
+        const textoOriginal = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvando...';
+        btn.disabled = true;
+        
+        try {
+            const response = await fetch(`/vendedor/api/pedido/{{ pedido.pk }}/salvar-preco/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({
+                    preco_negociado: valor
+                })
+            });
+            
+            const resultado = await response.json();
+            
+            if (resultado.success) {
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Salvo!';
+                setTimeout(() => {
+                    btn.innerHTML = textoOriginal;
+                    btn.disabled = false;
+                }, 1500);
+                
+                // Atualizar dados na página
+                console.log('Preço salvo com sucesso:', resultado.dados);
+                
+            } else {
+                throw new Error(resultado.error || 'Erro ao salvar preço');
+            }
+            
+        } catch (error) {
+            console.error('Erro ao salvar preço:', error);
+            alert('Erro ao salvar preço: ' + error.message);
+            
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+    }
+}
+
+// Inicializar quando página carregar
 document.addEventListener('DOMContentLoaded', function() {
     // Ativar tooltips do Bootstrap se existirem
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Verificar se estamos na aba de preços
+    if (document.getElementById('precoFinalSemImpostos')) {
+        // Inicializar gerenciador de preços com dados do Django
+        window.gerenciadorPrecos = new GerenciadorPrecos();
+        
+        console.log('Sistema de precificação inicializado com parâmetros do banco de dados');
+        console.log('Pedido:', '{{ pedido.numero }}');
+        console.log('Faturado por:', '{{ pedido.faturado_por }}');
+    }
     
     // Log dos dados para debug (apenas no console)
     console.log('=== PEDIDO {{ pedido.numero }} ===');
@@ -1016,5 +1473,135 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Preço calculado:', '{{ pedido.preco_venda_calculado|default:"null" }}');
 });
 </script>
+
+{% block extra_css %}
+<style>
+.price-section {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.price-section:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.price-display {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #198754;
+}
+
+.price-input {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: right;
+    border: 2px solid #198754;
+    border-radius: 8px;
+}
+
+.price-input:focus {
+    border-color: #20c997;
+    box-shadow: 0 0 0 0.2rem rgba(32, 201, 151, 0.25);
+}
+
+.alcada-warning {
+    background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+    border-left: 4px solid #f39c12;
+}
+
+.alcada-danger {
+    background: linear-gradient(45deg, #f8d7da, #fab1a0);
+    border-left: 4px solid #e74c3c;
+}
+
+.formacao-table {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background: #f8f9fa;
+}
+
+.formacao-table td {
+    padding: 8px 12px;
+    border-bottom: 1px dotted #dee2e6;
+}
+
+.formacao-table .valor-column {
+    text-align: right;
+    font-weight: bold;
+}
+
+.total-row {
+    background: #e8f5e8;
+    font-weight: bold;
+    border-top: 2px solid #198754;
+}
+
+.discount-badge {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.btn-save-price {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    color: white;
+    font-weight: bold;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-save-price:hover {
+    background: linear-gradient(45deg, #218838, #1e7e34);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.collapse-toggle {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.collapse-toggle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.collapse-toggle .fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.collapse-toggle[aria-expanded="true"] .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+.margin-indicator {
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+    position: relative;
+    margin: 10px 0;
+}
+
+.margin-pointer {
+    position: absolute;
+    top: -2px;
+    width: 10px;
+    height: 10px;
+    background: #2c3e50;
+    border-radius: 50%;
+    transform: translateX(-50%);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- CSRF Token para AJAX -->
+{% csrf_token %}
+{% endblock %}
 
 {% endblock %}
