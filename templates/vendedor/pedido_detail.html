@@ -1055,87 +1055,51 @@
 </div>
 
 <script>
-// Classe para gerenciar preços com integração aos parâmetros
 class GerenciadorPrecos {
     constructor() {
-        // Dados base do pedido - serão carregados do backend
-        this.dados = {
-            custoProducao: 0,
-            percentualMargem: 0,
-            percentualComissao: 0,
-            percentualImpostos: 0,
-            precoCalculado: 0,
-            alcadaMaxima: 0,
-            faturadoPor: 'Elevadores' // Elevadores, Fuza, ou Manutenção
-        };
-        
-        this.parametros = {}; // Cache dos parâmetros
-        
+        this.dados = {};
+        this.parametros = {};
         this.carregarDados();
     }
     
     async carregarDados() {
         try {
-            // Carregar dados do pedido e parâmetros do backend
-            const response = await fetch(`/vendedor/api/pedido/{{ pedido.pk }}/dados-precificacao/`);
-            const dados = await response.json();
+            console.log('🔄 Carregando parâmetros do sistema...');
             
-            if (dados.success) {
-                this.dados = dados.dados;
-                this.parametros = dados.parametros;
+            const response = await fetch(`/vendedor/api/pedido/{{ pedido.pk }}/dados-precificacao/`);
+            const resultado = await response.json();
+            
+            if (resultado.success) {
+                this.dados = resultado.dados;
+                this.parametros = resultado.parametros;
                 
-                // Aplicar percentual de impostos baseado no "faturado_por"
-                this.aplicarParametrosImpostos();
+                console.log('✅ Parâmetros carregados:', {
+                    margem: this.dados.percentualMargem + '%',
+                    comissao: this.dados.percentualComissao + '%',
+                    impostos: this.dados.percentualImpostos + '% (' + this.dados.faturadoPor + ')',
+                    alcada: this.dados.alcadaMaxima + '% (' + this.dados.alcadaTipo + ')',
+                    usuario: this.dados.userLevel
+                });
                 
                 this.init();
             } else {
-                console.error('Erro ao carregar dados:', dados.error);
-                this.usarDadosDefault();
+                console.error('❌ Erro:', resultado.error);
+                this.mostrarErro('Erro ao carregar parâmetros: ' + resultado.error);
             }
         } catch (error) {
-            console.error('Erro na requisição:', error);
-            this.usarDadosDefault();
+            console.error('💥 Erro de conexão:', error);
+            this.mostrarErro('Erro de conexão com o servidor');
         }
     }
     
-    aplicarParametrosImpostos() {
-        // Mapear "faturado_por" para chave do parâmetro
-        const mapeamentoImpostos = {
-            'Elevadores': 'fat.Elevadores',
-            'Fuza': 'fat.Fuza', 
-            'Manutenção': 'fat.Manutenção'
-        };
-        
-        const chaveImposto = mapeamentoImpostos[this.dados.faturadoPor] || 'fat.Elevadores';
-        this.dados.percentualImpostos = this.parametros[chaveImposto] || 10.0;
-        
-        // Outros parâmetros
-        this.dados.percentualComissao = this.parametros['comissao'] || 3.0;
-        this.dados.percentualMargem = this.parametros['margem'] || 30.0;
-        this.dados.alcadaMaxima = this.parametros['desc.alcada1'] || 5.0;
-        
-        console.log('Parâmetros aplicados:', {
-            faturadoPor: this.dados.faturadoPor,
-            impostos: this.dados.percentualImpostos,
-            comissao: this.dados.percentualComissao,
-            margem: this.dados.percentualMargem,
-            alcada: this.dados.alcadaMaxima
-        });
-    }
-    
-    usarDadosDefault() {
-        // Fallback com dados default caso não consiga carregar do backend
-        this.dados = {
-            custoProducao: parseFloat('{{ pedido.custo_producao|default:"0" }}') || 0,
-            percentualMargem: 30.0,
-            percentualComissao: 3.0,
-            percentualImpostos: 10.0, // Default para Elevadores
-            precoCalculado: parseFloat('{{ pedido.preco_venda_calculado|default:"0" }}') || 0,
-            alcadaMaxima: 5.0,
-            faturadoPor: '{{ pedido.faturado_por }}'
-        };
-        
-        this.init();
+    mostrarErro(mensagem) {
+        alert(mensagem);
+        // Desabilitar funcionalidades se não conseguir carregar parâmetros
+        const btnSalvar = document.getElementById('btnSalvarPreco');
+        if (btnSalvar) {
+            btnSalvar.disabled = true;
+            btnSalvar.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Erro nos Parâmetros';
+        }
     }
     
     init() {
@@ -1144,8 +1108,6 @@ class GerenciadorPrecos {
         if (inputPreco) {
             inputPreco.addEventListener('input', (e) => this.onPrecoChange(e));
             inputPreco.addEventListener('blur', (e) => this.formatarInput(e));
-            
-            // Formatar valor inicial
             this.formatarInput({target: inputPreco});
         }
         
@@ -1154,11 +1116,40 @@ class GerenciadorPrecos {
             btnSalvar.addEventListener('click', () => this.salvarPreco());
         }
         
+        // Atualizar interface
+        this.atualizarPercentuais();
         this.atualizarCalculos();
+        
+        console.log('✅ Sistema inicializado');
+    }
+    
+    atualizarPercentuais() {
+        // Atualizar percentuais na formação de preço
+        const elementos = {
+            'percMargem': this.dados.percentualMargem,
+            'percComissao': this.dados.percentualComissao,
+            'percImpostos': this.dados.percentualImpostos
+        };
+        
+        Object.entries(elementos).forEach(([id, valor]) => {
+            const elem = document.getElementById(id);
+            if (elem) elem.textContent = `${valor.toFixed(1)}%`;
+        });
+        
+        // Custo de produção
+        const custoElem = document.getElementById('custoProducaoFormacao');
+        if (custoElem) {
+            custoElem.textContent = `R$ ${this.formatarMoeda(this.dados.custoProducao)}`;
+        }
+        
+        // Preço calculado
+        const precoCalculadoElem = document.getElementById('precoCalculado');
+        if (precoCalculadoElem) {
+            precoCalculadoElem.textContent = `R$ ${this.formatarMoeda(this.dados.precoCalculado)}`;
+        }
     }
     
     onPrecoChange(event) {
-        // Remove formatação para cálculo
         let valor = event.target.value.replace(/[^\d,]/g, '').replace(',', '.');
         
         if (valor) {
@@ -1174,11 +1165,8 @@ class GerenciadorPrecos {
         let valor = input.value.replace(/[^\d,]/g, '');
         
         if (valor) {
-            // Converter para float
             const precoFloat = parseFloat(valor.replace(',', '.'));
-            
             if (!isNaN(precoFloat)) {
-                // Formatar como moeda brasileira
                 input.value = this.formatarMoeda(precoFloat);
             }
         }
@@ -1186,21 +1174,25 @@ class GerenciadorPrecos {
     
     atualizarCalculos(precoFinal = null) {
         if (precoFinal === null) {
-            precoFinal = this.dados.precoCalculado;
+            precoFinal = this.dados.precoNegociado || this.dados.precoCalculado;
         }
         
         // Calcular desconto
         const desconto = this.dados.precoCalculado - precoFinal;
-        const percentualDesconto = this.dados.precoCalculado > 0 ? (desconto / this.dados.precoCalculado) * 100 : 0;
+        const percentualDesconto = this.dados.precoCalculado > 0 ? 
+            (desconto / this.dados.precoCalculado) * 100 : 0;
         
         // Verificar alçada
         this.verificarAlcada(percentualDesconto);
         
         // Atualizar displays
-        this.atualizarDisplays(precoFinal, percentualDesconto, desconto);
+        this.atualizarDisplays(precoFinal, percentualDesconto);
         
         // Atualizar formação de preço
-        this.atualizarFormacaoPreco(precoFinal, percentualDesconto, desconto);
+        this.atualizarFormacaoPreco(precoFinal, percentualDesconto);
+        
+        // Atualizar indicador de margem
+        this.atualizarIndicadorMargem(precoFinal);
     }
     
     verificarAlcada(percentualDesconto) {
@@ -1213,9 +1205,15 @@ class GerenciadorPrecos {
         if (percentualDesconto <= this.dados.alcadaMaxima) {
             // Dentro da alçada
             statusBadge.className = 'badge bg-success fs-6';
-            statusBadge.textContent = 'Dentro da Alçada';
+            statusBadge.textContent = `OK - ${this.dados.alcadaTipo.toUpperCase()}`;
             
-            alcadaAlert.innerHTML = '';
+            alcadaAlert.innerHTML = `
+                <div class="alert alert-success p-2">
+                    <i class="fas fa-check me-2"></i>
+                    <small>Alçada ${this.dados.alcadaTipo}: até ${this.dados.alcadaMaxima}%</small>
+                </div>
+            `;
+            
             btnSalvar.disabled = false;
             btnSalvar.classList.remove('btn-danger');
             btnSalvar.classList.add('btn-save-price');
@@ -1223,13 +1221,14 @@ class GerenciadorPrecos {
         } else {
             // Fora da alçada
             statusBadge.className = 'badge bg-danger fs-6';
-            statusBadge.textContent = 'Fora da Alçada';
+            statusBadge.textContent = 'FORA DA ALÇADA';
             
             alcadaAlert.innerHTML = `
-                <div class="alert alcada-danger p-3">
+                <div class="alert alert-danger p-2">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Desconto acima da alçada!</strong><br>
-                    <small>Desconto máximo permitido: ${this.dados.alcadaMaxima}%. Solicite aprovação do gestor.</small>
+                    <small>
+                        Desconto ${percentualDesconto.toFixed(1)}% > Alçada ${this.dados.alcadaTipo} ${this.dados.alcadaMaxima}%
+                    </small>
                 </div>
             `;
             
@@ -1239,7 +1238,7 @@ class GerenciadorPrecos {
         }
     }
     
-    atualizarDisplays(precoFinal, percentualDesconto, desconto) {
+    atualizarDisplays(precoFinal, percentualDesconto) {
         // Percentual de desconto
         const elemPercentual = document.getElementById('percentualDesconto');
         if (elemPercentual) {
@@ -1260,55 +1259,18 @@ class GerenciadorPrecos {
         if (elemPrecoComImpostos) {
             elemPrecoComImpostos.textContent = `R$ ${this.formatarMoeda(precoComImpostos)}`;
         }
-        
-        // Atualizar indicador de margem
-        this.atualizarIndicadorMargem(precoFinal);
     }
     
-    atualizarIndicadorMargem(precoFinal) {
-        const margem = precoFinal - this.dados.custoProducao;
-        const percentualMargem = this.dados.custoProducao > 0 ? (margem / this.dados.custoProducao) * 100 : 0;
-        
-        // Calcular posição no indicador (0-100%)
-        let posicao = 0;
-        if (percentualMargem <= 0) posicao = 0;
-        else if (percentualMargem >= 50) posicao = 100;
-        else posicao = (percentualMargem / 50) * 100;
-        
-        const pointer = document.getElementById('margemPointer');
-        if (pointer) {
-            pointer.style.left = `${posicao}%`;
-            
-            // Mudar cor baseado na margem
-            if (percentualMargem < 10) {
-                pointer.style.background = '#e74c3c';
-            } else if (percentualMargem < 25) {
-                pointer.style.background = '#f39c12';
-            } else {
-                pointer.style.background = '#27ae60';
-            }
-        }
-    }
-    
-    atualizarFormacaoPreco(precoFinal, percentualDesconto, valorDesconto) {
-        // Base de cálculo da comissão
+    atualizarFormacaoPreco(precoFinal, percentualDesconto) {
+        // Cálculos da formação de preço
+        const valorMargem = this.dados.custoProducao * (this.dados.percentualMargem / 100);
         const baseComissao = precoFinal / (1 + this.dados.percentualComissao / 100);
-        const valorComissao = baseComissao * (this.dados.percentualComissao / 100);
+        const valorComissao = precoFinal - baseComissao;
         const valorImpostos = precoFinal * (this.dados.percentualImpostos / 100);
         const precoComImpostos = precoFinal + valorImpostos;
-        const valorMargem = this.dados.custoProducao * (this.dados.percentualMargem / 100);
         
-        // Atualizar percentuais na tabela
-        const percMargem = document.getElementById('percMargem');
-        const percComissao = document.getElementById('percComissao');
-        const percImpostos = document.getElementById('percImpostos');
-        
-        if (percMargem) percMargem.textContent = `${this.dados.percentualMargem.toFixed(1)}%`;
-        if (percComissao) percComissao.textContent = `${this.dados.percentualComissao.toFixed(1)}%`;
-        if (percImpostos) percImpostos.textContent = `${this.dados.percentualImpostos.toFixed(1)}%`;
-        
-        // Atualizar valores calculados
-        const elementos = {
+        // Atualizar valores na tabela
+        const valores = {
             'valorMargem': valorMargem,
             'baseComissao': baseComissao,
             'valorComissao': valorComissao,
@@ -1317,11 +1279,9 @@ class GerenciadorPrecos {
             'precoComImpostosFormacao': precoComImpostos
         };
         
-        Object.entries(elementos).forEach(([id, valor]) => {
+        Object.entries(valores).forEach(([id, valor]) => {
             const elem = document.getElementById(id);
-            if (elem) {
-                elem.textContent = `R$ ${this.formatarMoeda(valor)}`;
-            }
+            if (elem) elem.textContent = `R$ ${this.formatarMoeda(valor)}`;
         });
         
         // Mostrar/ocultar linha de desconto
@@ -1330,54 +1290,69 @@ class GerenciadorPrecos {
             if (percentualDesconto > 0.1) {
                 rowDesconto.classList.remove('d-none');
                 const percDesconto = document.getElementById('percDesconto');
-                const valorDescontoElem = document.getElementById('valorDesconto');
+                const valorDesconto = document.getElementById('valorDesconto');
                 
                 if (percDesconto) percDesconto.textContent = `${percentualDesconto.toFixed(1)}%`;
-                if (valorDescontoElem) valorDescontoElem.textContent = this.formatarMoeda(Math.abs(valorDesconto));
+                if (valorDesconto) {
+                    const desconto = this.dados.precoCalculado - precoFinal;
+                    valorDesconto.textContent = this.formatarMoeda(Math.abs(desconto));
+                }
             } else {
                 rowDesconto.classList.add('d-none');
             }
         }
         
-        // Atualizar indicador de empresa faturadora
+        // Atualizar indicador de faturamento
         this.atualizarIndicadorFaturamento();
+    }
+    
+    atualizarIndicadorMargem(precoFinal) {
+        const margem = precoFinal - this.dados.custoProducao;
+        const percentualMargem = this.dados.custoProducao > 0 ? (margem / this.dados.custoProducao) * 100 : 0;
+        
+        // Calcular posição no indicador (0-100%)
+        let posicao = Math.max(0, Math.min(100, (percentualMargem / 50) * 100));
+        
+        const pointer = document.getElementById('margemPointer');
+        if (pointer) {
+            pointer.style.left = `${posicao}%`;
+            
+            // Cor baseada na margem
+            if (percentualMargem < 10) {
+                pointer.style.background = '#e74c3c'; // Vermelho
+            } else if (percentualMargem < 25) {
+                pointer.style.background = '#f39c12'; // Laranja
+            } else {
+                pointer.style.background = '#27ae60'; // Verde
+            }
+        }
     }
     
     atualizarIndicadorFaturamento() {
         const alertasFormacao = document.getElementById('alertasFormacao');
         if (!alertasFormacao) return;
         
-        let corBadge = 'success';
-        let textoFaturamento = '';
+        const config = {
+            'Elevadores': { cor: 'success', texto: 'Elevadores' },
+            'Fuza': { cor: 'primary', texto: 'Fuza' },
+            'Manutenção': { cor: 'warning', texto: 'Manutenção' }
+        };
         
-        switch(this.dados.faturadoPor) {
-            case 'Elevadores':
-                corBadge = 'success';
-                textoFaturamento = `Faturamento: <strong>Elevadores</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%`;
-                break;
-            case 'Fuza':
-                corBadge = 'primary';
-                textoFaturamento = `Faturamento: <strong>Fuza</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%`;
-                break;
-            case 'Manutenção':
-                corBadge = 'warning';
-                textoFaturamento = `Faturamento: <strong>Manutenção</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%`;
-                break;
-        }
+        const cfg = config[this.dados.faturadoPor] || config['Elevadores'];
         
         alertasFormacao.innerHTML = `
-            <div class="alert alert-${corBadge === 'warning' ? 'warning' : 'info'} alert-dismissible p-2">
+            <div class="alert alert-${cfg.cor === 'warning' ? 'warning' : 'info'} p-2">
                 <small>
                     <i class="fas fa-building me-2"></i>
-                    ${textoFaturamento}
+                    Faturamento: <strong>${cfg.texto}</strong> - Impostos: ${this.dados.percentualImpostos.toFixed(1)}%
                 </small>
             </div>
         `;
     }
     
     formatarMoeda(valor) {
-        if (isNaN(valor) || valor === null || valor === undefined) return '0,00';
-        return valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        if (isNaN(valor) || valor == null) return '0,00';
+        return valor.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
     }
     
     async salvarPreco() {
@@ -1388,20 +1363,10 @@ class GerenciadorPrecos {
         const valor = parseFloat(valorTexto);
         
         if (isNaN(valor) || valor <= 0) {
-            alert('Por favor, insira um preço válido');
+            alert('Preço inválido');
             return;
         }
         
-        // Validar alçada
-        const desconto = this.dados.precoCalculado - valor;
-        const percentualDesconto = this.dados.precoCalculado > 0 ? (desconto / this.dados.precoCalculado) * 100 : 0;
-        
-        if (percentualDesconto > this.dados.alcadaMaxima) {
-            alert(`Desconto de ${percentualDesconto.toFixed(1)}% está acima da alçada máxima de ${this.dados.alcadaMaxima}%`);
-            return;
-        }
-        
-        // Feedback visual
         const btn = document.getElementById('btnSalvarPreco');
         const textoOriginal = btn.innerHTML;
         
@@ -1415,30 +1380,27 @@ class GerenciadorPrecos {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
                 },
-                body: JSON.stringify({
-                    preco_negociado: valor
-                })
+                body: JSON.stringify({ preco_negociado: valor })
             });
             
             const resultado = await response.json();
             
             if (resultado.success) {
                 btn.innerHTML = '<i class="fas fa-check me-2"></i>Salvo!';
+                console.log('✅ Preço salvo:', resultado.dados);
+                
                 setTimeout(() => {
                     btn.innerHTML = textoOriginal;
                     btn.disabled = false;
-                }, 1500);
-                
-                // Atualizar dados na página
-                console.log('Preço salvo com sucesso:', resultado.dados);
+                }, 2000);
                 
             } else {
-                throw new Error(resultado.error || 'Erro ao salvar preço');
+                throw new Error(resultado.error);
             }
             
         } catch (error) {
-            console.error('Erro ao salvar preço:', error);
-            alert('Erro ao salvar preço: ' + error.message);
+            console.error('❌ Erro ao salvar:', error);
+            alert('Erro: ' + error.message);
             
             btn.innerHTML = textoOriginal;
             btn.disabled = false;
@@ -1446,31 +1408,17 @@ class GerenciadorPrecos {
     }
 }
 
-// Inicializar quando página carregar
+// Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    // Ativar tooltips do Bootstrap se existirem
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    // Ativar tooltips do Bootstrap
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => new bootstrap.Tooltip(tooltip));
     
-    // Verificar se estamos na aba de preços
+    // Inicializar sistema de preços se estivermos na aba correta
     if (document.getElementById('precoFinalSemImpostos')) {
-        // Inicializar gerenciador de preços com dados do Django
         window.gerenciadorPrecos = new GerenciadorPrecos();
-        
-        console.log('Sistema de precificação inicializado com parâmetros do banco de dados');
-        console.log('Pedido:', '{{ pedido.numero }}');
-        console.log('Faturado por:', '{{ pedido.faturado_por }}');
+        console.log('🚀 Sistema de precificação iniciado para pedido {{ pedido.numero }}');
     }
-    
-    // Log dos dados para debug (apenas no console)
-    console.log('=== PEDIDO {{ pedido.numero }} ===');
-    console.log('Status:', '{{ pedido.status }}');
-    console.log('Tem dimensionamento:', {{ dimensionamento|yesno:"true,false" }});
-    console.log('Tem formação preço:', {{ formacao_preco|yesno:"true,false" }});
-    console.log('Custo produção:', '{{ pedido.custo_producao|default:"null" }}');
-    console.log('Preço calculado:', '{{ pedido.preco_venda_calculado|default:"null" }}');
 });
 </script>
 
