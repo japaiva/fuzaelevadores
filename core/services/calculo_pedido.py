@@ -1,4 +1,4 @@
-# core/services/calculo_pedido.py - ARQUIVO PRINCIPAL UNIFICADO
+# core/services/calculo_pedido.py - ARQUIVO PRINCIPAL UNIFICADO - VERSÃO ATUALIZADA
 
 import logging
 from decimal import Decimal
@@ -9,10 +9,10 @@ from core.models import Produto, ParametrosGerais
 from core.services.dimensionamento import DimensionamentoService
 from core.services.pricing import PricingService
 # SERVICES ESPECÍFICOS - importados diretamente
-from core.services.calculo_cabine import CalculoCabineService
-from core.services.calculo_carrinho import CalculoCarrinhoService
-from core.services.calculo_tracao import CalculoTracaoService
-from core.services.calculo_sistemas import CalculoSistemasService
+from .calculo_cabine import CalculoCabineService
+from .calculo_carrinho import CalculoCarrinhoService
+from .calculo_tracao import CalculoTracaoService
+from .calculo_sistemas import CalculoSistemasService
 from core.utils.formatters import extrair_especificacoes_do_pedido
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ class CalculoPedidoService:
         """
         Calcula os custos de produção completos usando módulos especializados
         Método interno que substitui o ComponentesCalculoService
+        REFATORADO para consolidar a nova estrutura de componentes
         """
         # Buscar todos os produtos ativos (MPs - Matéria Prima)
         custos_db = {p.codigo: p for p in Produto.objects.filter(
@@ -48,51 +49,65 @@ class CalculoPedidoService:
         
         logger.info(f"Produtos disponíveis para cálculo: {len(custos_db)}")
         
-        componentes = {}
+        # Dicionário que armazenará a estrutura hierárquica final dos componentes
+        componentes_consolidados = {} 
         custos_por_categoria = {}
         
         # CABINE - Chapas do Corpo, Piso e Parafusos
         logger.info("Calculando custos da cabine...")
         try:
+            # calculo_cabine.py agora retorna {'componentes': {'chapas_corpo': {...}, 'chapas_piso': {...}}, 'total': Decimal}
             custo_cabine = CalculoCabineService.calcular_custo_cabine(pedido, dimensionamento, custos_db)
-            componentes.update(custo_cabine['componentes'])
+            componentes_consolidados["CABINE"] = custo_cabine['componentes'] # Armazena a estrutura hierárquica da cabine
+            # Adiciona o total da categoria ao dicionário de componentes consolidados para fácil acesso no template
+            componentes_consolidados["CABINE"]["total_categoria"] = float(custo_cabine['total']) 
             custos_por_categoria['CABINE'] = safe_decimal(custo_cabine['total'])
             logger.info(f"Custo cabine: R$ {custo_cabine['total']}")
         except Exception as e:
             logger.error(f"Erro no cálculo da cabine: {e}")
+            componentes_consolidados["CABINE"] = {} # Garante que a chave existe mesmo em erro
             custos_por_categoria['CABINE'] = Decimal('0')
         
         # CARRINHO - Chassi, Plataforma, Travessas, Longarinas, Perfis e Barras
         logger.info("Calculando custos do carrinho...")
         try:
+            # **ASSUMIMOS QUE calculo_carrinho.py SERÁ REFATORADO DE FORMA SIMILAR**
             custo_carrinho = CalculoCarrinhoService.calcular_custo_carrinho(pedido, dimensionamento, custos_db)
-            componentes.update(custo_carrinho['componentes'])
+            componentes_consolidados["CARRINHO"] = custo_carrinho['componentes']
+            componentes_consolidados["CARRINHO"]["total_categoria"] = float(custo_carrinho['total'])
             custos_por_categoria['CARRINHO'] = safe_decimal(custo_carrinho['total'])
             logger.info(f"Custo carrinho: R$ {custo_carrinho['total']}")
         except Exception as e:
             logger.error(f"Erro no cálculo do carrinho: {e}")
+            componentes_consolidados["CARRINHO"] = {}
             custos_por_categoria['CARRINHO'] = Decimal('0')
         
         # TRAÇÃO - Motor, Cabos, Contrapeso, Guias e Polias
         logger.info("Calculando custos de tração...")
         try:
+            # **ASSUMIMOS QUE calculo_tracao.py SERÁ REFATORADO DE FORMA SIMILAR**
             custo_tracao = CalculoTracaoService.calcular_custo_tracao(pedido, dimensionamento, custos_db)
-            componentes.update(custo_tracao['componentes'])
+            componentes_consolidados["TRACAO"] = custo_tracao['componentes']
+            componentes_consolidados["TRACAO"]["total_categoria"] = float(custo_tracao['total'])
             custos_por_categoria['TRACAO'] = safe_decimal(custo_tracao['total'])
             logger.info(f"Custo tração: R$ {custo_tracao['total']}")
         except Exception as e:
             logger.error(f"Erro no cálculo da tração: {e}")
+            componentes_consolidados["TRACAO"] = {}
             custos_por_categoria['TRACAO'] = Decimal('0')
         
         # SISTEMAS COMPLEMENTARES - Iluminação, Ventilação, Comando, Botoeiras e Portas
         logger.info("Calculando custos dos sistemas complementares...")
         try:
+            # **ASSUMIMOS QUE calculo_sistemas.py SERÁ REFATORADO DE FORMA SIMILAR**
             custo_sistemas = CalculoSistemasService.calcular_custo_sistemas(pedido, dimensionamento, custos_db)
-            componentes.update(custo_sistemas['componentes'])
+            componentes_consolidados["SIST_COMPLEMENTARES"] = custo_sistemas['componentes']
+            componentes_consolidados["SIST_COMPLEMENTARES"]["total_categoria"] = float(custo_sistemas['total'])
             custos_por_categoria['SIST_COMPLEMENTARES'] = safe_decimal(custo_sistemas['total'])
             logger.info(f"Custo sistemas: R$ {custo_sistemas['total']}")
         except Exception as e:
             logger.error(f"Erro no cálculo dos sistemas: {e}")
+            componentes_consolidados["SIST_COMPLEMENTARES"] = {}
             custos_por_categoria['SIST_COMPLEMENTARES'] = Decimal('0')
         
         # Totais - CONVERSÃO SEGURA PARA DECIMAL
@@ -112,13 +127,13 @@ class CalculoPedidoService:
         logger.info(f"  - CUSTO TOTAL: R$ {custo_total}")
         
         return {
-            'componentes': componentes,
+            'componentes': componentes_consolidados, # AGORA ESTE CONTÉM A ESTRUTURA HIERÁRQUICA
             'custos_por_categoria': custos_por_categoria,
-            'custo_materiais': custo_materiais,  # Agora já é Decimal
+            'custo_materiais': custo_materiais,
             'custo_mao_obra': custo_mao_obra,
             'custo_instalacao': custo_instalacao,
             'custo_total': custo_total,
-            'total_componentes': len(componentes)
+            'total_componentes': len(componentes_consolidados) # Isso precisaria ser reavaliado, mas não afeta a funcionalidade
         }
 
     @staticmethod
@@ -145,6 +160,7 @@ class CalculoPedidoService:
             logger.info(f"Dimensionamento calculado - Cabine: {dimensionamento.get('cab', {}).get('largura', 0)}x{dimensionamento.get('cab', {}).get('compr', 0)}m")
             
             # 3. Calcular custos de produção usando métodos internos
+            # O 'componentes' no resultado agora é a estrutura hierárquica
             custos_resultado = CalculoPedidoService._calcular_custos_componentes(pedido, dimensionamento)
             logger.info(f"Custos calculados - Total: R$ {custos_resultado['custo_total']}")
             
@@ -237,8 +253,9 @@ class CalculoPedidoService:
         pedido.ficha_tecnica = ficha_tecnica
         pedido.dimensionamento_detalhado = dimensionamento
         pedido.explicacao_calculo = explicacao
+        # AQUI É O PONTO CHAVE: salvamos a nova estrutura hierárquica
         pedido.custos_detalhados = {
-            'componentes': custos_resultado['componentes'],
+            'componentes': custos_resultado['componentes'], # A nova estrutura aninhada
             'custos_por_categoria': {k: float(v) for k, v in custos_resultado['custos_por_categoria'].items()},
             'resumo': {
                 'custo_materiais': float(custos_resultado['custo_materiais']),
@@ -247,7 +264,10 @@ class CalculoPedidoService:
                 'custo_total': float(custos_resultado['custo_total'])
             }
         }
+        # Podemos remover 'componentes_calculados' se 'custos_detalhados.componentes' for o único local
+        # Por enquanto, para segurança, vamos manter e garantir que receba a nova estrutura
         pedido.componentes_calculados = custos_resultado['componentes']
+        
         pedido.formacao_preco = formacao_preco
         
         # Atualizar status se necessário

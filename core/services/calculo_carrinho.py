@@ -1,4 +1,4 @@
-# core/services/calculos/calculo_carrinho.py - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL
+# core/services/calculos/calculo_carrinho.py - VERSÃO REFATORADA PARA ESTRUTURA HIERÁRQUICA
 
 import logging
 import math
@@ -21,13 +21,20 @@ class CalculoCarrinhoService:
     """
     Serviço para cálculo completo do carrinho (chassi + plataforma + barra roscada)
     CORRIGIDO seguindo calculations.py original
+    REFATORADO para retornar estrutura hierárquica de componentes.
     """
     
     @staticmethod
     def calcular_custo_carrinho(pedido, dimensionamento, custos_db) -> Dict[str, Any]:
-        """Calcula custos do carrinho - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL"""
-        componentes = {}
-        total = Decimal('0')
+        """Calcula custos do carrinho - VERSÃO REFATORADA ESTRUTURADA"""
+        
+        # Estrutura para armazenar os componentes detalhados por subcategoria
+        componentes_carrinho_estruturado = {
+            "chassi": {"total_subcategoria": Decimal('0'), "itens": {}},
+            "plataforma": {"total_subcategoria": Decimal('0'), "itens": {}},
+            "barra_roscada": {"total_subcategoria": Decimal('0'), "itens": {}}
+        }
+        total_carrinho_categoria = Decimal('0')
         
         # Extrair valores com conversão segura para Decimal
         capacidade = safe_decimal(dimensionamento.get('cab', {}).get('capacidade', 0))
@@ -57,7 +64,7 @@ class CalculoCarrinhoService:
             quantidade_total_travessas = safe_decimal(qtd_travessas) * comprimento_travessa
             valor_travessas = quantidade_total_travessas * valor_unitario_travessa
             
-            componentes[codigo_travessa] = {
+            componentes_carrinho_estruturado["chassi"]["itens"][codigo_travessa] = {
                 'codigo': codigo_travessa,
                 'descricao': produto_travessa.nome,
                 'categoria': produto_travessa.grupo.nome if produto_travessa.grupo else 'ESTRUTURA',
@@ -68,7 +75,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_travessas),
                 'explicacao': f"Travessas chassi: {qtd_travessas} x {float(comprimento_travessa):.2f}m ({'base 4' + (', +4 se > 2000kg' if capacidade > 2000 else '')})"
             }
-            total += valor_travessas
+            componentes_carrinho_estruturado["chassi"]["total_subcategoria"] += valor_travessas
+            total_carrinho_categoria += valor_travessas
         
         # Longarinas do chassi
         if capacidade <= 1500:
@@ -88,7 +96,7 @@ class CalculoCarrinhoService:
             quantidade_total_longarinas = safe_decimal(qtd_longarinas) * comprimento_longarina
             valor_longarinas = quantidade_total_longarinas * valor_unitario_longarina
             
-            componentes[codigo_longarina] = {
+            componentes_carrinho_estruturado["chassi"]["itens"][codigo_longarina] = {
                 'codigo': codigo_longarina,
                 'descricao': produto_longarina.nome,
                 'categoria': produto_longarina.grupo.nome if produto_longarina.grupo else 'ESTRUTURA',
@@ -99,7 +107,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_longarinas),
                 'explicacao': f"Longarinas chassi: {qtd_longarinas} x {float(comprimento_longarina):.2f}m (altura + 0.70m)"
             }
-            total += valor_longarinas
+            componentes_carrinho_estruturado["chassi"]["total_subcategoria"] += valor_longarinas
+            total_carrinho_categoria += valor_longarinas
         
         # Parafusos para chassi
         codigo_parafuso_chassi = "MP0114"  # FE02 → MP0114
@@ -109,7 +118,7 @@ class CalculoCarrinhoService:
             qtd_parafusos_chassi = 65
             valor_parafusos_chassi = safe_decimal(qtd_parafusos_chassi) * valor_unitario_parafuso
             
-            componentes[f"{codigo_parafuso_chassi}_chassi"] = {
+            componentes_carrinho_estruturado["chassi"]["itens"][f"{codigo_parafuso_chassi}_chassi"] = {
                 'codigo': codigo_parafuso_chassi,
                 'descricao': produto_parafuso.nome,
                 'categoria': produto_parafuso.grupo.nome if produto_parafuso.grupo else 'FIXACAO',
@@ -120,7 +129,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_parafusos_chassi),
                 'explicacao': f"Parafusos chassi: {qtd_parafusos_chassi} unidades fixas"
             }
-            total += valor_parafusos_chassi
+            componentes_carrinho_estruturado["chassi"]["total_subcategoria"] += valor_parafusos_chassi
+            total_carrinho_categoria += valor_parafusos_chassi
         
         # === PLATAFORMA ===
         
@@ -142,7 +152,7 @@ class CalculoCarrinhoService:
             quantidade_total_externos = qtd_perfis_largura + qtd_perfis_comprimento
             valor_perfis_externos = quantidade_total_externos * valor_unitario_perfil_externo
             
-            componentes[codigo_perfil_externo] = {
+            componentes_carrinho_estruturado["plataforma"]["itens"][codigo_perfil_externo] = {
                 'codigo': codigo_perfil_externo,
                 'descricao': produto_perfil_externo.nome,
                 'categoria': produto_perfil_externo.grupo.nome if produto_perfil_externo.grupo else 'ESTRUTURA',
@@ -153,7 +163,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_perfis_externos),
                 'explicacao': f"Perfis externos: (2 x {float(largura_cabine):.2f}m) + (2 x {float(comprimento_cabine):.2f}m) = {float(quantidade_total_externos):.2f}m"
             }
-            total += valor_perfis_externos
+            componentes_carrinho_estruturado["plataforma"]["total_subcategoria"] += valor_perfis_externos
+            total_carrinho_categoria += valor_perfis_externos
         
         # Perfis internos da plataforma
         if capacidade <= 1000:
@@ -171,7 +182,7 @@ class CalculoCarrinhoService:
             quantidade_total_internos = safe_decimal(qtd_perfis_internos) * comprimento_cabine
             valor_perfis_internos = quantidade_total_internos * valor_unitario_perfil_interno
             
-            componentes[codigo_perfil_interno] = {
+            componentes_carrinho_estruturado["plataforma"]["itens"][codigo_perfil_interno] = {
                 'codigo': codigo_perfil_interno,
                 'descricao': produto_perfil_interno.nome,
                 'categoria': produto_perfil_interno.grupo.nome if produto_perfil_interno.grupo else 'ESTRUTURA',
@@ -182,14 +193,16 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_perfis_internos),
                 'explicacao': f"Perfis internos: {qtd_perfis_internos} x {float(comprimento_cabine):.2f}m (largura/0.35 arredondado)"
             }
-            total += valor_perfis_internos
+            componentes_carrinho_estruturado["plataforma"]["total_subcategoria"] += valor_perfis_internos
+            total_carrinho_categoria += valor_perfis_internos
         
-        # Parafusos para plataforma
-        if codigo_parafuso_chassi in custos_db:  # Reutiliza o mesmo código MP0114
+        # Parafusos para plataforma (reutiliza o mesmo código MP0114 do chassi)
+        if codigo_parafuso_chassi in custos_db:
+            # O produto_parafuso e valor_unitario_parafuso já foram definidos no cálculo do chassi
             qtd_parafusos_plataforma = 24 + (4 * qtd_perfis_internos)
             valor_parafusos_plataforma = safe_decimal(qtd_parafusos_plataforma) * valor_unitario_parafuso
             
-            componentes[f"{codigo_parafuso_chassi}_plataforma"] = {
+            componentes_carrinho_estruturado["plataforma"]["itens"][f"{codigo_parafuso_chassi}_plataforma"] = {
                 'codigo': codigo_parafuso_chassi,
                 'descricao': produto_parafuso.nome,
                 'categoria': produto_parafuso.grupo.nome if produto_parafuso.grupo else 'FIXACAO',
@@ -200,7 +213,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_parafusos_plataforma),
                 'explicacao': f"Parafusos plataforma: 24 + (4 x {qtd_perfis_internos}) = {qtd_parafusos_plataforma}"
             }
-            total += valor_parafusos_plataforma
+            componentes_carrinho_estruturado["plataforma"]["total_subcategoria"] += valor_parafusos_plataforma
+            total_carrinho_categoria += valor_parafusos_plataforma
         
         # === BARRA ROSCADA ===
         
@@ -216,7 +230,7 @@ class CalculoCarrinhoService:
             qtd_barras_compradas = math.ceil(float(comprimento_total_barras / Decimal('3')))  # Arredonda para cima
             valor_barras = safe_decimal(qtd_barras_compradas) * valor_unitario_barra
             
-            componentes[codigo_barra_roscada] = {
+            componentes_carrinho_estruturado["barra_roscada"]["itens"][codigo_barra_roscada] = {
                 'codigo': codigo_barra_roscada,
                 'descricao': produto_barra.nome,
                 'categoria': produto_barra.grupo.nome if produto_barra.grupo else 'ESTRUTURA',
@@ -227,7 +241,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_barras),
                 'explicacao': f"Barras roscadas: {float(comprimento_total_barras):.2f}m total = {qtd_barras_compradas} barras de 3m"
             }
-            total += valor_barras
+            componentes_carrinho_estruturado["barra_roscada"]["total_subcategoria"] += valor_barras
+            total_carrinho_categoria += valor_barras
         
         # Parafusos para barras roscadas (FE01)
         codigo_parafuso_barra_fe01 = "MP0113"  # FE01 → MP0113
@@ -237,7 +252,7 @@ class CalculoCarrinhoService:
             qtd_parafusos_barra_fe01 = 16  # 4 parafusos por barra x 4 barras
             valor_parafusos_barra_fe01 = safe_decimal(qtd_parafusos_barra_fe01) * valor_unitario_parafuso_barra
             
-            componentes[f"{codigo_parafuso_barra_fe01}_barra"] = {
+            componentes_carrinho_estruturado["barra_roscada"]["itens"][f"{codigo_parafuso_barra_fe01}_barra"] = {
                 'codigo': codigo_parafuso_barra_fe01,
                 'descricao': produto_parafuso_barra.nome,
                 'categoria': produto_parafuso_barra.grupo.nome if produto_parafuso_barra.grupo else 'FIXACAO',
@@ -248,7 +263,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_parafusos_barra_fe01),
                 'explicacao': f"Parafusos barras roscadas (FE01): {qtd_parafusos_barra_fe01} unidades"
             }
-            total += valor_parafusos_barra_fe01
+            componentes_carrinho_estruturado["barra_roscada"]["total_subcategoria"] += valor_parafusos_barra_fe01
+            total_carrinho_categoria += valor_parafusos_barra_fe01
         
         # Parafusos para barras roscadas (FE02)
         codigo_parafuso_barra_fe02 = "MP0114"  # FE02 → MP0114
@@ -258,7 +274,7 @@ class CalculoCarrinhoService:
             qtd_parafusos_barra_fe02 = 16  # 4 parafusos por barra x 4 barras
             valor_parafusos_barra_fe02 = safe_decimal(qtd_parafusos_barra_fe02) * valor_unitario_parafuso_barra_fe02
             
-            componentes[f"{codigo_parafuso_barra_fe02}_barra"] = {
+            componentes_carrinho_estruturado["barra_roscada"]["itens"][f"{codigo_parafuso_barra_fe02}_barra"] = {
                 'codigo': codigo_parafuso_barra_fe02,
                 'descricao': produto_parafuso_barra_fe02.nome,
                 'categoria': produto_parafuso_barra_fe02.grupo.nome if produto_parafuso_barra_fe02.grupo else 'FIXACAO',
@@ -269,7 +285,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_parafusos_barra_fe02),
                 'explicacao': f"Parafusos barras roscadas (FE02): {qtd_parafusos_barra_fe02} unidades"
             }
-            total += valor_parafusos_barra_fe02
+            componentes_carrinho_estruturado["barra_roscada"]["total_subcategoria"] += valor_parafusos_barra_fe02
+            total_carrinho_categoria += valor_parafusos_barra_fe02
         
         # Suportes para barras roscadas (PE26)
         codigo_suporte_barra_pe26 = "MP0147"  # PE26 → MP0147
@@ -279,7 +296,7 @@ class CalculoCarrinhoService:
             qtd_suportes_pe26 = 4  # 1 suporte por barra
             valor_suportes_pe26 = safe_decimal(qtd_suportes_pe26) * valor_unitario_suporte_pe26
             
-            componentes[codigo_suporte_barra_pe26] = {
+            componentes_carrinho_estruturado["barra_roscada"]["itens"][codigo_suporte_barra_pe26] = {
                 'codigo': codigo_suporte_barra_pe26,
                 'descricao': produto_suporte_pe26.nome,
                 'categoria': produto_suporte_pe26.grupo.nome if produto_suporte_pe26.grupo else 'ESTRUTURA',
@@ -290,7 +307,8 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_suportes_pe26),
                 'explicacao': f"Suportes barra roscada (PE26): {qtd_suportes_pe26} unidades"
             }
-            total += valor_suportes_pe26
+            componentes_carrinho_estruturado["barra_roscada"]["total_subcategoria"] += valor_suportes_pe26
+            total_carrinho_categoria += valor_suportes_pe26
         
         # Suportes para barras roscadas (PE27)
         codigo_suporte_barra_pe27 = "MP0148"  # PE27 → MP0148
@@ -300,7 +318,7 @@ class CalculoCarrinhoService:
             qtd_suportes_pe27 = 4  # 1 suporte por barra
             valor_suportes_pe27 = safe_decimal(qtd_suportes_pe27) * valor_unitario_suporte_pe27
             
-            componentes[codigo_suporte_barra_pe27] = {
+            componentes_carrinho_estruturado["barra_roscada"]["itens"][codigo_suporte_barra_pe27] = {
                 'codigo': codigo_suporte_barra_pe27,
                 'descricao': produto_suporte_pe27.nome,
                 'categoria': produto_suporte_pe27.grupo.nome if produto_suporte_pe27.grupo else 'ESTRUTURA',
@@ -311,6 +329,14 @@ class CalculoCarrinhoService:
                 'valor_total': float(valor_suportes_pe27),
                 'explicacao': f"Suportes barra roscada (PE27): {qtd_suportes_pe27} unidades"
             }
-            total += valor_suportes_pe27
+            componentes_carrinho_estruturado["barra_roscada"]["total_subcategoria"] += valor_suportes_pe27
+            total_carrinho_categoria += valor_suportes_pe27
         
-        return {'componentes': componentes, 'total': total}
+        # Converte os totais de subcategorias para float antes de retornar para JSONField
+        for sub_cat in componentes_carrinho_estruturado.values():
+            sub_cat['total_subcategoria'] = float(sub_cat['total_subcategoria'])
+            
+        return {
+            'componentes': componentes_carrinho_estruturado, # Retorna a estrutura aninhada
+            'total': total_carrinho_categoria # Total da categoria principal (Carrinho)
+        }

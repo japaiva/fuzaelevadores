@@ -3,7 +3,7 @@
 import logging
 import json
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.db import models
 from django.db.models import Q, Count
 from django.utils import timezone

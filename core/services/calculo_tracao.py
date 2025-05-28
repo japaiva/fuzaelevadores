@@ -1,4 +1,4 @@
-# core/services/calculos/calculo_tracao.py - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL
+# core/services/calculos/calculo_tracao.py - VERSÃO REFATORADA PARA ESTRUTURA HIERÁRQUICA
 
 import logging
 from decimal import Decimal
@@ -11,13 +11,21 @@ class CalculoTracaoService:
     """
     Serviço para cálculo completo do sistema de tração
     CORRIGIDO seguindo calculations.py original
+    REFATORADO para retornar estrutura hierárquica de componentes.
     """
     
     @staticmethod
     def calcular_custo_tracao(pedido, dimensionamento, custos_db) -> Dict[str, Any]:
-        """Calcula custos de tração - VERSÃO CORRIGIDA SEGUINDO LÓGICA ORIGINAL"""
-        componentes = {}
-        total = Decimal('0')
+        """Calcula custos de tração - VERSÃO REFATORADA ESTRUTURADA"""
+        
+        # Estrutura para armazenar os componentes detalhados por subcategoria
+        componentes_tracao_estruturado = {
+            "acionamento": {"total_subcategoria": Decimal('0'), "itens": {}},
+            "tracionamento": {"total_subcategoria": Decimal('0'), "itens": {}},
+            "contrapeso": {"total_subcategoria": Decimal('0'), "itens": {}},
+            "guias": {"total_subcategoria": Decimal('0'), "itens": {}}
+        }
+        total_tracao_categoria = Decimal('0')
         
         capacidade = dimensionamento.get('cab', {}).get('capacidade', 0)
         tracao_cabine = dimensionamento.get('cab', {}).get('tracao', 0)
@@ -32,7 +40,7 @@ class CalculoTracaoService:
                 produto_hidraulico = custos_db[codigo_hidraulico]
                 valor_unitario_hidraulico = produto_hidraulico.custo_medio or produto_hidraulico.preco_venda or Decimal('3000')
                 
-                componentes[codigo_hidraulico] = {
+                componentes_tracao_estruturado["acionamento"]["itens"][codigo_hidraulico] = {
                     'codigo': codigo_hidraulico,
                     'descricao': produto_hidraulico.nome,
                     'categoria': produto_hidraulico.grupo.nome if produto_hidraulico.grupo else 'HIDRAULICO',
@@ -43,11 +51,12 @@ class CalculoTracaoService:
                     'valor_total': float(valor_unitario_hidraulico),
                     'explicacao': "Sistema hidráulico completo"
                 }
-                total += valor_unitario_hidraulico
+                componentes_tracao_estruturado["acionamento"]["total_subcategoria"] += valor_unitario_hidraulico
+                total_tracao_categoria += valor_unitario_hidraulico
         
         elif pedido.acionamento == 'Motor':
             
-            # === TRACIONAMENTO ===
+            # === TRACIONAMENTO (Componentes específicos para Motor) ===
             
             # Motor elétrico (MO02 → MP0119)
             codigo_motor = "MP0119"  # MO02 → MP0119 (Motor 7,5 cv - 630 kg)
@@ -55,7 +64,7 @@ class CalculoTracaoService:
                 produto_motor = custos_db[codigo_motor]
                 valor_unitario_motor = produto_motor.custo_medio or produto_motor.preco_venda or Decimal('2000')
                 
-                componentes[codigo_motor] = {
+                componentes_tracao_estruturado["tracionamento"]["itens"][codigo_motor] = {
                     'codigo': codigo_motor,
                     'descricao': produto_motor.nome,
                     'categoria': produto_motor.grupo.nome if produto_motor.grupo else 'MOTOR',
@@ -66,7 +75,8 @@ class CalculoTracaoService:
                     'valor_total': float(valor_unitario_motor),
                     'explicacao': "Motor para acionamento"
                 }
-                total += valor_unitario_motor
+                componentes_tracao_estruturado["tracionamento"]["total_subcategoria"] += valor_unitario_motor
+                total_tracao_categoria += valor_unitario_motor
             
             # Polias (se tração 2x1)
             if pedido.tracao == "2x1":
@@ -82,7 +92,7 @@ class CalculoTracaoService:
                         valor_unitario_polia = produto_polia.custo_medio or produto_polia.preco_venda or Decimal('300')
                         valor_polias = Decimal(str(qtd_polias)) * valor_unitario_polia
                         
-                        componentes[codigo_polia] = {
+                        componentes_tracao_estruturado["tracionamento"]["itens"][codigo_polia] = {
                             'codigo': codigo_polia,
                             'descricao': produto_polia.nome,
                             'categoria': produto_polia.grupo.nome if produto_polia.grupo else 'TRACAO',
@@ -93,7 +103,8 @@ class CalculoTracaoService:
                             'valor_total': float(valor_polias),
                             'explicacao': f"Polias para tração 2x1: {qtd_polias} unidades ({'2 se largura > 2m' if qtd_polias == 2 else '1 se largura <= 2m'})"
                         }
-                        total += valor_polias
+                        componentes_tracao_estruturado["tracionamento"]["total_subcategoria"] += valor_polias
+                        total_tracao_categoria += valor_polias
                 
                 # Travessa da polia (se 2 polias)
                 if qtd_polias > 1:
@@ -104,7 +115,7 @@ class CalculoTracaoService:
                         comprimento_travessa = largura_cabine / 2
                         valor_travessa_polia = comprimento_travessa * valor_unitario_travessa
                         
-                        componentes[codigo_travessa_polia] = {
+                        componentes_tracao_estruturado["tracionamento"]["itens"][codigo_travessa_polia] = {
                             'codigo': codigo_travessa_polia,
                             'descricao': produto_travessa_polia.nome,
                             'categoria': produto_travessa_polia.grupo.nome if produto_travessa_polia.grupo else 'TRACAO',
@@ -115,7 +126,8 @@ class CalculoTracaoService:
                             'valor_total': float(valor_travessa_polia),
                             'explicacao': f"Travessa da polia: {comprimento_travessa:.2f}m (largura cabine / 2)"
                         }
-                        total += valor_travessa_polia
+                        componentes_tracao_estruturado["tracionamento"]["total_subcategoria"] += valor_travessa_polia
+                        total_tracao_categoria += valor_travessa_polia
             
             # Cabo de aço
             codigo_cabo = "MP0135"  # PE14 → MP0135 (Cabo aço 5/16)
@@ -128,9 +140,9 @@ class CalculoTracaoService:
                     comprimento_cabo *= 2
                 comprimento_cabo += 5  # 5m adicionais
                 
-                valor_cabo = comprimento_cabo * valor_unitario_cabo
+                valor_cabo = Decimal(str(comprimento_cabo)) * valor_unitario_cabo
                 
-                componentes[codigo_cabo] = {
+                componentes_tracao_estruturado["tracionamento"]["itens"][codigo_cabo] = {
                     'codigo': codigo_cabo,
                     'descricao': produto_cabo.nome,
                     'categoria': produto_cabo.grupo.nome if produto_cabo.grupo else 'TRACAO',
@@ -141,7 +153,8 @@ class CalculoTracaoService:
                     'valor_total': float(valor_cabo),
                     'explicacao': f"Cabo de aço: {comprimento_cabo:.1f}m ({'2x altura' if pedido.tracao == '2x1' else 'altura'} + 5m)"
                 }
-                total += valor_cabo
+                componentes_tracao_estruturado["tracionamento"]["total_subcategoria"] += valor_cabo
+                total_tracao_categoria += valor_cabo
             
             # === CONTRAPESO ===
             
@@ -151,7 +164,7 @@ class CalculoTracaoService:
                 produto_contrapeso = custos_db[contrapeso_tipo]
                 valor_unitario_contrapeso = produto_contrapeso.custo_medio or produto_contrapeso.preco_venda or Decimal('800')
                 
-                componentes[contrapeso_tipo] = {
+                componentes_tracao_estruturado["contrapeso"]["itens"][contrapeso_tipo] = {
                     'codigo': contrapeso_tipo,
                     'descricao': produto_contrapeso.nome,
                     'categoria': produto_contrapeso.grupo.nome if produto_contrapeso.grupo else 'CONTRAPESO',
@@ -162,7 +175,8 @@ class CalculoTracaoService:
                     'valor_total': float(valor_unitario_contrapeso),
                     'explicacao': f"Contrapeso {pedido.contrapeso.lower()}"
                 }
-                total += valor_unitario_contrapeso
+                componentes_tracao_estruturado["contrapeso"]["total_subcategoria"] += valor_unitario_contrapeso
+                total_tracao_categoria += valor_unitario_contrapeso
             
             # Pedras para contrapeso
             codigo_pedra, qtd_pedras = CalculoTracaoService._calcular_pedras_contrapeso(contrapeso_tipo, tracao_cabine)
@@ -171,7 +185,7 @@ class CalculoTracaoService:
                 valor_unitario_pedra = produto_pedra.custo_medio or produto_pedra.preco_venda or Decimal('45')
                 valor_pedras = Decimal(str(qtd_pedras)) * valor_unitario_pedra
                 
-                componentes[codigo_pedra] = {
+                componentes_tracao_estruturado["contrapeso"]["itens"][codigo_pedra] = {
                     'codigo': codigo_pedra,
                     'descricao': produto_pedra.nome,
                     'categoria': produto_pedra.grupo.nome if produto_pedra.grupo else 'CONTRAPESO',
@@ -182,7 +196,8 @@ class CalculoTracaoService:
                     'valor_total': float(valor_pedras),
                     'explicacao': f"Pedras contrapeso: {qtd_pedras} unidades (tração {tracao_cabine:.0f}kg)"
                 }
-                total += valor_pedras
+                componentes_tracao_estruturado["contrapeso"]["total_subcategoria"] += valor_pedras
+                total_tracao_categoria += valor_pedras
             
             # === GUIAS ===
             
@@ -194,7 +209,7 @@ class CalculoTracaoService:
                 qtd_guias = round(float(pedido.altura_poco) / 5 * 2)
                 valor_guias = Decimal(str(qtd_guias)) * valor_unitario_guia
                 
-                componentes[codigo_guia_elevador] = {
+                componentes_tracao_estruturado["guias"]["itens"][codigo_guia_elevador] = {
                     'codigo': codigo_guia_elevador,
                     'descricao': produto_guia.nome,
                     'categoria': produto_guia.grupo.nome if produto_guia.grupo else 'GUIAS',
@@ -205,7 +220,8 @@ class CalculoTracaoService:
                     'valor_total': float(valor_guias),
                     'explicacao': f"Guias elevador: {qtd_guias} unidades ((altura / 5) * 2)"
                 }
-                total += valor_guias
+                componentes_tracao_estruturado["guias"]["total_subcategoria"] += valor_guias
+                total_tracao_categoria += valor_guias
             
             # Suportes das guias do elevador
             codigo_suporte_guia = "MP0143"  # PE22 → MP0143
@@ -215,7 +231,7 @@ class CalculoTracaoService:
                 qtd_suportes = round(float(pedido.altura_poco) / 5 * 2)
                 valor_suportes = Decimal(str(qtd_suportes)) * valor_unitario_suporte
                 
-                componentes[codigo_suporte_guia] = {
+                componentes_tracao_estruturado["guias"]["itens"][codigo_suporte_guia] = {
                     'codigo': codigo_suporte_guia,
                     'descricao': produto_suporte.nome,
                     'categoria': produto_suporte.grupo.nome if produto_suporte.grupo else 'GUIAS',
@@ -226,7 +242,8 @@ class CalculoTracaoService:
                     'valor_total': float(valor_suportes),
                     'explicacao': f"Suportes guia elevador: {qtd_suportes} unidades"
                 }
-                total += valor_suportes
+                componentes_tracao_estruturado["guias"]["total_subcategoria"] += valor_suportes
+                total_tracao_categoria += valor_suportes
             
             # Guias do contrapeso
             if contrapeso_tipo:
@@ -237,7 +254,7 @@ class CalculoTracaoService:
                     qtd_guias_cp = round(float(pedido.altura_poco) / 5 * 2)
                     valor_guias_cp = Decimal(str(qtd_guias_cp)) * valor_unitario_guia_cp
                     
-                    componentes[codigo_guia_contrapeso] = {
+                    componentes_tracao_estruturado["guias"]["itens"][codigo_guia_contrapeso] = {
                         'codigo': codigo_guia_contrapeso,
                         'descricao': produto_guia_cp.nome,
                         'categoria': produto_guia_cp.grupo.nome if produto_guia_cp.grupo else 'GUIAS',
@@ -248,7 +265,8 @@ class CalculoTracaoService:
                         'valor_total': float(valor_guias_cp),
                         'explicacao': f"Guias contrapeso: {qtd_guias_cp} unidades"
                     }
-                    total += valor_guias_cp
+                    componentes_tracao_estruturado["guias"]["total_subcategoria"] += valor_guias_cp
+                    total_tracao_categoria += valor_guias_cp
                 
                 # Suportes das guias do contrapeso
                 codigo_suporte_guia_cp = "MP0145"  # PE24 → MP0145
@@ -258,7 +276,7 @@ class CalculoTracaoService:
                     qtd_suportes_cp = 4 + (pedido.pavimentos * 2)
                     valor_suportes_cp = Decimal(str(qtd_suportes_cp)) * valor_unitario_suporte_cp
                     
-                    componentes[codigo_suporte_guia_cp] = {
+                    componentes_tracao_estruturado["guias"]["itens"][codigo_suporte_guia_cp] = {
                         'codigo': codigo_suporte_guia_cp,
                         'descricao': produto_suporte_cp.nome,
                         'categoria': produto_suporte_cp.grupo.nome if produto_suporte_cp.grupo else 'GUIAS',
@@ -269,7 +287,8 @@ class CalculoTracaoService:
                         'valor_total': float(valor_suportes_cp),
                         'explicacao': f"Suportes guia contrapeso: {qtd_suportes_cp} unidades (4 + pavimentos * 2)"
                     }
-                    total += valor_suportes_cp
+                    componentes_tracao_estruturado["guias"]["total_subcategoria"] += valor_suportes_cp
+                    total_tracao_categoria += valor_suportes_cp
         
         # Parafusos gerais para tração
         codigo_parafuso_tracao = "MP0115"  # FE03 → MP0115
@@ -279,7 +298,7 @@ class CalculoTracaoService:
             qtd_parafusos = 50  # Quantidade estimada
             valor_parafusos = Decimal(str(qtd_parafusos)) * valor_unitario_parafuso
             
-            componentes[codigo_parafuso_tracao] = {
+            componentes_tracao_estruturado["guias"]["itens"][codigo_parafuso_tracao] = {
                 'codigo': codigo_parafuso_tracao,
                 'descricao': produto_parafuso.nome,
                 'categoria': produto_parafuso.grupo.nome if produto_parafuso.grupo else 'FIXACAO',
@@ -290,9 +309,17 @@ class CalculoTracaoService:
                 'valor_total': float(valor_parafusos),
                 'explicacao': f"Parafusos sistema de tração: {qtd_parafusos} unidades"
             }
-            total += valor_parafusos
+            componentes_tracao_estruturado["guias"]["total_subcategoria"] += valor_parafusos
+            total_tracao_categoria += valor_parafusos
         
-        return {'componentes': componentes, 'total': total}
+        # Converte os totais de subcategorias para float antes de retornar para JSONField
+        for sub_cat in componentes_tracao_estruturado.values():
+            sub_cat['total_subcategoria'] = float(sub_cat['total_subcategoria'])
+            
+        return {
+            'componentes': componentes_tracao_estruturado, # Retorna a estrutura aninhada
+            'total': total_tracao_categoria # Total da categoria principal (Tração)
+        }
     
     # =============================================================================
     # MÉTODOS AUXILIARES

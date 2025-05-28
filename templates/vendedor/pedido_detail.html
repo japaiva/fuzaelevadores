@@ -468,18 +468,16 @@
         </div>
       </div>
 
-
-
-      <!-- ABA CUSTO PRODUÇÃO - VERSÃO COMPLETA CORRIGIDA -->
+      <!-- ABA CUSTO PRODUÇÃO - VERSÃO EXPANDIDA COM EXPLICAÇÕES DETALHADAS -->
       <div class="tab-pane fade" id="custos" role="tabpanel">
         <div class="card-body">
           {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.custo_instalacao %}
             
-            <!-- Resumo dos Custos -->
+            <!-- RESUMO GERAL -->
             <div class="card shadow-sm border-success mb-4">
               <div class="card-header bg-success text-white">
                 <h6 class="card-title mb-0">
-                  <i class="fas fa-calculator me-2"></i>Resumo dos Custos de Produção
+                  Resumo dos Custos de Produção
                 </h6>
               </div>
               <div class="card-body">
@@ -497,7 +495,7 @@
                   <div class="col-md-3">
                     <div class="border rounded p-3 bg-light">
                       <strong class="d-block text-info fs-4">R$ {{ pedido.custo_mao_obra|formato_br }}</strong>
-                      <small class="text-muted">Mão de Obra</small>
+                      <small class="text-muted">Mão de Obra (15%)</small>
                     </div>
                   </div>
                   {% endif %}
@@ -506,7 +504,7 @@
                   <div class="col-md-3">
                     <div class="border rounded p-3 bg-light">
                       <strong class="d-block text-warning fs-4">R$ {{ pedido.custo_instalacao|formato_br }}</strong>
-                      <small class="text-muted">Instalação</small>
+                      <small class="text-muted">Instalação (10%)</small>
                     </div>
                   </div>
                   {% endif %}
@@ -514,7 +512,7 @@
                   {% if pedido.custo_producao %}
                   <div class="col-md-3">
                     <div class="border rounded p-3 bg-success text-white">
-                      <strong class="d-block fs-3">R$ {{ pedido.custo_producao|formato_br }}</strong>
+                      <strong class="d-block fs-4">R$ {{ pedido.custo_producao|formato_br }}</strong>
                       <small>TOTAL</small>
                     </div>
                   </div>
@@ -523,378 +521,315 @@
               </div>
             </div>
 
-            <!-- Detalhamento por Grupos de Cálculo -->
-            {% if pedido.custos_detalhados and pedido.custos_detalhados.custos_por_categoria %}
-            <div class="row">
+            <!-- DETALHAMENTO POR CATEGORIA - VERSÃO EXPANDIDA -->
+            {% if pedido.componentes_calculados %}
+            <div class="accordion" id="custosAccordion">
               
-              <!-- CABINE -->
-              {% if pedido.custos_detalhados.custos_por_categoria.CABINE %}
-              <div class="col-md-6">
-                <div class="card shadow-sm border-warning mb-4">
-                  <div class="card-header bg-warning text-dark">
-                    <h6 class="card-title mb-0">
-                      <i class="fas fa-square me-2"></i>CABINE
-                    </h6>
-                  </div>
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                      <span class="text-muted fw-bold">Total da Cabine</span>
-                      <span class="fw-bold text-warning fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.CABINE|formato_br }}</span>
+              <!-- CABINE EXPANDIDA -->
+              {% if pedido.componentes_calculados.CABINE %}
+              <div class="accordion-item border-warning">
+                <h2 class="accordion-header" id="cabineHeader">
+                  <button class="accordion-button collapsed bg-warning text-dark" type="button" 
+                          data-bs-toggle="collapse" data-bs-target="#cabineCollapse">
+                    <div class="d-flex justify-content-between w-100 me-3">
+                      <span><strong>CABINE</strong> </span>
+                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.CABINE.total_categoria|formato_br }}</span>
+                    </div>
+                  </button>
+                </h2>
+                <div id="cabineCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+                  <div class="accordion-body">
+                    
+                    <!-- Subcategorias da Cabine -->
+                    {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.CABINE.items %}
+                    {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+                    
+                    <div class="card border-warning mb-3">
+                      <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <h6 class="mb-0 text-warning">
+                            {% if 'chapas' in subcategoria_nome %}Chapas{% elif 'piso' in subcategoria_nome %}Piso{% elif 'fixacao' in subcategoria_nome %}Fixação{% else %}{{ subcategoria_nome|title }}{% endif %}
+                          </h6>
+                          <span class="badge bg-warning text-dark">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        
+                        {% for codigo, comp in subcategoria_dados.itens.items %}
+                        <div class="row border-bottom pb-2 mb-2">
+                          <div class="col-md-8">
+                            <div class="d-flex align-items-start">
+                              <div class="me-3">
+                                <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                              </div>
+                              <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                                <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                                
+                                <!-- EXPLICAÇÃO TÉCNICA -->
+                                {% if comp.explicacao %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                  <small class="text-primary">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ comp.explicacao }}
+                                  </small>
+                                </div>
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4 text-end">
+                            <div class="mb-1">
+                              <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                            </div>
+                            <div class="text-muted small">
+                              {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                              <div class="progress-bar bg-warning" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100 }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100|floatformat:1 }}% da cabine</small>
+                          </div>
+                        </div>
+                        {% endfor %}
+                        
+                      </div>
                     </div>
                     
-                    <!-- Chapas do Corpo -->
-                    {% with chapas_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0101' or comp.codigo == 'MP0102' or comp.codigo == 'MP0103' or comp.codigo == 'MP0104' or comp.codigo == 'MP0105' or comp.codigo == 'MP0106' or comp.codigo == 'MP0107' or comp.codigo == 'MP0108' or comp.codigo == 'MP0111' or comp.codigo == 'MP0112' or comp.codigo == 'MP0113' %}
-                          {% if not chapas_found %}
-                            <h6 class="text-warning border-bottom pb-1 mb-2">Chapas</h6>
-                            {% with chapas_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
                     
-                    <!-- Chapas do Piso -->
-                    {% with piso_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0109' or comp.codigo == 'MP0110' or comp.codigo == 'MP0116' %}
-                          {% if not piso_found %}
-                            <h6 class="text-warning border-bottom pb-1 mb-2 mt-3">Chapas Piso</h6>
-                            {% with piso_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
                   </div>
                 </div>
               </div>
               {% endif %}
 
-              <!-- CARRINHO -->
-              {% if pedido.custos_detalhados.custos_por_categoria.CARRINHO %}
-              <div class="col-md-6">
-                <div class="card shadow-sm border-info mb-4">
-                  <div class="card-header bg-info text-white">
-                    <h6 class="card-title mb-0">
-                      <i class="fas fa-truck me-2"></i>CARRINHO
-                    </h6>
-                  </div>
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                      <span class="text-muted fw-bold">Total do Carrinho</span>
-                      <span class="fw-bold text-info fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.CARRINHO|formato_br }}</span>
+              <!-- CARRINHO EXPANDIDO -->
+              {% if pedido.componentes_calculados.CARRINHO %}
+              <div class="accordion-item border-info">
+                <h2 class="accordion-header" id="carrinhoHeader">
+                  <button class="accordion-button collapsed bg-info text-white" type="button" 
+                          data-bs-toggle="collapse" data-bs-target="#carrinhoCollapse">
+                    <div class="d-flex justify-content-between w-100 me-3">
+                      <span><strong>CARRINHO</strong></span>
+                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.CARRINHO.total_categoria|formato_br }}</span>
+                    </div>
+                  </button>
+                </h2>
+                <div id="carrinhoCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+                  <div class="accordion-body">
+                    
+                    {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.CARRINHO.items %}
+                    {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+                    
+                    <div class="card border-info mb-3">
+                      <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <h6 class="mb-0 text-info">
+                            {% if 'chassi' in subcategoria_nome %}Chassi{% elif 'plataforma' in subcategoria_nome %}Plataforma{% elif 'barra' in subcategoria_nome %}Barra Roscada{% else %}{{ subcategoria_nome|title }}{% endif %}
+                          </h6>
+                          <span class="badge bg-info">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        
+                        {% for codigo, comp in subcategoria_dados.itens.items %}
+                        <div class="row border-bottom pb-2 mb-2">
+                          <div class="col-md-8">
+                            <div class="d-flex align-items-start">
+                              <div class="me-3">
+                                <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                              </div>
+                              <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                                <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                                
+                                {% if comp.explicacao %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                  <small class="text-primary">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ comp.explicacao }}
+                                  </small>
+                                </div>
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4 text-end">
+                            <div class="mb-1">
+                              <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                            </div>
+                            <div class="text-muted small">
+                              {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                              <div class="progress-bar bg-info" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CARRINHO.total_categoria|mul:100 }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.CARRINHO.total_categoria|mul:100|floatformat:1 }}% do carrinho</small>
+                          </div>
+                        </div>
+                        {% endfor %}
+                        
+                      </div>
                     </div>
                     
-                    <!-- Chassi -->
-                    {% with chassi_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0122' or comp.codigo == 'MP0123' or comp.codigo == 'MP0124' or comp.codigo == 'MP0125' or comp.codigo == 'MP0126' or comp.codigo == 'MP0127' or comp.codigo == 'MP0114' and 'chassi' in comp.explicacao|lower %}
-                          {% if not chassi_found %}
-                            <h6 class="text-info border-bottom pb-1 mb-2">Chassi</h6>
-                            {% with chassi_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
                     
-                    <!-- Plataforma -->
-                    {% with plataforma_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0128' or comp.codigo == 'MP0129' or comp.codigo == 'MP0130' or comp.codigo == 'MP0131' or comp.codigo == 'MP0132' or comp.codigo == 'MP0133' or comp.codigo == 'MP0114' and 'plataforma' in comp.explicacao|lower %}
-                          {% if not plataforma_found %}
-                            <h6 class="text-info border-bottom pb-1 mb-2 mt-3">Plataforma</h6>
-                            {% with plataforma_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
-                    
-                    <!-- Barra Roscada -->
-                    {% with barra_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0146' or comp.codigo == 'MP0147' or comp.codigo == 'MP0148' or comp.codigo == 'MP0113' and 'barra' in comp.explicacao|lower or comp.codigo == 'MP0114' and 'barra' in comp.explicacao|lower %}
-                          {% if not barra_found %}
-                            <h6 class="text-info border-bottom pb-1 mb-2 mt-3">Barra Roscada</h6>
-                            {% with barra_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
                   </div>
                 </div>
               </div>
               {% endif %}
 
-              <!-- TRAÇÃO -->
-              {% if pedido.custos_detalhados.custos_por_categoria.TRACAO %}
-              <div class="col-md-6">
-                <div class="card shadow-sm border-danger mb-4">
-                  <div class="card-header bg-danger text-white">
-                    <h6 class="card-title mb-0">
-                      <i class="fas fa-cogs me-2"></i>TRAÇÃO
-                    </h6>
-                  </div>
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                      <span class="text-muted fw-bold">Total da Tração</span>
-                      <span class="fw-bold text-danger fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.TRACAO|formato_br }}</span>
+              <!-- TRAÇÃO EXPANDIDA -->
+              {% if pedido.componentes_calculados.TRACAO %}
+              <div class="accordion-item border-danger">
+                <h2 class="accordion-header" id="tracaoHeader">
+                  <button class="accordion-button collapsed bg-danger text-white" type="button" 
+                          data-bs-toggle="collapse" data-bs-target="#tracaoCollapse">
+                    <div class="d-flex justify-content-between w-100 me-3">
+                      <span><strong>TRAÇÃO</strong></span>
+                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.TRACAO.total_categoria|formato_br }}</span>
+                    </div>
+                  </button>
+                </h2>
+                <div id="tracaoCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+                  <div class="accordion-body">
+                    
+                    {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.TRACAO.items %}
+                    {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+                    
+                    <div class="card border-danger mb-3">
+                      <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <h6 class="mb-0 text-danger">
+                            {% if 'acionamento' in subcategoria_nome %}Acionamento{% elif 'tracionamento' in subcategoria_nome %}Tracionamento{% elif 'contrapeso' in subcategoria_nome %}Contrapeso{% elif 'guias' in subcategoria_nome %}Guias{% else %}{{ subcategoria_nome|title }}{% endif %}
+                          </h6>
+                          <span class="badge bg-danger">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        
+                        {% for codigo, comp in subcategoria_dados.itens.items %}
+                        <div class="row border-bottom pb-2 mb-2">
+                          <div class="col-md-8">
+                            <div class="d-flex align-items-start">
+                              <div class="me-3">
+                                <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                              </div>
+                              <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                                <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                                
+                                {% if comp.explicacao %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                  <small class="text-primary">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ comp.explicacao }}
+                                  </small>
+                                </div>
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4 text-end">
+                            <div class="mb-1">
+                              <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                            </div>
+                            <div class="text-muted small">
+                              {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                              <div class="progress-bar bg-danger" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100 }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100|floatformat:1 }}% da tração</small>
+                          </div>
+                        </div>
+                        {% endfor %}
+                        
+                      </div>
                     </div>
                     
-                    <!-- Acionamento -->
-                    {% with acionamento_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0118' or comp.codigo == 'MP0119' %}
-                          {% if not acionamento_found %}
-                            <h6 class="text-danger border-bottom pb-1 mb-2">Acionamento</h6>
-                            {% with acionamento_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
                     
-                    <!-- Tracionamento -->
-                    {% with tracionamento_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0134' or comp.codigo == 'MP0135' or comp.codigo == 'MP0136' %}
-                          {% if not tracionamento_found %}
-                            <h6 class="text-danger border-bottom pb-1 mb-2 mt-3">Tracionamento</h6>
-                            {% with tracionamento_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
-                    
-                    <!-- Contrapeso -->
-                    {% with contrapeso_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0137' or comp.codigo == 'MP0138' or comp.codigo == 'MP0139' or comp.codigo == 'MP0140' or comp.codigo == 'MP0141' %}
-                          {% if not contrapeso_found %}
-                            <h6 class="text-danger border-bottom pb-1 mb-2 mt-3">Contrapeso</h6>
-                            {% with contrapeso_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
-                    
-                    <!-- Guias -->
-                    {% with guias_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0142' or comp.codigo == 'MP0143' or comp.codigo == 'MP0144' or comp.codigo == 'MP0145' or comp.codigo == 'MP0115' %}
-                          {% if not guias_found %}
-                            <h6 class="text-danger border-bottom pb-1 mb-2 mt-3">Guias</h6>
-                            {% with guias_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
                   </div>
                 </div>
               </div>
               {% endif %}
 
-              <!-- SISTEMAS COMPLEMENTARES -->
-              {% if pedido.custos_detalhados.custos_por_categoria.SIST_COMPLEMENTARES %}
-              <div class="col-md-6">
-                <div class="card shadow-sm border-secondary mb-4">
-                  <div class="card-header bg-secondary text-white">
-                    <h6 class="card-title mb-0">
-                      <i class="fas fa-lightbulb me-2"></i>SISTEMAS COMPLEMENTARES
-                    </h6>
-                  </div>
-                  <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                      <span class="text-muted fw-bold">Total dos Sistemas</span>
-                      <span class="fw-bold text-secondary fs-5">R$ {{ pedido.custos_detalhados.custos_por_categoria.SIST_COMPLEMENTARES|formato_br }}</span>
+              <!-- SISTEMAS COMPLEMENTARES EXPANDIDO -->
+              {% if pedido.componentes_calculados.SIST_COMPLEMENTARES %}
+              <div class="accordion-item border-secondary">
+                <h2 class="accordion-header" id="sistemasHeader">
+                  <button class="accordion-button collapsed bg-secondary text-white" type="button" 
+                          data-bs-toggle="collapse" data-bs-target="#sistemasCollapse">
+                    <div class="d-flex justify-content-between w-100 me-3">
+                      <span><strong>SISTEMAS COMPLEMENTARES</strong></span>
+                      <span class="badge bg-dark fs-6">R$ {{ pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|formato_br }}</span>
+                    </div>
+                  </button>
+                </h2>
+                <div id="sistemasCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+                  <div class="accordion-body">
+                    
+                    {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.SIST_COMPLEMENTARES.items %}
+                    {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+                    
+                    <div class="card border-secondary mb-3">
+                      <div class="card-header bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <h6 class="mb-0 text-secondary">
+                            {% if 'iluminacao' in subcategoria_nome %}Iluminação{% elif 'ventilacao' in subcategoria_nome %}Ventilação{% else %}{{ subcategoria_nome|title }}{% endif %}
+                          </h6>
+                          <span class="badge bg-secondary">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                        </div>
+                      </div>
+                      <div class="card-body">
+                        
+                        {% for codigo, comp in subcategoria_dados.itens.items %}
+                        <div class="row border-bottom pb-2 mb-2">
+                          <div class="col-md-8">
+                            <div class="d-flex align-items-start">
+                              <div class="me-3">
+                                <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                              </div>
+                              <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                                <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                                
+                                {% if comp.explicacao %}
+                                <div class="mt-2 p-2 bg-light rounded">
+                                  <small class="text-primary">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ comp.explicacao }}
+                                  </small>
+                                </div>
+                                {% endif %}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-md-4 text-end">
+                            <div class="mb-1">
+                              <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                            </div>
+                            <div class="text-muted small">
+                              {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                            </div>
+                            <div class="progress mt-1" style="height: 4px;">
+                              <div class="progress-bar bg-secondary" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|mul:100 }}%"></div>
+                            </div>
+                            <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|mul:100|floatformat:1 }}% dos sistemas</small>
+                          </div>
+                        </div>
+                        {% endfor %}
+                        
+                      </div>
                     </div>
                     
-                    <!-- Iluminação -->
-                    {% with iluminacao_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0174' %}
-                          {% if not iluminacao_found %}
-                            <h6 class="text-secondary border-bottom pb-1 mb-2">Iluminação</h6>
-                            {% with iluminacao_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
+                    {% endif %}
+                    {% endfor %}
                     
-                    <!-- Ventilação -->
-                    {% with ventilacao_found=False %}
-                      {% for codigo, comp in pedido.custos_detalhados.componentes.items %}
-                        {% if comp.codigo == 'MP0175' %}
-                          {% if not ventilacao_found %}
-                            <h6 class="text-secondary border-bottom pb-1 mb-2 mt-3">Ventilação</h6>
-                            {% with ventilacao_found=True %}{% endwith %}
-                          {% endif %}
-                        <div class="mb-2">
-                          <div class="d-flex justify-content-between">
-                            <span class="small">
-                              <strong>{{ comp.codigo }}</strong> - {{ comp.descricao|default:comp.codigo }}
-                            </span>
-                            <span class="small fw-bold">R$ {{ comp.valor_total|formato_br }}</span>
-                          </div>
-                          <div class="d-flex justify-content-between text-muted">
-                            <small>{{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }}</small>
-                            <small>R$ {{ comp.valor_unitario|formato_br }}/{{ comp.unidade|default:"un" }}</small>
-                          </div>
-                          {% if comp.explicacao %}
-                          <small class="text-muted d-block">{{ comp.explicacao }}</small>
-                          {% endif %}
-                        </div>
-                        {% endif %}
-                      {% endfor %}
-                    {% endwith %}
                   </div>
                 </div>
               </div>
