@@ -1,7 +1,7 @@
 <!-- templates/producao/grupo_list.html -->
 {% extends 'producao/base_producao.html' %}
 
-{% block title %}Grupos de Produtos | Portal Producao{% endblock %}
+{% block title %}Grupos de Produtos | Portal Produção{% endblock %}
 
 {% block content %}
 <div class="card shadow">
@@ -24,8 +24,16 @@
       <div class="col-md-8">
         <form method="get" class="row g-2 align-items-center">
           <div class="col-auto">
+            <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Tipos</option>
+              <option value="MP" {% if tipo_filtro == 'MP' %}selected{% endif %}>Matéria Prima</option>
+              <option value="PI" {% if tipo_filtro == 'PI' %}selected{% endif %}>Produto Intermediário</option>
+              <option value="PA" {% if tipo_filtro == 'PA' %}selected{% endif %}>Produto Acabado</option>
+            </select>
+          </div>
+          <div class="col-auto">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">Todos os Grupos</option>
+              <option value="">Todos os Status</option>
               <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
               <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
             </select>
@@ -34,6 +42,8 @@
       </div>
       <div class="col-md-4">
         <form method="get" class="d-flex">
+          <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
+          <input type="hidden" name="status" value="{{ status_filtro }}">
           <input type="text" name="q" class="form-control form-control-sm me-2" 
                  placeholder="Buscar por código ou nome" value="{{ query|default:'' }}">
           <button type="submit" class="btn btn-sm btn-primary">
@@ -51,21 +61,32 @@
           <tr>
             <th>Código</th>
             <th>Nome</th>
-            <th>Descrição</th>
+            <th>Tipo</th>
             <th>Subgrupos</th>
             <th class="text-center">Status</th>
-            <th class="text-center" style="min-width: 140px;">Ações</th>
+            <th class="text-center" style="min-width: 160px;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for grupo in grupos %}
             <tr>
-              <td><strong>{{ grupo.codigo }}</strong></td>
-              <td>{{ grupo.nome }}</td>
-              <td>{{ grupo.descricao|truncatechars:60|default:"-" }}</td>
+              <td><strong><code>{{ grupo.codigo }}</code></strong></td>
               <td>
-                <span class="badge bg-info">{{ grupo.subgrupos.count }} subgrupos</span>
+                <strong>{{ grupo.nome }}</strong>
               </td>
+              <td>
+                <span class="badge {{ grupo.tipo_produto_display_badge }}">
+                  {{ grupo.get_tipo_produto_display }}
+                </span>
+              </td>
+              <td>
+                {% if grupo.subgrupos.count > 0 %}
+                  <span class="badge bg-info">{{ grupo.subgrupos.count }} subgrupo{{ grupo.subgrupos.count|pluralize }}</span>
+                {% else %}
+                  <span class="text-muted">Nenhum</span>
+                {% endif %}
+              </td>
+
               <td class="text-center">
                 <span class="badge {% if grupo.ativo %}bg-success{% else %}bg-danger{% endif %}">
                   {% if grupo.ativo %}Ativo{% else %}Inativo{% endif %}
@@ -75,7 +96,7 @@
                 <div class="btn-group" role="group" aria-label="Ações do grupo">
                   <a href="{% url 'producao:subgrupo_list' %}?grupo={{ grupo.id }}" 
                      class="btn btn-outline-info btn-sm" 
-                     title="Ver Subgrupos">
+                     title="Ver Subgrupos ({{ grupo.subgrupos.count }})">
                     <i class="fas fa-sitemap"></i>
                   </a>
                   <a href="{% url 'producao:grupo_update' grupo.id %}" 
@@ -84,14 +105,14 @@
                     <i class="fas fa-edit"></i>
                   </a>
                   <a href="{% url 'producao:grupo_toggle_status' grupo.id %}" 
-                     class="btn btn-sm {% if grupo.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                     class="btn btn-sm {% if grupo.ativo %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
                      title="{% if grupo.ativo %}Desativar{% else %}Ativar{% endif %}">
-                    <i class="fas {% if grupo.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                    <i class="fas {% if grupo.ativo %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
                   </a>
                   <a href="{% url 'producao:grupo_delete' grupo.id %}" 
                     class="btn btn-outline-danger btn-sm" 
                     title="Excluir" 
-                    onclick="return confirm('Tem certeza que deseja excluir este grupo?');">
+                    onclick="return confirm('Tem certeza que deseja excluir este grupo?\n\nATENÇÃO: Esta ação irá excluir também todos os subgrupos e produtos vinculados!');">
                     <i class="fas fa-trash"></i>
                   </a>
                 </div>
@@ -99,8 +120,18 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="text-center py-3 text-muted">
-                Nenhum grupo cadastrado.
+              <td colspan="7" class="text-center py-3 text-muted">
+                {% if query or tipo_filtro or status_filtro %}
+                  Nenhum grupo encontrado com os filtros aplicados.
+                  <br><a href="{% url 'producao:grupo_list' %}" class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="fas fa-times me-1"></i> Limpar Filtros
+                  </a>
+                {% else %}
+                  Nenhum grupo cadastrado.
+                  <br><a href="{% url 'producao:grupo_create' %}" class="btn btn-sm btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Cadastrar Primeiro Grupo
+                  </a>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
@@ -115,12 +146,12 @@
       <ul class="pagination pagination-sm justify-content-center mb-0">
         {% if grupos.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?page=1{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+            <a class="page-link" href="?page=1{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
               <span aria-hidden="true">&laquo;&laquo;</span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?page={{ grupos.previous_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+            <a class="page-link" href="?page={{ grupos.previous_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
               <span aria-hidden="true">&laquo;</span>
             </a>
           </li>
@@ -137,18 +168,18 @@
           {% if grupos.number == i %}
             <li class="page-item active"><span class="page-link">{{ i }}</span></li>
           {% elif i > grupos.number|add:'-3' and i < grupos.number|add:'3' %}
-            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
           {% endif %}
         {% endfor %}
         
         {% if grupos.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ grupos.next_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+            <a class="page-link" href="?page={{ grupos.next_page_number }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
               <span aria-hidden="true">&raquo;</span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?page={{ grupos.paginator.num_pages }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+            <a class="page-link" href="?page={{ grupos.paginator.num_pages }}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
               <span aria-hidden="true">&raquo;&raquo;</span>
             </a>
           </li>
@@ -157,7 +188,7 @@
             <span class="page-link">&raquo;</span>
           </li>
           <li class="page-item disabled">
-            <span class="page-link">&raquo;</span>
+            <span class="page-link">&raquo;&raquo;</span>
           </li>
         {% endif %}
       </ul>

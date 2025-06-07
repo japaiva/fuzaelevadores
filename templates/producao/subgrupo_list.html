@@ -1,7 +1,7 @@
-<!-- templates/producao/subgrupo_list.html -->
+<!-- producao/subgrupo_list.html -->
 {% extends 'producao/base_producao.html' %}
 
-{% block title %}Subgrupos de Produtos | Portal Producao{% endblock %}
+{% block title %}Subgrupos de Produtos | Portal Produção{% endblock %}
 
 {% block content %}
 <div class="card shadow">
@@ -34,8 +34,16 @@
             </select>
           </div>
           <div class="col-auto">
+            <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Tipos</option>
+              <option value="MP" {% if tipo_filtro == 'MP' %}selected{% endif %}>Matéria Prima</option>
+              <option value="PI" {% if tipo_filtro == 'PI' %}selected{% endif %}>Produto Intermediário</option>
+              <option value="PA" {% if tipo_filtro == 'PA' %}selected{% endif %}>Produto Acabado</option>
+            </select>
+          </div>
+          <div class="col-auto">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">Todos os Subgrupos</option>
+              <option value="">Todos os Status</option>
               <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
               <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
             </select>
@@ -44,6 +52,9 @@
       </div>
       <div class="col-md-4">
         <form method="get" class="d-flex">
+          <input type="hidden" name="grupo" value="{{ grupo_filtro }}">
+          <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
+          <input type="hidden" name="status" value="{{ status_filtro }}">
           <input type="text" name="q" class="form-control form-control-sm me-2" 
                  placeholder="Buscar por código ou nome" value="{{ query|default:'' }}">
           <button type="submit" class="btn btn-sm btn-primary">
@@ -59,11 +70,11 @@
       <table class="table table-hover align-middle">
         <thead class="table-light">
           <tr>
-            <th>Código Completo</th>
+            <th>Código</th>
             <th>Grupo</th>
             <th>Nome</th>
-            <th>Descrição</th>
-            <th>Produtos</th>
+            <th>Tipo</th>
+            <th class="text-center">Produtos</th>
             <th class="text-center">Status</th>
             <th class="text-center" style="min-width: 140px;">Ações</th>
           </tr>
@@ -71,15 +82,24 @@
         <tbody>
           {% for subgrupo in subgrupos %}
             <tr>
-              <td><strong>{{ subgrupo.grupo.codigo }}.{{ subgrupo.codigo }}</strong></td>
+              <td><strong><code>{{ subgrupo.grupo.codigo }}.{{ subgrupo.codigo }}</code></strong></td>
               <td>
-                <span class="badge bg-primary">{{ subgrupo.grupo.codigo }}</span>
-                <br><small class="text-muted">{{ subgrupo.grupo.nome }}</small>
+                <div>
+                  <strong>{{ subgrupo.grupo.nome }}</strong>
+                </div>
               </td>
               <td>{{ subgrupo.nome }}</td>
-              <td>{{ subgrupo.descricao|truncatechars:60|default:"-" }}</td>
               <td>
-                <span class="badge bg-info">{{ subgrupo.produto_set.count }} produtos</span>
+                <span class="badge {{ subgrupo.grupo.tipo_produto_display_badge }}">
+                  {{ subgrupo.grupo.get_tipo_produto_display }}
+                </span>
+              </td>
+              <td class="text-center">
+                {% if subgrupo.produtos.count > 0 %}
+                  <span class="badge bg-info">{{ subgrupo.produtos.count }}</span>
+                {% else %}
+                  <span class="text-muted">0</span>
+                {% endif %}
               </td>
               <td class="text-center">
                 <span class="badge {% if subgrupo.ativo %}bg-success{% else %}bg-danger{% endif %}">
@@ -88,11 +108,26 @@
               </td>
               <td class="text-center">
                 <div class="btn-group" role="group" aria-label="Ações do subgrupo">
-                  <a href="{% url 'producao:materiaprima_list' %}?subgrupo={{ subgrupo.id }}" 
-                     class="btn btn-outline-info btn-sm" 
-                     title="Ver Produtos">
-                    <i class="fas fa-boxes"></i>
-                  </a>
+                  {% if subgrupo.grupo.tipo_produto == 'MP' %}
+                    <a href="{% url 'producao:materiaprima_list' %}?subgrupo={{ subgrupo.id }}" 
+                       class="btn btn-outline-info btn-sm" 
+                       title="Ver Matérias-Primas ({{ subgrupo.produtos.count }})">
+                      <i class="fas fa-boxes"></i>
+                    </a>
+                  {% elif subgrupo.grupo.tipo_produto == 'PI' %}
+                    <a href="#" 
+                       class="btn btn-outline-info btn-sm disabled" 
+                       title="Produtos Intermediários (Em desenvolvimento)">
+                      <i class="fas fa-cogs"></i>
+                    </a>
+                  {% elif subgrupo.grupo.tipo_produto == 'PA' %}
+                    <a href="#" 
+                       class="btn btn-outline-info btn-sm disabled" 
+                       title="Produtos Acabados (Em desenvolvimento)">
+                      <i class="fas fa-check-circle"></i>
+                    </a>
+                  {% endif %}
+                  
                   <a href="{% url 'producao:subgrupo_update' subgrupo.id %}" 
                      class="btn btn-outline-primary btn-sm" 
                      title="Editar">
@@ -106,7 +141,7 @@
                   <a href="{% url 'producao:subgrupo_delete' subgrupo.id %}" 
                     class="btn btn-outline-danger btn-sm" 
                     title="Excluir" 
-                    onclick="return confirm('Tem certeza que deseja excluir este subgrupo?');">
+                    onclick="return confirm('Tem certeza que deseja excluir este subgrupo? Esta ação não pode ser desfeita.');">
                     <i class="fas fa-trash"></i>
                   </a>
                 </div>
@@ -114,8 +149,20 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-center py-3 text-muted">
-                Nenhum subgrupo cadastrado.
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="fas fa-inbox fa-2x mb-2"></i>
+                <br>
+                {% if query or grupo_filtro or tipo_filtro or status_filtro %}
+                  Nenhum subgrupo encontrado com os filtros aplicados.
+                  <br><a href="{% url 'producao:subgrupo_list' %}" class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="fas fa-times me-1"></i> Limpar Filtros
+                  </a>
+                {% else %}
+                  Nenhum subgrupo cadastrado.
+                  <br><a href="{% url 'producao:subgrupo_create' %}" class="btn btn-sm btn-primary mt-2">
+                    <i class="fas fa-plus me-1"></i> Cadastrar Primeiro Subgrupo
+                  </a>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
@@ -130,12 +177,12 @@
       <ul class="pagination pagination-sm justify-content-center mb-0">
         {% if subgrupos.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+            <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
               <span aria-hidden="true">&laquo;&laquo;</span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?page={{ subgrupos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+            <a class="page-link" href="?page={{ subgrupos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
               <span aria-hidden="true">&laquo;</span>
             </a>
           </li>
@@ -152,18 +199,18 @@
           {% if subgrupos.number == i %}
             <li class="page-item active"><span class="page-link">{{ i }}</span></li>
           {% elif i > subgrupos.number|add:'-3' and i < subgrupos.number|add:'3' %}
-            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
           {% endif %}
         {% endfor %}
         
         {% if subgrupos.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ subgrupos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+            <a class="page-link" href="?page={{ subgrupos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
               <span aria-hidden="true">&raquo;</span>
             </a>
           </li>
           <li class="page-item">
-            <a class="page-link" href="?page={{ subgrupos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+            <a class="page-link" href="?page={{ subgrupos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if tipo_filtro %}&tipo={{ tipo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
               <span aria-hidden="true">&raquo;&raquo;</span>
             </a>
           </li>
@@ -172,7 +219,7 @@
             <span class="page-link">&raquo;</span>
           </li>
           <li class="page-item disabled">
-            <span class="page-link">&raquo;</span>
+            <span class="page-link">&raquo;&raquo;</span>
           </li>
         {% endif %}
       </ul>
@@ -180,4 +227,5 @@
   </div>
   {% endif %}
 </div>
+
 {% endblock %}

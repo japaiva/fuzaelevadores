@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime, timedelta
 from django.db import models
+from django.urls import reverse
 import json
 
 from django.http import HttpResponse, JsonResponse
@@ -12,6 +13,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Sum, Count
 from django.db.models.deletion import ProtectedError
+from django.views.decorators.http import require_GET
 
 from core.models import (
     Usuario, Produto, GrupoProduto, SubgrupoProduto, Fornecedor,
@@ -142,6 +144,8 @@ def fornecedor_toggle_status(request, pk):
 # CRUD GRUPOS DE PRODUTOS
 # =============================================================================
 
+# Atualização da view grupo_list em producao/views.py
+
 @login_required
 def grupo_list(request):
     grupos_list = GrupoProduto.objects.all().order_by('codigo')
@@ -153,11 +157,17 @@ def grupo_list(request):
     elif status == 'inativo':
         grupos_list = grupos_list.filter(ativo=False)
     
+    # NOVO: Filtro por tipo de produto
+    tipo = request.GET.get('tipo')
+    if tipo in ['MP', 'PI', 'PA']:
+        grupos_list = grupos_list.filter(tipo_produto=tipo)
+    
     query = request.GET.get('q')
     if query:
         grupos_list = grupos_list.filter(
             Q(codigo__icontains=query) | 
-            Q(nome__icontains=query)
+            Q(nome__icontains=query) |
+            Q(descricao__icontains=query)
         )
     
     # Paginação
@@ -174,6 +184,7 @@ def grupo_list(request):
     return render(request, 'producao/grupo_list.html', {
         'grupos': grupos,
         'status_filtro': status,
+        'tipo_filtro': tipo,  # NOVO: Passar tipo para o template
         'query': query
     })
 
@@ -243,6 +254,11 @@ def subgrupo_list(request):
     if grupo_id:
         subgrupos_list = subgrupos_list.filter(grupo_id=grupo_id)
     
+    # NOVO: Filtro por tipo de produto
+    tipo = request.GET.get('tipo')
+    if tipo:
+        subgrupos_list = subgrupos_list.filter(grupo__tipo_produto=tipo)
+    
     status = request.GET.get('status')
     if status == 'ativo':
         subgrupos_list = subgrupos_list.filter(ativo=True)
@@ -275,6 +291,7 @@ def subgrupo_list(request):
         'subgrupos': subgrupos,
         'grupos': grupos,
         'grupo_filtro': grupo_id,
+        'tipo_filtro': tipo,  # NOVO
         'status_filtro': status,
         'query': query
     })
@@ -354,6 +371,10 @@ def materiaprima_list(request):
     if grupo_id:
         produtos_list = produtos_list.filter(grupo_id=grupo_id)
     
+    subgrupo_id = request.GET.get('subgrupo')
+    if subgrupo_id:
+        produtos_list = produtos_list.filter(subgrupo_id=subgrupo_id)
+    
     status = request.GET.get('status')
     if status == 'ativo':
         produtos_list = produtos_list.filter(status='ATIVO')
@@ -384,15 +405,31 @@ def materiaprima_list(request):
         produtos = paginator.page(paginator.num_pages)
     
     # Para os filtros
-    grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
+    grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='MP').order_by('codigo')
+    
+    # Subgrupos - se tem grupo selecionado, filtrar por grupo
+    if grupo_id:
+        subgrupos = SubgrupoProduto.objects.filter(
+            grupo_id=grupo_id, 
+            ativo=True
+        ).order_by('codigo')
+    else:
+        # Se não tem grupo selecionado, mostrar apenas subgrupos de grupos MP
+        subgrupos = SubgrupoProduto.objects.filter(
+            grupo__tipo_produto='MP',
+            ativo=True
+        ).select_related('grupo').order_by('grupo__codigo', 'codigo')
     
     return render(request, 'producao/materiaprima_list.html', {
         'produtos': produtos,
         'grupos': grupos,
+        'subgrupos': subgrupos,
         'grupo_filtro': grupo_id,
+        'subgrupo_filtro': subgrupo_id,
         'status_filtro': status,
         'query': query
     })
+
 
 @login_required
 def materiaprima_create(request):
@@ -459,6 +496,17 @@ def materiaprima_toggle_status(request, pk):
     messages.success(request, f'Matéria-prima "{produto.nome}" {status_text} com sucesso.')
     
     return redirect('producao:materiaprima_list')
+
+@login_required
+def materiaprima_detail(request, pk):
+    """Visualizar detalhes de uma matéria-prima"""
+    produto = get_object_or_404(Produto, pk=pk, tipo='MP')
+    
+    context = {
+        'produto': produto,
+    }
+    
+    return render(request, 'producao/materiaprima_detail.html', context)
 
 @login_required
 def materiaprima_delete(request, pk):
@@ -795,41 +843,94 @@ def fornecedor_produto_toggle(request, pk):
 # =============================================================================
 
 @login_required
-def api_subgrupos_por_grupo(request, grupo_id):
-    """API para buscar subgrupos por grupo"""
-    subgrupos = SubgrupoProduto.objects.filter(grupo_id=grupo_id, ativo=True).order_by('nome')
+@require_GET
+def get_subgrupos_by_grupo(request):
+    """
+    API endpoint para retornar subgrupos de um grupo específico
+    Used by AJAX in forms when grupo is selected
+    """
+    grupo_id = request.GET.get('grupo_id')
     
-    data = [
-        {
-            'id': subgrupo.id,
-            'codigo': subgrupo.codigo,
-            'nome': subgrupo.nome
-        }
-        for subgrupo in subgrupos
-    ]
+    if not grupo_id:
+        return JsonResponse({'error': 'grupo_id é obrigatório'}, status=400)
     
-    return JsonResponse({'subgrupos': data})
-
-@login_required
-def api_produto_por_codigo(request, codigo):
-    """API para buscar produto por código"""
-    produto = Produto.objects.filter(codigo=codigo).first()
-    
-    if produto:
+    try:
+        grupo = GrupoProduto.objects.get(id=grupo_id, ativo=True)
+        subgrupos = SubgrupoProduto.objects.filter(
+            grupo=grupo, 
+            ativo=True
+        ).order_by('codigo')
+        
+        subgrupos_data = [
+            {
+                'id': subgrupo.id,
+                'codigo': subgrupo.codigo,
+                'nome': subgrupo.nome,
+                'codigo_completo': f"{grupo.codigo}.{subgrupo.codigo}",
+                'ultimo_numero': subgrupo.ultimo_numero
+            }
+            for subgrupo in subgrupos
+        ]
+        
         return JsonResponse({
             'success': True,
-            'id': str(produto.id),
-            'nome': produto.nome,
-            'tipo': produto.tipo,
-            'disponivel': produto.disponivel,
-            'estoque_atual': float(produto.estoque_atual),
-            'preco_venda': float(produto.preco_venda) if produto.preco_venda else None
+            'grupo': {
+                'id': grupo.id,
+                'codigo': grupo.codigo,
+                'nome': grupo.nome,
+                'tipo_produto': grupo.tipo_produto,
+                'tipo_produto_display': grupo.get_tipo_produto_display()
+            },
+            'subgrupos': subgrupos_data
         })
-    else:
+        
+    except GrupoProduto.DoesNotExist:
+        return JsonResponse({'error': 'Grupo não encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
+def get_info_produto_codigo(request):
+    """
+    API endpoint para preview do código que será gerado para um produto
+    """
+    grupo_id = request.GET.get('grupo_id')
+    subgrupo_id = request.GET.get('subgrupo_id')
+    
+    if not grupo_id or not subgrupo_id:
+        return JsonResponse({'error': 'grupo_id e subgrupo_id são obrigatórios'}, status=400)
+    
+    try:
+        grupo = GrupoProduto.objects.get(id=grupo_id, ativo=True)
+        subgrupo = SubgrupoProduto.objects.get(id=subgrupo_id, grupo=grupo, ativo=True)
+        
+        # Preview do próximo código que seria gerado
+        proximo_numero = subgrupo.ultimo_numero + 1
+        codigo_preview = f"{grupo.codigo}.{subgrupo.codigo}.{proximo_numero:04d}"
+        
         return JsonResponse({
-            'success': False,
-            'message': 'Produto não encontrado'
+            'success': True,
+            'grupo': {
+                'codigo': grupo.codigo,
+                'nome': grupo.nome,
+                'tipo_produto': grupo.tipo_produto,
+                'tipo_produto_display': grupo.get_tipo_produto_display()
+            },
+            'subgrupo': {
+                'codigo': subgrupo.codigo,
+                'nome': subgrupo.nome,
+                'ultimo_numero': subgrupo.ultimo_numero
+            },
+            'codigo_preview': codigo_preview,
+            'proximo_numero': proximo_numero
         })
+        
+    except (GrupoProduto.DoesNotExist, SubgrupoProduto.DoesNotExist):
+        return JsonResponse({'error': 'Grupo ou subgrupo não encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # =============================================================================
 # RELATÓRIOS ESPECÍFICOS DA PRODUÇÃO

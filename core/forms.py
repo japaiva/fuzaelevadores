@@ -1,4 +1,5 @@
-# core/forms.py
+# core/forms.py - CORREÇÃO DOS RELACIONAMENTOS
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
@@ -82,10 +83,123 @@ class UsuarioForm(forms.ModelForm):
             user.save()
         
         return user
+
+
+# =============================================================================
+# ⭐ FORMULÁRIOS CORRIGIDOS PARA GRUPOS E SUBGRUPOS
+# =============================================================================
+
+# Atualizações no core/forms.py
+
+class GrupoProdutoForm(forms.ModelForm):
+    class Meta:
+        model = GrupoProduto
+        fields = ['codigo', 'nome', 'tipo_produto', 'ativo']
+        widgets = {
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 01, 02, 03...'
+            }),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome do grupo'
+            }),
+            'tipo_produto': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'ativo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+
+
+class SubgrupoProdutoForm(forms.ModelForm):
+    class Meta:
+        model = SubgrupoProduto
+        fields = ['grupo', 'codigo', 'nome', 'ultimo_numero', 'ativo']
+        widgets = {
+            'grupo': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'codigo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 01, 02, 03...'
+            }),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome do subgrupo'
+            }),
+            'ultimo_numero': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'step': '1',
+                'placeholder': '0'
+            }),
+            'ativo': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
     
-# core/forms.py - Versão corrigida do ProdutoForm
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar apenas grupos ativos
+        self.fields['grupo'].queryset = GrupoProduto.objects.filter(ativo=True).order_by('codigo')
+        
+        # Se for edição, mostrar informações adicionais
+        if self.instance.pk:
+            produtos_count = self.instance.produtos.count()
+            
+            # Descobrir o maior número usado analisando os códigos dos produtos
+            maior_numero_usado = 0
+            for produto in self.instance.produtos.all():
+                try:
+                    # Formato: GG.SS.NNNNN - pegar os últimos 5 dígitos
+                    partes = produto.codigo.split('.')
+                    if len(partes) >= 3:
+                        numero_produto = int(partes[-1])
+                        if numero_produto > maior_numero_usado:
+                            maior_numero_usado = numero_produto
+                except (ValueError, IndexError):
+                    continue
+            
+            if produtos_count > 0:
+                self.fields['nome'].help_text = f"Produtos vinculados: {produtos_count}"
+                
+                # Se o último número for menor que o maior usado, mostrar aviso
+                if maior_numero_usado > self.instance.ultimo_numero:
+                    self.fields['ultimo_numero'].help_text = f"⚠️ Maior número usado: {maior_numero_usado}"
+                    self.fields['ultimo_numero'].widget.attrs['class'] += ' border-warning'
+    
+    def clean_codigo(self):
+        """Validar unicidade do código dentro do grupo"""
+        codigo = self.cleaned_data.get('codigo')
+        grupo = self.cleaned_data.get('grupo')
+        
+        if codigo and grupo:
+            # Verificar se já existe outro subgrupo com o mesmo código no mesmo grupo
+            queryset = SubgrupoProduto.objects.filter(grupo=grupo, codigo=codigo)
+            
+            # Se for edição, excluir o próprio registro da verificação
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise forms.ValidationError(
+                    f'Já existe um subgrupo com o código "{codigo}" no grupo "{grupo.nome}".'
+                )
+        
+        return codigo
+# =============================================================================
+# ⭐ FORMULÁRIO DE PRODUTO CORRIGIDO
+# =============================================================================
 
 class ProdutoForm(forms.ModelForm):
+    """
+    Formulário atualizado que usa a nova lógica de grupos/subgrupos
+    e geração automática de códigos
+    """
+    
     class Meta:
         model = Produto
         fields = [
@@ -95,19 +209,56 @@ class ProdutoForm(forms.ModelForm):
             'fornecedor_principal', 'prazo_entrega_padrao', 'status', 'disponivel'
         ]
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'grupo': forms.Select(attrs={'class': 'form-select'}),
-            'subgrupo': forms.Select(attrs={'class': 'form-select'}),
-            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'peso_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'controla_estoque': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'estoque_minimo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'custo_medio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'fornecedor_principal': forms.Select(attrs={'class': 'form-select'}),
-            'prazo_entrega_padrao': forms.NumberInput(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
-            'disponivel': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'nome': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nome do produto'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'class': 'form-control', 
+                'rows': 3,
+                'placeholder': 'Descrição do produto...'
+            }),
+            'grupo': forms.Select(attrs={
+                'class': 'form-select',
+                'onchange': 'updateSubgrupos(this.value)'
+            }),
+            'subgrupo': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'unidade_medida': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'peso_unitario': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'step': '0.001',
+                'placeholder': '0.000'
+            }),
+            'controla_estoque': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'estoque_minimo': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+            'custo_medio': forms.NumberInput(attrs={
+                'class': 'form-control', 
+                'step': '0.01',
+                'placeholder': '0.00'
+            }),
+            'fornecedor_principal': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'prazo_entrega_padrao': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Dias'
+            }),
+            'status': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'disponivel': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -115,52 +266,130 @@ class ProdutoForm(forms.ModelForm):
         
         # Campos obrigatórios
         self.fields['grupo'].required = True
+        self.fields['subgrupo'].required = True
         self.fields['nome'].required = True
+        
+        # Filtrar apenas grupos ativos
+        self.fields['grupo'].queryset = GrupoProduto.objects.filter(ativo=True).order_by('codigo')
         
         # Filtrar subgrupos baseado no grupo selecionado
         if 'grupo' in self.data:
             # Se tem dados do POST, usar o grupo selecionado
             try:
                 grupo_id = int(self.data.get('grupo'))
-                self.fields['subgrupo'].queryset = SubgrupoProduto.objects.filter(grupo_id=grupo_id, ativo=True)
+                self.fields['subgrupo'].queryset = SubgrupoProduto.objects.filter(
+                    grupo_id=grupo_id, 
+                    ativo=True
+                ).order_by('codigo')
             except (ValueError, TypeError):
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
-        elif self.instance.pk:
-            # Se é edição de produto existente, verificar se tem grupo
-            try:
-                if hasattr(self.instance, 'grupo') and self.instance.grupo:
-                    self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True)
-                else:
-                    self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
-            except:
-                # Se der qualquer erro ao acessar grupo, deixar queryset vazio
-                self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
+        elif self.instance.pk and hasattr(self.instance, 'grupo') and self.instance.grupo:
+            # Se é edição de produto existente
+            self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True).order_by('codigo')
         else:
             # Para produtos novos, não mostrar subgrupos até que um grupo seja selecionado
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
+        
+        # Informações de ajuda
+        self.fields['grupo'].help_text = "Selecione o grupo - o tipo do produto será definido automaticamente"
+        self.fields['subgrupo'].help_text = "Selecione o subgrupo - o código será gerado automaticamente"
+        
+        # Se for edição, mostrar o código atual
+        if self.instance.pk and self.instance.codigo:
+            self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
 
-class GrupoProdutoForm(forms.ModelForm):
-    class Meta:
-        model = GrupoProduto
-        fields = ['codigo', 'nome', 'descricao', 'ativo']
-        widgets = {
-            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+    def clean(self):
+        """Validações personalizadas"""
+        cleaned_data = super().clean()
+        grupo = cleaned_data.get('grupo')
+        subgrupo = cleaned_data.get('subgrupo')
+        
+        # Validar se o subgrupo pertence ao grupo selecionado
+        if grupo and subgrupo:
+            if subgrupo.grupo != grupo:
+                self.add_error('subgrupo', 'O subgrupo selecionado não pertence ao grupo escolhido.')
+        
+        return cleaned_data
 
-class SubgrupoProdutoForm(forms.ModelForm):
-    class Meta:
-        model = SubgrupoProduto
-        fields = ['grupo', 'codigo', 'nome', 'descricao', 'ativo']
-        widgets = {
-            'grupo': forms.Select(attrs={'class': 'form-select'}),
-            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+    def save(self, commit=True):
+        """Override para garantir que o tipo seja definido corretamente"""
+        produto = super().save(commit=False)
+        
+        # Garantir que o tipo coincida com o grupo
+        if produto.grupo and produto.grupo.tipo_produto:
+            produto.tipo = produto.grupo.tipo_produto
+        
+        if commit:
+            produto.save()
+        
+        return produto
+
+
+# =============================================================================
+# ⭐ FORMULÁRIOS PARA FILTROS E BUSCAS
+# =============================================================================
+
+class GrupoProdutoFiltroForm(forms.Form):
+    """Formulário para filtros na listagem de grupos"""
+    
+    TIPO_CHOICES = [('', 'Todos os Tipos')] + GrupoProduto.TIPO_PRODUTO_CHOICES
+    STATUS_CHOICES = [
+        ('', 'Todos'),
+        ('ativo', 'Ativos'),
+        ('inativo', 'Inativos'),
+    ]
+    
+    tipo_produto = forms.ChoiceField(
+        choices=TIPO_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'})
+    )
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'})
+    )
+    q = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Buscar por código ou nome...'
+        })
+    )
+
+
+class SubgrupoProdutoFiltroForm(forms.Form):
+    """Formulário para filtros na listagem de subgrupos"""
+    
+    STATUS_CHOICES = [
+        ('', 'Todos'),
+        ('ativo', 'Ativos'),
+        ('inativo', 'Inativos'),
+    ]
+    
+    grupo = forms.ModelChoiceField(
+        queryset=GrupoProduto.objects.filter(ativo=True).order_by('codigo'),
+        required=False,
+        empty_label="Todos os Grupos",
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'})
+    )
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control form-control-sm'})
+    )
+    q = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Buscar por código ou nome...'
+        })
+    )
+
+
+# =============================================================================
+# DEMAIS FORMULÁRIOS (mantidos iguais)
+# =============================================================================
 
 class FornecedorForm(forms.ModelForm):
     class Meta:
@@ -278,7 +507,7 @@ FornecedorProdutoFormSet = forms.inlineformset_factory(
 )
 
 # =============================================================================
-# ⭐ FORMULÁRIOS DE CLIENTE COM VALIDAÇÃO COMPLETA
+# ⭐ FORMULÁRIOS DE CLIENTE (mantidos iguais)
 # =============================================================================
 
 class ClienteForm(forms.ModelForm):

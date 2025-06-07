@@ -1,4 +1,5 @@
-# producao/urls.py
+# producao/urls.py - CORREÇÃO FINAL
+
 from django.urls import path
 from . import views
 from core.views import ProducaoLoginView
@@ -39,7 +40,8 @@ urlpatterns = [
     path('materias-primas/novo/', views.materiaprima_create, name='materiaprima_create'),
     path('materias-primas/<uuid:pk>/editar/', views.materiaprima_update, name='materiaprima_update'),
     path('materias-primas/<uuid:pk>/status/', views.materiaprima_toggle_status, name='materiaprima_toggle_status'),
-    path('materiasprimas/<uuid:pk>/excluir/', views.materiaprima_delete, name='materiaprima_delete'),
+    path('materias-primas/<uuid:pk>/excluir/', views.materiaprima_delete, name='materiaprima_delete'),
+    path('materias-primas/<uuid:pk>/', views.materiaprima_detail, name='materiaprima_detail'),
 
     # PRODUTOS INTERMEDIÁRIOS
     path('produtos-intermediarios/', views.produto_intermediario_list, name='produto_intermediario_list'),
@@ -55,9 +57,9 @@ urlpatterns = [
     path('produtos-acabados/<uuid:pk>/status/', views.produto_acabado_toggle_status, name='produto_acabado_toggle_status'),
     path('produtos-acabados/<uuid:pk>/excluir/', views.produto_acabado_delete, name='produto_acabado_delete'),
 
-    # APIs para AJAX
-    path('api/subgrupos-por-grupo/<int:grupo_id>/', views.api_subgrupos_por_grupo, name='api_subgrupos_por_grupo'),
-    path('api/produto-por-codigo/<str:codigo>/', views.api_produto_por_codigo, name='api_produto_por_codigo'),
+    # APIs para AJAX - CORREÇÃO: Usar nomes corretos das funções
+    path('api/subgrupos-por-grupo/', views.get_subgrupos_by_grupo, name='api_subgrupos_por_grupo'),
+    path('api/info-produto-codigo/', views.get_info_produto_codigo, name='api_info_produto_codigo'),
     
     # Gestão de fornecedores do produto
     path('produtos/<uuid:pk>/fornecedores/', views.produto_fornecedores, name='produto_fornecedores'),
