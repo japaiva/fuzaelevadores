@@ -24,14 +24,14 @@
 <!-- Menu de Pedidos -->
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Pedidos
+    Propostas
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'vendedor:pedido_step1' %}">
-        Novo Pedido
+        Nova Proposta
     </a></li>
     <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}">
-        Pedidos
+        Propostas
     </a></li>
   </ul>
 </li>

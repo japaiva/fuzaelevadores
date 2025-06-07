@@ -2,14 +2,14 @@
 {% load formato_br %}
 {% load pedido_filters %}
 
-{% block title %}Pedido {{ pedido.numero }}{% endblock %}
+{% block title %}Proposta {{ pedido.numero }}{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="card shadow">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
       <h5 class="card-title mb-0">
-        <i class="fas fa-clipboard-check me-2"></i>Pedido {{ pedido.numero }} - {{ pedido.nome_projeto }}
+        <i class="fas fa-clipboard-check me-2"></i>Proposta {{ pedido.numero }} - {{ pedido.nome_projeto }}
       </h5>
       <div>
         {% if pedido.pode_calcular %}
@@ -44,7 +44,7 @@
     <ul class="nav nav-tabs" id="pedidoTabs" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="resumo-tab" data-bs-toggle="tab" data-bs-target="#resumo" type="button">
-          Resumo Pedido
+          Resumo Proposta
         </button>
       </li>
       <li class="nav-item" role="presentation">
@@ -72,7 +72,7 @@
           <div class="card shadow-sm border-primary mb-4">
             <div class="card-header bg-primary text-white">
               <div class="d-flex justify-content-between align-items-center">
-                <h6 class="card-title mb-0">Dados do Pedido</h6>
+                <h6 class="card-title mb-0">Dados da Proposta</h6>
                 <span class="badge bg-light text-primary fs-6">{{ pedido.numero }}</span>
               </div>
             </div>

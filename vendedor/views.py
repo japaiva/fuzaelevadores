@@ -11,11 +11,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, Http404, HttpResponse
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 
 from core.services.calculo_pedido import CalculoPedidoService
+from core.models import ParametrosGerais, Cliente
 from core.utils.formatters import extrair_especificacoes_do_pedido, agrupar_respostas_por_pagina, safe_decimal, safe_int
 
 from .models import Pedido, HistoricoPedido, AnexoPedido
@@ -23,9 +24,7 @@ from .forms import (
     PedidoClienteElevadorForm, PedidoCabinePortasForm, 
     AnexoPedidoForm, PedidoFiltroForm, ClienteCreateForm
 )
-
 from .utils import validar_permissoes_vendedor, calcular_estatisticas_vendedor
-from core.models import Cliente
 
 logger = logging.getLogger(__name__)
 
@@ -732,9 +731,28 @@ def pedido_anexo_delete(request, pk, anexo_id):
 # =============================================================================
 # FECHAMENTO
 # =============================================================================
-# vendedor/views.py - APENAS LEITURA DOS PARÂMETROS EXISTENTES
 
-# vendedor/views.py - APENAS O TRECHO DA API DE DADOS DE PRECIFICAÇÃO
+def detalhe_pedido(request, pk):
+    pedido = get_object_or_404(Pedido, pk=pk)
+    parametros = ParametrosGerais.objects.first()
+
+    if not parametros:
+        parametros = {}
+
+    impostos_por_tipo = {
+        'Elevadores': parametros.faturamento_elevadores or 10,
+        'Fuza': parametros.faturamento_fuza or 8,
+        'Manutenção': parametros.faturamento_manutencao or 5,
+    }
+
+    imposto_tipo = impostos_por_tipo.get(pedido.faturado_por, 10)
+
+    contexto = {
+        'pedido': pedido,
+        'parametros': parametros,
+        'imposto_tipo': imposto_tipo,
+    }
+    return render(request, 'pedido_detail.html', contexto)
 
 @login_required
 def api_dados_precificacao(request, pk):
@@ -743,10 +761,7 @@ def api_dados_precificacao(request, pk):
     """
     pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
     
-    try:
-        # BUSCAR PARÂMETROS DO MODELO ParametrosGerais
-        from core.models import ParametrosGerais
-        
+    try:        
         parametros_obj = ParametrosGerais.objects.first()
         
         if not parametros_obj:
@@ -833,8 +848,6 @@ def api_salvar_preco_negociado(request, pk):
         data = json.loads(request.body)
         preco_negociado = Decimal(str(data.get('preco_negociado')))
         
-        # BUSCAR PARÂMETROS PARA VALIDAÇÃO
-        from core.models import ParametrosGerais
         parametros_obj = ParametrosGerais.objects.first()
         
         if not parametros_obj:
@@ -863,88 +876,6 @@ def api_salvar_preco_negociado(request, pk):
             'Elevadores': float(parametros_obj.faturamento_elevadores or 10.0),
             'Fuza': float(parametros_obj.faturamento_fuza or 8.0),
             'Manutenção': float(parametros_obj.faturamento_manutencao or 5.0),
-        }
-        
-        percentual_impostos = Decimal(str(impostos_por_tipo.get(pedido.faturado_por, 10.0)))
-        preco_final = preco_negociado * (1 + percentual_impostos / 100)
-        
-        # SALVAR
-        pedido.preco_negociado = preco_negociado
-        pedido.preco_venda_final = preco_final
-        pedido.percentual_desconto = percentual_desconto
-        pedido.atualizado_por = request.user
-        pedido.save()
-        
-        # HISTÓRICO
-        HistoricoPedido.objects.create(
-            pedido=pedido,
-            status_anterior=pedido.status,
-            status_novo=pedido.status,
-            observacao=f'Preço negociado: R$ {preco_negociado:,.2f} ({percentual_desconto:.1f}% desconto)',
-            usuario=request.user
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Preço salvo com sucesso',
-            'dados': {
-                'preco_negociado': float(preco_negociado),
-                'preco_final': float(preco_final),
-                'percentual_desconto': float(percentual_desconto)
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Erro ao salvar preço: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-@login_required
-@require_POST
-def api_salvar_preco_negociado(request, pk):
-    """
-    API para salvar preço negociado - COM VALIDAÇÃO DE ALÇADA
-    """
-    pedido = get_object_or_404(Pedido, pk=pk, vendedor=request.user)
-    
-    pode_editar, mensagem = validar_permissoes_vendedor(request.user, pedido)
-    if not pode_editar:
-        return JsonResponse({'success': False, 'error': mensagem})
-    
-    try:
-        data = json.loads(request.body)
-        preco_negociado = Decimal(str(data.get('preco_negociado')))
-        
-        # BUSCAR PARÂMETROS PARA VALIDAÇÃO
-        from core.models import ParametrosGerais
-        parametros_obj = ParametrosGerais.objects.first()
-        
-        if not parametros_obj:
-            return JsonResponse({'success': False, 'error': 'Parâmetros não encontrados'})
-        
-        # DETERMINAR ALÇADA DO USUÁRIO
-        user_level = getattr(request.user, 'nivel', 'vendedor')
-        alcada_maxima = float(parametros_obj.desconto_alcada_2 if user_level in ['admin', 'gestor'] 
-                             else parametros_obj.desconto_alcada_1)
-        
-        # VALIDAR DESCONTO
-        preco_original = pedido.preco_venda_calculado or Decimal('0')
-        if preco_original <= 0:
-            return JsonResponse({'success': False, 'error': 'Preço calculado não encontrado'})
-        
-        percentual_desconto = ((preco_original - preco_negociado) / preco_original) * 100
-        
-        if percentual_desconto > Decimal(str(alcada_maxima)):
-            return JsonResponse({
-                'success': False,
-                'error': f'Desconto {percentual_desconto:.1f}% acima da alçada ({alcada_maxima}%)'
-            })
-        
-        # CALCULAR PREÇO FINAL COM IMPOSTOS
-        impostos_por_tipo = {
-            'Elevadores': float(parametros_obj.faturamento_elevadores),
-            'Fuza': float(parametros_obj.faturamento_fuza),
-            'Manutenção': float(parametros_obj.faturamento_manutencao),
         }
         
         percentual_impostos = Decimal(str(impostos_por_tipo.get(pedido.faturado_por, 10.0)))

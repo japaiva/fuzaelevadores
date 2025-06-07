@@ -22,9 +22,9 @@ class AppContextMiddleware:
             request.session['app_context'] = 'vendedor'
             request.session['portal_name'] = 'Portal do Vendedor'
             request.session['portal_color'] = 'success'
-        elif '/compras/' in path:
-            request.session['app_context'] = 'compras'
-            request.session['portal_name'] = 'Portal de Compras'
+        elif '/producao/' in path:
+            request.session['app_context'] = 'producao'
+            request.session['portal_name'] = 'Portal de Produção'
             request.session['portal_color'] = 'info'
         elif '/gestor/' in path:
             request.session['app_context'] = 'gestor'
@@ -88,7 +88,7 @@ class ComponenteDisponibilidadeMiddleware:
 
     def __call__(self, request):
         # Adicionar informações de disponibilidade se necessário
-        if request.user.is_authenticated and hasattr(request.user, 'nivel') and request.user.nivel in ['vendedor', 'compras', 'gestor', 'admin']:
+        if request.user.is_authenticated and hasattr(request.user, 'nivel') and request.user.nivel in ['vendedor', 'compras', 'producao', 'gestor', 'admin']:
             # Verificar se há produtos com estoque baixo
             try:
                 from core.models import Produto
@@ -131,6 +131,11 @@ class FuzaLogMiddleware:
                 logger = logging.getLogger('fuza.vendedor')
                 logger.info(f"Ação vendedor: {request.user.username} - {request.path} - {duration:.2f}s")
             
+            # Log de ações de produção
+            elif '/producao/' in request.path and request.method == 'POST':
+                logger = logging.getLogger('fuza.producao')
+                logger.info(f"Ação produção: {request.user.username} - {request.path} - {duration:.2f}s")
+            
             # Log de mudanças de configuração
             elif '/configuracao/' in request.path and request.method in ['POST', 'PUT', 'DELETE']:
                 logger = logging.getLogger('fuza.configuracao')
@@ -147,113 +152,11 @@ class FuzaLogMiddleware:
                 logger.info(f"Simulação: {request.user.username} - {request.path}")
         
         return response
-    
-# Versão corrigida do PermissaoPortalMiddleware com debug
+
 
 class PermissaoPortalMiddleware:
     """
     Middleware para verificar permissões de acesso aos portais
-    """
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        # Verificar permissões apenas para usuários autenticados
-        if request.user.is_authenticated:
-            path = request.path
-            
-            # Debug: verificar informações do usuário
-            print(f"DEBUG: User: {request.user.username}")
-            print(f"DEBUG: Path: {path}")
-            print(f"DEBUG: Has nivel attr: {hasattr(request.user, 'nivel')}")
-            
-            if hasattr(request.user, 'nivel'):
-                user_nivel = request.user.nivel
-                print(f"DEBUG: User nivel: {user_nivel}")
-            else:
-                print("DEBUG: User não tem atributo 'nivel'")
-                # Se não tem nível, permitir acesso (pode ser superuser)
-                response = self.get_response(request)
-                return response
-            
-            # Definir permissões por portal
-            portal_permissions = {
-                '/gestor/': ['admin', 'gestor'],
-                '/vendedor/': ['admin', 'gestor', 'vendedor'],
-                '/compras/': ['admin', 'gestor', 'compras'],
-                '/configuracao/': ['admin', 'gestor'],
-            }
-            
-            # Verificar se o usuário tem permissão para acessar o portal
-            for portal_path, allowed_levels in portal_permissions.items():
-                if path.startswith(portal_path):
-                    print(f"DEBUG: Portal {portal_path} requer níveis: {allowed_levels}")
-                    print(f"DEBUG: User nivel '{user_nivel}' in allowed? {user_nivel in allowed_levels}")
-                    
-                    if user_nivel not in allowed_levels:
-                        # Verificar se é superuser
-                        if request.user.is_superuser:
-                            print("DEBUG: User é superuser, permitindo acesso")
-                            break
-                        
-                        from django.http import HttpResponseForbidden
-                        print(f"DEBUG: Bloqueando acesso - Nível {user_nivel} não permitido")
-                        return HttpResponseForbidden(
-                            f"Acesso negado. Seu nível ({user_nivel}) não tem permissão para acessar este portal."
-                        )
-                    break
-        
-        response = self.get_response(request)
-        return response
-
-# SOLUÇÕES POSSÍVEIS:
-
-# 1. VERIFICAR O USUÁRIO NO SHELL DO DJANGO:
-"""
-python manage.py shell
-
-from core.models import Usuario
-user = Usuario.objects.get(username='seu_usuario')
-print(f"Nivel: {user.nivel}")
-print(f"Is superuser: {user.is_superuser}")
-"""
-
-# 2. CRIAR UM USUÁRIO GESTOR:
-"""
-python manage.py shell
-
-from core.models import Usuario
-user = Usuario.objects.get(username='seu_usuario')
-user.nivel = 'gestor'  # ou 'admin'
-user.save()
-"""
-
-# 3. MIDDLEWARE TEMPORÁRIO SEM VERIFICAÇÃO (para testar):
-class PermissaoPortalMiddlewareTemporario:
-    """
-    Middleware temporário SEM verificação de permissões
-    Use apenas para testar e depois remova!
-    """
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        # Debug do usuário
-        if request.user.is_authenticated:
-            print(f"DEBUG: User: {request.user.username}")
-            print(f"DEBUG: Has nivel: {hasattr(request.user, 'nivel')}")
-            if hasattr(request.user, 'nivel'):
-                print(f"DEBUG: Nivel: {request.user.nivel}")
-            print(f"DEBUG: Is superuser: {request.user.is_superuser}")
-        
-        # PERMITIR TUDO (temporário)
-        response = self.get_response(request)
-        return response
-
-# 4. SOLUÇÃO DEFINITIVA - MIDDLEWARE INTELIGENTE:
-class PermissaoPortalMiddlewareInteligente:
-    """
-    Middleware inteligente que lida com diferentes cenários
     """
     def __init__(self, get_response):
         self.get_response = get_response
@@ -279,7 +182,7 @@ class PermissaoPortalMiddlewareInteligente:
             portal_permissions = {
                 '/gestor/': ['admin', 'gestor'],
                 '/vendedor/': ['admin', 'gestor', 'vendedor'],
-                '/compras/': ['admin', 'gestor', 'compras'],
+                '/producao/': ['admin', 'gestor', 'producao', 'compras'],
                 '/configuracao/': ['admin', 'gestor'],
             }
             
@@ -289,21 +192,7 @@ class PermissaoPortalMiddlewareInteligente:
                     if user_nivel not in allowed_levels:
                         from django.http import HttpResponseForbidden
                         return HttpResponseForbidden(
-                            f"""
-                            <h1>Acesso Negado</h1>
-                            <p>Seu nível de usuário (<strong>{user_nivel}</strong>) não tem permissão para acessar este portal.</p>
-                            <p>Portais disponíveis para seu nível:</p>
-                            <ul>
-                            """ + 
-                            "".join([
-                                f"<li><a href='{portal}'>{portal}</a></li>" 
-                                for portal, levels in portal_permissions.items() 
-                                if user_nivel in levels
-                            ]) + 
-                            """
-                            </ul>
-                            <p><a href='/'>← Voltar ao início</a></p>
-                            """
+                            f"Acesso negado. Seu nível ({user_nivel}) não tem permissão para acessar este portal."
                         )
                     break
         

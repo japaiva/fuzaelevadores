@@ -1,0 +1,165 @@
+<!-- templates/producao/fornecedor_list.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Fornecedores | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-truck me-2"></i> Fornecedores
+    </h5>
+    <div>
+      <a href="{% url 'producao:fornecedor_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Fornecedor
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-header bg-white">
+    <div class="row">
+      <div class="col-md-8">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-auto">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Fornecedores</option>
+              <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
+              <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="col-md-4">
+        <form method="get" class="d-flex">
+          <input type="text" name="q" class="form-control form-control-sm me-2" 
+                 placeholder="Buscar por nome ou CNPJ" value="{{ query|default:'' }}">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Empresa</th>
+            <th>CNPJ</th>
+            <th>Contato</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th class="text-center">Status</th>
+            <th class="text-center" style="min-width: 120px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for fornecedor in fornecedores %}
+            <tr>
+              <td>
+                <strong>{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</strong>
+                {% if fornecedor.nome_fantasia and fornecedor.nome_fantasia != fornecedor.razao_social %}
+                  <br><small class="text-muted">{{ fornecedor.razao_social }}</small>
+                {% endif %}
+              </td>
+              <td>{{ fornecedor.cnpj|default:"-" }}</td>
+              <td>{{ fornecedor.contato_principal|default:"-" }}</td>
+              <td>{{ fornecedor.email|default:"-" }}</td>
+              <td>{{ fornecedor.telefone|default:"-" }}</td>
+              <td class="text-center">
+                <span class="badge {% if fornecedor.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                  {% if fornecedor.ativo %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group" aria-label="Ações do fornecedor">
+                  <a href="{% url 'producao:fornecedor_update' fornecedor.id %}" 
+                     class="btn btn-outline-primary btn-sm" 
+                     title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'producao:fornecedor_toggle_status' fornecedor.id %}" 
+                     class="btn btn-sm {% if fornecedor.ativo %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                     title="{% if fornecedor.ativo %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if fornecedor.ativo %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                  </a>
+                    <a href="{% url 'producao:fornecedor_delete' fornecedor.pk %}" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-3 text-muted">
+                Nenhum fornecedor cadastrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  {% if fornecedores.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav aria-label="Navegação de página">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if fornecedores.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page=1{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ fornecedores.previous_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;&laquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&laquo;</span>
+          </li>
+        {% endif %}
+        
+        {% for i in fornecedores.paginator.page_range %}
+          {% if fornecedores.number == i %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% elif i > fornecedores.number|add:'-3' and i < fornecedores.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if fornecedores.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ fornecedores.next_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ fornecedores.paginator.num_pages }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;</span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link">&raquo;&raquo;</span>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

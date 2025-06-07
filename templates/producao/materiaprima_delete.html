@@ -1,0 +1,23 @@
+<!-- templates/producao/materiaprima_delete.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Excluir Matéria-Prima | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-warning">
+    <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h4>
+    <p>Deseja realmente excluir a matéria-prima <strong>{{ produto.codigo }} - {{ produto.nome }}</strong>?</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-danger">
+        <i class="fas fa-trash me-1"></i> Confirmar Exclusão
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

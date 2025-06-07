@@ -1,0 +1,21 @@
+REGRA,DESCRICAO,EXEMPLO_CORRETO,EXEMPLO_ERRADO
+ESTRUTURA,"[TIPO] [MATERIAL/MODELO] [DIMENSÃO] [ACABAMENTO]","CHAPA INOX 430 1,2MM","Chapa de inox 430 com 1,2mm"
+MAIUSCULO,Sempre em maiúsculas,PARAFUSO AUTOBROCANTE 4,3X13MM,Parafuso autobrocante 4,3x13mm
+SEM_ARTIGOS,"Sem artigos (o, a, os, as, um, uma)",CABO DE AÇO 3/8",Cabo de aço de 3/8"
+SEM_PREPOSICOES,"Sem preposições desnecessárias (de, da, do, para, com)",MOTOR 10CV 800KG,Motor de 10cv para 800kg
+DIMENSOES_PADRONIZADAS,"Vírgula para decimais, X para dimensões","TUBO 30X30X1,20 - 6M","Tubo 30 x 30 x 1,20 de 6 metros"
+POLEGADAS,Use aspas para polegadas,PERFIL U 3" 2,65MM - 6M,Perfil U de 3 polegadas
+ABREVIACOES_TECNICAS,"MM, CV, KG, L, V, A permitidas",CABO 6MM PRETO - 100M,Cabo de 6 milímetros preto rolo 100 metros
+MAXIMO_80_CARACTERES,Máximo 80 caracteres por descrição,GUIA T70 CABINA COMPLETA - 5M,Guia T70 para cabina completa com tala e parafusos de 5 metros
+INFORMACOES_SUFICIENTES,Dados necessários para identificação única,PARAFUSO FRANCÊS 1/4"X2-1/2",PARAFUSO
+ESPECIFICACOES_TECNICAS,"Potência, tensão, capacidade sempre incluídas",INVERSOR FREQUÊNCIA WEG CFW500 10CV 220V,Inversor de frequência WEG
+SEM_REDUNDANCIAS,Evitar informações desnecessárias,CHAPA INOX 430 1,2MM,CHAPA METÁLICA DE AÇO INOX 430
+DIMENSOES_X_MAIUSCULO,Sempre X maiúsculo para dimensões,CHAPA XADREZ 1200X3000,Chapa xadrez 1200 x 3000
+VIRGULA_DECIMAIS,"Vírgula para decimais (padrão brasileiro)","MOTOR 7,5CV","MOTOR 7.5CV"
+HIFEN_COMPRIMENTOS,Hífen para separar comprimento,BARRA ROSCADA 1/2" - 3M,BARRA ROSCADA 1/2" 3M
+CORES_ESPECIFICADAS,Incluir cor quando relevante,CABO 0,75MM PRETO - 100M,CABO 0,75MM
+MODELO_MARCA_INCLUIR,Incluir marca/modelo quando importante,MÁQUINA TRAÇÃO AKIS ZF102 1000KG,MÁQUINA DE TRAÇÃO
+ACABAMENTO_FINAL,Acabamento/material no final,CHUMBADOR 3/8"X3-1/2" ZINCADO,CHUMBADOR ZINCADO 3/8"X3-1/2"
+CONSISTENCIA_GRUPO,Seguir padrão do grupo/subgrupo,BOTOEIRA CABINA 200X710MM - 3 ANDARES,Botoeira para cabina de 200x710
+IDENTIFICACAO_UNICA,Cada descrição deve ser única,GUIA T50 CABINA - 5M vs GUIA T50 CONTRAPESO - 5M,GUIA T50
+TECNICO_NAO_COMERCIAL,Descrição técnica não comercial,ELETRODO 3,25MM HEAVY DUTY,Eletrodo especial super resistente

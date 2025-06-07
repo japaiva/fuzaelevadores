@@ -1,17 +1,17 @@
 {% extends 'vendedor/base_vendedor.html' %}
 {% load formato_br %}
 
-{% block title %}Meus Pedidos | Portal do Vendedor{% endblock %}
+{% block title %}Propostas | Portal do Vendedor{% endblock %}
 
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
     <h5 class="card-title mb-0">
-      <i class="fas fa-clipboard-list me-2"></i>Pedidos
+      <i class="fas fa-clipboard-list me-2"></i>Propostas
     </h5>
     <div>
       <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
-        <i class="fas fa-plus me-1"></i> Novo Pedido
+        <i class="fas fa-plus me-1"></i> Nova Proposta
       </a>
       <a href="{% url 'vendedor:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
         <i class="fas fa-arrow-left me-1"></i> Voltar
@@ -116,14 +116,14 @@
                 <div class="btn-group" role="group">
                   <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
                      class="btn btn-sm btn-outline-primary" 
-                     title="Ver Pedido"
+                     title="Ver Proposta"
                      data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
                   </a>
                   {% if pedido.pode_editar %}
                   <a href="{% url 'vendedor:pedido_step1' pedido.pk %}" 
                      class="btn btn-sm btn-outline-warning" 
-                     title="Editar Pedido"
+                     title="Editar Proposta"
                      data-bs-toggle="tooltip">
                     <i class="fas fa-edit"></i>
                   </a>
@@ -138,7 +138,7 @@
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_duplicar' pedido.pk %}">
-                          <i class="fas fa-copy me-2"></i>Duplicar Pedido
+                          <i class="fas fa-copy me-2"></i>Duplicar Proposta
                         </a>
                       </li>
                       {% if pedido.preco_venda_calculado %}
@@ -161,7 +161,7 @@
                         <a class="dropdown-item text-danger" 
                            href="{% url 'vendedor:pedido_delete' pedido.pk %}" 
                            onclick="return confirm('Tem certeza que deseja excluir este pedido?')">
-                          <i class="fas fa-trash me-2"></i>Excluir Pedido
+                          <i class="fas fa-trash me-2"></i>Excluir Proposta
                         </a>
                       </li>
                       {% endif %}
@@ -175,16 +175,16 @@
               <td colspan="7" class="text-center py-5">
                 <div class="empty-state">
                   <i class="fas fa-clipboard-list fa-4x text-muted mb-4"></i>
-                  <h5 class="text-muted">Nenhum pedido encontrado</h5>
+                  <h5 class="text-muted">Nenhuma proposta encontrada</h5>
                   <p class="text-muted mb-4">
                     {% if form.data %}
-                      Tente ajustar os filtros ou comece criando um novo pedido.
+                      Tente ajustar os filtros ou comece criando uma nova proposta.
                     {% else %}
-                      Comece criando seu primeiro pedido de elevador.
+                      Comece criando sua primeira proposta.
                     {% endif %}
                   </p>
                   <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-lg">
-                    <i class="fas fa-plus me-2"></i>Criar Primeiro Pedido
+                    <i class="fas fa-plus me-2"></i>Criar Primeira Proposta
                   </a>
                 </div>
               </td>
@@ -201,7 +201,7 @@
       <div class="pagination-info">
         <small class="text-muted">
           <i class="fas fa-info-circle me-1"></i>
-          Mostrando {{ pedidos.start_index }}-{{ pedidos.end_index }} de {{ pedidos.paginator.count }} pedidos
+          Mostrando {{ pedidos.start_index }}-{{ pedidos.end_index }} de {{ pedidos.paginator.count }} propostas
         </small>
       </div>
       <nav aria-label="Navegação de página">

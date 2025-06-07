@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}Portal do Gestor{% endblock %}
+{% block title %}Portal Produção{% endblock %}
 
 {% block navbar_title %}
-<span class="app-title-text">Portal Gestor</span>
+<span class="app-title-text">Portal Produção</span>
 {% endblock %}
 
 {% block nav_items %}
@@ -19,19 +19,8 @@
      Cadastros
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'gestor:usuario_list' %}">
-        Usuários
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:parametros_gerais' %}">
-        Parâmetros Gerais
-    </a></li>
-    
-    <li><hr class="dropdown-divider"></li>
-    
-    <li><a class="dropdown-item" href="{% url 'gestor:cliente_list' %}">
-        Clientes
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
+
+    <li><a class="dropdown-item" href="{% url 'producao:fornecedor_list' %}">
         Fornecedores
     </a></li>
     
@@ -45,15 +34,15 @@
     Produtos
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'gestor:materiaprima_list' %}">
+    <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
         Matérias-Primas
     </a></li>
         <li><hr class="dropdown-divider"></li>
     
-    <li><a class="dropdown-item" href="{% url 'gestor:grupo_list' %}">
+    <li><a class="dropdown-item" href="{% url 'producao:grupo_list' %}">
         Grupos de Produtos
     </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:subgrupo_list' %}">
+    <li><a class="dropdown-item" href="{% url 'producao:subgrupo_list' %}">
         Subgrupos de Produtos
     </a></li>
 

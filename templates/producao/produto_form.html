@@ -1,0 +1,363 @@
+<!-- templates/producao/produto_form.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Produto | Portal Comercial{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+      {% if form.instance.pk %}Editar{% else %}Novo{% endif %} Produto
+    </h5>
+    <a href="{% url 'producao:produto_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Bloco de Identificação -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-barcode me-2"></i>
+            Identificação do Produto
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="{{ form.codigo.id_for_label }}" class="form-label">Código*</label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.codigo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
+              {{ form.nome }}
+              {% if form.nome.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo*</label>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.tipo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-12">
+              <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+              {{ form.descricao }}
+              {% if form.descricao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Classificação -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-tags me-2"></i>
+            Classificação
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.grupo.id_for_label }}" class="form-label">Grupo*</label>
+              {{ form.grupo }}
+              {% if form.grupo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.grupo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.subgrupo.id_for_label }}" class="form-label">Subgrupo</label>
+              {{ form.subgrupo }}
+              {% if form.subgrupo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.subgrupo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Características Técnicas -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-cogs me-2"></i>
+            Características Técnicas
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.unidade_medida.id_for_label }}" class="form-label">Unidade de Medida*</label>
+              {{ form.unidade_medida }}
+              {% if form.unidade_medida.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.unidade_medida.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.peso_unitario.id_for_label }}" class="form-label">Peso Unitário (kg)</label>
+              {{ form.peso_unitario }}
+              {% if form.peso_unitario.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.peso_unitario.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">Fornecedor Principal</label>
+              {{ form.fornecedor_principal }}
+              {% if form.fornecedor_principal.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.fornecedor_principal.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Controle de Estoque -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-warehouse me-2"></i>
+            Controle de Estoque
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="form-check form-switch mt-4">
+                {{ form.controla_estoque }}
+                <label class="form-check-label" for="{{ form.controla_estoque.id_for_label }}">Controla Estoque</label>
+              </div>
+              {% if form.controla_estoque.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.controla_estoque.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">Estoque Mínimo</label>
+              {{ form.estoque_minimo }}
+              {% if form.estoque_minimo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.estoque_minimo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
+              {{ form.prazo_entrega_padrao }}
+              {% if form.prazo_entrega_padrao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              {% if form.instance.pk %}
+                <label class="form-label">Estoque Atual</label>
+                <div class="form-control-plaintext fw-bold {% if form.instance.estoque_atual <= form.instance.estoque_minimo %}text-danger{% else %}text-success{% endif %}">
+                  {{ form.instance.estoque_atual }} {{ form.instance.unidade_medida }}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Precificação -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-dollar-sign me-2"></i>
+            Precificação
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo Médio</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form.custo_medio }}
+              </div>
+              {% if form.custo_medio.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.preco_venda.id_for_label }}" class="form-label">Preço de Venda</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form.preco_venda }}
+              </div>
+              {% if form.preco_venda.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.preco_venda.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label for="{{ form.margem_padrao.id_for_label }}" class="form-label">Margem Padrão (%)</label>
+              <div class="input-group">
+                {{ form.margem_padrao }}
+                <span class="input-group-text">%</span>
+              </div>
+              {% if form.margem_padrao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.margem_padrao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Status -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-toggle-on me-2"></i>
+            Status e Disponibilidade
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+              {{ form.status }}
+              {% if form.status.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.status.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <div class="form-check form-switch mt-4">
+                {{ form.disponivel }}
+                <label class="form-check-label" for="{{ form.disponivel.id_for_label }}">Disponível para Uso</label>
+              </div>
+              {% if form.disponivel.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.disponivel.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Script para atualizar subgrupos quando grupo for alterado
+    const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
+    const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
+    
+    if (grupoSelect && subgrupoSelect) {
+      grupoSelect.addEventListener('change', function() {
+        const grupoId = this.value;
+        
+        // Limpar opções atuais
+        subgrupoSelect.innerHTML = '<option value="">---------</option>';
+        
+        if (grupoId) {
+          fetch(`/producao/api/subgrupos-por-grupo/${grupoId}/`)
+            .then(response => response.json())
+            .then(data => {
+              data.subgrupos.forEach(subgrupo => {
+                const option = document.createElement('option');
+                option.value = subgrupo.id;
+                option.textContent = `${subgrupo.codigo} - ${subgrupo.nome}`;
+                subgrupoSelect.appendChild(option);
+              });
+            })
+            .catch(error => console.error('Erro:', error));
+        }
+      });
+    }
+    
+    // Calcular margem automaticamente
+    const custoInput = document.getElementById('{{ form.custo_medio.id_for_label }}');
+    const precoInput = document.getElementById('{{ form.preco_venda.id_for_label }}');
+    const margemInput = document.getElementById('{{ form.margem_padrao.id_for_label }}');
+    
+    function calcularMargem() {
+      const custo = parseFloat(custoInput.value) || 0;
+      const preco = parseFloat(precoInput.value) || 0;
+      
+      if (custo > 0 && preco > 0) {
+        const margem = ((preco - custo) / custo * 100).toFixed(2);
+        margemInput.value = margem;
+      }
+    }
+    
+    if (custoInput && precoInput && margemInput) {
+      custoInput.addEventListener('blur', calcularMargem);
+      precoInput.addEventListener('blur', calcularMargem);
+    }
+  });
+</script>
+{% endblock %}
+{% endblock %}

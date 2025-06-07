@@ -1,4 +1,4 @@
-# fuza_elevadores/urls.py
+# fuza_elevadores/urls.py - ESTRUTURA FINAL
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -17,18 +17,17 @@ urlpatterns = [
     # Página inicial do site
     path('', home_view, name='home'),
     
-    # Portais específicos
-    path('gestor/', include('gestor.urls')),
+    # 🏭 PORTAIS FINAIS (3 portais)
+    path('gestor/', include('gestor.urls')),      # 👔 Gestão executiva
+    path('vendedor/', include('vendedor.urls')),  # 💼 Vendas e simulações  
+    path('producao/', include('producao.urls')),  # 🏭 Produção + Compras
     
-    # ⚠️ COMENTAR ESTAS LINHAS TEMPORARIAMENTE ⚠️
-    # path('producao/', include('producao.urls')),  # ← URLs ainda não criadas
-    path('vendedor/', include('vendedor.urls')),  # ← App ainda não criado
-    
-    # APIs e outros apps
-    # path('api/', include('api.urls', namespace='api')),  # ← Se não tiver ainda
+    # APIs e configurações - COMENTADO TEMPORARIAMENTE
+    # path('configuracao/', include('configuracao.urls')),  # ⚙️ Configurações
+    # path('api/', include('api.urls', namespace='api')),
 ]
 
-# Adicionar URLs para servir mídia durante o desenvolvimento
+# Servir mídia durante desenvolvimento
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
