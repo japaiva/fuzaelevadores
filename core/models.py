@@ -11,6 +11,27 @@ import uuid, re
 
 from core.utils.validators import validar_cpf, validar_cnpj, formatar_cpf, formatar_cnpj, validar_cpf_cnpj_unico
 
+
+# ===============================================
+# CHOICES PARA FORMULÁRIOS E MODELS
+# ===============================================
+
+STATUS_PEDIDO_CHOICES = [
+    ('RASCUNHO', 'Rascunho'),
+    ('ENVIADO', 'Enviado'),
+    ('CONFIRMADO', 'Confirmado'),
+    ('PARCIAL', 'Parcialmente Recebido'),
+    ('RECEBIDO', 'Recebido'),
+    ('CANCELADO', 'Cancelado'),
+]
+
+PRIORIDADE_PEDIDO_CHOICES = [
+    ('BAIXA', 'Baixa'),
+    ('NORMAL', 'Normal'),
+    ('ALTA', 'Alta'),
+    ('URGENTE', 'Urgente'),
+]
+
 class Usuario(AbstractUser):
     NIVEL_CHOICES = [
         ('admin', 'Admin'),
@@ -993,3 +1014,351 @@ class ParametrosGerais(models.Model):
 
     def __str__(self):
         return f"Parâmetros Gerais - {self.razao_social or 'Sistema'}"
+    
+
+
+# core/models.py - ALTERAÇÕES NO PEDIDO DE COMPRA
+
+class PedidoCompra(models.Model):
+    """
+    Pedido de compra de matérias-primas e produtos
+    """
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('ENVIADO', 'Enviado'),
+        ('CONFIRMADO', 'Confirmado'),
+        ('PARCIAL', 'Parcialmente Recebido'),
+        ('RECEBIDO', 'Recebido'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+    
+    PRIORIDADE_CHOICES = [
+        ('BAIXA', 'Baixa'),
+        ('NORMAL', 'Normal'),
+        ('ALTA', 'Alta'),
+        ('URGENTE', 'Urgente'),
+    ]
+    
+    # Identificação
+    numero = models.CharField(max_length=20, unique=True, verbose_name="Número")
+    fornecedor = models.ForeignKey(
+        Fornecedor, 
+        on_delete=models.PROTECT, 
+        related_name='pedidos_compra'
+    )
+    
+    # Datas
+    data_pedido = models.DateTimeField(default=timezone.now, verbose_name="Data do Pedido")
+    data_entrega_prevista = models.DateField(blank=True, null=True, verbose_name="Data Entrega Prevista")
+    data_entrega_real = models.DateField(blank=True, null=True, verbose_name="Data Entrega Real")
+    
+    # Status e controle
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='RASCUNHO')
+    prioridade = models.CharField(max_length=10, choices=PRIORIDADE_CHOICES, default='NORMAL')
+    
+    # Valores
+    valor_total = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Valor Total")
+    desconto_percentual = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name="Desconto %")
+    desconto_valor = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Desconto R$")
+    valor_frete = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Valor Frete")
+    valor_final = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Valor Final")
+    
+    # Condições comerciais
+    condicao_pagamento = models.CharField(max_length=100, blank=True, verbose_name="Condição de Pagamento")
+    prazo_entrega = models.IntegerField(blank=True, null=True, verbose_name="Prazo Entrega (dias)")
+    
+    # Observações
+    observacoes = models.TextField(blank=True, verbose_name="Observações")
+    observacoes_internas = models.TextField(blank=True, verbose_name="Observações Internas")
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT,
+        related_name='pedidos_compra_criados'
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+    atualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT,
+        related_name='pedidos_compra_atualizados',
+        null=True, blank=True
+    )
+    
+    class Meta:
+        verbose_name = "Pedido de Compra"
+        verbose_name_plural = "Pedidos de Compra"
+        ordering = ['-data_pedido', '-numero']
+        indexes = [
+            models.Index(fields=['numero']),
+            models.Index(fields=['fornecedor', 'status']),
+            models.Index(fields=['data_pedido']),
+            models.Index(fields=['status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.numero} - {self.fornecedor.razao_social}"
+    
+    def save(self, *args, **kwargs):
+        """Override para gerar número automático"""
+        # ALTERAÇÃO: Gerar número no formato AAMM0001
+        if not self.numero:
+            self.numero = self.gerar_numero()
+        
+        # CORREÇÃO: Salvar primeiro, depois calcular valores
+        super().save(*args, **kwargs)
+        
+        # Agora calcular valores (com ID já definido)
+        self.calcular_valores()
+        
+        # Salvar novamente com valores calculados
+        if hasattr(self, '_calcular_valores_executado'):
+            # Evitar loop infinito - só salvar os campos de valores
+            super().save(update_fields=['valor_total', 'desconto_valor', 'valor_final'])
+    
+    def gerar_numero(self):
+        """Gera número automático no formato AAMM0001"""
+        agora = timezone.now()
+        ano_mes = agora.strftime('%y%m')  # Formato AAMM (24 para 2024, etc)
+        
+        # Buscar o último número do mês
+        ultimo_pedido = PedidoCompra.objects.filter(
+            numero__startswith=f'{ano_mes}'
+        ).order_by('-numero').first()
+        
+        if ultimo_pedido:
+            # Extrair o número sequencial (últimos 4 dígitos)
+            try:
+                ultimo_seq = int(ultimo_pedido.numero[-4:])
+                proximo_seq = ultimo_seq + 1
+            except (ValueError, IndexError):
+                proximo_seq = 1
+        else:
+            proximo_seq = 1
+        
+        return f'{ano_mes}{proximo_seq:04d}'
+        
+    def calcular_valores(self):
+        """Calcula os valores totais do pedido"""
+        # CORREÇÃO: Só calcular se o pedido tem ID (foi salvo)
+        if not self.pk:
+            return
+        
+        # Marcar que estamos calculando para evitar loop
+        self._calcular_valores_executado = True
+        
+        # Somar valor dos itens
+        total_itens = self.itens.aggregate(
+            total=models.Sum(
+                models.F('quantidade') * models.F('valor_unitario'),
+                output_field=models.DecimalField(max_digits=12, decimal_places=2)
+            )
+        )['total'] or 0
+        
+        self.valor_total = total_itens
+        
+        # Aplicar desconto percentual
+        if self.desconto_percentual > 0:
+            self.desconto_valor = (self.valor_total * self.desconto_percentual / 100)
+        
+        # Calcular valor final
+        self.valor_final = self.valor_total - self.desconto_valor + self.valor_frete
+    
+    def recalcular_valores(self):
+        """Método público para recalcular valores"""
+        self.calcular_valores()
+        self.save(update_fields=['valor_total', 'desconto_valor', 'valor_final'])
+    
+    @property
+    def status_badge_class(self):
+        """Retorna classe CSS para badge de status"""
+        classes = {
+            'RASCUNHO': 'bg-secondary',
+            'ENVIADO': 'bg-info', 
+            'CONFIRMADO': 'bg-primary',
+            'PARCIAL': 'bg-warning',
+            'RECEBIDO': 'bg-success',
+            'CANCELADO': 'bg-danger',
+        }
+        return classes.get(self.status, 'bg-secondary')
+    
+    @property
+    def prioridade_badge_class(self):
+        """Retorna classe CSS para badge de prioridade"""
+        classes = {
+            'BAIXA': 'bg-light text-dark',
+            'NORMAL': 'bg-info',
+            'ALTA': 'bg-warning',
+            'URGENTE': 'bg-danger',
+        }
+        return classes.get(self.prioridade, 'bg-info')
+    
+    @property
+    def pode_editar(self):
+        """Verifica se o pedido pode ser editado"""
+        return self.status in ['RASCUNHO', 'ENVIADO']
+    
+    @property
+    def pode_cancelar(self):
+        """Verifica se o pedido pode ser cancelado"""
+        return self.status not in ['RECEBIDO', 'CANCELADO']
+    
+    def get_total_quantidade(self):
+        """Retorna a quantidade total de itens"""
+        if not self.pk:
+            return 0
+        return self.itens.aggregate(
+            total=models.Sum('quantidade')
+        )['total'] or 0
+    
+    def get_total_itens(self):
+        """Retorna o número total de itens diferentes"""
+        if not self.pk:
+            return 0
+        return self.itens.count()
+
+
+class ItemPedidoCompra(models.Model):
+    """
+    Item do pedido de compra
+    """
+    pedido = models.ForeignKey(
+        PedidoCompra, 
+        on_delete=models.CASCADE, 
+        related_name='itens'
+    )
+    produto = models.ForeignKey(
+        Produto, 
+        on_delete=models.PROTECT,
+        related_name='itens_pedido_compra'
+    )
+    
+    # Quantidades
+    quantidade = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantidade")
+    unidade = models.CharField(max_length=10, verbose_name="Unidade")
+    
+    # Valores
+    valor_unitario = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor Unitário")
+    valor_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Total")
+    
+    # Recebimento
+    quantidade_recebida = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0,
+        verbose_name="Quantidade Recebida"
+    )
+    data_recebimento = models.DateTimeField(blank=True, null=True, verbose_name="Data Recebimento")
+    
+    # Observações do item
+    observacoes = models.TextField(blank=True, verbose_name="Observações")
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Item do Pedido de Compra"
+        verbose_name_plural = "Itens dos Pedidos de Compra"
+        ordering = ['id']
+        unique_together = ['pedido', 'produto']
+    
+    def __str__(self):
+        return f"{self.pedido.numero} - {self.produto.codigo}"
+    
+    def save(self, *args, **kwargs):
+        """Override para calcular valor total"""
+        # Definir unidade baseada no produto
+        if not self.unidade:
+            self.unidade = self.produto.unidade_medida
+        
+        # Calcular valor total
+        self.valor_total = self.quantidade * self.valor_unitario
+        
+        super().save(*args, **kwargs)
+        
+        # CORREÇÃO: Recalcular valores do pedido usando método público
+        if self.pedido.pk:
+            self.pedido.recalcular_valores()
+    
+    def delete(self, *args, **kwargs):
+        """Override para recalcular valores do pedido após exclusão"""
+        pedido = self.pedido
+        super().delete(*args, **kwargs)
+        
+        # CORREÇÃO: Recalcular valores do pedido usando método público
+        if pedido.pk:
+            pedido.recalcular_valores()
+    
+    @property
+    def quantidade_pendente(self):
+        """Quantidade ainda não recebida"""
+        return self.quantidade - self.quantidade_recebida
+    
+    @property
+    def desconto_valor(self):
+        """Calcula o valor do desconto em R$"""
+        if self.desconto_percentual > 0:
+            return (self.valor_total * self.desconto_percentual / 100)
+        return 0
+    
+    @property
+    def percentual_recebido(self):
+        """Percentual recebido do item"""
+        if self.quantidade > 0:
+            return (self.quantidade_recebida / self.quantidade) * 100
+        return 0
+    
+    @property
+    def status_recebimento(self):
+        """Status do recebimento do item"""
+        if self.quantidade_recebida == 0:
+            return 'PENDENTE'
+        elif self.quantidade_recebida >= self.quantidade:
+            return 'COMPLETO'
+        else:
+            return 'PARCIAL'
+    
+    @property
+    def status_recebimento_badge_class(self):
+        """Classe CSS para badge de status de recebimento"""
+        classes = {
+            'PENDENTE': 'bg-warning',
+            'PARCIAL': 'bg-info',
+            'COMPLETO': 'bg-success',
+        }
+        return classes.get(self.status_recebimento, 'bg-secondary')
+    
+# core/models.py - ADICIONAR ESTA CLASSE NO FINAL DO ARQUIVO
+
+class HistoricoPedidoCompra(models.Model):
+    """
+    Histórico de alterações no pedido de compra
+    """
+    pedido = models.ForeignKey(
+        PedidoCompra, 
+        on_delete=models.CASCADE, 
+        related_name='historico'
+    )
+    
+    # Informações da alteração
+    data_alteracao = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT
+    )
+    acao = models.CharField(max_length=100, verbose_name="Ação")
+    observacao = models.TextField(blank=True, verbose_name="Observação")
+    
+    # Dados antes/depois (JSON)
+    dados_anteriores = models.JSONField(default=dict, blank=True)
+    dados_novos = models.JSONField(default=dict, blank=True)
+    
+    class Meta:
+        verbose_name = "Histórico do Pedido"
+        verbose_name_plural = "Histórico dos Pedidos"
+        ordering = ['-data_alteracao']
+    
+    def __str__(self):
+        return f"{self.pedido.numero} - {self.acao} - {self.data_alteracao.strftime('%d/%m/%Y %H:%M')}"

@@ -1,0 +1,341 @@
+<!-- templates/producao/pedido_compra_alterar_status.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Alterar Status - Pedido {{ pedido.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-exchange-alt me-2"></i>
+            Alterar Status do Pedido
+          </h5>
+        </div>
+        
+        <div class="card-body">
+          <!-- Informações do Pedido -->
+          <div class="card mb-4">
+            <div class="card-header bg-light">
+              <h6 class="mb-0">Informações do Pedido</h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <p><strong>Número:</strong> {{ pedido.numero }}</p>
+                  <p><strong>Fornecedor:</strong> {{ pedido.fornecedor.nome_fantasia|default:pedido.fornecedor.razao_social }}</p>
+                  <p><strong>Data:</strong> {{ pedido.data_pedido|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div class="col-md-6">
+                  <p><strong>Status Atual:</strong> 
+                    <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
+                  </p>
+                  <p><strong>Valor Total:</strong> R$ {{ pedido.valor_final|floatformat:2 }}</p>
+                  <p><strong>Total de Itens:</strong> {{ pedido.get_total_itens }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Formulário de Alteração -->
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+              <label for="{{ form.status.id_for_label }}" class="form-label fw-bold">
+                Novo Status <span class="text-danger">*</span>
+              </label>
+              {{ form.status }}
+              {% if form.status.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.status.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              {% if form.status.help_text %}
+                <small class="text-muted">{{ form.status.help_text }}</small>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label for="{{ form.observacoes_internas.id_for_label }}" class="form-label">
+                Observações sobre a Alteração
+              </label>
+              {{ form.observacoes_internas }}
+              {% if form.observacoes_internas.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.observacoes_internas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <small class="text-muted">
+                Estas observações serão registradas no histórico do pedido.
+              </small>
+            </div>
+
+            <!-- Informações sobre mudanças de status -->
+            <div class="alert alert-info">
+              <h6><i class="fas fa-info-circle me-2"></i>Sobre Mudanças de Status</h6>
+              <div class="small">
+                <p class="mb-2"><strong>Fluxo padrão:</strong></p>
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                  <span class="badge bg-secondary">Rascunho</span>
+                  <i class="fas fa-arrow-right text-muted"></i>
+                  <span class="badge bg-info">Enviado</span>
+                  <i class="fas fa-arrow-right text-muted"></i>
+                  <span class="badge bg-primary">Confirmado</span>
+                  <i class="fas fa-arrow-right text-muted"></i>
+                  <span class="badge bg-warning">Parcial</span>
+                  <i class="fas fa-arrow-right text-muted"></i>
+                  <span class="badge bg-success">Recebido</span>
+                </div>
+                <p class="mb-0">
+                  <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                  <strong>Atenção:</strong> Algumas mudanças de status são irreversíveis. 
+                  Verifique cuidadosamente antes de confirmar.
+                </p>
+              </div>
+            </div>
+
+            <!-- Avisos específicos por status -->
+            <div id="avisos-status" style="display: none;">
+              <!-- Será preenchido dinamicamente via JavaScript -->
+            </div>
+            
+            <div class="d-flex justify-content-end gap-3">
+              <a href="{% url 'producao:pedido_compra_detail' pedido.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Cancelar
+              </a>
+              <button type="submit" class="btn btn-warning" id="btn-alterar">
+                <i class="fas fa-exchange-alt me-1"></i> Alterar Status
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <div class="card-footer bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+              <i class="fas fa-user me-1"></i>
+              Criado por {{ pedido.criado_por.get_full_name|default:pedido.criado_por.username }} 
+              em {{ pedido.criado_em|date:"d/m/Y H:i" }}
+            </small>
+            <small class="text-warning">
+              <i class="fas fa-history me-1"></i>
+              Todas as alterações são registradas no histórico
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('id_status');
+    const avisosDiv = document.getElementById('avisos-status');
+    const btnAlterar = document.getElementById('btn-alterar');
+    
+    // Configurações de avisos por status
+    const avisosPorStatus = {
+        'CANCELADO': {
+            tipo: 'danger',
+            titulo: 'Cancelamento do Pedido',
+            texto: 'O pedido será cancelado e não poderá ser revertido. Todos os itens ficarão indisponíveis para recebimento.',
+            confirmacao: true
+        },
+        'CONFIRMADO': {
+            tipo: 'success',
+            titulo: 'Confirmação do Pedido',
+            texto: 'O pedido será confirmado e ficará disponível para recebimento de materiais.',
+            confirmacao: false
+        },
+        'RECEBIDO': {
+            tipo: 'success',
+            titulo: 'Recebimento Completo',
+            texto: 'Marcar como recebido indica que todos os itens foram entregues. Verifique se o recebimento está correto.',
+            confirmacao: true
+        },
+        'PARCIAL': {
+            tipo: 'warning',
+            titulo: 'Recebimento Parcial',
+            texto: 'Alguns itens foram recebidos, mas o pedido ainda está pendente de entrega completa.',
+            confirmacao: false
+        }
+    };
+    
+    function atualizarAvisos() {
+        const statusSelecionado = statusSelect.value;
+        const statusAtual = '{{ pedido.status }}';
+        
+        if (statusSelecionado && statusSelecionado !== statusAtual) {
+            const config = avisosPorStatus[statusSelecionado];
+            
+            if (config) {
+                avisosDiv.innerHTML = `
+                    <div class="alert alert-${config.tipo}">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>${config.titulo}</h6>
+                        <p class="mb-0">${config.texto}</p>
+                    </div>
+                `;
+                avisosDiv.style.display = 'block';
+                
+                // Atualizar botão se precisar de confirmação
+                if (config.confirmacao) {
+                    btnAlterar.classList.remove('btn-warning');
+                    btnAlterar.classList.add('btn-danger');
+                    btnAlterar.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Confirmar Alteração';
+                } else {
+                    btnAlterar.classList.remove('btn-danger');
+                    btnAlterar.classList.add('btn-warning');
+                    btnAlterar.innerHTML = '<i class="fas fa-exchange-alt me-1"></i> Alterar Status';
+                }
+            } else {
+                avisosDiv.style.display = 'none';
+                btnAlterar.classList.remove('btn-danger');
+                btnAlterar.classList.add('btn-warning');
+                btnAlterar.innerHTML = '<i class="fas fa-exchange-alt me-1"></i> Alterar Status';
+            }
+        } else {
+            avisosDiv.style.display = 'none';
+            btnAlterar.classList.remove('btn-danger');
+            btnAlterar.classList.add('btn-warning');
+            btnAlterar.innerHTML = '<i class="fas fa-exchange-alt me-1"></i> Alterar Status';
+        }
+    }
+    
+    // Event listener para mudança de status
+    if (statusSelect) {
+        statusSelect.addEventListener('change', atualizarAvisos);
+        
+        // Executar uma vez no carregamento
+        atualizarAvisos();
+    }
+    
+    // Confirmação antes de submeter
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const statusSelecionado = statusSelect.value;
+            const statusAtual = '{{ pedido.status }}';
+            const config = avisosPorStatus[statusSelecionado];
+            
+            if (config && config.confirmacao) {
+                const confirmMessage = `Tem certeza que deseja alterar o status do pedido {{ pedido.numero }} para "${statusSelect.selectedOptions[0].text}"?\n\nEsta ação pode ser irreversível.`;
+                
+                if (!confirm(confirmMessage)) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+            // Validar se status foi realmente alterado
+            if (statusSelecionado === statusAtual) {
+                e.preventDefault();
+                alert('Selecione um status diferente do atual.');
+                return false;
+            }
+        });
+    }
+    
+    // Destacar status atual
+    const statusAtual = '{{ pedido.status }}';
+    if (statusSelect) {
+        Array.from(statusSelect.options).forEach(option => {
+            if (option.value === statusAtual) {
+                option.text += ' (atual)';
+                option.style.fontWeight = 'bold';
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.badge {
+    font-size: 0.75em;
+}
+
+.alert {
+    border-left: 4px solid;
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+}
+
+.alert-danger {
+    border-left-color: #dc3545;
+}
+
+.alert-success {
+    border-left-color: #198754;
+}
+
+#btn-alterar {
+    min-width: 150px;
+    transition: all 0.3s ease;
+}
+
+#btn-alterar:hover {
+    transform: translateY(-1px);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.card {
+    border: none;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.text-muted {
+    font-size: 0.875em;
+}
+
+/* Animações */
+#avisos-status {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .d-flex.gap-2 {
+        flex-wrap: wrap;
+    }
+    
+    .badge {
+        margin-bottom: 0.25rem;
+    }
+    
+    .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

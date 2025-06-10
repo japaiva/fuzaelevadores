@@ -1,0 +1,275 @@
+<!-- templates/producao/pedido_compra_detail.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Pedido {{ pedido.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-file-invoice me-2"></i> Pedido {{ pedido.numero }}
+    </h5>
+    <div class="btn-group">
+      {% if pode_editar %}
+        <a href="{% url 'producao:pedido_compra_update' pedido.pk %}" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-edit me-1"></i> Editar
+        </a>
+      {% endif %}
+      
+      <a href="{% url 'producao:pedido_compra_gerar_pdf' pedido.pk %}" class="btn btn-outline-danger btn-sm" target="_blank">
+        <i class="fas fa-file-pdf me-1"></i> PDF
+      </a>
+      
+      <a href="{% url 'producao:pedido_compra_duplicar' pedido.pk %}" class="btn btn-outline-info btn-sm" 
+         onclick="return confirm('Deseja duplicar este pedido?')">
+        <i class="fas fa-copy me-1"></i> Duplicar
+      </a>
+      
+      <a href="{% url 'producao:pedido_compra_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+      <!-- COLUNA 1 - Informações do Pedido -->
+      <div class="col-md-6">
+        <!-- Status e Informações Básicas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Informações do Pedido</h6>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <strong>Número:</strong> 
+                <span class="badge bg-primary fs-6">{{ pedido.numero }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Status:</strong>
+                <span class="badge {{ pedido.status_badge_class }}">{{ pedido.get_status_display }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Prioridade:</strong>
+                <span class="badge {{ pedido.prioridade_badge_class }}">{{ pedido.get_prioridade_display }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Data do Pedido:</strong> {{ pedido.data_pedido|date:"d/m/Y H:i" }}
+              </li>
+              {% if pedido.data_entrega_prevista %}
+              <li class="list-group-item">
+                <strong>Entrega Prevista:</strong> {{ pedido.data_entrega_prevista|date:"d/m/Y" }}
+              </li>
+              {% endif %}
+              {% if pedido.condicao_pagamento %}
+              <li class="list-group-item">
+                <strong>Condição Pagamento:</strong> {{ pedido.condicao_pagamento }}
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Fornecedor -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Fornecedor</h6>
+          </div>
+          <div class="card-body">
+            <h6>{{ pedido.fornecedor.nome_fantasia|default:pedido.fornecedor.razao_social }}</h6>
+            {% if pedido.fornecedor.telefone %}
+              <div><i class="fas fa-phone me-2"></i>{{ pedido.fornecedor.telefone }}</div>
+            {% endif %}
+            {% if pedido.fornecedor.email %}
+              <div><i class="fas fa-envelope me-2"></i>{{ pedido.fornecedor.email }}</div>
+            {% endif %}
+            {% if pedido.fornecedor.contato_principal %}
+              <div><i class="fas fa-user me-2"></i>{{ pedido.fornecedor.contato_principal }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUNA 2 - Valores e Totais -->
+      <div class="col-md-6">
+        <!-- Resumo Financeiro -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Resumo Financeiro</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-6">
+                <div class="text-muted">Subtotal</div>
+                <div class="h5">R$ {{ pedido.valor_total|floatformat:2 }}</div>
+              </div>
+              {% if pedido.desconto_valor > 0 %}
+              <div class="col-6">
+                <div class="text-muted">Desconto</div>
+                <div class="h6 text-warning">- R$ {{ pedido.desconto_valor|floatformat:2 }}</div>
+              </div>
+              {% endif %}
+              {% if pedido.valor_frete > 0 %}
+              <div class="col-6">
+                <div class="text-muted">Frete</div>
+                <div class="h6">R$ {{ pedido.valor_frete|floatformat:2 }}</div>
+              </div>
+              {% endif %}
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between">
+              <strong>Total Geral:</strong>
+              <strong class="text-primary h4">R$ {{ pedido.valor_final|floatformat:2 }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Estatísticas</h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-6">
+                <div class="h4 text-info">{{ pedido.get_total_itens }}</div>
+                <div class="small text-muted">Itens</div>
+              </div>
+              <div class="col-6">
+                <div class="h4 text-success">{{ pedido.get_total_quantidade|floatformat:0 }}</div>
+                <div class="small text-muted">Quantidade</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Itens do Pedido -->
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-boxes me-2"></i>
+          Itens do Pedido
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Item</th>
+                <th>Código</th>
+                <th>Produto</th>
+                <th class="text-end">Qtd</th>
+                <th class="text-end">Valor Unit.</th>
+                <th class="text-end">Total</th>
+                {% if pedido.status in 'CONFIRMADO,PARCIAL,RECEBIDO' %}
+                  <th class="text-center">Recebimento</th>
+                {% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in pedido.itens.all %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td><code>{{ item.produto.codigo }}</code></td>
+                  <td>
+                    <strong>{{ item.produto.nome }}</strong>
+                    {% if item.observacoes %}
+                      <div class="small text-muted">{{ item.observacoes }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">{{ item.quantidade|floatformat:2 }} {{ item.unidade }}</td>
+                  <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+                  <td class="text-end"><strong>R$ {{ item.valor_total|floatformat:2 }}</strong></td>
+                  {% if pedido.status in 'CONFIRMADO,PARCIAL,RECEBIDO' %}
+                    <td class="text-center">
+                      <span class="badge {{ item.status_recebimento_badge_class }}">
+                        {{ item.quantidade_recebida|floatformat:2 }}/{{ item.quantidade|floatformat:2 }}
+                      </span>
+                      {% if item.status_recebimento == 'COMPLETO' %}
+                        <div class="small text-muted">{{ item.data_recebimento|date:"d/m/Y" }}</div>
+                      {% endif %}
+                    </td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observações -->
+    {% if pedido.observacoes or pedido.observacoes_internas %}
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-comment me-2"></i>
+          Observações
+        </h6>
+      </div>
+      <div class="card-body">
+        {% if pedido.observacoes %}
+          <div class="mb-3">
+            <strong>Observações Gerais:</strong>
+            <div class="mt-1">{{ pedido.observacoes|linebreaks }}</div>
+          </div>
+        {% endif %}
+        {% if pedido.observacoes_internas %}
+          <div class="alert alert-info">
+            <strong>Observações Internas:</strong>
+            <div class="mt-1">{{ pedido.observacoes_internas|linebreaks }}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+   </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -23px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #007bff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid #007bff;
+}
+</style>
+{% endblock %}

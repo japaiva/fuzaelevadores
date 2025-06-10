@@ -1,0 +1,998 @@
+<!-- templates/producao/pedido_compra_form.html - VERSÃO COMPLETA CORRIGIDA -->
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if pedido %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+      {{ title }}
+    </h5>
+    <a href="{% url 'producao:pedido_compra_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <form method="post" id="pedido-form" novalidate>
+      {% csrf_token %}
+
+      <!-- Mostrar erros globais -->
+      {% if form.non_field_errors or formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+          {% endfor %}
+          {% for error in formset.non_form_errors %}
+            <p class="mb-0"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Dados do Pedido -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            Dados do Pedido
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% if pedido %}
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Número</label>
+                <div class="form-control-plaintext fw-bold text-primary fs-5">{{ pedido.numero }}</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Status</label>
+                <div class="form-control-plaintext">
+                  <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
+                </div>
+              </div>
+            {% endif %}
+            
+            <div class="col-md-{% if pedido %}6{% else %}12{% endif %}">
+              <label for="{{ form.fornecedor.id_for_label }}" class="form-label fw-bold">
+                Fornecedor <span class="text-danger">*</span>
+              </label>
+              {{ form.fornecedor }}
+              {% if form.fornecedor.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.fornecedor.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="row g-3 mt-2">
+            <div class="col-md-3">
+              <label for="{{ form.data_entrega_prevista.id_for_label }}" class="form-label">Data Entrega Prevista</label>
+              {{ form.data_entrega_prevista }}
+              {% if form.data_entrega_prevista.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.data_entrega_prevista.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
+              {{ form.prioridade }}
+              {% if form.prioridade.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.prazo_entrega.id_for_label }}" class="form-label">Prazo (dias)</label>
+              {{ form.prazo_entrega }}
+              {% if form.prazo_entrega.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.prazo_entrega.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <small class="text-muted">Prazo de entrega em dias úteis</small>
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.condicao_pagamento.id_for_label }}" class="form-label">Condição Pagamento</label>
+              {{ form.condicao_pagamento }}
+              {% if form.condicao_pagamento.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.condicao_pagamento.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens do Pedido -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-boxes me-2"></i>
+            Itens do Pedido
+            <span class="badge bg-primary ms-2" id="contador-itens">0</span>
+          </h6>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-adicionar-item">
+            <i class="fas fa-plus me-1"></i> Adicionar Item
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+          
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0" id="itens-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 5%">#</th>
+                  <th style="width: 30%">Produto <span class="text-danger">*</span></th>
+                  <th style="width: 12%">Quantidade <span class="text-danger">*</span></th>
+                  <th style="width: 15%">Valor Unitário <span class="text-danger">*</span></th>
+                  <th style="width: 15%">Total</th>
+                  <th style="width: 18%">Observações</th>
+                  <th style="width: 5%">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="itens-tbody">
+                {% for form_item in formset %}
+                  <tr class="item-row" data-form-index="{{ forloop.counter0 }}">
+                    {% for hidden in form_item.hidden_fields %}
+                      {{ hidden }}
+                    {% endfor %}
+                    
+                    <td class="text-center align-middle">
+                      <span class="fw-bold text-muted item-numero">{{ forloop.counter }}</span>
+                    </td>
+                    
+                    <td>
+                      {{ form_item.produto }}
+                      {% if form_item.produto.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.produto.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td>
+                      {{ form_item.quantidade }}
+                      {% if form_item.quantidade.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.quantidade.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td>
+                      <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        {{ form_item.valor_unitario }}
+                      </div>
+                      {% if form_item.valor_unitario.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.valor_unitario.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="align-middle">
+                      <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
+                    </td>
+                    
+                    <td>
+                      {{ form_item.observacoes }}
+                      {% if form_item.observacoes.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.observacoes.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="text-center align-middle">
+                      {{ form_item.DELETE }}
+                      <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Mostrar quando não há itens -->
+          <div id="sem-itens" class="text-center py-5" style="display: none;">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <div class="text-muted h5">Nenhum item adicionado</div>
+            <small class="text-muted">Clique em "Adicionar Item" para começar</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Valores e Desconto -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-calculator me-2"></i>
+            Resumo Financeiro
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Subtotal dos Itens</label>
+              <div class="form-control-plaintext fw-bold fs-5" id="subtotal-display">R$ 0,00</div>
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.desconto_percentual.id_for_label }}" class="form-label">Desconto (%)</label>
+              <div class="input-group">
+                {{ form.desconto_percentual }}
+                <span class="input-group-text">%</span>
+              </div>
+              {% if form.desconto_percentual.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.desconto_percentual.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <small class="text-muted">Desconto sobre o subtotal</small>
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.valor_frete.id_for_label }}" class="form-label">Valor do Frete</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form.valor_frete }}
+              </div>
+              {% if form.valor_frete.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.valor_frete.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label class="form-label fw-bold text-primary">Total Geral</label>
+              <div class="form-control-plaintext fw-bold fs-4 text-primary" id="total-geral">
+                R$ 0,00
+              </div>
+            </div>
+          </div>
+          
+          <!-- Detalhamento do cálculo -->
+          <hr class="my-3">
+          <div class="row text-center">
+            <div class="col-3">
+              <div class="small text-muted">Subtotal</div>
+              <div class="fw-bold" id="resumo-subtotal">R$ 0,00</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Desconto</div>
+              <div class="fw-bold text-warning" id="resumo-desconto">R$ 0,00</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Frete</div>
+              <div class="fw-bold" id="resumo-frete">R$ 0,00</div>
+            </div>
+            <div class="col-3">
+              <div class="small text-muted">Total</div>
+              <div class="fw-bold text-primary" id="resumo-total">R$ 0,00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observações -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-comment me-2"></i>
+            Observações
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                Observações Gerais
+                <small class="text-muted">(aparecerão no PDF)</small>
+              </label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.observacoes_internas.id_for_label }}" class="form-label">
+                Observações Internas
+                <small class="text-muted">(não aparecerão no PDF)</small>
+              </label>
+              {{ form.observacoes_internas }}
+              {% if form.observacoes_internas.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.observacoes_internas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="d-flex justify-content-between">
+        <div>
+          <a href="{% url 'producao:pedido_compra_list' %}" class="btn btn-secondary">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </a>
+        </div>
+        
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-primary" id="btn-rascunho">
+            <i class="fas fa-save me-1"></i> Salvar Rascunho
+          </button>
+          <button type="submit" class="btn btn-primary" id="btn-salvar">
+            <i class="fas fa-check me-1"></i> 
+            {% if pedido %}Atualizar Pedido{% else %}Criar Pedido{% endif %}
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Template para nova linha de item (hidden) -->
+<template id="template-item-row">
+  <tr class="item-row" data-form-index="__prefix__">
+    <td class="text-center align-middle">
+      <span class="fw-bold text-muted item-numero">1</span>
+    </td>
+    <td>
+      <select name="form-__prefix__-produto" id="id_form-__prefix__-produto" class="form-control" required>
+        <option value="">Selecione o produto...</option>
+        {% for produto in form.instance.itens.model.produto.field.queryset %}
+          <option value="{{ produto.pk }}">{{ produto.codigo }} - {{ produto.nome }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td>
+      <input type="number" name="form-__prefix__-quantidade" id="id_form-__prefix__-quantidade" 
+             class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
+    </td>
+    <td>
+      <div class="input-group">
+        <span class="input-group-text">R$</span>
+        <input type="number" name="form-__prefix__-valor_unitario" id="id_form-__prefix__-valor_unitario" 
+               class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
+      </div>
+    </td>
+    <td class="align-middle">
+      <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
+    </td>
+    <td>
+      <input type="text" name="form-__prefix__-observacoes" id="id_form-__prefix__-observacoes" 
+             class="form-control" placeholder="Observações do item...">
+    </td>
+    <td class="text-center align-middle">
+      <input type="hidden" name="form-__prefix__-id" id="id_form-__prefix__-id">
+      <input type="checkbox" name="form-__prefix__-DELETE" id="id_form-__prefix__-DELETE" style="display:none;">
+      <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+console.log('🚀 Iniciando JavaScript do formulário...');
+
+// Variáveis globais
+let formIndex = {{ formset.total_form_count|default:0 }};
+const PRODUTOS_DISPONIVEIS = [
+  {% for produto in form.produto.field.queryset %}
+    {
+      id: "{{ produto.pk }}",
+      codigo: "{{ produto.codigo }}",
+      nome: "{{ produto.nome|escapejs }}",
+      unidade: "{{ produto.unidade_medida }}",
+      custo: {{ produto.custo_medio|default:0 }}
+    },
+  {% endfor %}
+];
+
+console.log(`📊 Form index inicial: ${formIndex}`);
+console.log(`📦 Produtos disponíveis: ${PRODUTOS_DISPONIVEIS.length}`);
+
+// =============================================================================
+// INICIALIZAÇÃO
+// =============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 DOM carregado - inicializando...');
+    
+    // Inicializar componentes
+    inicializarEventListeners();
+    atualizarNumeracaoItens();
+    calcularTotais();
+    verificarItensVazios();
+    
+    console.log('✅ Inicialização completa');
+});
+
+// =============================================================================
+// EVENT LISTENERS
+// =============================================================================
+function inicializarEventListeners() {
+    console.log('🎧 Configurando event listeners...');
+    
+    // Botão adicionar item
+    const btnAdicionar = document.getElementById('btn-adicionar-item');
+    if (btnAdicionar) {
+        btnAdicionar.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('➕ Adicionando novo item...');
+            adicionarItem();
+        });
+    }
+    
+    // Event listeners para cálculos automáticos
+    document.addEventListener('input', function(e) {
+        if (e.target.name && (
+            e.target.name.includes('-quantidade') || 
+            e.target.name.includes('-valor_unitario') ||
+            e.target.id === 'id_desconto_percentual' ||
+            e.target.id === 'id_valor_frete'
+        )) {
+            console.log('💰 Recalculando totais...');
+            calcularTotais();
+        }
+    });
+    
+    // Event listener para remover itens
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remover-item')) {
+            e.preventDefault();
+            console.log('🗑️ Removendo item...');
+            removerItem(e.target.closest('.btn-remover-item'));
+        }
+    });
+    
+    // Event listener para mudança de produtos
+    document.addEventListener('change', function(e) {
+        if (e.target.name && e.target.name.includes('-produto')) {
+            console.log('🔄 Produto alterado:', e.target.value);
+            buscarDadosProduto(e.target);
+        }
+    });
+    
+    // Event listener para fornecedor
+    const fornecedorSelect = document.getElementById('id_fornecedor');
+    if (fornecedorSelect) {
+        fornecedorSelect.addEventListener('change', function() {
+            console.log('🏭 Fornecedor alterado:', this.value);
+            atualizarProdutosPorFornecedor(this.value);
+        });
+    }
+    
+    // Validação do formulário
+    const form = document.getElementById('pedido-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('📋 Validando formulário...');
+            if (!validarFormulario()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+}
+
+// =============================================================================
+// GERENCIAMENTO DE ITENS
+// =============================================================================
+function adicionarItem() {
+    const tbody = document.getElementById('itens-tbody');
+    const template = document.getElementById('template-item-row');
+    const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+    
+    if (!tbody || !template || !totalFormsInput) {
+        console.error('❌ Elementos necessários não encontrados');
+        return;
+    }
+    
+    try {
+        // Clone do template
+        const clone = template.content.cloneNode(true);
+        
+        // Substituir __prefix__ pelo índice atual
+        let html = clone.querySelector('tr').outerHTML;
+        html = html.replace(/__prefix__/g, formIndex);
+        
+        // Criar nova linha
+        const novaLinha = document.createElement('tr');
+        novaLinha.innerHTML = html.replace('<tr class="item-row" data-form-index="' + formIndex + '">', '');
+        novaLinha.className = 'item-row';
+        novaLinha.setAttribute('data-form-index', formIndex);
+        
+        // Adicionar ao tbody
+        tbody.appendChild(novaLinha);
+        
+        // Atualizar contador de forms
+        const novoTotal = parseInt(totalFormsInput.value) + 1;
+        totalFormsInput.value = novoTotal;
+        formIndex++;
+        
+        console.log(`✅ Item adicionado. Novo total: ${novoTotal}, próximo índice: ${formIndex}`);
+        
+        // Atualizar interface
+        atualizarNumeracaoItens();
+        verificarItensVazios();
+        atualizarContadorItens();
+        
+        // Focar no select de produto
+        const novoProdutoSelect = novaLinha.querySelector('select[name*="-produto"]');
+        if (novoProdutoSelect) {
+            novoProdutoSelect.focus();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao adicionar item:', error);
+        alert('Erro ao adicionar item. Tente novamente.');
+    }
+}
+
+function removerItem(btn) {
+    try {
+        const row = btn.closest('.item-row');
+        const deleteCheckbox = row.querySelector('[name$="-DELETE"]');
+        
+        if (deleteCheckbox) {
+            if (row.querySelector('[name$="-id"]').value) {
+                // Item existente - marcar para deleção
+                deleteCheckbox.checked = true;
+                row.style.display = 'none';
+                console.log('📝 Item existente marcado para exclusão');
+            } else {
+                // Item novo - remover da DOM
+                row.remove();
+                console.log('🗑️ Item novo removido da DOM');
+            }
+        } else {
+            // Sem checkbox DELETE - item novo
+            row.remove();
+            console.log('🗑️ Item removido da DOM');
+        }
+        
+        // Atualizar interface
+        atualizarNumeracaoItens();
+        verificarItensVazios();
+        atualizarContadorItens();
+        calcularTotais();
+        
+    } catch (error) {
+        console.error('❌ Erro ao remover item:', error);
+    }
+}
+
+function atualizarNumeracaoItens() {
+    let contador = 1;
+    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(function(row) {
+        const numeroSpan = row.querySelector('.item-numero');
+        if (numeroSpan) {
+            numeroSpan.textContent = contador;
+        }
+        contador++;
+    });
+}
+
+function atualizarContadorItens() {
+    const contador = document.querySelectorAll('.item-row:not([style*="display: none"])').length;
+    const contadorElement = document.getElementById('contador-itens');
+    if (contadorElement) {
+        contadorElement.textContent = contador;
+    }
+}
+
+function verificarItensVazios() {
+    const tbody = document.getElementById('itens-tbody');
+    const semItens = document.getElementById('sem-itens');
+    const itensVisiveis = tbody.querySelectorAll('.item-row:not([style*="display: none"])');
+    
+    if (itensVisiveis.length === 0) {
+        if (semItens) semItens.style.display = 'block';
+        tbody.style.display = 'none';
+    } else {
+        if (semItens) semItens.style.display = 'none';
+        tbody.style.display = '';
+    }
+}
+
+// =============================================================================
+// CÁLCULOS FINANCEIROS
+// =============================================================================
+function calcularTotais() {
+    let subtotal = 0;
+    
+    // Calcular total de cada item visível
+    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(function(row) {
+        const qtdInput = row.querySelector('[name*="-quantidade"]');
+        const valorInput = row.querySelector('[name*="-valor_unitario"]');
+        const totalDiv = row.querySelector('.valor-total');
+        
+        if (qtdInput && valorInput && totalDiv) {
+            const qtd = parseFloat(qtdInput.value) || 0;
+            const valor = parseFloat(valorInput.value) || 0;
+            const total = qtd * valor;
+            
+            // Atualizar total do item
+            totalDiv.textContent = formatarMoeda(total);
+            subtotal += total;
+        }
+    });
+    
+    // Obter desconto e frete
+    const descontoPerc = parseFloat(document.getElementById('id_desconto_percentual').value) || 0;
+    const valorFrete = parseFloat(document.getElementById('id_valor_frete').value) || 0;
+    
+    // Calcular valores
+    const desconto = (subtotal * descontoPerc) / 100;
+    const totalGeral = subtotal - desconto + valorFrete;
+    
+    // Atualizar displays principais
+    const subtotalDisplay = document.getElementById('subtotal-display');
+    const totalGeralDisplay = document.getElementById('total-geral');
+    
+    if (subtotalDisplay) subtotalDisplay.textContent = formatarMoeda(subtotal);
+    if (totalGeralDisplay) totalGeralDisplay.textContent = formatarMoeda(totalGeral);
+    
+    // Atualizar resumo detalhado
+    atualizarResumoFinanceiro(subtotal, desconto, valorFrete, totalGeral);
+}
+
+function atualizarResumoFinanceiro(subtotal, desconto, frete, total) {
+    const elementos = {
+        'resumo-subtotal': subtotal,
+        'resumo-desconto': desconto,
+        'resumo-frete': frete,
+        'resumo-total': total
+    };
+    
+    Object.entries(elementos).forEach(([id, valor]) => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.textContent = formatarMoeda(valor);
+        }
+    });
+}
+
+function formatarMoeda(valor) {
+    return 'R$ ' + valor.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+// =============================================================================
+// INTEGRAÇÃO COM PRODUTOS E FORNECEDORES
+// =============================================================================
+function buscarDadosProduto(produtoSelect) {
+    const produtoId = produtoSelect.value;
+    if (!produtoId) return;
+    
+    const row = produtoSelect.closest('.item-row');
+    const valorInput = row.querySelector('[name*="-valor_unitario"]');
+    
+    // Buscar produto nos dados disponíveis
+    const produto = PRODUTOS_DISPONIVEIS.find(p => p.id === produtoId);
+    if (produto && valorInput && !valorInput.value) {
+        // Preencher com custo médio se disponível
+        if (produto.custo > 0) {
+            valorInput.value = produto.custo.toFixed(2);
+            calcularTotais();
+        }
+    }
+    
+    // Fazer busca AJAX para dados mais detalhados
+    const fornecedorSelect = document.getElementById('id_fornecedor');
+    const fornecedorId = fornecedorSelect ? fornecedorSelect.value : null;
+    
+    let url = `/producao/api/produto-info/?produto_id=${produtoId}`;
+    if (fornecedorId) {
+        url += `&fornecedor_id=${fornecedorId}`;
+    }
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.produto) {
+                // Atualizar preço se ainda não preenchido e há preço do fornecedor
+                if (valorInput && !valorInput.value && data.produto.preco_fornecedor) {
+                    valorInput.value = data.produto.preco_fornecedor.toFixed(2);
+                    calcularTotais();
+                }
+                
+                console.log('📦 Dados do produto carregados:', data.produto);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao buscar dados do produto:', error);
+        });
+}
+
+function atualizarProdutosPorFornecedor(fornecedorId) {
+    console.log('🏭 Atualizando preços para fornecedor:', fornecedorId);
+    
+    if (!fornecedorId) return;
+    
+    // Atualizar preços dos produtos já selecionados
+    document.querySelectorAll('[name*="-produto"]').forEach(function(select) {
+        if (select.value) {
+            buscarPrecoFornecedor(select, fornecedorId);
+        }
+    });
+}
+
+function buscarPrecoFornecedor(produtoSelect, fornecedorId) {
+    const produtoId = produtoSelect.value;
+    if (!produtoId || !fornecedorId) return;
+    
+    const row = produtoSelect.closest('.item-row');
+    const valorInput = row.querySelector('[name*="-valor_unitario"]');
+    
+    const url = `/producao/api/produto-info/?produto_id=${produtoId}&fornecedor_id=${fornecedorId}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.produto && data.produto.preco_fornecedor) {
+                // Só atualizar se o campo estiver vazio
+                if (valorInput && !valorInput.value) {
+                    valorInput.value = data.produto.preco_fornecedor.toFixed(2);
+                    calcularTotais();
+                    console.log('💰 Preço do fornecedor aplicado:', data.produto.preco_fornecedor);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao buscar preço do fornecedor:', error);
+        });
+}
+
+// =============================================================================
+// VALIDAÇÃO DO FORMULÁRIO
+// =============================================================================
+function validarFormulario() {
+    let temErro = false;
+    const erros = [];
+    
+    // Validar fornecedor
+    const fornecedor = document.getElementById('id_fornecedor');
+    if (!fornecedor || !fornecedor.value) {
+        erros.push('Selecione um fornecedor');
+        temErro = true;
+    }
+    
+    // Validar itens
+    const itensVisiveis = document.querySelectorAll('.item-row:not([style*="display: none"])');
+    
+    if (itensVisiveis.length === 0) {
+        erros.push('Adicione pelo menos um item ao pedido');
+        temErro = true;
+    } else {
+        // Verificar se todos os itens têm dados válidos
+        let itemIndex = 1;
+        itensVisiveis.forEach(function(row) {
+            const produto = row.querySelector('[name*="-produto"]');
+            const quantidade = row.querySelector('[name*="-quantidade"]');
+            const valor = row.querySelector('[name*="-valor_unitario"]');
+            
+            if (!produto || !produto.value) {
+                erros.push(`Item ${itemIndex}: Selecione um produto`);
+                temErro = true;
+            }
+            
+            if (!quantidade || !quantidade.value || parseFloat(quantidade.value) <= 0) {
+                erros.push(`Item ${itemIndex}: Informe uma quantidade válida`);
+                temErro = true;
+            }
+            
+            if (!valor || !valor.value || parseFloat(valor.value) <= 0) {
+                erros.push(`Item ${itemIndex}: Informe um valor unitário válido`);
+                temErro = true;
+            }
+            
+            itemIndex++;
+        });
+    }
+    
+    // Mostrar erros se houver
+    if (temErro) {
+        let mensagem = 'Corrija os seguintes problemas:\n\n';
+        mensagem += erros.join('\n');
+        alert(mensagem);
+        return false;
+    }
+    
+    return true;
+}
+
+// =============================================================================
+// FUNCIONALIDADES EXTRAS
+// =============================================================================
+
+// Auto-save (opcional)
+function autoSave() {
+    // Implementar auto-save se necessário
+    console.log('💾 Auto-save executado');
+}
+
+// Atalhos de teclado
+document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter para salvar
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        const btnSalvar = document.getElementById('btn-salvar');
+        if (btnSalvar) {
+            btnSalvar.click();
+        }
+    }
+    
+    // Ctrl+Shift+A para adicionar item
+    if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        const btnAdicionar = document.getElementById('btn-adicionar-item');
+        if (btnAdicionar) {
+            btnAdicionar.click();
+        }
+    }
+});
+
+// Alertas ao sair da página
+window.addEventListener('beforeunload', function(e) {
+    // Verificar se há alterações não salvas
+    const form = document.getElementById('pedido-form');
+    if (form && form.checkValidity && form.checkValidity()) {
+        // Implementar verificação de alterações se necessário
+    }
+});
+
+// Debug helpers
+window.debugPedido = {
+    formIndex: () => formIndex,
+    produtos: () => PRODUTOS_DISPONIVEIS,
+    calcular: () => calcularTotais(),
+    itens: () => document.querySelectorAll('.item-row:not([style*="display: none"])').length
+};
+
+console.log('✅ JavaScript carregado completamente');
+console.log('🔧 Debug disponível em: window.debugPedido');
+</script>
+
+<!-- CSS adicional para melhorar a interface -->
+<style>
+.item-row:hover {
+    background-color: #f8f9fa;
+}
+
+.valor-total {
+    font-family: 'Courier New', monospace;
+}
+
+#contador-itens {
+    animation: pulse 0.3s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.btn-remover-item:hover {
+    transform: scale(1.05);
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    background-color: #f8f9fa !important;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+#sem-itens {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.375rem;
+    margin: 1rem;
+}
+
+.timeline-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
