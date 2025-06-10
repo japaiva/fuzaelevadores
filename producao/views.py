@@ -1,4 +1,4 @@
-# producao/views.py - CORREÇÃO DOS IMPORTS
+# producao/views.py
 
 import logging
 from datetime import datetime, timedelta, timezone
@@ -21,7 +21,7 @@ from core.models import (
     FornecedorProduto, PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
 )
 from core.forms import (
-    ProdutoForm, GrupoProdutoForm, SubgrupoProdutoForm, 
+    ProdutoForm, GrupoProdutoForm, SubgrupoProdutoForm,
     FornecedorForm, FornecedorProdutoFormSet,
     PedidoCompraForm, ItemPedidoCompraFormSet, PedidoCompraFiltroForm,
     AlterarStatusPedidoForm, RecebimentoItemForm
@@ -49,7 +49,7 @@ def dashboard(request):
         'total_produtos_acabados': Produto.objects.filter(tipo='PA').count(),
         'total_fornecedores': Fornecedor.objects.filter(ativo=True).count(),
         'produtos_sem_estoque': Produto.objects.filter(
-            controla_estoque=True, 
+            controla_estoque=True,
             estoque_atual__lte=models.F('estoque_minimo')
         ).count() if Produto.objects.exists() else 0,
         'produtos_indisponiveis': Produto.objects.filter(disponivel=False).count(),
@@ -63,33 +63,33 @@ def dashboard(request):
 @login_required
 def fornecedor_list(request):
     fornecedores_list = Fornecedor.objects.all().order_by('razao_social')
-    
+
     # Filtros
     status = request.GET.get('status')
     if status == 'ativo':
         fornecedores_list = fornecedores_list.filter(ativo=True)
     elif status == 'inativo':
         fornecedores_list = fornecedores_list.filter(ativo=False)
-    
+
     query = request.GET.get('q')
     if query:
         fornecedores_list = fornecedores_list.filter(
-            Q(razao_social__icontains=query) | 
+            Q(razao_social__icontains=query) |
             Q(nome_fantasia__icontains=query) |
             Q(cnpj__icontains=query)
         )
-    
+
     # Paginação
     paginator = Paginator(fornecedores_list, 15)
     page = request.GET.get('page', 1)
-    
+
     try:
         fornecedores = paginator.page(page)
     except PageNotAnInteger:
         fornecedores = paginator.page(1)
     except EmptyPage:
         fornecedores = paginator.page(paginator.num_pages)
-    
+
     return render(request, 'producao/fornecedor_list.html', {
         'fornecedores': fornecedores,
         'status_filtro': status,
@@ -139,10 +139,10 @@ def fornecedor_toggle_status(request, pk):
     fornecedor = get_object_or_404(Fornecedor, pk=pk)
     fornecedor.ativo = not fornecedor.ativo
     fornecedor.save()
-    
+
     status_text = "ativado" if fornecedor.ativo else "desativado"
     messages.success(request, f'Fornecedor "{fornecedor.razao_social}" {status_text} com sucesso.')
-    
+
     return redirect('producao:fornecedor_list')
 
 # =============================================================================
@@ -152,38 +152,38 @@ def fornecedor_toggle_status(request, pk):
 @login_required
 def grupo_list(request):
     grupos_list = GrupoProduto.objects.all().order_by('codigo')
-    
+
     # Filtros
     status = request.GET.get('status')
     if status == 'ativo':
         grupos_list = grupos_list.filter(ativo=True)
     elif status == 'inativo':
         grupos_list = grupos_list.filter(ativo=False)
-    
+
     # NOVO: Filtro por tipo de produto
     tipo = request.GET.get('tipo')
     if tipo in ['MP', 'PI', 'PA']:
         grupos_list = grupos_list.filter(tipo_produto=tipo)
-    
+
     query = request.GET.get('q')
     if query:
         grupos_list = grupos_list.filter(
-            Q(codigo__icontains=query) | 
+            Q(codigo__icontains=query) |
             Q(nome__icontains=query) |
             Q(descricao__icontains=query)
         )
-    
+
     # Paginação
     paginator = Paginator(grupos_list, 15)
     page = request.GET.get('page', 1)
-    
+
     try:
         grupos = paginator.page(page)
     except PageNotAnInteger:
         grupos = paginator.page(1)
     except EmptyPage:
         grupos = paginator.page(paginator.num_pages)
-    
+
     return render(request, 'producao/grupo_list.html', {
         'grupos': grupos,
         'status_filtro': status,
@@ -238,10 +238,10 @@ def grupo_toggle_status(request, pk):
     grupo = get_object_or_404(GrupoProduto, pk=pk)
     grupo.ativo = not grupo.ativo
     grupo.save()
-    
+
     status_text = "ativado" if grupo.ativo else "desativado"
     messages.success(request, f'Grupo "{grupo.nome}" {status_text} com sucesso.')
-    
+
     return redirect('producao:grupo_list')
 
 # =============================================================================
@@ -251,45 +251,45 @@ def grupo_toggle_status(request, pk):
 @login_required
 def subgrupo_list(request):
     subgrupos_list = SubgrupoProduto.objects.select_related('grupo').order_by('grupo__codigo', 'codigo')
-    
+
     # Filtros
     grupo_id = request.GET.get('grupo')
     if grupo_id:
         subgrupos_list = subgrupos_list.filter(grupo_id=grupo_id)
-    
+
     # NOVO: Filtro por tipo de produto
     tipo = request.GET.get('tipo')
     if tipo:
         subgrupos_list = subgrupos_list.filter(grupo__tipo_produto=tipo)
-    
+
     status = request.GET.get('status')
     if status == 'ativo':
         subgrupos_list = subgrupos_list.filter(ativo=True)
     elif status == 'inativo':
         subgrupos_list = subgrupos_list.filter(ativo=False)
-    
+
     query = request.GET.get('q')
     if query:
         subgrupos_list = subgrupos_list.filter(
-            Q(codigo__icontains=query) | 
+            Q(codigo__icontains=query) |
             Q(nome__icontains=query) |
             Q(grupo__nome__icontains=query)
         )
-    
+
     # Paginação
     paginator = Paginator(subgrupos_list, 15)
     page = request.GET.get('page', 1)
-    
+
     try:
         subgrupos = paginator.page(page)
     except PageNotAnInteger:
         subgrupos = paginator.page(1)
     except EmptyPage:
         subgrupos = paginator.page(paginator.num_pages)
-    
+
     # Para o filtro de grupos
     grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
-    
+
     return render(request, 'producao/subgrupo_list.html', {
         'subgrupos': subgrupos,
         'grupos': grupos,
@@ -316,7 +316,7 @@ def subgrupo_create(request):
         if grupo_id:
             initial['grupo'] = grupo_id
         form = SubgrupoProdutoForm(initial=initial)
-    
+
     return render(request, 'producao/subgrupo_form.html', {'form': form})
 
 @login_required
@@ -352,14 +352,14 @@ def subgrupo_toggle_status(request, pk):
     subgrupo = get_object_or_404(SubgrupoProduto, pk=pk)
     subgrupo.ativo = not subgrupo.ativo
     subgrupo.save()
-    
+
     status_text = "ativado" if subgrupo.ativo else "desativado"
     messages.success(request, f'Subgrupo "{subgrupo.nome}" {status_text} com sucesso.')
-    
+
     return redirect('producao:subgrupo_list')
 
 # =============================================================================
-# CRUD MATÉRIAS-PRIMAS (TIPO = MP) 
+# CRUD MATÉRIAS-PRIMAS (TIPO = MP)
 # =============================================================================
 
 @login_required
@@ -368,16 +368,22 @@ def materiaprima_list(request):
     produtos_list = Produto.objects.select_related(
         'grupo', 'subgrupo', 'fornecedor_principal'
     ).filter(tipo='MP').order_by('codigo')
-    
+
     # Filtros
     grupo_id = request.GET.get('grupo')
-    if grupo_id:
+    # Convert to int if it's a valid digit string, otherwise keep as None
+    if grupo_id and grupo_id.isdigit(): # Ensure it's a digit string before converting
         produtos_list = produtos_list.filter(grupo_id=grupo_id)
-    
+    else:
+        grupo_id = None # Set to None if it's empty string or not a digit
+
     subgrupo_id = request.GET.get('subgrupo')
-    if subgrupo_id:
+    # Convert to int if it's a valid digit string, otherwise keep as None
+    if subgrupo_id and subgrupo_id.isdigit(): # Ensure it's a digit string before converting
         produtos_list = produtos_list.filter(subgrupo_id=subgrupo_id)
-    
+    else:
+        subgrupo_id = None # Set to None if it's empty string or not a digit
+
     status = request.GET.get('status')
     if status == 'ativo':
         produtos_list = produtos_list.filter(status='ATIVO')
@@ -387,33 +393,34 @@ def materiaprima_list(request):
         produtos_list = produtos_list.filter(disponivel=True)
     elif status == 'indisponivel':
         produtos_list = produtos_list.filter(disponivel=False)
-    
+
     query = request.GET.get('q')
     if query:
         produtos_list = produtos_list.filter(
-            Q(codigo__icontains=query) | 
+            Q(codigo__icontains=query) |
             Q(nome__icontains=query) |
             Q(descricao__icontains=query)
         )
-    
+
     # Paginação
     paginator = Paginator(produtos_list, 20)
     page = request.GET.get('page', 1)
-    
+
     try:
         produtos = paginator.page(page)
     except PageNotAnInteger:
         produtos = paginator.page(1)
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
-    
+
     # Para os filtros
     grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='MP').order_by('codigo')
-    
+
     # Subgrupos - se tem grupo selecionado, filtrar por grupo
-    if grupo_id:
+    # IMPORTANT: Use the (potentially converted) grupo_id variable here
+    if grupo_id: # Use the cleaned grupo_id
         subgrupos = SubgrupoProduto.objects.filter(
-            grupo_id=grupo_id, 
+            grupo_id=grupo_id,
             ativo=True
         ).order_by('codigo')
     else:
@@ -422,63 +429,62 @@ def materiaprima_list(request):
             grupo__tipo_produto='MP',
             ativo=True
         ).select_related('grupo').order_by('grupo__codigo', 'codigo')
-    
+
     return render(request, 'producao/materiaprima_list.html', {
         'produtos': produtos,
         'grupos': grupos,
         'subgrupos': subgrupos,
-        'grupo_filtro': grupo_id,
-        'subgrupo_filtro': subgrupo_id,
+        'grupo_filtro': grupo_id, # Pass the potentially None/converted ID back
+        'subgrupo_filtro': subgrupo_id, # Pass the potentially None/converted ID back
         'status_filtro': status,
         'query': query
     })
-
 
 @login_required
 def materiaprima_create(request):
     """Criar nova matéria-prima"""
     if request.method == 'POST':
         form = ProdutoForm(request.POST)
-        
+
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'MP'
             produto.criado_por = request.user
             produto.atualizado_por = request.user
             produto.save()
-            
+
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" criada com sucesso.')
-            return redirect('producao:materiaprima_list') 
+            return redirect('producao:materiaprima_list')
         else:
             messages.error(request, 'Erro ao criar matéria-prima. Verifique os dados informados.')
     else:
         form = ProdutoForm()
-    
+
     return render(request, 'producao/materiaprima_form.html', {'form': form})
 
 @login_required
 def materiaprima_update(request, pk):
     """Editar matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
-    
+
     if request.method == 'POST':
         form = ProdutoForm(request.POST, instance=produto)
-        
+
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'MP'
             produto.atualizado_por = request.user
             produto.save()
-            
+
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" atualizada com sucesso.')
-            return redirect('producao:materiaprima_list') 
+            return redirect('producao:materiaprima_list')
         else:
             messages.error(request, 'Erro ao atualizar matéria-prima. Verifique os dados informados.')
     else:
         form = ProdutoForm(instance=produto)
-    
+
     return render(request, 'producao/materiaprima_form.html', {
-        'form': form, 
+        'form': form,
         'produto': produto
     })
 
@@ -486,45 +492,45 @@ def materiaprima_update(request, pk):
 def materiaprima_toggle_status(request, pk):
     """Ativar/desativar matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
-    
+
     if produto.status == 'ATIVO':
         produto.status = 'INATIVO'
         status_text = "desativada"
     else:
         produto.status = 'ATIVO'
         status_text = "ativada"
-    
+
     produto.atualizado_por = request.user
     produto.save()
     messages.success(request, f'Matéria-prima "{produto.nome}" {status_text} com sucesso.')
-    
+
     return redirect('producao:materiaprima_list')
 
 @login_required
 def materiaprima_detail(request, pk):
     """Visualizar detalhes de uma matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
-    
+
     context = {
         'produto': produto,
     }
-    
+
     return render(request, 'producao/materiaprima_detail.html', context)
 
 @login_required
 def materiaprima_delete(request, pk):
     """Excluir matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
-    
+
     if request.method == 'POST':
         try:
             produto.delete()
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" excluída com sucesso.')
         except Exception as e:
             messages.error(request, f'Erro ao excluir matéria-prima: {str(e)}')
-        
+
         return redirect('producao:materiaprima_list')
-    
+
     return render(request, 'producao/materiaprima_delete.html', {'produto': produto})
 
 # =============================================================================
@@ -537,12 +543,12 @@ def produto_intermediario_list(request):
     produtos_list = Produto.objects.select_related(
         'grupo', 'subgrupo', 'fornecedor_principal'
     ).filter(tipo='PI').order_by('codigo')
-    
+
     # Filtros similares às matérias-primas
     grupo_id = request.GET.get('grupo')
     if grupo_id:
         produtos_list = produtos_list.filter(grupo_id=grupo_id)
-    
+
     status = request.GET.get('status')
     if status == 'ativo':
         produtos_list = produtos_list.filter(status='ATIVO')
@@ -552,28 +558,28 @@ def produto_intermediario_list(request):
         produtos_list = produtos_list.filter(disponivel=True)
     elif status == 'indisponivel':
         produtos_list = produtos_list.filter(disponivel=False)
-    
+
     query = request.GET.get('q')
     if query:
         produtos_list = produtos_list.filter(
-            Q(codigo__icontains=query) | 
+            Q(codigo__icontains=query) |
             Q(nome__icontains=query) |
             Q(descricao__icontains=query)
         )
-    
+
     # Paginação
     paginator = Paginator(produtos_list, 20)
     page = request.GET.get('page', 1)
-    
+
     try:
         produtos = paginator.page(page)
     except PageNotAnInteger:
         produtos = paginator.page(1)
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
-    
+
     grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
-    
+
     return render(request, 'producao/produto_intermediario_list.html', {
         'produtos': produtos,
         'grupos': grupos,
@@ -587,46 +593,46 @@ def produto_intermediario_create(request):
     """Criar novo produto intermediário"""
     if request.method == 'POST':
         form = ProdutoForm(request.POST)
-        
+
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'PI'
             produto.criado_por = request.user
             produto.atualizado_por = request.user
             produto.save()
-            
+
             messages.success(request, f'Produto intermediário "{produto.codigo} - {produto.nome}" criado com sucesso.')
-            return redirect('producao:produto_intermediario_list') 
+            return redirect('producao:produto_intermediario_list')
         else:
             messages.error(request, 'Erro ao criar produto intermediário. Verifique os dados informados.')
     else:
         form = ProdutoForm()
-    
+
     return render(request, 'producao/produto_intermediario_form.html', {'form': form})
 
 @login_required
 def produto_intermediario_update(request, pk):
     """Editar produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI')
-    
+
     if request.method == 'POST':
         form = ProdutoForm(request.POST, instance=produto)
-        
+
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'PI'
             produto.atualizado_por = request.user
             produto.save()
-            
+
             messages.success(request, f'Produto intermediário "{produto.codigo} - {produto.nome}" atualizado com sucesso.')
-            return redirect('producao:produto_intermediario_list') 
+            return redirect('producao:produto_intermediario_list')
         else:
             messages.error(request, 'Erro ao atualizar produto intermediário. Verifique os dados informados.')
     else:
         form = ProdutoForm(instance=produto)
-    
+
     return render(request, 'producao/produto_intermediario_form.html', {
-        'form': form, 
+        'form': form,
         'produto': produto
     })
 
@@ -634,34 +640,34 @@ def produto_intermediario_update(request, pk):
 def produto_intermediario_toggle_status(request, pk):
     """Ativar/desativar produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI')
-    
+
     if produto.status == 'ATIVO':
         produto.status = 'INATIVO'
         status_text = "desativado"
     else:
         produto.status = 'ATIVO'
         status_text = "ativado"
-    
+
     produto.atualizado_por = request.user
     produto.save()
     messages.success(request, f'Produto intermediário "{produto.nome}" {status_text} com sucesso.')
-    
+
     return redirect('producao:produto_intermediario_list')
 
 @login_required
 def produto_intermediario_delete(request, pk):
     """Excluir produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI')
-    
+
     if request.method == 'POST':
         try:
             produto.delete()
             messages.success(request, f'Produto intermediário "{produto.codigo} - {produto.nome}" excluído com sucesso.')
         except Exception as e:
             messages.error(request, f'Erro ao excluir produto intermediário: {str(e)}')
-        
+
         return redirect('producao:produto_intermediario_list')
-    
+
     return render(request, 'producao/produto_intermediario_delete.html', {'produto': produto})
 
 # =============================================================================
@@ -674,12 +680,12 @@ def produto_acabado_list(request):
     produtos_list = Produto.objects.select_related(
         'grupo', 'subgrupo', 'fornecedor_principal'
     ).filter(tipo='PA').order_by('codigo')
-    
+
     # Filtros
     grupo_id = request.GET.get('grupo')
     if grupo_id:
         produtos_list = produtos_list.filter(grupo_id=grupo_id)
-    
+
     status = request.GET.get('status')
     if status == 'ativo':
         produtos_list = produtos_list.filter(status='ATIVO')
@@ -689,28 +695,28 @@ def produto_acabado_list(request):
         produtos_list = produtos_list.filter(disponivel=True)
     elif status == 'indisponivel':
         produtos_list = produtos_list.filter(disponivel=False)
-    
+
     query = request.GET.get('q')
     if query:
         produtos_list = produtos_list.filter(
-            Q(codigo__icontains=query) | 
+            Q(codigo__icontains=query) |
             Q(nome__icontains=query) |
             Q(descricao__icontains=query)
         )
-    
+
     # Paginação
     paginator = Paginator(produtos_list, 20)
     page = request.GET.get('page', 1)
-    
+
     try:
         produtos = paginator.page(page)
     except PageNotAnInteger:
         produtos = paginator.page(1)
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
-    
+
     grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
-    
+
     return render(request, 'producao/produto_acabado_list.html', {
         'produtos': produtos,
         'grupos': grupos,
@@ -724,46 +730,46 @@ def produto_acabado_create(request):
     """Criar novo produto acabado"""
     if request.method == 'POST':
         form = ProdutoForm(request.POST)
-        
+
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'PA'
             produto.criado_por = request.user
             produto.atualizado_por = request.user
             produto.save()
-            
+
             messages.success(request, f'Produto acabado "{produto.codigo} - {produto.nome}" criado com sucesso.')
-            return redirect('producao:produto_acabado_list') 
+            return redirect('producao:produto_acabado_list')
         else:
             messages.error(request, 'Erro ao criar produto acabado. Verifique os dados informados.')
     else:
         form = ProdutoForm()
-    
+
     return render(request, 'producao/produto_acabado_form.html', {'form': form})
 
 @login_required
 def produto_acabado_update(request, pk):
     """Editar produto acabado"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PA')
-    
+
     if request.method == 'POST':
         form = ProdutoForm(request.POST, instance=produto)
-        
+
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'PA'
             produto.atualizado_por = request.user
             produto.save()
-            
+
             messages.success(request, f'Produto acabado "{produto.codigo} - {produto.nome}" atualizado com sucesso.')
-            return redirect('producao:produto_acabado_list') 
+            return redirect('producao:produto_acabado_list')
         else:
             messages.error(request, 'Erro ao atualizar produto acabado. Verifique os dados informados.')
     else:
         form = ProdutoForm(instance=produto)
-    
+
     return render(request, 'producao/produto_acabado_form.html', {
-        'form': form, 
+        'form': form,
         'produto': produto
     })
 
@@ -771,34 +777,34 @@ def produto_acabado_update(request, pk):
 def produto_acabado_toggle_status(request, pk):
     """Ativar/desativar produto acabado"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PA')
-    
+
     if produto.status == 'ATIVO':
         produto.status = 'INATIVO'
         status_text = "desativado"
     else:
         produto.status = 'ATIVO'
         status_text = "ativado"
-    
+
     produto.atualizado_por = request.user
     produto.save()
     messages.success(request, f'Produto acabado "{produto.nome}" {status_text} com sucesso.')
-    
+
     return redirect('producao:produto_acabado_list')
 
 @login_required
 def produto_acabado_delete(request, pk):
     """Excluir produto acabado"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PA')
-    
+
     if request.method == 'POST':
         try:
             produto.delete()
             messages.success(request, f'Produto acabado "{produto.codigo} - {produto.nome}" excluído com sucesso.')
         except Exception as e:
             messages.error(request, f'Erro ao excluir produto acabado: {str(e)}')
-        
+
         return redirect('producao:produto_acabado_list')
-    
+
     return render(request, 'producao/produto_acabado_delete.html', {'produto': produto})
 
 # =============================================================================
@@ -809,7 +815,7 @@ def produto_acabado_delete(request, pk):
 def produto_fornecedores(request, pk):
     """Gerenciar fornecedores de um produto"""
     produto = get_object_or_404(Produto, pk=pk)
-    
+
     if request.method == 'POST':
         formset = FornecedorProdutoFormSet(request.POST, instance=produto)
         if formset.is_valid():
@@ -820,10 +826,10 @@ def produto_fornecedores(request, pk):
                 instance.save()
             formset.save_m2m()
             messages.success(request, 'Fornecedores atualizados com sucesso.')
-            return redirect('producao:fornecedor_list') 
+            return redirect('producao:fornecedor_list')
     else:
         formset = FornecedorProdutoFormSet(instance=produto)
-    
+
     return render(request, 'producao/produto_fornecedores.html', {
         'produto': produto,
         'formset': formset
@@ -835,11 +841,11 @@ def fornecedor_produto_toggle(request, pk):
     fornecedor_produto = get_object_or_404(FornecedorProduto, pk=pk)
     fornecedor_produto.ativo = not fornecedor_produto.ativo
     fornecedor_produto.save()
-    
+
     status_text = "ativado" if fornecedor_produto.ativo else "desativado"
     messages.success(request, f'Fornecedor {status_text} para este produto.')
-    
-    return redirect('producao:fornecedor_list') 
+
+    return redirect('producao:fornecedor_list')
 
 # =============================================================================
 # APIs AJAX
@@ -853,17 +859,17 @@ def get_subgrupos_by_grupo(request):
     Used by AJAX in forms when grupo is selected
     """
     grupo_id = request.GET.get('grupo_id')
-    
+
     if not grupo_id:
         return JsonResponse({'error': 'grupo_id é obrigatório'}, status=400)
-    
+
     try:
         grupo = GrupoProduto.objects.get(id=grupo_id, ativo=True)
         subgrupos = SubgrupoProduto.objects.filter(
-            grupo=grupo, 
+            grupo=grupo,
             ativo=True
         ).order_by('codigo')
-        
+
         subgrupos_data = [
             {
                 'id': subgrupo.id,
@@ -874,7 +880,7 @@ def get_subgrupos_by_grupo(request):
             }
             for subgrupo in subgrupos
         ]
-        
+
         return JsonResponse({
             'success': True,
             'grupo': {
@@ -886,7 +892,7 @@ def get_subgrupos_by_grupo(request):
             },
             'subgrupos': subgrupos_data
         })
-        
+
     except GrupoProduto.DoesNotExist:
         return JsonResponse({'error': 'Grupo não encontrado'}, status=404)
     except Exception as e:
@@ -901,18 +907,18 @@ def get_info_produto_codigo(request):
     """
     grupo_id = request.GET.get('grupo_id')
     subgrupo_id = request.GET.get('subgrupo_id')
-    
+
     if not grupo_id or not subgrupo_id:
         return JsonResponse({'error': 'grupo_id e subgrupo_id são obrigatórios'}, status=400)
-    
+
     try:
         grupo = GrupoProduto.objects.get(id=grupo_id, ativo=True)
         subgrupo = SubgrupoProduto.objects.get(id=subgrupo_id, grupo=grupo, ativo=True)
-        
+
         # Preview do próximo código que seria gerado
         proximo_numero = subgrupo.ultimo_numero + 1
         codigo_preview = f"{grupo.codigo}.{subgrupo.codigo}.{proximo_numero:04d}"
-        
+
         return JsonResponse({
             'success': True,
             'grupo': {
@@ -929,7 +935,7 @@ def get_info_produto_codigo(request):
             'codigo_preview': codigo_preview,
             'proximo_numero': proximo_numero
         })
-        
+
     except (GrupoProduto.DoesNotExist, SubgrupoProduto.DoesNotExist):
         return JsonResponse({'error': 'Grupo ou subgrupo não encontrado'}, status=404)
     except Exception as e:
@@ -947,12 +953,12 @@ def relatorio_estoque_baixo(request):
         estoque_atual__lte=models.F('estoque_minimo'),
         status='ATIVO'
     ).select_related('grupo', 'subgrupo').order_by('codigo')
-    
+
     context = {
         'produtos': produtos_estoque_baixo,
         'total': produtos_estoque_baixo.count()
     }
-    
+
     return render(request, 'producao/relatorio_estoque_baixo.html', context)
 
 @login_required
@@ -962,12 +968,12 @@ def relatorio_produtos_sem_fornecedor(request):
         fornecedor_principal__isnull=True,
         status='ATIVO'
     ).select_related('grupo', 'subgrupo').order_by('codigo')
-    
+
     context = {
         'produtos': produtos_sem_fornecedor,
         'total': produtos_sem_fornecedor.count()
     }
-    
+
     return render(request, 'producao/relatorio_produtos_sem_fornecedor.html', context)
 
 @login_required
@@ -978,8 +984,8 @@ def relatorio_producao(request):
             'total': Produto.objects.filter(tipo='MP').count(),
             'ativas': Produto.objects.filter(tipo='MP', status='ATIVO').count(),
             'estoque_baixo': Produto.objects.filter(
-                tipo='MP', 
-                controla_estoque=True, 
+                tipo='MP',
+                controla_estoque=True,
                 estoque_atual__lte=models.F('estoque_minimo')
             ).count(),
         },
@@ -987,8 +993,8 @@ def relatorio_producao(request):
             'total': Produto.objects.filter(tipo='PI').count(),
             'ativas': Produto.objects.filter(tipo='PI', status='ATIVO').count(),
             'estoque_baixo': Produto.objects.filter(
-                tipo='PI', 
-                controla_estoque=True, 
+                tipo='PI',
+                controla_estoque=True,
                 estoque_atual__lte=models.F('estoque_minimo')
             ).count(),
         },
@@ -996,18 +1002,18 @@ def relatorio_producao(request):
             'total': Produto.objects.filter(tipo='PA').count(),
             'ativas': Produto.objects.filter(tipo='PA', status='ATIVO').count(),
             'estoque_baixo': Produto.objects.filter(
-                tipo='PA', 
-                controla_estoque=True, 
+                tipo='PA',
+                controla_estoque=True,
                 estoque_atual__lte=models.F('estoque_minimo')
             ).count(),
         }
     }
-    
+
     context = {
         'stats_producao': stats_producao,
         'total_fornecedores': Fornecedor.objects.filter(ativo=True).count(),
     }
-    
+
     return render(request, 'producao/relatorio_producao.html', context)
 
 # =============================================================================
@@ -1023,24 +1029,24 @@ def dashboard_analytics(request):
         ativos=Count('id', filter=Q(status='ATIVO')),
         inativos=Count('id', filter=Q(status='INATIVO'))
     ).order_by('tipo')
-    
+
     # Produtos com maior giro (mais caros)
     produtos_importantes = Produto.objects.filter(
         preco_venda__isnull=False,
         status='ATIVO'
     ).order_by('-preco_venda')[:10]
-    
+
     # Fornecedores com mais produtos
     fornecedores_principais = Fornecedor.objects.annotate(
         total_produtos=Count('produtos_fornecedor')
     ).filter(total_produtos__gt=0).order_by('-total_produtos')[:10]
-    
+
     context = {
         'stats_por_tipo': stats_por_tipo,
         'produtos_importantes': produtos_importantes,
         'fornecedores_principais': fornecedores_principais,
     }
-    
+
     return render(request, 'producao/dashboard_analytics.html', context)
 
 # =============================================================================
@@ -1060,7 +1066,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from core.models import (
-    PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra, 
+    PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra,
     Fornecedor, Produto
 )
 from core.forms import (
@@ -1085,7 +1091,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from core.models import (
-    PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra, 
+    PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra,
     Fornecedor, Produto
 )
 from core.forms import (
@@ -1103,90 +1109,90 @@ def pedido_compra_list(request):
     pedidos_list = PedidoCompra.objects.select_related(
         'fornecedor', 'criado_por'
     ).prefetch_related('itens').order_by('-data_pedido')
-    
+
     # Aplicar filtros
     form_filtros = PedidoCompraFiltroForm(request.GET)
     if form_filtros.is_valid():
         data = form_filtros.cleaned_data
-        
+
         if data.get('fornecedor'):
             pedidos_list = pedidos_list.filter(fornecedor=data['fornecedor'])
-        
+
         if data.get('status'):
             pedidos_list = pedidos_list.filter(status=data['status'])
-        
+
         if data.get('prioridade'):
             pedidos_list = pedidos_list.filter(prioridade=data['prioridade'])
-        
+
         if data.get('data_inicio'):
             pedidos_list = pedidos_list.filter(data_pedido__date__gte=data['data_inicio'])
-        
+
         if data.get('data_fim'):
             pedidos_list = pedidos_list.filter(data_pedido__date__lte=data['data_fim'])
-        
+
         if data.get('q'):
             query = data['q']
             pedidos_list = pedidos_list.filter(
-                Q(numero__icontains=query) | 
+                Q(numero__icontains=query) |
                 Q(fornecedor__razao_social__icontains=query) |
                 Q(fornecedor__nome_fantasia__icontains=query) |
                 Q(observacoes__icontains=query)
             )
-    
+
     # Paginação
     paginator = Paginator(pedidos_list, 15)
     page = request.GET.get('page', 1)
-    
+
     try:
         pedidos = paginator.page(page)
     except:
         pedidos = paginator.page(1)
-    
+
     context = {
         'pedidos': pedidos,
         'form_filtros': form_filtros,
         'total_pedidos': pedidos_list.count(),
     }
-    
+
     return render(request, 'producao/pedido_compra_list.html', context)
 
 
 @login_required
 def pedido_compra_create(request):
     """Criar novo pedido de compra - VERSÃO CORRIGIDA"""
-    
+
     if request.method == 'POST':
         form = PedidoCompraForm(request.POST)
         formset = ItemPedidoCompraFormSet(request.POST)
-        
+
         print("=== DEBUG PEDIDO COMPRA CREATE ===")
         print(f"Form válido: {form.is_valid()}")
         print(f"Formset válido: {formset.is_valid()}")
-        
+
         if not form.is_valid():
             print("ERROS DO FORM:")
             for field, errors in form.errors.items():
                 print(f"  {field}: {errors}")
-        
+
         if not formset.is_valid():
             print("ERROS DO FORMSET:")
             print(f"  Non form errors: {formset.non_form_errors}")
             for i, form_item in enumerate(formset):
                 if form_item.errors:
                     print(f"  Erro no item {i}: {form_item.errors}")
-        
+
         # Verificar se há pelo menos um item válido
         itens_validos = 0
         for form_item in formset:
             if form_item.is_valid() and not form_item.cleaned_data.get('DELETE', False):
                 # Verificar se os campos obrigatórios estão preenchidos
-                if (form_item.cleaned_data.get('produto') and 
-                    form_item.cleaned_data.get('quantidade') and 
+                if (form_item.cleaned_data.get('produto') and
+                    form_item.cleaned_data.get('quantidade') and
                     form_item.cleaned_data.get('valor_unitario')):
                     itens_validos += 1
-        
+
         print(f"Itens válidos encontrados: {itens_validos}")
-        
+
         if form.is_valid() and formset.is_valid() and itens_validos > 0:
             try:
                 with transaction.atomic():
@@ -1194,40 +1200,40 @@ def pedido_compra_create(request):
                     pedido = form.save(commit=False)
                     pedido.criado_por = request.user
                     pedido.atualizado_por = request.user
-                    
+
                     # Salvar pedido sem calcular valores ainda
                     pedido.valor_total = 0
                     pedido.valor_final = 0
                     pedido.save()
-                    
+
                     print(f"Pedido criado com ID: {pedido.pk}")
-                    
+
                     # Salvar itens
                     itens_salvos = 0
                     for form_item in formset:
-                        if (form_item.is_valid() and 
+                        if (form_item.is_valid() and
                             not form_item.cleaned_data.get('DELETE', False) and
                             form_item.cleaned_data.get('produto')):
-                            
+
                             item = form_item.save(commit=False)
                             item.pedido = pedido
-                            
+
                             # Garantir que tem unidade
                             if not item.unidade:
                                 item.unidade = item.produto.unidade_medida
-                            
+
                             # Calcular valor total do item
                             item.valor_total = item.quantidade * item.valor_unitario
                             item.save()
                             itens_salvos += 1
-                            
+
                             print(f"Item salvo: {item.produto.codigo} - Qtd: {item.quantidade} - Valor: {item.valor_unitario}")
-                    
+
                     print(f"Total de itens salvos: {itens_salvos}")
-                    
+
                     # Recalcular valores do pedido
                     pedido.recalcular_valores()
-                    
+
                     # Registrar no histórico
                     HistoricoPedidoCompra.objects.create(
                         pedido=pedido,
@@ -1235,10 +1241,10 @@ def pedido_compra_create(request):
                         acao='Pedido criado',
                         observacao=f'Pedido criado com {itens_salvos} itens'
                     )
-                    
+
                     messages.success(request, f'Pedido {pedido.numero} criado com sucesso!')
                     return redirect('producao:pedido_compra_detail', pk=pedido.pk)
-                    
+
             except Exception as e:
                 print(f"ERRO AO SALVAR: {str(e)}")
                 messages.error(request, f'Erro ao criar pedido: {str(e)}')
@@ -1250,13 +1256,13 @@ def pedido_compra_create(request):
     else:
         form = PedidoCompraForm()
         formset = ItemPedidoCompraFormSet()
-    
+
     context = {
         'form': form,
         'formset': formset,
         'title': 'Novo Pedido de Compra'
     }
-    
+
     return render(request, 'producao/pedido_compra_form.html', context)
 
 
@@ -1268,13 +1274,13 @@ def pedido_compra_detail(request, pk):
         .prefetch_related('itens__produto', 'historico__usuario'),
         pk=pk
     )
-    
+
     context = {
         'pedido': pedido,
         'pode_editar': pedido.pode_editar,
         'pode_cancelar': pedido.pode_cancelar,
     }
-    
+
     return render(request, 'producao/pedido_compra_detail.html', context)
 
 
@@ -1282,28 +1288,28 @@ def pedido_compra_detail(request, pk):
 def pedido_compra_update(request, pk):
     """Editar pedido de compra"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
-    
+
     if not pedido.pode_editar:
         messages.error(request, f'Pedido {pedido.numero} não pode ser editado no status atual.')
         return redirect('producao:pedido_compra_detail', pk=pk)
-    
+
     if request.method == 'POST':
         form = PedidoCompraForm(request.POST, instance=pedido)
         formset = ItemPedidoCompraFormSet(request.POST, instance=pedido)
-        
+
         print("=== DEBUG PEDIDO UPDATE ===")
         print(f"Form válido: {form.is_valid()}")
         print(f"Formset válido: {formset.is_valid()}")
-        
+
         # Verificar itens válidos
         itens_validos = 0
         for form_item in formset:
             if form_item.is_valid() and not form_item.cleaned_data.get('DELETE', False):
-                if (form_item.cleaned_data.get('produto') and 
-                    form_item.cleaned_data.get('quantidade') and 
+                if (form_item.cleaned_data.get('produto') and
+                    form_item.cleaned_data.get('quantidade') and
                     form_item.cleaned_data.get('valor_unitario')):
                     itens_validos += 1
-        
+
         if form.is_valid() and formset.is_valid() and itens_validos > 0:
             try:
                 with transaction.atomic():
@@ -1311,13 +1317,13 @@ def pedido_compra_update(request, pk):
                     pedido = form.save(commit=False)
                     pedido.atualizado_por = request.user
                     pedido.save()
-                    
+
                     # Salvar itens
                     formset.save()
-                    
+
                     # Recalcular valores
                     pedido.recalcular_valores()
-                    
+
                     # Registrar no histórico
                     HistoricoPedidoCompra.objects.create(
                         pedido=pedido,
@@ -1325,10 +1331,10 @@ def pedido_compra_update(request, pk):
                         acao='Pedido atualizado',
                         observacao='Dados do pedido foram alterados'
                     )
-                    
+
                     messages.success(request, f'Pedido {pedido.numero} atualizado com sucesso!')
                     return redirect('producao:pedido_compra_detail', pk=pedido.pk)
-                    
+
             except Exception as e:
                 print(f"ERRO AO ATUALIZAR: {str(e)}")
                 messages.error(request, f'Erro ao atualizar pedido: {str(e)}')
@@ -1340,14 +1346,14 @@ def pedido_compra_update(request, pk):
     else:
         form = PedidoCompraForm(instance=pedido)
         formset = ItemPedidoCompraFormSet(instance=pedido)
-    
+
     context = {
         'form': form,
         'formset': formset,
         'pedido': pedido,
         'title': f'Editar Pedido {pedido.numero}'
     }
-    
+
     return render(request, 'producao/pedido_compra_form.html', context)
 
 
@@ -1355,26 +1361,26 @@ def pedido_compra_update(request, pk):
 def pedido_compra_delete(request, pk):
     """Excluir pedido de compra"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
-    
+
     # Verificar se pode ser excluído
     if pedido.status not in ['RASCUNHO', 'ENVIADO']:
         messages.error(request, f'Pedido {pedido.numero} não pode ser excluído no status atual: {pedido.get_status_display()}.')
         return redirect('producao:pedido_compra_detail', pk=pk)
-    
+
     if request.method == 'POST':
         try:
             numero = pedido.numero
             with transaction.atomic():
                 # Excluir pedido (cascata exclui itens e histórico)
                 pedido.delete()
-                
+
             messages.success(request, f'Pedido {numero} excluído com sucesso!')
             return redirect('producao:pedido_compra_list')
-            
+
         except Exception as e:
             messages.error(request, f'Erro ao excluir pedido: {str(e)}')
             return redirect('producao:pedido_compra_detail', pk=pk)
-    
+
     return render(request, 'producao/pedido_compra_delete.html', {'pedido': pedido})
 
 
@@ -1382,23 +1388,23 @@ def pedido_compra_delete(request, pk):
 def pedido_compra_alterar_status(request, pk):
     """Alterar status do pedido"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
-    
+
     if request.method == 'POST':
         form = AlterarStatusPedidoForm(request.POST, instance=pedido)
         form._user = request.user  # Passar usuário para o form
-        
+
         if form.is_valid():
             form.save()
             messages.success(request, f'Status do pedido alterado para "{pedido.get_status_display()}".')
             return redirect('producao:pedido_compra_detail', pk=pk)
     else:
         form = AlterarStatusPedidoForm(instance=pedido)
-    
+
     context = {
         'form': form,
         'pedido': pedido
     }
-    
+
     return render(request, 'producao/pedido_compra_alterar_status.html', context)
 
 
@@ -1410,14 +1416,14 @@ def pedido_compra_gerar_pdf(request, pk):
         .prefetch_related('itens__produto'),
         pk=pk
     )
-    
+
     try:
         # Importar o gerador de PDF
         from core.utils.pdf_generator import gerar_pdf_pedido_compra
-        
+
         # Gerar PDF
         pdf_buffer = gerar_pdf_pedido_compra(pedido)
-        
+
         # Registrar no histórico
         HistoricoPedidoCompra.objects.create(
             pedido=pedido,
@@ -1425,16 +1431,16 @@ def pedido_compra_gerar_pdf(request, pk):
             acao='PDF gerado',
             observacao='PDF do pedido foi gerado e baixado'
         )
-        
+
         # Preparar resposta
         response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="Pedido_Compra_{pedido.numero}.pdf"'
-        
+
         # Fechar buffer
         pdf_buffer.close()
-        
+
         return response
-        
+
     except ImportError as e:
         messages.error(request, f'Erro: Módulo reportlab não encontrado. Instale com: pip install reportlab')
         return redirect('producao:pedido_compra_detail', pk=pk)
@@ -1452,7 +1458,7 @@ def pedido_compra_gerar_pdf(request, pk):
 def pedido_compra_duplicar(request, pk):
     """Duplicar pedido de compra"""
     pedido_original = get_object_or_404(PedidoCompra, pk=pk)
-    
+
     try:
         with transaction.atomic():
             # Criar novo pedido
@@ -1469,7 +1475,7 @@ def pedido_compra_duplicar(request, pk):
                 atualizado_por=request.user
             )
             novo_pedido.save()
-            
+
             # Copiar itens
             for item_original in pedido_original.itens.all():
                 ItemPedidoCompra.objects.create(
@@ -1479,10 +1485,10 @@ def pedido_compra_duplicar(request, pk):
                     valor_unitario=item_original.valor_unitario,
                     observacoes=item_original.observacoes
                 )
-            
+
             # Recalcular valores
             novo_pedido.recalcular_valores()
-            
+
             # Registrar no histórico
             HistoricoPedidoCompra.objects.create(
                 pedido=novo_pedido,
@@ -1490,10 +1496,10 @@ def pedido_compra_duplicar(request, pk):
                 acao='Pedido duplicado',
                 observacao=f'Duplicado a partir do pedido {pedido_original.numero}'
             )
-            
+
             messages.success(request, f'Pedido duplicado com sucesso! Novo número: {novo_pedido.numero}')
             return redirect('producao:pedido_compra_detail', pk=novo_pedido.pk)
-            
+
     except Exception as e:
         messages.error(request, f'Erro ao duplicar pedido: {str(e)}')
         return redirect('producao:pedido_compra_detail', pk=pk)
@@ -1511,16 +1517,16 @@ def pedido_compra_recebimento(request, pk):
         .prefetch_related('itens__produto'),
         pk=pk
     )
-    
+
     if pedido.status not in ['CONFIRMADO', 'PARCIAL']:
         messages.error(request, 'Pedido deve estar confirmado para recebimento.')
         return redirect('producao:pedido_compra_detail', pk=pk)
-    
+
     context = {
         'pedido': pedido,
         'itens_pendentes': pedido.itens.filter(quantidade_recebida__lt=models.F('quantidade')),
     }
-    
+
     return render(request, 'producao/pedido_compra_recebimento.html', context)
 
 
@@ -1530,35 +1536,35 @@ def receber_item_pedido(request, pedido_pk, item_pk):
     """Receber item específico do pedido"""
     pedido = get_object_or_404(PedidoCompra, pk=pedido_pk)
     item = get_object_or_404(ItemPedidoCompra, pk=item_pk, pedido=pedido)
-    
+
     try:
         data = json.loads(request.body)
         quantidade_recebida = float(data.get('quantidade', 0))
-        
+
         if quantidade_recebida <= 0:
             return JsonResponse({'success': False, 'error': 'Quantidade deve ser maior que zero'})
-        
+
         quantidade_pendente = item.quantidade - item.quantidade_recebida
         if quantidade_recebida > quantidade_pendente:
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': f'Quantidade não pode ser maior que {quantidade_pendente}'
             })
-        
+
         with transaction.atomic():
             # Atualizar item
             item.quantidade_recebida += quantidade_recebida
             item.data_recebimento = timezone.now()
             item.save()
-            
+
             # Atualizar estoque do produto se controla estoque
             if item.produto.controla_estoque:
                 item.produto.estoque_atual += quantidade_recebida
                 item.produto.save()
-            
+
             # Verificar se pedido está totalmente recebido
             itens_pendentes = pedido.itens.filter(quantidade_recebida__lt=models.F('quantidade'))
-            
+
             if not itens_pendentes.exists():
                 # Todos os itens foram recebidos
                 pedido.status = 'RECEBIDO'
@@ -1566,10 +1572,10 @@ def receber_item_pedido(request, pedido_pk, item_pk):
             elif pedido.status == 'CONFIRMADO':
                 # Primeiro recebimento parcial
                 pedido.status = 'PARCIAL'
-            
+
             pedido.atualizado_por = request.user
             pedido.save()
-            
+
             # Registrar no histórico
             HistoricoPedidoCompra.objects.create(
                 pedido=pedido,
@@ -1577,7 +1583,7 @@ def receber_item_pedido(request, pedido_pk, item_pk):
                 acao='Item recebido',
                 observacao=f'Recebido {quantidade_recebida} {item.unidade} do produto {item.produto.codigo}'
             )
-        
+
         return JsonResponse({
             'success': True,
             'item_status': 'COMPLETO' if item.quantidade_recebida >= item.quantidade else 'PARCIAL',
@@ -1585,7 +1591,7 @@ def receber_item_pedido(request, pedido_pk, item_pk):
             'quantidade_recebida': float(item.quantidade_recebida),
             'quantidade_pendente': float(item.quantidade - item.quantidade_recebida)
         })
-        
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
@@ -1599,13 +1605,13 @@ def api_produto_info(request):
     """API para buscar informações do produto"""
     produto_id = request.GET.get('produto_id')
     fornecedor_id = request.GET.get('fornecedor_id')
-    
+
     if not produto_id:
         return JsonResponse({'error': 'produto_id é obrigatório'}, status=400)
-    
+
     try:
         produto = Produto.objects.get(id=produto_id)
-        
+
         # Dados básicos do produto
         data = {
             'codigo': produto.codigo,
@@ -1615,7 +1621,7 @@ def api_produto_info(request):
             'estoque_minimo': float(produto.estoque_minimo) if produto.estoque_minimo else 0,
             'custo_medio': float(produto.custo_medio) if produto.custo_medio else None,
         }
-        
+
         # Buscar preço do fornecedor se especificado
         if fornecedor_id:
             from core.models import FornecedorProduto
@@ -1624,14 +1630,14 @@ def api_produto_info(request):
                 fornecedor_id=fornecedor_id,
                 ativo=True
             ).first()
-            
+
             if fornecedor_produto:
                 data['preco_fornecedor'] = float(fornecedor_produto.preco_unitario) if fornecedor_produto.preco_unitario else None
                 data['prazo_entrega'] = fornecedor_produto.prazo_entrega
                 data['quantidade_minima'] = float(fornecedor_produto.quantidade_minima) if fornecedor_produto.quantidade_minima else 1
-        
+
         return JsonResponse({'success': True, 'produto': data})
-        
+
     except Produto.DoesNotExist:
         return JsonResponse({'error': 'Produto não encontrado'}, status=404)
     except Exception as e:
@@ -1643,21 +1649,21 @@ def api_fornecedor_produtos(request, fornecedor_id):
     """API para buscar produtos de um fornecedor"""
     try:
         fornecedor = Fornecedor.objects.get(id=fornecedor_id, ativo=True)
-        
+
         produtos = Produto.objects.filter(
             fornecedores_produto__fornecedor=fornecedor,
             fornecedores_produto__ativo=True,
             status='ATIVO',
             disponivel=True
         ).select_related('grupo', 'subgrupo').order_by('codigo')
-        
+
         produtos_data = []
         for produto in produtos:
             fornecedor_produto = produto.fornecedores_produto.filter(
                 fornecedor=fornecedor,
                 ativo=True
             ).first()
-            
+
             produtos_data.append({
                 'id': produto.id,
                 'codigo': produto.codigo,
@@ -1667,7 +1673,7 @@ def api_fornecedor_produtos(request, fornecedor_id):
                 'estoque_atual': float(produto.estoque_atual) if produto.estoque_atual else 0,
                 'estoque_minimo': float(produto.estoque_minimo) if produto.estoque_minimo else 0,
             })
-        
+
         return JsonResponse({
             'success': True,
             'fornecedor': {
@@ -1676,7 +1682,7 @@ def api_fornecedor_produtos(request, fornecedor_id):
             },
             'produtos': produtos_data
         })
-        
+
     except Fornecedor.DoesNotExist:
         return JsonResponse({'error': 'Fornecedor não encontrado'}, status=404)
     except Exception as e:

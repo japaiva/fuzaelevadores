@@ -1,4 +1,3 @@
-<!-- templates/producao/materiaprima_form.html -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -15,7 +14,7 @@
       <i class="fas fa-arrow-left me-1"></i> Voltar
     </a>
   </div>
-  
+
   <div class="card-body">
     <form method="post" id="produto-form">
       {% csrf_token %}
@@ -28,7 +27,6 @@
         </div>
       {% endif %}
 
-      <!-- Bloco de Identificação -->
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
@@ -56,7 +54,7 @@
                 </div>
               </div>
             {% endif %}
-            
+
             <div class="col-md-{% if form.instance.pk %}9{% else %}9{% endif %}">
               <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
               {{ form.nome }}
@@ -67,7 +65,7 @@
               {% endif %}
             </div>
           </div>
-            
+
           <div class="row g-3 mt-3">
             <div class="col-md-6">
               <label for="{{ form.grupo.id_for_label }}" class="form-label">Grupo*</label>
@@ -78,7 +76,7 @@
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-6">
               <label for="{{ form.subgrupo.id_for_label }}" class="form-label">Subgrupo*</label>
               {{ form.subgrupo }}
@@ -92,7 +90,6 @@
         </div>
       </div>
 
-      <!-- Bloco de Características Técnicas -->
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
@@ -111,7 +108,7 @@
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-6">
               <label for="{{ form.peso_unitario.id_for_label }}" class="form-label">Peso Unitário (kg)</label>
               {{ form.peso_unitario }}
@@ -125,7 +122,6 @@
         </div>
       </div>
 
-      <!-- Bloco de Fornecimento e Estoque -->
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
@@ -144,7 +140,7 @@
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-3">
               <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo Médio</label>
               <div class="input-group">
@@ -169,7 +165,6 @@
             </div>
           </div>
 
-          <!-- LINHA EM BRANCO ADICIONADA -->
           <div class="row g-3 mt-4">
             <div class="col-md-3">
               <div class="form-check form-switch mt-4">
@@ -177,7 +172,7 @@
                 <label class="form-check-label" for="{{ form.controla_estoque.id_for_label }}">Controla Estoque</label>
               </div>
             </div>
-            
+
             <div class="col-md-3">
               <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">Estoque Mínimo</label>
               {{ form.estoque_minimo }}
@@ -187,7 +182,7 @@
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-3">
               {% if form.instance.pk %}
                 <label class="form-label">Estoque Atual</label>
@@ -196,7 +191,7 @@
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-3">
               <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
               {{ form.status }}
@@ -210,7 +205,6 @@
         </div>
       </div>
 
-      <!-- Botões de ação -->
       <div class="d-flex justify-content-end mt-4">
         <button type="submit" class="btn btn-primary">
           <i class="fas fa-save me-1"></i> Salvar Matéria-Prima
@@ -226,29 +220,43 @@
 document.addEventListener('DOMContentLoaded', function() {
     const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
     const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
-    
+    const initialSubgrupoId = '{{ form.subgrupo.value|default:"" }}'; // Get the initially selected subgrupo ID
+
+    // Function to fetch and populate subgroups
+    function fetchAndPopulateSubgrupos(grupoId, selectedSubgrupoId) {
+        // Clear current options
+        subgrupoSelect.innerHTML = '<option value="">---------</option>';
+
+        if (grupoId) { // Only fetch if a group is actually selected
+            fetch(`/producao/api/subgrupos/?grupo_id=${grupoId}`) // Corrected URL
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        data.subgrupos.forEach(subgrupo => {
+                            const option = document.createElement('option');
+                            option.value = subgrupo.id;
+                            option.textContent = `${subgrupo.codigo_completo} - ${subgrupo.nome}`;
+                            // If this subgrupo was the one initially selected, make it selected
+                            if (subgrupo.id == selectedSubgrupoId) {
+                                option.selected = true;
+                            }
+                            subgrupoSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Erro ao carregar subgrupos:', error));
+        }
+    }
+
     if (grupoSelect && subgrupoSelect) {
+        // Call the function on page load if a group is already selected (for edit mode)
+        if (grupoSelect.value) {
+            fetchAndPopulateSubgrupos(grupoSelect.value, initialSubgrupoId);
+        }
+
+        // Add event listener for when the group changes
         grupoSelect.addEventListener('change', function() {
-            const grupoId = this.value;
-            
-            // Limpar opções atuais
-            subgrupoSelect.innerHTML = '<option value="">---------</option>';
-            
-            if (grupoId) {
-                fetch(`/producao/api/subgrupos-por-grupo/?grupo_id=${grupoId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            data.subgrupos.forEach(subgrupo => {
-                                const option = document.createElement('option');
-                                option.value = subgrupo.id;
-                                option.textContent = `${subgrupo.codigo_completo} - ${subgrupo.nome}`;
-                                subgrupoSelect.appendChild(option);
-                            });
-                        }
-                    })
-                    .catch(error => console.error('Erro:', error));
-            }
+            fetchAndPopulateSubgrupos(this.value, null); // When group changes, no initial subgrupo is selected
         });
     }
 });
