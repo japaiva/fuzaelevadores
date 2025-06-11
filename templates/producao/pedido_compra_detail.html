@@ -55,7 +55,7 @@
                 <span class="badge {{ pedido.prioridade_badge_class }}">{{ pedido.get_prioridade_display }}</span>
               </li>
               <li class="list-group-item">
-                <strong>Data do Pedido:</strong> {{ pedido.data_pedido|date:"d/m/Y H:i" }}
+                <strong>Data de Emissão:</strong> {{ pedido.data_emissao|date:"d/m/Y" }}
               </li>
               {% if pedido.data_entrega_prevista %}
               <li class="list-group-item">

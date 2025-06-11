@@ -1,0 +1,446 @@
+# core/models/produtos.py
+
+"""
+Models relacionados a produtos, grupos e estruturas
+"""
+
+from django.db import models
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import transaction
+import uuid
+
+from .base import (
+    TIPO_PRODUTO_CHOICES, 
+    UNIDADE_MEDIDA_CHOICES, 
+    STATUS_PRODUTO_CHOICES
+)
+
+
+class GrupoProduto(models.Model):
+    """Grupos de produtos com classificação por tipo"""
+    
+    codigo = models.CharField(max_length=10, unique=True, verbose_name="Código")
+    nome = models.CharField(max_length=100, unique=True)
+    tipo_produto = models.CharField(
+        max_length=2, 
+        choices=TIPO_PRODUTO_CHOICES, 
+        default='MP',
+        verbose_name="Tipo de Produto"
+    )
+    ativo = models.BooleanField(default=True)
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT,
+        related_name='grupos_produtos_criados'
+    )
+    
+    class Meta:
+        verbose_name = "Grupo de Produto"
+        verbose_name_plural = "Grupos de Produtos"
+        ordering = ['codigo', 'nome']
+    
+    def __str__(self):
+        return f"{self.codigo} - {self.nome}"
+    
+    @property
+    def tipo_produto_display_badge(self):
+        """Retorna classe CSS para badge do tipo"""
+        badges = {
+            'MP': 'bg-primary',      # Matéria Prima - Azul
+            'PI': 'bg-warning',      # Produto Intermediário - Amarelo
+            'PA': 'bg-success',      # Produto Acabado - Verde
+        }
+        return badges.get(self.tipo_produto, 'bg-secondary')
+
+
+class SubgrupoProduto(models.Model):
+    """Subgrupos de produtos com controle sequencial"""
+    
+    grupo = models.ForeignKey(
+        GrupoProduto, 
+        on_delete=models.CASCADE, 
+        related_name='subgrupos'
+    )
+    codigo = models.CharField(max_length=10, verbose_name="Código")
+    nome = models.CharField(max_length=100)
+    ultimo_numero = models.IntegerField(
+        default=0, 
+        verbose_name="Último Número"
+    )
+    ativo = models.BooleanField(default=True)
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT,
+        related_name='subgrupos_produtos_criados'
+    )
+    
+    class Meta:
+        verbose_name = "Subgrupo de Produto"
+        verbose_name_plural = "Subgrupos de Produtos"
+        unique_together = ['grupo', 'codigo']
+        ordering = ['grupo__codigo', 'codigo', 'nome']
+    
+    def __str__(self):
+        return f"{self.grupo.codigo}.{self.codigo} - {self.nome}"
+    
+    def get_proximo_numero(self):
+        """Retorna o próximo número sequencial para produtos deste subgrupo"""
+        self.ultimo_numero += 1
+        self.save(update_fields=['ultimo_numero'])
+        return self.ultimo_numero
+    
+    @property
+    def codigo_completo(self):
+        """Retorna código completo grupo.subgrupo"""
+        return f"{self.grupo.codigo}.{self.codigo}"
+
+
+class Produto(models.Model):
+    """
+    Modelo unificado para Matéria Prima, Produto Intermediário e Produto Acabado
+    Com geração automática de código baseada em grupo/subgrupo
+    """
+    
+    # Identificação
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    codigo = models.CharField(max_length=50, unique=True, verbose_name="Código")
+    nome = models.CharField(max_length=200, verbose_name="Nome")
+    descricao = models.TextField(blank=True, verbose_name="Descrição")
+    tipo = models.CharField(max_length=2, choices=TIPO_PRODUTO_CHOICES, verbose_name="Tipo")
+    
+    # Classificação
+    grupo = models.ForeignKey(
+        GrupoProduto, 
+        on_delete=models.PROTECT, 
+        verbose_name="Grupo",
+        related_name='produtos'
+    )
+    subgrupo = models.ForeignKey(
+        SubgrupoProduto, 
+        on_delete=models.PROTECT, 
+        blank=True, 
+        null=True,
+        related_name='produtos'
+    )
+    
+    # Características técnicas (JSON flexível)
+    especificacoes_tecnicas = models.JSONField(
+        default=dict, 
+        blank=True,
+        help_text="Especificações técnicas em formato flexível",
+        verbose_name="Especificações Técnicas"
+    )
+    
+    # Unidades e medidas
+    unidade_medida = models.CharField(max_length=3, choices=UNIDADE_MEDIDA_CHOICES, verbose_name="Unidade")
+    peso_unitario = models.DecimalField(
+        max_digits=10, 
+        decimal_places=3, 
+        blank=True, 
+        null=True, 
+        verbose_name="Peso (kg)"
+    )
+    dimensoes = models.JSONField(
+        default=dict, 
+        blank=True,
+        help_text="Dimensões: altura, largura, profundidade, diâmetro, etc."
+    )
+    
+    # Controle de estoque
+    controla_estoque = models.BooleanField(default=True, verbose_name="Controla Estoque")
+    estoque_minimo = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0, 
+        verbose_name="Estoque Mínimo"
+    )
+    estoque_atual = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0, 
+        verbose_name="Estoque Atual"
+    )
+    
+    # Precificação
+    custo_medio = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True, 
+        verbose_name="Custo Médio"
+    )
+    preco_venda = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True, 
+        verbose_name="Preço Venda"
+    )
+    margem_padrao = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        blank=True, 
+        null=True, 
+        verbose_name="Margem Padrão (%)"
+    )
+    
+    # Fornecimento (mantido para compatibilidade)
+    fornecedor_principal = models.ForeignKey(
+        'Fornecedor', 
+        on_delete=models.SET_NULL, 
+        blank=True, 
+        null=True,
+        related_name='produtos_principal'
+    )
+    prazo_entrega_padrao = models.IntegerField(
+        blank=True, 
+        null=True, 
+        verbose_name="Prazo Entrega (dias)"
+    )
+    
+    # Status e controle
+    status = models.CharField(max_length=15, choices=STATUS_PRODUTO_CHOICES, default='ATIVO')
+    disponivel = models.BooleanField(default=True, verbose_name="Disponível para Uso")
+    motivo_indisponibilidade = models.TextField(
+        blank=True, 
+        verbose_name="Motivo Indisponibilidade"
+    )
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT, 
+        related_name='produtos_criados'
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+    atualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT, 
+        related_name='produtos_atualizados'
+    )
+    
+    class Meta:
+        verbose_name = "Produto"
+        verbose_name_plural = "Produtos"
+        ordering = ['codigo']
+        indexes = [
+            models.Index(fields=['codigo']),
+            models.Index(fields=['tipo', 'grupo']),
+            models.Index(fields=['disponivel', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.codigo} - {self.nome}"
+    
+    def gerar_codigo_automatico(self):
+        """
+        Gera código automático no formato GG.SS.NNNNN
+        onde GG = código do grupo, SS = código do subgrupo, NNNNN = número sequencial (até 99999)
+        """
+        if not self.subgrupo:
+            raise ValidationError('Subgrupo é obrigatório para gerar código automático.')
+        
+        if not self.grupo:
+            raise ValidationError('Grupo é obrigatório para gerar código automático.')
+        
+        # Usar transaction para evitar race conditions
+        with transaction.atomic():
+            # Buscar o subgrupo com lock para garantir dados atualizados
+            subgrupo = SubgrupoProduto.objects.select_for_update().get(id=self.subgrupo.id)
+            
+            # Incrementar o último número
+            proximo_numero = subgrupo.ultimo_numero + 1
+            
+            # Verificar se não passou do limite de 99999
+            if proximo_numero > 99999:
+                raise ValidationError(
+                    f'Limite de produtos atingido para o subgrupo {subgrupo.codigo_completo}. '
+                    f'Máximo permitido: 99999 produtos.'
+                )
+            
+            # Gerar código: GG.SS.NNNNN (5 dígitos)
+            codigo_gerado = f"{self.grupo.codigo}.{subgrupo.codigo}.{proximo_numero:05d}"
+            
+            # Verificar se o código já existe (proteção extra)
+            while Produto.objects.filter(codigo=codigo_gerado).exists():
+                # Se existir, incrementar novamente
+                proximo_numero += 1
+                if proximo_numero > 99999:
+                    raise ValidationError(
+                        f'Limite de produtos atingido para o subgrupo {subgrupo.codigo_completo}. '
+                        f'Máximo permitido: 99999 produtos.'
+                    )
+                codigo_gerado = f"{self.grupo.codigo}.{subgrupo.codigo}.{proximo_numero:05d}"
+            
+            # Atualizar o último número no subgrupo
+            subgrupo.ultimo_numero = proximo_numero
+            subgrupo.save(update_fields=['ultimo_numero'])
+            
+            # Definir o código no produto
+            self.codigo = codigo_gerado
+            
+            return codigo_gerado
+
+    def save(self, *args, **kwargs):
+        """
+        Override do save para gerar código automático no formato GG.SS.NNNNN
+        """
+        # Garantir que o tipo coincida com o grupo
+        if self.grupo and self.grupo.tipo_produto:
+            self.tipo = self.grupo.tipo_produto
+        
+        # Gerar código automático se não existir e tiver subgrupo
+        if not self.codigo and self.subgrupo:
+            with transaction.atomic():
+                # Buscar o subgrupo novamente para garantir dados atualizados
+                subgrupo = SubgrupoProduto.objects.select_for_update().get(id=self.subgrupo.id)
+                
+                # Incrementar o último número
+                proximo_numero = subgrupo.ultimo_numero + 1
+                
+                # Verificar limite
+                if proximo_numero > 99999:
+                    raise ValidationError(
+                        f'Limite de produtos atingido para o subgrupo {subgrupo.codigo_completo}. '
+                        f'Máximo permitido: 99999 produtos.'
+                    )
+                
+                # Gerar código: GG.SS.NNNNN (5 dígitos)
+                self.codigo = f"{self.grupo.codigo}.{subgrupo.codigo}.{proximo_numero:05d}"
+                
+                # Atualizar o último número no subgrupo
+                subgrupo.ultimo_numero = proximo_numero
+                subgrupo.save(update_fields=['ultimo_numero'])
+        
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        """
+        Validações personalizadas do produto
+        """
+        # O tipo do produto deve coincidir com o tipo do grupo
+        if self.grupo and self.grupo.tipo_produto:
+            self.tipo = self.grupo.tipo_produto
+        
+        # Gerar código automático se não fornecido
+        if not self.codigo and self.subgrupo:
+            self.gerar_codigo_automatico()
+        
+        # Validar unicidade do código
+        if self.codigo:
+            produtos_existentes = Produto.objects.filter(codigo=self.codigo)
+            if self.pk:
+                produtos_existentes = produtos_existentes.exclude(pk=self.pk)
+            
+            if produtos_existentes.exists():
+                raise ValidationError({'codigo': 'Já existe um produto com este código.'})
+
+    @property
+    def disponibilidade_info(self):
+        """Informações sobre disponibilidade para o motor de regras"""
+        if not self.disponivel:
+            return {
+                'disponivel': False,
+                'motivo': self.motivo_indisponibilidade,
+                'tipo': 'bloqueio_manual'
+            }
+        
+        if self.controla_estoque and self.estoque_atual <= self.estoque_minimo:
+            return {
+                'disponivel': False,
+                'motivo': f'Estoque baixo: {self.estoque_atual} (mín: {self.estoque_minimo})',
+                'tipo': 'estoque_baixo'
+            }
+            
+        return {'disponivel': True, 'motivo': '', 'tipo': 'ok'}
+
+    @property
+    def fornecedor_principal_novo(self):
+        """Retorna o fornecedor principal baseado na nova estrutura"""
+        fornecedor_principal = self.fornecedores_produto.filter(
+            ativo=True, 
+            prioridade=1
+        ).first()
+        
+        if fornecedor_principal:
+            return fornecedor_principal.fornecedor
+        
+        # Fallback para o campo antigo se existir
+        return self.fornecedor_principal
+    
+    @property
+    def melhor_preco(self):
+        """Retorna o melhor preço entre os fornecedores ativos"""
+        precos = self.fornecedores_produto.filter(
+            ativo=True,
+            preco_unitario__isnull=False
+        ).values_list('preco_unitario', flat=True)
+        
+        return min(precos) if precos else None
+    
+    @property
+    def menor_prazo_entrega(self):
+        """Retorna o menor prazo de entrega"""
+        prazos = self.fornecedores_produto.filter(
+            ativo=True,
+            prazo_entrega__isnull=False
+        ).values_list('prazo_entrega', flat=True)
+        
+        return min(prazos) if prazos else self.prazo_entrega_padrao
+    
+    def fornecedores_ordenados(self):
+        """Retorna fornecedores ordenados por prioridade"""
+        return self.fornecedores_produto.filter(ativo=True).order_by('prioridade')
+
+
+class EstruturaProduto(models.Model):
+    """
+    Define a estrutura/composição de produtos intermediários e acabados
+    """
+    produto_pai = models.ForeignKey(
+        Produto, 
+        on_delete=models.CASCADE, 
+        related_name='componentes',
+        limit_choices_to={'tipo__in': ['PI', 'PA']}
+    )
+    produto_filho = models.ForeignKey(
+        Produto, 
+        on_delete=models.CASCADE, 
+        related_name='usado_em'
+    )
+    quantidade = models.DecimalField(max_digits=10, decimal_places=4, verbose_name="Quantidade")
+    unidade = models.CharField(max_length=3, choices=UNIDADE_MEDIDA_CHOICES)
+    
+    # Para cálculos dinâmicos
+    formula_quantidade = models.TextField(
+        blank=True,
+        help_text="Fórmula para cálculo dinâmico da quantidade (ex: 'altura * 2 + 0.5')"
+    )
+    
+    # Perda/desperdício
+    percentual_perda = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=0,
+        verbose_name="% Perda"
+    )
+    
+    # Auditoria
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    
+    class Meta:
+        verbose_name = "Estrutura do Produto"
+        verbose_name_plural = "Estruturas dos Produtos"
+        unique_together = ['produto_pai', 'produto_filho']
+    
+    def __str__(self):
+        return f"{self.produto_pai.codigo} → {self.produto_filho.codigo}"

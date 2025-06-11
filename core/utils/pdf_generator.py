@@ -1,4 +1,4 @@
-# core/utils/pdf_generator.py - VERSÃO COMPACTA COM ESPAÇAMENTO OTIMIZADO
+# core/utils/pdf_generator.py - VERSÃO CORRIGIDA COM CONTATOS DOS PARÂMETROS
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -16,7 +16,7 @@ from core.models import ParametrosGerais
 
 def gerar_pdf_pedido_compra(pedido):
     """
-    Gera PDF do pedido de compra - VERSÃO COMPACTA COM ESPAÇAMENTO OTIMIZADO
+    Gera PDF do pedido de compra - VERSÃO CORRIGIDA COM CONTATOS DOS PARÂMETROS
     """
     buffer = BytesIO()
     
@@ -51,8 +51,8 @@ def gerar_pdf_pedido_compra(pedido):
     titulo_principal = ParagraphStyle(
         'TituloPrincipal',
         parent=styles['Heading1'],
-        fontSize=18,  # Reduzido de 24
-        spaceAfter=8,  # REDUZIDO DE 20 para 8
+        fontSize=18,
+        spaceAfter=8,
         alignment=TA_CENTER,
         textColor=COR_PRIMARIA,
         fontName='Helvetica-Bold'
@@ -62,8 +62,8 @@ def gerar_pdf_pedido_compra(pedido):
     normal_style = ParagraphStyle(
         'NormalMelhorado',
         parent=styles['Normal'],
-        fontSize=9,  # Reduzido de 10
-        leading=12,  # Reduzido de 14
+        fontSize=9,
+        leading=12,
         textColor=COR_TEXTO,
         alignment=TA_LEFT
     )
@@ -72,11 +72,11 @@ def gerar_pdf_pedido_compra(pedido):
     empresa_style = ParagraphStyle(
         'EmpresaStyle',
         parent=styles['Normal'],
-        fontSize=10,  # Reduzido de 11
-        leading=12,  # Reduzido de 14
+        fontSize=10,
+        leading=12,
         alignment=TA_CENTER,
         textColor=COR_TEXTO,
-        spaceAfter=0  # ADICIONADO: Remove espaço após parágrafo
+        spaceAfter=0
     )
     
     # Lista de elementos do PDF
@@ -89,13 +89,10 @@ def gerar_pdf_pedido_compra(pedido):
     if parametros:
         # Nome da empresa em destaque
         elementos.append(Paragraph(f"<b>{parametros.razao_social}</b>", titulo_principal))
-        
-        # REDUZIDO: Apenas 2mm entre razão social e próximo elemento
-        elementos.append(Spacer(1, 2))  # REDUZIDO de 4 para 2
+        elementos.append(Spacer(1, 2))
         
         if parametros.nome_fantasia:
             elementos.append(Paragraph(parametros.nome_fantasia, empresa_style))
-            # NÃO adiciona spacer após nome fantasia
         
         # Informações da empresa em tabela organizada
         empresa_info = []
@@ -116,7 +113,7 @@ def gerar_pdf_pedido_compra(pedido):
         if endereco_parts:
             empresa_info.append([Paragraph(" • ".join(endereco_parts), empresa_style)])
         
-        # Contatos
+        # Contatos da empresa
         contatos = []
         if parametros.telefone:
             contatos.append(f"Tel: {parametros.telefone}")
@@ -133,24 +130,24 @@ def gerar_pdf_pedido_compra(pedido):
             empresa_table.setStyle(TableStyle([
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('TOPPADDING', (0, 0), (-1, -1), 4),  # REDUZIDO de 6 para 4
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # REDUZIDO de 10 para 6
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ]))
             
             elementos.append(empresa_table)
     
 
-    elementos.append(Spacer(1, 4))  # Reduzido de 20
+    elementos.append(Spacer(1, 4))
     
     # =============================================================================
     # TÍTULO DO DOCUMENTO
     # =============================================================================
     
     elementos.append(Paragraph("PEDIDO DE COMPRA", titulo_principal))
-    elementos.append(Spacer(1, 4))  # Reduzido de 25
+    elementos.append(Spacer(1, 4))
     
     # =============================================================================
-    # INFORMAÇÕES DO PEDIDO
+    # INFORMAÇÕES DO PEDIDO - INCLUINDO CONTATOS DOS PARÂMETROS
     # =============================================================================
     
     # Dados do pedido em layout de cards
@@ -159,7 +156,7 @@ def gerar_pdf_pedido_compra(pedido):
             Paragraph("<b>Número:</b>", normal_style),
             Paragraph(f"<b>{pedido.numero}</b>", normal_style),
             Paragraph("<b>Data:</b>", normal_style),
-            Paragraph(pedido.data_pedido.strftime('%d/%m/%Y'), normal_style)
+            Paragraph(pedido.data_emissao.strftime('%d/%m/%Y'), normal_style)
         ],
         [
             Paragraph("<b>Status:</b>", normal_style),
@@ -177,6 +174,15 @@ def gerar_pdf_pedido_compra(pedido):
             Paragraph(f"{pedido.prazo_entrega} dias" if pedido.prazo_entrega else "N/I", normal_style)
         ])
     
+    # ADICIONAR LINHA COM CONTATOS DOS PARÂMETROS
+    if parametros and (parametros.comprador_responsavel or parametros.contato_compras):
+        pedido_data.append([
+            Paragraph("<b>Comprador:</b>", normal_style),
+            Paragraph(parametros.comprador_responsavel or "N/I", normal_style),
+            Paragraph("<b>Contato Compras:</b>", normal_style),
+            Paragraph(parametros.contato_compras or "N/I", normal_style)
+        ])
+    
     pedido_table = Table(pedido_data, colWidths=[3.5*cm, 5*cm, 3.5*cm, 6*cm])
     pedido_table.setStyle(TableStyle([
         # Backgrounds alternados
@@ -186,20 +192,20 @@ def gerar_pdf_pedido_compra(pedido):
         # Bordas e espaçamento
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('TOPPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         
         # Bordas arredondadas (efeito visual)
         ('LINEBELOW', (0, 0), (-1, 0), 2, COR_ACCENT),
     ]))
     
     elementos.append(pedido_table)
-    elementos.append(Spacer(1, 18))  # Reduzido de 25
+    elementos.append(Spacer(1, 18))
     
     # =============================================================================
-    # DADOS DO FORNECEDOR (SEM TÍTULO)
+    # DADOS DO FORNECEDOR
     # =============================================================================
     
     fornecedor = pedido.fornecedor
@@ -245,25 +251,25 @@ def gerar_pdf_pedido_compra(pedido):
         ('BACKGROUND', (0, 0), (0, -1), COR_BACKGROUND),
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('TOPPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
     ]))
     
     elementos.append(fornecedor_table)
-    elementos.append(Spacer(1, 18))  # Reduzido de 25
+    elementos.append(Spacer(1, 18))
     
     # =============================================================================
-    # ITENS DO PEDIDO (SEM TÍTULO)
+    # ITENS DO PEDIDO
     # =============================================================================
     
     # Estilo para descrição com quebra de linha (reduzido)
     descricao_style = ParagraphStyle(
         'DescricaoStyle',
         parent=normal_style,
-        fontSize=8,  # Reduzido de 9
-        leading=10,  # Reduzido de 11
+        fontSize=8,
+        leading=10,
         alignment=TA_LEFT,
         wordWrap='LTR'
     )
@@ -307,10 +313,10 @@ def gerar_pdf_pedido_compra(pedido):
             Paragraph(str(i), normal_style),
             Paragraph(item.produto.codigo, normal_style),
             Paragraph(descricao, descricao_style),
-            Paragraph(quantidade_fmt, numero_style),  # Usando style de número
+            Paragraph(quantidade_fmt, numero_style),
             Paragraph(item.unidade, normal_style),
-            Paragraph(valor_unit_fmt, numero_style),  # Usando style de número
-            Paragraph(valor_total_fmt, numero_style)  # Usando style de número
+            Paragraph(valor_unit_fmt, numero_style),
+            Paragraph(valor_total_fmt, numero_style)
         ])
     
     # Tabela com larguras corrigidas
@@ -325,9 +331,9 @@ def gerar_pdf_pedido_compra(pedido):
     for i in range(1, len(itens_data)):
         descricao_length = len(itens_data[i][2].text if hasattr(itens_data[i][2], 'text') else str(itens_data[i][2]))
         if descricao_length > 30:
-            row_heights.append(1.0*cm)  # Reduzido de 1.2cm
+            row_heights.append(1.0*cm)
         else:
-            row_heights.append(0.7*cm)  # Reduzido de 0.9cm
+            row_heights.append(0.7*cm)
     
     itens_table._argH = row_heights
     
@@ -368,24 +374,24 @@ def gerar_pdf_pedido_compra(pedido):
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, COR_BACKGROUND]),
         
         # Padding otimizado reduzido
-        ('LEFTPADDING', (0, 0), (-1, -1), 3),  # Reduzido de 4
-        ('RIGHTPADDING', (0, 0), (-1, -1), 3),  # Reduzido de 4
-        ('TOPPADDING', (0, 0), (-1, -1), 4),  # Reduzido de 6
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),  # Reduzido de 6
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
         
         # Padding especial para descrição
-        ('LEFTPADDING', (2, 1), (2, -1), 4),  # Reduzido de 6
-        ('RIGHTPADDING', (2, 1), (2, -1), 4),  # Reduzido de 6
+        ('LEFTPADDING', (2, 1), (2, -1), 4),
+        ('RIGHTPADDING', (2, 1), (2, -1), 4),
         
         # Linha de separação no cabeçalho
         ('LINEBELOW', (0, 0), (-1, 0), 2, COR_ACCENT),
     ]))
     
     elementos.append(itens_table)
-    elementos.append(Spacer(1, 15))  # Reduzido de 20
+    elementos.append(Spacer(1, 15))
     
     # =============================================================================
-    # TOTAIS (SEM TÍTULO)
+    # TOTAIS
     # =============================================================================
     
     totais_data = []
@@ -430,23 +436,23 @@ def gerar_pdf_pedido_compra(pedido):
     totais_table = Table(totais_data, colWidths=[13*cm, 5*cm])
     totais_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-        ('FONTSIZE', (0, 0), (-1, -2), 9),  # Reduzido de 10
-        ('FONTSIZE', (-2, -1), (-1, -1), 11),  # Reduzido de 12
+        ('FONTSIZE', (0, 0), (-1, -2), 9),
+        ('FONTSIZE', (-2, -1), (-1, -1), 11),
         
         # Linha do total com destaque
         ('BACKGROUND', (-2, -1), (-1, -1), COR_PRIMARIA),
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('TOPPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
     ]))
     
     elementos.append(totais_table)
-    elementos.append(Spacer(1, 18))  # Reduzido de 25
+    elementos.append(Spacer(1, 18))
     
     # =============================================================================
-    # CONDIÇÕES E OBSERVAÇÕES (SEM TÍTULO DE SEÇÃO)
+    # CONDIÇÕES E OBSERVAÇÕES
     # =============================================================================
     
     if pedido.condicao_pagamento or pedido.observacoes:
@@ -470,35 +476,61 @@ def gerar_pdf_pedido_compra(pedido):
                 ('BACKGROUND', (0, 0), (0, -1), COR_BACKGROUND),
                 ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-                ('RIGHTPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-                ('TOPPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),  # Reduzido de 8
+                ('LEFTPADDING', (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
             ]))
             
             elementos.append(condicoes_table)
-            elementos.append(Spacer(1, 12))  # Reduzido de 15
+            elementos.append(Spacer(1, 12))
         
         if pedido.observacoes:
             elementos.append(Paragraph("<b>Observações:</b>", normal_style))
-            elementos.append(Spacer(1, 6))  # Reduzido de 8
+            elementos.append(Spacer(1, 6))
             elementos.append(Paragraph(pedido.observacoes, normal_style))
-            elementos.append(Spacer(1, 18))  # Reduzido de 25
+            elementos.append(Spacer(1, 18))
     
     
     # =============================================================================
-    # RODAPÉ
+    # RODAPÉ COM DADOS DO COMPRADOR
     # =============================================================================
     
-    elementos.append(Spacer(1, 20))  # Reduzido de 25
+    elementos.append(Spacer(1, 20))
     
+    # INFORMAÇÕES DO COMPRADOR DOS PARÂMETROS
+    if parametros and (parametros.comprador_responsavel or parametros.contato_compras):
+        rodape_comprador = []
+        
+        if parametros.comprador_responsavel:
+            rodape_comprador.append(f"Comprador: {parametros.comprador_responsavel}")
+        
+        if parametros.contato_compras:
+            rodape_comprador.append(f"Contato: {parametros.contato_compras}")
+        
+        if rodape_comprador:
+            rodape_comprador_text = " | ".join(rodape_comprador)
+            
+            rodape_comprador_style = ParagraphStyle(
+                'RodapeComprador',
+                parent=normal_style,
+                fontSize=8,
+                alignment=TA_CENTER,
+                textColor=COR_PRIMARIA,
+                fontName='Helvetica-Bold'
+            )
+            
+            elementos.append(Paragraph(rodape_comprador_text, rodape_comprador_style))
+            elementos.append(Spacer(1, 10))
+    
+    # Informações de geração
     usuario_nome = pedido.criado_por.get_full_name() or pedido.criado_por.username
     rodape_text = f"Pedido gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')} por {usuario_nome}"
     
     rodape_style = ParagraphStyle(
         'RodapeCustom',
         parent=normal_style,
-        fontSize=7,  # Reduzido de 8
+        fontSize=7,
         alignment=TA_CENTER,
         textColor=colors.HexColor('#718096')
     )

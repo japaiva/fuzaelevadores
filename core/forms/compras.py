@@ -1,0 +1,493 @@
+# core/forms/compras.py
+
+"""
+Formulários relacionados a pedidos de compra - ATUALIZADOS
+"""
+
+from django import forms
+from django.forms import inlineformset_factory
+from django.core.exceptions import ValidationError
+from datetime import datetime, date, timedelta
+
+from core.models import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra, Fornecedor, Produto, ParametrosGerais
+from .base import BaseModelForm, BaseFiltroForm, AuditMixin, MoneyInput, QuantityInput, CustomDateInput, DateAwareModelForm
+from core.choices import get_status_pedido_choices, get_prioridade_pedido_choices
+
+
+class PedidoCompraForm(DateAwareModelForm, AuditMixin):
+    """Formulário principal do pedido de compra - ATUALIZADO"""
+    
+    class Meta:
+        model = PedidoCompra
+        fields = [
+            'fornecedor', 'data_emissao', 'prazo_entrega', 'data_entrega_prevista',
+            'prioridade', 'condicao_pagamento', 'desconto_percentual',
+            'valor_frete', 'observacoes', 'observacoes_internas',
+            'comprador_responsavel', 'contato_compras'
+        ]
+        widgets = {
+            'fornecedor': forms.Select(attrs={
+                'required': True
+            }),
+            'data_emissao': CustomDateInput(attrs={
+                'onchange': 'calcularDataEntrega()'
+            }),
+            'prazo_entrega': forms.NumberInput(attrs={
+                'placeholder': 'Dias',
+                'min': '1',
+                'step': '1',
+                'onchange': 'calcularDataEntrega()'
+            }),
+            'data_entrega_prevista': CustomDateInput(attrs={
+                'onchange': 'calcularPrazoEntrega()'
+            }),
+            'condicao_pagamento': forms.TextInput(attrs={
+                'placeholder': 'Ex: 30/60/90 dias, À vista, etc.'
+            }),
+            'desconto_percentual': forms.NumberInput(attrs={
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+                'value': '0'
+            }),
+            'valor_frete': MoneyInput(),
+            'comprador_responsavel': forms.TextInput(attrs={
+                'placeholder': 'Nome do comprador responsável'
+            }),
+            'contato_compras': forms.TextInput(attrs={
+                'placeholder': 'Email ou telefone de contato'
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Observações que aparecerão no PDF do pedido...'
+            }),
+            'observacoes_internas': forms.Textarea(attrs={
+                'rows': 2,
+                'placeholder': 'Observações internas (não aparecerão no PDF)...'
+            }),
+        }
+        labels = {
+            'fornecedor': 'Fornecedor',
+            'data_emissao': 'Data de Emissão',
+            'prazo_entrega': 'Prazo (dias)',
+            'data_entrega_prevista': 'Data Entrega Prevista',
+            'prioridade': 'Prioridade',
+            'condicao_pagamento': 'Condição de Pagamento',
+            'desconto_percentual': 'Desconto (%)',
+            'valor_frete': 'Valor do Frete',
+            'comprador_responsavel': 'Comprador Responsável',
+            'contato_compras': 'Contato de Compras',
+            'observacoes': 'Observações Gerais',
+            'observacoes_internas': 'Observações Internas',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['prioridade'].choices = get_prioridade_pedido_choices() # Set choices dynamically
+        
+        # Filtrar apenas fornecedores ativos
+        self.fields['fornecedor'].queryset = Fornecedor.objects.filter(ativo=True).order_by('razao_social')
+        
+        # Campos obrigatórios
+        self.fields['fornecedor'].required = True
+        self.fields['data_emissao'].required = True
+        self.fields['prazo_entrega'].required = True
+        
+        # Valores padrão para novos pedidos
+        if not self.instance.pk:
+            self.fields['data_emissao'].initial = date.today()
+            self.fields['prazo_entrega'].initial = 7
+            
+            # Preencher dados do comprador dos parâmetros
+            try:
+                parametros = ParametrosGerais.objects.first()
+                if parametros:
+                    if parametros.comprador_responsavel:
+                        self.fields['comprador_responsavel'].initial = parametros.comprador_responsavel
+                    if parametros.contato_compras:
+                        self.fields['contato_compras'].initial = parametros.contato_compras
+            except ParametrosGerais.DoesNotExist:
+                pass
+        
+        # Help texts
+        self.fields['prazo_entrega'].help_text = 'Prazo de entrega em dias úteis'
+        self.fields['desconto_percentual'].help_text = 'Desconto em % sobre o valor total dos itens'
+        self.fields['valor_frete'].help_text = 'Valor do frete a ser adicionado ao pedido'
+        self.fields['comprador_responsavel'].help_text = 'Preenchido automaticamente dos parâmetros'
+        self.fields['contato_compras'].help_text = 'Preenchido automaticamente dos parâmetros'
+    
+    def clean_prazo_entrega(self):
+        """Validar prazo de entrega"""
+        prazo = self.cleaned_data.get('prazo_entrega')
+        if prazo is not None and prazo < 1:
+            raise ValidationError('Prazo deve ser de pelo menos 1 dia.')
+        return prazo
+    
+    def clean_desconto_percentual(self):
+        """Validar desconto percentual"""
+        desconto = self.cleaned_data.get('desconto_percentual')
+        if desconto is not None and (desconto < 0 or desconto > 100):
+            raise ValidationError('Desconto deve estar entre 0 e 100%.')
+        return desconto
+    
+    def clean(self):
+        """Validações customizadas"""
+        cleaned_data = super().clean()
+        data_emissao = cleaned_data.get('data_emissao')
+        prazo_entrega = cleaned_data.get('prazo_entrega')
+        data_entrega_prevista = cleaned_data.get('data_entrega_prevista')
+        
+        # Se temos emissão e prazo mas não temos data de entrega, calcular
+        if data_emissao and prazo_entrega and not data_entrega_prevista:
+            cleaned_data['data_entrega_prevista'] = data_emissao + timedelta(days=prazo_entrega)
+        
+        # Validar que data de entrega não é anterior à emissão
+        if data_emissao and data_entrega_prevista:
+            if data_entrega_prevista < data_emissao:
+                self.add_error('data_entrega_prevista', 'Data de entrega não pode ser anterior à data de emissão.')
+        
+        return cleaned_data
+
+
+class ItemPedidoCompraForm(BaseModelForm):
+    """Formulário para itens do pedido de compra"""
+    
+    class Meta:
+        model = ItemPedidoCompra
+        fields = ['produto', 'quantidade', 'valor_unitario', 'observacoes']
+        widgets = {
+            'produto': forms.Select(attrs={
+                'required': True
+            }),
+            'quantidade': QuantityInput(),
+            'valor_unitario': MoneyInput(),
+            'observacoes': forms.TextInput(attrs={
+                'placeholder': 'Observações do item...'
+            }),
+        }
+        labels = {
+            'produto': 'Produto',
+            'quantidade': 'Quantidade',
+            'valor_unitario': 'Valor Unitário',
+            'observacoes': 'Observações',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar produtos disponíveis
+        self.fields['produto'].queryset = Produto.objects.filter(
+            status='ATIVO',
+            disponivel=True
+        ).select_related('grupo', 'subgrupo').order_by('codigo')
+        
+        # Campos obrigatórios
+        self.fields['produto'].required = True
+        self.fields['quantidade'].required = True
+        self.fields['valor_unitario'].required = True
+    
+    def clean_quantidade(self):
+        quantidade = self.cleaned_data.get('quantidade')
+        if quantidade is None or quantidade <= 0:
+            raise ValidationError('Quantidade deve ser maior que zero.')
+        return quantidade
+    
+    def clean_valor_unitario(self):
+        valor = self.cleaned_data.get('valor_unitario')
+        if valor is None or valor <= 0:
+            raise ValidationError('Valor unitário deve ser maior que zero.')
+        return valor
+
+
+# FORMSET PARA ITENS DO PEDIDO
+ItemPedidoCompraFormSet = inlineformset_factory(
+    PedidoCompra,
+    ItemPedidoCompra,
+    form=ItemPedidoCompraForm,
+    extra=1,
+    can_delete=True,
+    min_num=0,
+    validate_min=False,
+    fields=['produto', 'quantidade', 'valor_unitario', 'observacoes']
+)
+
+
+class PedidoCompraFiltroForm(BaseFiltroForm):
+    """Formulário para filtros na listagem de pedidos"""
+    
+    STATUS_PRAZO_CHOICES = [
+        ('', 'Todos os Prazos'),
+        ('vencido', 'Vencidos'),
+        ('urgente', 'Urgentes'),
+        ('em_dia', 'Em Dia'),
+    ]
+    
+    fornecedor = forms.ModelChoiceField(
+        queryset=Fornecedor.objects.filter(ativo=True).order_by('razao_social'),
+        required=False,
+        empty_label="Todos os Fornecedores",
+        label='Fornecedor'
+    )
+    status = forms.ChoiceField(
+        required=False,
+        label='Status'
+    )
+    prioridade = forms.ChoiceField(
+        required=False,
+        label='Prioridade'
+    )
+    status_prazo = forms.ChoiceField(
+        choices=STATUS_PRAZO_CHOICES,
+        required=False,
+        label='Status Prazo'
+    )
+    data_inicio = forms.DateField(
+        required=False,
+        label="Data Emissão Início",
+        widget=CustomDateInput()
+    )
+    data_fim = forms.DateField(
+        required=False,
+        label="Data Emissão Fim",
+        widget=CustomDateInput()
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].choices = [('', 'Todos os Status')] + get_status_pedido_choices() # Set dynamically
+        self.fields['prioridade'].choices = [('', 'Todas as Prioridades')] + get_prioridade_pedido_choices() # Set dynamically
+        self.fields['q'].widget.attrs['placeholder'] = 'Buscar por número, fornecedor...'
+
+
+class AlterarStatusPedidoForm(BaseModelForm):
+    """Formulário para alterar status dos pedidos de compra"""
+    
+    class Meta:
+        model = PedidoCompra
+        fields = ['status', 'observacoes_internas']
+        widgets = {
+            'status': forms.Select(attrs={
+                'required': True
+            }),
+            'observacoes_internas': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Observações sobre a mudança de status...'
+            }),
+        }
+        labels = {
+            'status': 'Novo Status',
+            'observacoes_internas': 'Observações',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Definir choices para status baseado no status atual
+        if self.instance.pk:
+            status_atual = self.instance.status
+            
+            # Use a copy of the original choices to modify
+            all_status_choices = list(get_status_pedido_choices())
+            status_choices = []
+
+            if status_atual == 'RASCUNHO':
+                status_choices = [
+                    ('RASCUNHO', 'Rascunho'),
+                    ('ENVIADO', 'Enviado'),
+                    ('CANCELADO', 'Cancelado'),
+                ]
+            elif status_atual == 'ENVIADO':
+                status_choices = [
+                    ('ENVIADO', 'Enviado'),
+                    ('CONFIRMADO', 'Confirmado'),
+                    ('CANCELADO', 'Cancelado'),
+                ]
+            elif status_atual == 'CONFIRMADO':
+                status_choices = [
+                    ('CONFIRMADO', 'Confirmado'),
+                    ('PARCIAL', 'Parcialmente Recebido'),
+                    ('RECEBIDO', 'Recebido'),
+                ]
+            elif status_atual == 'PARCIAL':
+                status_choices = [
+                    ('PARCIAL', 'Parcialmente Recebido'),
+                    ('RECEBIDO', 'Recebido'),
+                ]
+            else:
+                # Para RECEBIDO e CANCELADO, apenas manter o status atual
+                status_choices = [
+                    (status_atual, next(display for value, display in all_status_choices if value == status_atual))
+                ]
+            
+            self.fields['status'].choices = status_choices
+        else:
+            # For new instances, allow all choices or a default subset
+            self.fields['status'].choices = get_status_pedido_choices()
+
+        # Help text baseado no status atual
+        if self.instance.pk:
+            self.fields['status'].help_text = f"Status atual: {self.instance.get_status_display()}"
+    
+    def save(self, commit=True, user=None):
+        """Override para registrar mudança de status no histórico"""
+        pedido = super().save(commit=False)
+        
+        if commit:
+            # Verificar se o status mudou
+            if self.instance.pk:
+                pedido_original = PedidoCompra.objects.get(pk=self.instance.pk)
+                status_anterior = pedido_original.status
+                
+                if status_anterior != pedido.status:
+                    # Salvar o pedido primeiro
+                    pedido.save()
+                    
+                    # Criar registro no histórico
+                    HistoricoPedidoCompra.objects.create(
+                        pedido=pedido,
+                        usuario=user,
+                        acao=f'Status alterado de {status_anterior} para {pedido.status}',
+                        observacao=self.cleaned_data.get('observacoes_internas', '')
+                    )
+                else:
+                    pedido.save()
+            else:
+                pedido.save()
+        
+        return pedido
+
+
+class RecebimentoItemForm(forms.Form):
+    """Formulário para registrar recebimento de itens do pedido"""
+    
+    quantidade_recebida = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+        widget=QuantityInput(),
+        label='Quantidade Recebida'
+    )
+    
+    observacoes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 2,
+            'placeholder': 'Observações sobre o recebimento...'
+        }),
+        label='Observações'
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.item_pedido = kwargs.pop('item_pedido', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.item_pedido:
+            # Calcular quantidade pendente
+            quantidade_pendente = self.item_pedido.quantidade_pendente
+            
+            # Definir valor máximo e inicial
+            self.fields['quantidade_recebida'].max_value = quantidade_pendente
+            self.fields['quantidade_recebida'].initial = quantidade_pendente
+            
+            # Help text informativo
+            self.fields['quantidade_recebida'].help_text = f"""
+                Quantidade pedida: {self.item_pedido.quantidade}<br>
+                Já recebido: {self.item_pedido.quantidade_recebida}<br>
+                Pendente: {quantidade_pendente}
+            """
+    
+    def clean_quantidade_recebida(self):
+        """Validar quantidade recebida"""
+        quantidade = self.cleaned_data.get('quantidade_recebida')
+        
+        if self.item_pedido and quantidade:
+            quantidade_pendente = self.item_pedido.quantidade_pendente
+            
+            if quantidade > quantidade_pendente:
+                raise ValidationError(
+                    f'Quantidade recebida ({quantidade}) não pode ser maior que '
+                    f'a quantidade pendente ({quantidade_pendente})'
+                )
+            
+            if quantidade <= 0:
+                raise ValidationError('Quantidade deve ser maior que zero')
+        
+        return quantidade
+
+
+class RecebimentoPedidoForm(forms.Form):
+    """Formulário para recebimento completo ou parcial do pedido"""
+    
+    TIPO_RECEBIMENTO_CHOICES = [
+        ('PARCIAL', 'Recebimento Parcial'),
+        ('TOTAL', 'Recebimento Total'),
+    ]
+    
+    tipo_recebimento = forms.ChoiceField(
+        choices=TIPO_RECEBIMENTO_CHOICES,
+        widget=forms.RadioSelect(attrs={
+            'onchange': 'toggleRecebimentoOptions(this.value)'
+        }),
+        label='Tipo de Recebimento'
+    )
+    
+    observacoes_gerais = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'placeholder': 'Observações gerais sobre o recebimento...'
+        }),
+        label='Observações Gerais'
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.pedido = kwargs.pop('pedido', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.pedido:
+            # Adicionar campos dinâmicos para cada item do pedido
+            for item in self.pedido.itens.all():
+                quantidade_pendente = item.quantidade_pendente
+                
+                if quantidade_pendente > 0:  # Só mostrar itens pendentes
+                    field_name = f'item_{item.id}_quantidade'
+                    self.fields[field_name] = forms.DecimalField(
+                        max_digits=10,
+                        decimal_places=2,
+                        min_value=0,
+                        max_value=quantidade_pendente,
+                        initial=quantidade_pendente,
+                        required=False,
+                        widget=QuantityInput(),
+                        label=f'{item.produto.nome} (Pendente: {quantidade_pendente})'
+                    )
+                    
+                    # Campo de observações por item
+                    obs_field_name = f'item_{item.id}_observacoes'
+                    self.fields[obs_field_name] = forms.CharField(
+                        required=False,
+                        widget=forms.TextInput(attrs={
+                            'placeholder': 'Observações do item...'
+                        }),
+                        label='Observações'
+                    )
+    
+    def clean(self):
+        """Validações do formulário"""
+        cleaned_data = super().clean()
+        
+        # Verificar se pelo menos um item foi marcado para recebimento
+        tem_quantidade = False
+        
+        for field_name, value in cleaned_data.items():
+            if field_name.startswith('item_') and field_name.endswith('_quantidade'):
+                if value and value > 0:
+                    tem_quantidade = True
+                    break
+        
+        if not tem_quantidade:
+            raise ValidationError(
+                'Pelo menos um item deve ter quantidade maior que zero para recebimento.'
+            )
+        
+        return cleaned_data

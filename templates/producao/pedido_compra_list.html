@@ -1,9 +1,4 @@
-
-pedido_compra_list.html
-11.38 KB •320 linhas
-•
-A formatação pode estar inconsistente com a fonte
-<!-- templates/producao/pedido_compra_list.html - VERSÃO CORRIGIDA -->
+<!-- templates/producao/pedido_compra_list.html - VERSÃO ATUALIZADA -->
 {% extends 'producao/base_producao.html' %}
 
 {% block title %}Pedidos de Compra | Portal Produção{% endblock %}
@@ -22,7 +17,7 @@ A formatação pode estar inconsistente com a fonte
         <i class="fas fa-plus me-1"></i> Novo Pedido
       </a>
       <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="fas fa-arrow-left me-1"></i> Dashboard
+        <i class="fas fa-arrow-left me-1"></i> Voltar
       </a>
     </div>
   </div>
@@ -39,11 +34,11 @@ A formatação pode estar inconsistente com a fonte
         {{ form_filtros.status }}
       </div>
       <div class="col-md-2">
-        <label class="form-label small">Data Início</label>
+        <label class="form-label small">Data Emissão Início</label>
         {{ form_filtros.data_inicio }}
       </div>
       <div class="col-md-2">
-        <label class="form-label small">Data Fim</label>
+        <label class="form-label small">Data Emissão Fim</label>
         {{ form_filtros.data_fim }}
       </div>
       <div class="col-md-4">
@@ -71,7 +66,8 @@ A formatação pode estar inconsistente com a fonte
             <tr>
               <th>Número</th>
               <th>Fornecedor</th>
-              <th>Data Pedido</th>
+              <th>Emissão</th>
+              <th>Prazo</th>
               <th>Entrega</th>
               <th>Status</th>
               <th class="text-end">Valor Total</th>
@@ -92,30 +88,35 @@ A formatação pode estar inconsistente com a fonte
                 
                 <td>
                   <div class="fw-semibold">{{ pedido.fornecedor.nome_fantasia|default:pedido.fornecedor.razao_social }}</div>
-                  {% if pedido.fornecedor.contato_principal %}
-                    <small class="text-muted">{{ pedido.fornecedor.contato_principal }}</small>
-                  {% endif %}
                 </td>
                 
                 <td>
-                  <div>{{ pedido.data_pedido|date:"d/m/Y" }}</div>
+                  <div>{{ pedido.data_emissao|date:"d/m/Y" }}</div>
+                </td>
+                
+                <td>
+                  <span class="badge bg-secondary">{{ pedido.prazo_entrega }} dias</span>
                 </td>
                 
                 <td>
                   {% if pedido.data_entrega_prevista %}
                     <div>{{ pedido.data_entrega_prevista|date:"d/m/Y" }}</div>
-                    {% now "Y-m-d" as hoje %}
                   {% else %}
                     <span class="text-muted">-</span>
                   {% endif %}
                 </td>
+              
                 
                 <td>
                   <span class="badge {{ pedido.status_badge_class }}">
                     {{ pedido.get_status_display }}
                   </span>
+                  {% if pedido.prioridade != 'NORMAL' %}
+                    <br><span class="badge {{ pedido.prioridade_badge_class }} small">
+                      {{ pedido.get_prioridade_display }}
+                    </span>
+                  {% endif %}
                 </td>
-          
                 
                 <td class="text-end">
                   <div class="fw-bold">R$ {{ pedido.valor_final|floatformat:2 }}</div>
@@ -126,7 +127,6 @@ A formatação pode estar inconsistente com a fonte
                   {% endif %}
                 </td>
               
-                
                 <td class="text-center">
                   <div class="btn-group" role="group">
                     <!-- Ver detalhes -->
@@ -312,6 +312,11 @@ A formatação pode estar inconsistente com a fonte
     .table-responsive {
         font-size: 0.875rem;
     }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem;
+    }
 }
 
 /* Status colors customization */
@@ -321,5 +326,10 @@ A formatação pode estar inconsistente com a fonte
 .badge.bg-warning { background-color: #ffc107 !important; color: #000; }
 .badge.bg-success { background-color: #198754 !important; }
 .badge.bg-danger { background-color: #dc3545 !important; }
+
+/* Cores para status de prazo */
+.badge.bg-danger { background-color: #dc3545 !important; }
+.badge.bg-warning { background-color: #ffc107 !important; color: #000; }
+.badge.bg-success { background-color: #198754 !important; }
 </style>
 {% endblock %}
