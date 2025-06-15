@@ -2,9 +2,9 @@
 
 {% block title %}
   {% if editing %}
-    Editar Pedido {{ pedido.numero }} - Cabine/Portas | Portal do Vendedor
+    Editar Proposta {{ pedido.numero }} - Cabine/Portas | Portal do Vendedor
   {% else %}
-    Pedido {{ pedido.numero }} - Cabine/Portas | Portal do Vendedor
+    Proposta {{ pedido.numero }} - Cabine/Portas | Portal do Vendedor
   {% endif %}
 {% endblock %}
 
@@ -14,26 +14,28 @@
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
       <h5 class="card-title mb-0">
         {% if editing %}
-          <i class="fas fa-edit me-2"></i>Editar Pedido {{ pedido.numero }} - Cabine/Portas
+          <i class="fas fa-edit me-2"></i>Editar Proposta {{ pedido.numero }} - Cabine/Portas
         {% else %}
-          <i class="fas fa-square me-2"></i>Pedido {{ pedido.numero }} - Cabine/Portas
+          <i class="fas fa-square me-2"></i>Proposta {{ pedido.numero }} - Cabine/Portas
         {% endif %}
       </h5>
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_detail' pedido.pk %}">
-        <i class="fas fa-arrow-left me-1"></i> Voltar
-      </a>
+
+      <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> {% if editing %}Cancelar{% else %}Voltar{% endif %}
+     </a>
     </div>
-    
-    <!-- Progress Bar -->
+
     <div class="card-header bg-white">
       <div class="progress" style="height: 6px;">
-        <div aria-valuemax="100" aria-valuenow="100" class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 100%"></div>
+        <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 66%" aria-valuenow="66" aria-valuemax="100"></div>
       </div>
       <div class="d-flex justify-content-between mt-2">
-        <small class="text-success">✓ 1. Cliente/Elevador</small>
-        <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">2. Cabine/Portas</small>
+        <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">1. Cliente/Elevador</small>
+        <small class="text-muted">2. Cabine/Portas</small>
+        <small class="text-muted">3. Comercial</small>
       </div>
     </div>
+    
     
     <div class="card-body">
       <form id="cabinePortasForm" method="post">
@@ -333,15 +335,13 @@
 
         <!-- Botões de ação -->
         <div class="d-flex justify-content-between mt-4 mb-4">
-          <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1' pedido.pk %}">
+          <!-- CORREÇÃO PRINCIPAL: usar URL de edição quando tem PK -->
+          <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}">
             <i class="fas fa-arrow-left me-1"></i> Anterior
           </a>
-          <button class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}" type="submit">
-            {% if editing %}
-              <i class="fas fa-save me-1"></i> Salvar Alterações
-            {% else %}
-              <i class="fas fa-check me-1"></i> Finalizar
-            {% endif %}
+
+          <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
+              Próximo <i class="fas fa-arrow-right me-1"></i>
           </button>
         </div>
       </form>

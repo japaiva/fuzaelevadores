@@ -1,0 +1,533 @@
+<!-- vendedor/templates/vendedor/pedido_step3.html - NOVA ETAPA COMERCIAL -->
+
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}
+  Proposta {{ proposta.numero }} - Dados Comerciais | Portal do Vendedor
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-dollar-sign me-2"></i>Proposta {{ proposta.numero }} - Dados Comerciais
+    </h5>
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_list' %}"  ✅ Sempre para a lista
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="card-header bg-white">
+    <div class="progress" style="height: 6px;">
+      <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemax="100"></div>
+    </div>
+    <div class="d-flex justify-content-between mt-2">
+      <small class="text-success">✓ 1. Cliente/Elevador</small>
+      <small class="text-success">✓ 2. Cabine/Portas</small>
+      <small class="text-success fw-bold">3. Dados Comerciais</small>
+    </div>
+  </div>
+  
+  <div class="card-body">
+
+    <!-- Resumo da Proposta -->
+    <div class="card shadow-sm border-info mb-4">
+      <div class="card-header bg-info text-white">
+        <h6 class="card-title mb-0">Resumo da Proposta</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Cliente:</span>
+              <strong>{{ proposta.cliente.nome }}</strong>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Modelo:</span>
+              <strong>{{ proposta.get_modelo_elevador_display }}</strong>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Capacidade:</span>
+              <strong>{{ proposta.capacidade }} kg</strong>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Valor Calculado:</span>
+              <strong class="text-success">
+                {% if proposta.preco_venda_calculado %}
+                  R$ {{ proposta.preco_venda_calculado|floatformat:2 }}
+                {% else %}
+                  <span class="text-warning">Não calculado</span>
+                {% endif %}
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form id="comercialForm" method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <!-- Bloco 1: Validade e Prazo -->
+      <div class="card shadow-sm border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <h6 class="card-title mb-0">Validade e Prazo de Entrega</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.data_validade.id_for_label }}">Validade da Proposta*</label>
+              {{ form.data_validade }}
+              {% if form.data_validade.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_validade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Data até quando a proposta é válida</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.prazo_entrega_dias.id_for_label }}">Prazo de Entrega (dias)*</label>
+              {{ form.prazo_entrega_dias }}
+              {% if form.prazo_entrega_dias.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.prazo_entrega_dias.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Prazo em dias corridos após aprovação</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 2: Forma de Pagamento -->
+      <div class="card shadow-sm border-success mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">Forma de Pagamento</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.forma_pagamento.id_for_label }}">Forma de Pagamento*</label>
+              {{ form.forma_pagamento }}
+              {% if form.forma_pagamento.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.forma_pagamento.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Campos condicionais que aparecem baseado na forma de pagamento -->
+            
+            <!-- Entrada (para entrada + parcelas) -->
+            <div class="col-md-4" id="entrada-div" style="display: none;">
+              <label class="form-label" for="{{ form.valor_entrada.id_for_label }}">Valor da Entrada</label>
+              {{ form.valor_entrada }}
+              {% if form.valor_entrada.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.valor_entrada.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Ou informe o percentual abaixo</div>
+            </div>
+            
+            <div class="col-md-4" id="percentual-entrada-div" style="display: none;">
+              <label class="form-label" for="{{ form.percentual_entrada.id_for_label }}">Percentual da Entrada (%)</label>
+              {{ form.percentual_entrada }}
+              {% if form.percentual_entrada.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.percentual_entrada.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Alternativa ao valor fixo</div>
+            </div>
+            
+            <!-- Data de vencimento da entrada -->
+            <div class="col-md-4" id="data-entrada-div" style="display: none;">
+              <label class="form-label" for="{{ form.data_vencimento_entrada.id_for_label }}">Vencimento da Entrada</label>
+              {{ form.data_vencimento_entrada }}
+              {% if form.data_vencimento_entrada.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_vencimento_entrada.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Parcelas (para parcelado e entrada + parcelas) -->
+            <div class="col-md-3" id="parcelas-div" style="display: none;">
+              <label class="form-label" for="{{ form.numero_parcelas.id_for_label }}">Número de Parcelas*</label>
+              {{ form.numero_parcelas }}
+              {% if form.numero_parcelas.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.numero_parcelas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3" id="tipo-parcela-div" style="display: none;">
+              <label class="form-label" for="{{ form.tipo_parcela.id_for_label }}">Tipo de Parcela</label>
+              {{ form.tipo_parcela }}
+              {% if form.tipo_parcela.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.tipo_parcela.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3" id="primeira-parcela-div" style="display: none;">
+              <label class="form-label" for="{{ form.primeira_parcela.id_for_label }}">Vencimento 1ª Parcela</label>
+              {{ form.primeira_parcela }}
+              {% if form.primeira_parcela.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.primeira_parcela.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3" id="valor-parcela-div" style="display: none;">
+              <label class="form-label" for="{{ form.valor_parcela.id_for_label }}">Valor da Parcela</label>
+              {{ form.valor_parcela }}
+              {% if form.valor_parcela.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.valor_parcela.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Calculado automaticamente</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco 3: Preços e Descontos -->
+      <div class="card shadow-sm border-warning mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="card-title mb-0">Preços e Descontos</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.preco_negociado.id_for_label }}">Preço Final da Proposta</label>
+              {{ form.preco_negociado }}
+              {% if form.preco_negociado.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.preco_negociado.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Deixe em branco para usar o preço calculado</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.percentual_desconto.id_for_label }}">Desconto (%)</label>
+              {{ form.percentual_desconto }}
+              {% if form.percentual_desconto.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.percentual_desconto.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text small">Calculado automaticamente</div>
+            </div>
+          </div>
+          
+          <!-- Resumo de valores -->
+          <div class="row mt-3" id="resumo-valores">
+            <div class="col-12">
+              <div class="card bg-light">
+                <div class="card-body p-3">
+                  <h6 class="card-title">Resumo Financeiro</h6>
+                  <div class="row text-center">
+                    <div class="col-md-3">
+                      <div class="border-end">
+                        <div class="text-muted small">Valor Base</div>
+                        <div class="fw-bold text-info" id="valor-base">R$ {{ proposta.preco_venda_calculado|floatformat:2|default:"0,00" }}</div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="border-end">
+                        <div class="text-muted small">Desconto</div>
+                        <div class="fw-bold text-warning" id="valor-desconto">R$ 0,00</div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="border-end">
+                        <div class="text-muted small">Valor Final</div>
+                        <div class="fw-bold text-success" id="valor-final">R$ {{ proposta.preco_venda_calculado|floatformat:2|default:"0,00" }}</div>
+                      </div>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="text-muted small">Com Impostos</div>
+                      <div class="fw-bold text-primary" id="valor-impostos">R$ 0,00</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-between mt-4 mb-4">
+        <a class="btn btn-outline-secondary" href="{% url 'vendedor:proposta_step2' proposta.pk %}">
+          <i class="fas fa-arrow-left me-1"></i> Anterior
+        </a>
+        <button class="btn btn-success" type="submit">
+          <i class="fas fa-check me-1"></i> Finalizar Proposta
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('comercialForm');
+    
+    // Elementos do formulário
+    const formaPagamentoSelect = document.getElementById('{{ form.forma_pagamento.id_for_label }}');
+    const entradaDiv = document.getElementById('entrada-div');
+    const percentualEntradaDiv = document.getElementById('percentual-entrada-div');
+    const dataEntradaDiv = document.getElementById('data-entrada-div');
+    const parcelasDiv = document.getElementById('parcelas-div');
+    const tipoParcelaDiv = document.getElementById('tipo-parcela-div');
+    const primeiraParcelaDiv = document.getElementById('primeira-parcela-div');
+    const valorParcelaDiv = document.getElementById('valor-parcela-div');
+    
+    // Campos de valores
+    const valorEntradaInput = document.getElementById('{{ form.valor_entrada.id_for_label }}');
+    const percentualEntradaInput = document.getElementById('{{ form.percentual_entrada.id_for_label }}');
+    const numeroParcelasInput = document.getElementById('{{ form.numero_parcelas.id_for_label }}');
+    const valorParcelaInput = document.getElementById('{{ form.valor_parcela.id_for_label }}');
+    const precoNegociadoInput = document.getElementById('{{ form.preco_negociado.id_for_label }}');
+    const percentualDescontoInput = document.getElementById('{{ form.percentual_desconto.id_for_label }}');
+    
+    // Valores base
+    const valorBase = {{ proposta.preco_venda_calculado|default:0 }};
+    
+    // === FUNÇÕES DE FORMA DE PAGAMENTO ===
+    
+    function updateFormaPagamento() {
+        if (!formaPagamentoSelect) return;
+        
+        const forma = formaPagamentoSelect.value;
+        
+        // Esconder todos os campos primeiro
+        entradaDiv.style.display = 'none';
+        percentualEntradaDiv.style.display = 'none';
+        dataEntradaDiv.style.display = 'none';
+        parcelasDiv.style.display = 'none';
+        tipoParcelaDiv.style.display = 'none';
+        primeiraParcelaDiv.style.display = 'none';
+        valorParcelaDiv.style.display = 'none';
+        
+        // Mostrar campos baseado na forma selecionada
+        if (forma === 'vista') {
+            // À vista - nenhum campo adicional
+        } else if (forma === 'entrada_parcelas') {
+            // Entrada + Parcelas
+            entradaDiv.style.display = 'block';
+            percentualEntradaDiv.style.display = 'block';
+            dataEntradaDiv.style.display = 'block';
+            parcelasDiv.style.display = 'block';
+            tipoParcelaDiv.style.display = 'block';
+            primeiraParcelaDiv.style.display = 'block';
+            valorParcelaDiv.style.display = 'block';
+        } else if (forma === 'parcelado') {
+            // Parcelado
+            parcelasDiv.style.display = 'block';
+            tipoParcelaDiv.style.display = 'block';
+            primeiraParcelaDiv.style.display = 'block';
+            valorParcelaDiv.style.display = 'block';
+        } else if (forma === 'financiamento') {
+            // Financiamento - campos básicos
+            parcelasDiv.style.display = 'block';
+            tipoParcelaDiv.style.display = 'block';
+            primeiraParcelaDiv.style.display = 'block';
+        }
+        
+        // Recalcular valores
+        calcularValores();
+    }
+    
+    // === FUNÇÕES DE CÁLCULO ===
+    
+    function calcularValores() {
+        const precoNegociado = parseFloat(precoNegociadoInput.value) || valorBase;
+        const numeroParcelaValue = parseInt(numeroParcelasInput.value) || 1;
+        const valorEntrada = parseFloat(valorEntradaInput.value) || 0;
+        const percentualEntrada = parseFloat(percentualEntradaInput.value) || 0;
+        
+        // Calcular desconto
+        const desconto = valorBase - precoNegociado;
+        const percentualDesconto = valorBase > 0 ? (desconto / valorBase) * 100 : 0;
+        
+        // Atualizar campo de desconto
+        if (percentualDescontoInput) {
+            percentualDescontoInput.value = percentualDesconto.toFixed(2);
+        }
+        
+        // Calcular valor da entrada baseado no percentual
+        let valorEntradaCalculado = valorEntrada;
+        if (percentualEntrada > 0 && !valorEntrada) {
+            valorEntradaCalculado = precoNegociado * (percentualEntrada / 100);
+            if (valorEntradaInput) {
+                valorEntradaInput.value = valorEntradaCalculado.toFixed(2);
+            }
+        }
+        
+        // Calcular valor das parcelas
+        const forma = formaPagamentoSelect.value;
+        let valorParcela = 0;
+        
+        if (forma === 'parcelado') {
+            valorParcela = precoNegociado / numeroParcelaValue;
+        } else if (forma === 'entrada_parcelas') {
+            const restante = precoNegociado - valorEntradaCalculado;
+            valorParcela = restante / numeroParcelaValue;
+        }
+        
+        if (valorParcelaInput && valorParcela > 0) {
+            valorParcelaInput.value = valorParcela.toFixed(2);
+        }
+        
+        // Atualizar resumo visual
+        updateResumoValores(precoNegociado, desconto);
+    }
+    
+    function updateResumoValores(valorFinal, desconto) {
+        // Atualizar elementos visuais
+        const valorDescontoEl = document.getElementById('valor-desconto');
+        const valorFinalEl = document.getElementById('valor-final');
+        const valorImpostosEl = document.getElementById('valor-impostos');
+        
+        if (valorDescontoEl) {
+            valorDescontoEl.textContent = `R$ ${Math.abs(desconto).toFixed(2).replace('.', ',')}`;
+        }
+        
+        if (valorFinalEl) {
+            valorFinalEl.textContent = `R$ ${valorFinal.toFixed(2).replace('.', ',')}`;
+        }
+        
+        // Calcular impostos (assumindo 10% padrão)
+        const impostos = valorFinal * 0.10;
+        if (valorImpostosEl) {
+            valorImpostosEl.textContent = `R$ ${(valorFinal + impostos).toFixed(2).replace('.', ',')}`;
+        }
+    }
+    
+    function formatarMoeda(input) {
+        let valor = input.value.replace(/[^\d,]/g, '');
+        if (valor) {
+            const valorFloat = parseFloat(valor.replace(',', '.'));
+            if (!isNaN(valorFloat)) {
+                input.value = valorFloat.toFixed(2).replace('.', ',');
+            }
+        }
+    }
+    
+    // === EVENT LISTENERS ===
+    
+    // Forma de pagamento
+    if (formaPagamentoSelect) {
+        formaPagamentoSelect.addEventListener('change', updateFormaPagamento);
+    }
+    
+    // Campos de valores
+    if (valorEntradaInput) {
+        valorEntradaInput.addEventListener('input', calcularValores);
+        valorEntradaInput.addEventListener('blur', function() { formatarMoeda(this); });
+    }
+    
+    if (percentualEntradaInput) {
+        percentualEntradaInput.addEventListener('input', calcularValores);
+    }
+    
+    if (numeroParcelasInput) {
+        numeroParcelasInput.addEventListener('input', calcularValores);
+    }
+    
+    if (precoNegociadoInput) {
+        precoNegociadoInput.addEventListener('input', calcularValores);
+        precoNegociadoInput.addEventListener('blur', function() { formatarMoeda(this); });
+    }
+    
+    // === VALIDAÇÃO DO FORMULÁRIO ===
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const forma = formaPagamentoSelect.value;
+            
+            // Validações específicas por forma de pagamento
+            if (forma === 'entrada_parcelas') {
+                const valorEntrada = parseFloat(valorEntradaInput.value) || 0;
+                const percentualEntrada = parseFloat(percentualEntradaInput.value) || 0;
+                const numeroParcelas = parseInt(numeroParcelasInput.value) || 0;
+                
+                if (valorEntrada <= 0 && percentualEntrada <= 0) {
+                    e.preventDefault();
+                    alert('Para entrada + parcelas, informe o valor ou percentual da entrada.');
+                    valorEntradaInput.focus();
+                    return;
+                }
+                
+                if (numeroParcelas <= 0) {
+                    e.preventDefault();
+                    alert('Informe o número de parcelas.');
+                    numeroParcelasInput.focus();
+                    return;
+                }
+            } else if (forma === 'parcelado') {
+                const numeroParcelas = parseInt(numeroParcelasInput.value) || 0;
+                
+                if (numeroParcelas <= 0) {
+                    e.preventDefault();
+                    alert('Informe o número de parcelas.');
+                    numeroParcelasInput.focus();
+                    return;
+                }
+            }
+            
+            // Validar datas
+            const dataValidade = document.getElementById('{{ form.data_validade.id_for_label }}').value;
+            if (dataValidade) {
+                const hoje = new Date();
+                const validade = new Date(dataValidade);
+                
+                if (validade <= hoje) {
+                    e.preventDefault();
+                    alert('A data de validade deve ser futura.');
+                    return;
+                }
+            }
+        });
+    }
+    
+    // === INICIALIZAÇÃO ===
+    
+    updateFormaPagamento();
+    calcularValores();
+    
+    // Definir valores padrão se não existirem
+    if (!precoNegociadoInput.value && valorBase > 0) {
+        precoNegociadoInput.value = valorBase.toFixed(2).replace('.', ',');
+    }
+    
+    console.log('JavaScript da etapa comercial inicializado');
+});
+</script>
+{% endblock %}

@@ -1,27 +1,28 @@
 # core/choices.py
 
 from django.apps import apps
-from core.models.base import TIPO_PRODUTO_CHOICES, STATUS_PEDIDO_CHOICES, PRIORIDADE_PEDIDO_CHOICES # Add PRIORIDADE_PEDIDO_CHOICES here
+from core.models.base import (
+    TIPO_PRODUTO_CHOICES,
+    STATUS_PEDIDO_CHOICES,
+    PRIORIDADE_PEDIDO_CHOICES,
+    NIVEL_USUARIO_CHOICES,
+    TIPO_PESSOA_CHOICES # ADDED THIS IMPORT for Cliente choices
+) 
 
 def get_nivel_usuario_choices():
-    # Get the Usuario model after Django apps are ready
-    Usuario = apps.get_model('core', 'Usuario')
-    return Usuario.NIVEL_CHOICES
+    return NIVEL_USUARIO_CHOICES
 
 def get_tipo_pessoa_choices():
-    Cliente = apps.get_model('core', 'Cliente')
-    return Cliente.TIPO_PESSOA_CHOICES
+    # Corrected: Directly return TIPO_PESSOA_CHOICES from core.models.base
+    return TIPO_PESSOA_CHOICES
 
 def get_tipo_produto_choices():
-    # Corrected: TIPO_PRODUTO_CHOICES is now imported directly from core.models.base
     return TIPO_PRODUTO_CHOICES
 
 def get_status_pedido_choices():
-    # Corrected: STATUS_PEDIDO_CHOICES is imported directly from core.models.base
     return STATUS_PEDIDO_CHOICES
 
 def get_prioridade_pedido_choices():
-    # Corrected: PRIORIDADE_PEDIDO_CHOICES is imported directly from core.models.base
     return PRIORIDADE_PEDIDO_CHOICES
 
 # NEW: Getter functions for EspecificacaoElevador and SimulacaoElevador choices

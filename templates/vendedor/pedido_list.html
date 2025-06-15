@@ -174,14 +174,9 @@
             <tr>
               <td colspan="7" class="text-center py-5">
                 <div class="empty-state">
-                  <i class="fas fa-clipboard-list fa-4x text-muted mb-4"></i>
                   <h5 class="text-muted">Nenhuma proposta encontrada</h5>
                   <p class="text-muted mb-4">
-                    {% if form.data %}
-                      Tente ajustar os filtros ou comece criando uma nova proposta.
-                    {% else %}
-                      Comece criando sua primeira proposta.
-                    {% endif %}
+
                   </p>
                   <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-lg">
                     <i class="fas fa-plus me-2"></i>Criar Primeira Proposta

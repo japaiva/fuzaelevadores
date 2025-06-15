@@ -1,4 +1,4 @@
-# core/views.py - VERSÃO ATUALIZADA
+# core/views/base.py - VERSÃO ATUALIZADA
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -7,8 +7,8 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
 
-from .models import PerfilUsuario, Usuario
-from .forms import UsuarioForm
+from core.models import PerfilUsuario, Usuario
+from core.forms import UsuarioForm
 
 @login_required
 def perfil(request):

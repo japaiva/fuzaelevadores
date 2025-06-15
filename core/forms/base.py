@@ -80,14 +80,14 @@ class BaseFiltroForm(forms.Form):
 
 
 # Widgets customizados comuns
-class MoneyInput(forms.NumberInput):
+class MoneyInput(forms.TextInput): # ALTERADO PARA forms.TextInput
     """Widget para campos monetários"""
     
     def __init__(self, attrs=None):
         default_attrs = {
             'class': 'form-control',
-            'step': '0.01',
-            'min': '0',
+            'inputmode': 'decimal', # Sugere teclado numérico em dispositivos móveis
+            'pattern': '[0-9]*[.,]?[0-9]*', # Validação regex básica para ponto ou vírgula
             'placeholder': '0,00'
         }
         if attrs:
@@ -95,15 +95,14 @@ class MoneyInput(forms.NumberInput):
         super().__init__(attrs=default_attrs)
 
 
-class PercentageInput(forms.NumberInput):
+class PercentageInput(forms.TextInput): # ALTERADO PARA forms.TextInput
     """Widget para campos de porcentagem"""
     
     def __init__(self, attrs=None):
         default_attrs = {
             'class': 'form-control',
-            'step': '0.01',
-            'min': '0',
-            'max': '100',
+            'inputmode': 'decimal',
+            'pattern': '[0-9]*[.,]?[0-9]*',
             'placeholder': '0,00'
         }
         if attrs:
@@ -111,14 +110,14 @@ class PercentageInput(forms.NumberInput):
         super().__init__(attrs=default_attrs)
 
 
-class QuantityInput(forms.NumberInput):
+class QuantityInput(forms.TextInput): # ALTERADO PARA forms.TextInput
     """Widget para campos de quantidade"""
     
     def __init__(self, attrs=None):
         default_attrs = {
             'class': 'form-control',
-            'step': '0.01',
-            'min': '0.01',
+            'inputmode': 'decimal',
+            'pattern': '[0-9]*[.,]?[0-9]*',
             'placeholder': '0,00'
         }
         if attrs:

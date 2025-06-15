@@ -1,42 +1,47 @@
 # core/models/__init__.py
 
 """
-Modelos do Sistema FUZA Elevadores
-Organização modular dos models
+Importações dos models do sistema FUZA
+Keep it simple - apenas imports essenciais
 """
 
-# Importar todos os models para disponibilizá-los
-from .base import *
-from .usuarios import *
-from .produtos import *
-from .fornecedores import *
-from .clientes import *
-from .elevadores import *
-from .compras import *
-from .parametros import *
+# === MODELS PRINCIPAIS ===
+from .usuarios import Usuario, PerfilUsuario
+from .clientes import Cliente
+from .fornecedores import Fornecedor, FornecedorProduto
+from .parametros import ParametrosGerais
+from .produtos import GrupoProduto, SubgrupoProduto, Produto
+from .compras import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
+from .elevadores import (
+    EspecificacaoElevador, 
+    OpcaoEspecificacao, 
+    RegraComponente, 
+    ComponenteDerivado, 
+    SimulacaoElevador
+)
+from .propostas import Proposta, HistoricoProposta, AnexoProposta, ParcelaProposta
 
-# Lista de todos os models para facilitar importações
+# === LISTA ESSENCIAL ===
 __all__ = [
-    # Base/Choices
-    'STATUS_PEDIDO_CHOICES',
-    'PRIORIDADE_PEDIDO_CHOICES',
-    
     # Usuários
     'Usuario',
     'PerfilUsuario',
     
-    # Produtos
-    'GrupoProduto',
-    'SubgrupoProduto',
-    'Produto',
-    'EstruturaProduto',
-    
-    # Fornecedores
+    # Cadastros Base
+    'Cliente',
     'Fornecedor',
     'FornecedorProduto',
+    'ParametrosGerais',
     
-    # Clientes
-    'Cliente',
+    # Produtos
+    'GrupoProduto',
+    'SubgrupoProduto', 
+    'Produto',
+    
+    # Compras
+    'PedidoCompra',
+    'ItemPedidoCompra',
+    'HistoricoPedidoCompra',
     
     # Elevadores
     'EspecificacaoElevador',
@@ -45,11 +50,9 @@ __all__ = [
     'ComponenteDerivado',
     'SimulacaoElevador',
     
-    # Compras
-    'PedidoCompra',
-    'ItemPedidoCompra',
-    'HistoricoPedidoCompra',
-    
-    # Parâmetros
-    'ParametrosGerais',
+    # Propostas
+    'Proposta',
+    'HistoricoProposta',
+    'AnexoProposta',
+    'ParcelaProposta',
 ]

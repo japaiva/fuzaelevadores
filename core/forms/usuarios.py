@@ -8,10 +8,9 @@ from django import forms
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 
-from core.models import Usuario # Keep this import, as the form uses the model directly
+from core.models import Usuario
 from .base import BaseModelForm, AuditMixin, ValidacaoComumMixin
-from core.choices import get_nivel_usuario_choices # Import the function
-
+from core.models.base import NIVEL_USUARIO_CHOICES # Corrected Import
 
 class UsuarioForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     """Formulário para criação e edição de usuários"""
@@ -75,7 +74,7 @@ class UsuarioForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         super().__init__(*args, **kwargs)
         
         # Set choices for nivel field dynamically
-        self.fields['nivel'].choices = get_nivel_usuario_choices()
+        self.fields['nivel'].choices = NIVEL_USUARIO_CHOICES # Corrected usage
 
         # If estiver editando um usuário existente, não exigir senha
         if self.instance.pk:
@@ -140,9 +139,12 @@ class UsuarioForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         
         return cleaned_data
     
-    def save(self, commit=True, user=None):
+    def save(self, commit=True): # Removed 'user=None' from signature here
         """Override para codificar senha"""
-        usuario = super().save(commit=False, user=user)
+        # Call super().save() without passing 'user' directly here.
+        # AuditMixin's save method (which BaseModelForm inherits from implicitly if it's the first parent)
+        # is the one that accepts 'user' and handles audit fields.
+        usuario = super().save(commit=False) 
         
         # Se uma senha foi fornecida, codificá-la
         password = self.cleaned_data.get('password')
@@ -157,8 +159,6 @@ class UsuarioForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
 
 class UsuarioFiltroForm(forms.Form):
     """Formulário para filtros na listagem de usuários"""
-    
-    # Use the function to get choices
     
     STATUS_CHOICES = [
         ('', 'Todos'),
@@ -185,7 +185,7 @@ class UsuarioFiltroForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['nivel'].choices = [('', 'Todos os Níveis')] + get_nivel_usuario_choices()
+        self.fields['nivel'].choices = [('', 'Todos os Níveis')] + NIVEL_USUARIO_CHOICES
 
 
 class AlterarSenhaForm(forms.Form):

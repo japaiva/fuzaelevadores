@@ -1,67 +1,89 @@
-# vendedor/utils.py - Versão simplificada
+# =============================================================================
+# ARQUIVO: vendedor/utils.py (SIMPLIFICADO)
+# =============================================================================
 
-# Re-exportar funções do core para manter compatibilidade
-from core.utils.formatters import (
-    extrair_especificacoes_do_pedido,
-    agrupar_respostas_por_pagina,
-    safe_decimal,
-    safe_int
-)
+from datetime import datetime, timedelta
+from django.db.models import Count
 
-# Funções específicas do vendedor podem ficar aqui
-def gerar_numero_pedido_sequencial():
-    """Gera número sequencial para pedidos"""
-    from datetime import datetime
-    from .models import Pedido
+# Importar apenas o que precisa do core
+from core.utils import safe_int
+
+
+def gerar_numero_proposta_sequencial():
+    """Gera número sequencial para propostas"""
+    from core.models import Proposta
     
     ano_atual = datetime.now().year
-    ultimo_pedido = Pedido.objects.filter(
-        numero__startswith=f'PED{ano_atual}'
+    ultima_proposta = Proposta.objects.filter(
+        numero__startswith=f'PROP{ano_atual}'
     ).order_by('-numero').first()
     
-    if ultimo_pedido:
-        ultimo_numero = int(ultimo_pedido.numero[-4:])
+    if ultima_proposta:
+        # Extrair número da proposta: PROP2025001 -> 001
+        numero_str = ultima_proposta.numero.replace(f'PROP{ano_atual}', '')
+        ultimo_numero = safe_int(numero_str)
         novo_numero = ultimo_numero + 1
     else:
         novo_numero = 1
     
-    return f'PED{ano_atual}{novo_numero:04d}'
+    return f'PROP{ano_atual}{novo_numero:03d}'
 
 
-def validar_permissoes_vendedor(user, pedido):
-    """Valida se o vendedor pode editar o pedido"""
+def validar_permissoes_vendedor(user, proposta, acao='visualizar'):
+    """
+    Valida permissões do vendedor para ações na proposta
+    
+    Returns:
+        tuple: (bool, str) - (tem_permissao, mensagem_erro)
+    """
     if not user.is_authenticated:
         return False, "Usuário não autenticado"
     
-    if pedido.vendedor != user:
-        return False, "Você não tem permissão para editar este pedido"
+    # Vendedor só pode acessar suas próprias propostas
+    if proposta.vendedor != user:
+        return False, "Você só pode acessar suas próprias propostas."
     
-    if not pedido.pode_editar:
-        return False, "Este pedido não pode mais ser editado"
+    if acao == 'visualizar':
+        return True, ""
     
-    return True, ""
+    elif acao == 'editar':
+        if not proposta.pode_editar:
+            return False, f"Proposta em {proposta.get_status_display()} não pode ser editada."
+        return True, ""
+    
+    elif acao == 'excluir':
+        if proposta.status not in ['rascunho', 'simulado']:
+            return False, "Apenas propostas em rascunho ou simulado podem ser excluídas."
+        return True, ""
+    
+    elif acao == 'calcular':
+        if not proposta.pode_calcular():
+            return False, "Proposta não tem dados suficientes para cálculo."
+        return True, ""
+    
+    return False, "Ação não reconhecida."
 
 
 def calcular_estatisticas_vendedor(user):
     """Calcula estatísticas básicas do vendedor"""
-    from .models import Pedido
-    from django.db.models import Count
-    from datetime import datetime, timedelta
+    from core.models import Proposta
     
     hoje = datetime.now().date()
     inicio_mes = hoje.replace(day=1)
     inicio_ano = hoje.replace(month=1, day=1)
     
+    propostas = Proposta.objects.filter(vendedor=user)
+    
     stats = {
-        'total': Pedido.objects.filter(vendedor=user).count(),
-        'hoje': Pedido.objects.filter(vendedor=user, criado_em__date=hoje).count(),
-        'mes': Pedido.objects.filter(vendedor=user, criado_em__date__gte=inicio_mes).count(),
-        'ano': Pedido.objects.filter(vendedor=user, criado_em__date__gte=inicio_ano).count(),
+        'total': propostas.count(),
+        'hoje': propostas.filter(criado_em__date=hoje).count(),
+        'mes': propostas.filter(criado_em__date__gte=inicio_mes).count(),
+        'ano': propostas.filter(criado_em__date__gte=inicio_ano).count(),
     }
     
     # Estatísticas por status
     stats_status = list(
-        Pedido.objects.filter(vendedor=user, criado_em__date__gte=inicio_ano)
+        propostas.filter(criado_em__date__gte=inicio_ano)
         .values('status')
         .annotate(count=Count('status'))
         .order_by('-count')
@@ -69,7 +91,7 @@ def calcular_estatisticas_vendedor(user):
     
     # Estatísticas por modelo
     stats_modelo = list(
-        Pedido.objects.filter(vendedor=user, criado_em__date__gte=inicio_ano)
+        propostas.filter(criado_em__date__gte=inicio_ano)
         .values('modelo_elevador')
         .annotate(count=Count('modelo_elevador'))
         .order_by('-count')

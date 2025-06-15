@@ -1,7 +1,9 @@
-# core/utils/formatters.py
+# =============================================================================
+# ARQUIVO: core/utils/formatters.py (LIMPO)
+# =============================================================================
 
 from typing import Any, Dict, Union
-
+from .decimal_helpers import safe_decimal, safe_float, safe_int
 
 def formato_seguro(valor: Any, decimais: int = 2) -> float:
     """
@@ -49,12 +51,11 @@ def formato_moeda_br(valor: Union[int, float, str], incluir_simbolo: bool = True
         if valor is None:
             return "R$ 0,00" if incluir_simbolo else "0,00"
         
-        # Converte para float se necessário
-        if isinstance(valor, str):
-            valor = float(valor.replace(',', '.'))
+        # Usar safe_float para conversão segura
+        valor_float = safe_float(valor)
         
-        # Formata o número
-        formatted = f"{float(valor):,.2f}"
+        # Formatar o número
+        formatted = f"{valor_float:,.2f}"
         
         # Troca vírgula e ponto para padrão brasileiro
         formatted = formatted.replace(',', 'X').replace('.', ',').replace('X', '.')
@@ -63,7 +64,7 @@ def formato_moeda_br(valor: Union[int, float, str], incluir_simbolo: bool = True
             return f"R$ {formatted}"
         return formatted
         
-    except (ValueError, TypeError):
+    except Exception:
         return "R$ 0,00" if incluir_simbolo else "0,00"
 
 
@@ -81,19 +82,15 @@ def formato_numero_br(valor: Union[int, float, str]) -> str:
         if valor is None:
             return "0,00"
         
-        # Converte para float se necessário
-        if isinstance(valor, str):
-            valor = float(valor.replace(',', '.'))
-        
-        # Formata o número
-        formatted = f"{float(valor):,.2f}"
+        valor_float = safe_float(valor)
+        formatted = f"{valor_float:,.2f}"
         
         # Troca vírgula e ponto para padrão brasileiro
         formatted = formatted.replace(',', 'X').replace('.', ',').replace('X', '.')
         
         return formatted
         
-    except (ValueError, TypeError):
+    except Exception:
         return "0,00"
 
 
@@ -111,45 +108,12 @@ def formato_percentual_br(valor: Union[int, float, str]) -> str:
         if valor is None:
             return "0,0%"
         
-        formatted = f"{float(valor):.1f}".replace('.', ',')
+        valor_float = safe_float(valor)
+        formatted = f"{valor_float:.1f}".replace('.', ',')
         return f"{formatted}%"
         
-    except (ValueError, TypeError):
+    except Exception:
         return "0,0%"
-
-
-def safe_decimal(value: Any, default: float = 0.0) -> float:
-    """
-    Converte valor para decimal de forma segura
-    
-    Args:
-        value: Valor a ser convertido
-        default: Valor padrão se conversão falhar
-        
-    Returns:
-        float: Valor convertido
-    """
-    try:
-        return float(value) if value else default
-    except (ValueError, TypeError):
-        return default
-
-
-def safe_int(value: Any, default: int = 0) -> int:
-    """
-    Converte valor para inteiro de forma segura
-    
-    Args:
-        value: Valor a ser convertido
-        default: Valor padrão se conversão falhar
-        
-    Returns:
-        int: Valor convertido
-    """
-    try:
-        return int(value) if value else default
-    except (ValueError, TypeError):
-        return default
 
 
 def extrair_especificacoes_do_pedido(pedido) -> Dict[str, Any]:
@@ -173,14 +137,14 @@ def extrair_especificacoes_do_pedido(pedido) -> Dict[str, Any]:
     
     # === DADOS DO ELEVADOR ===
     especificacoes["Modelo do Elevador"] = pedido.modelo_elevador
-    especificacoes["Capacidade"] = safe_decimal(pedido.capacidade)
+    especificacoes["Capacidade"] = safe_float(pedido.capacidade)
     especificacoes["Capacidade (pessoas)"] = safe_int(pedido.capacidade_pessoas)
     especificacoes["Acionamento"] = pedido.acionamento
     especificacoes["Tração"] = pedido.tracao or ""
     especificacoes["Contrapeso"] = pedido.contrapeso or ""
-    especificacoes["Largura do Poço"] = safe_decimal(pedido.largura_poco)
-    especificacoes["Comprimento do Poço"] = safe_decimal(pedido.comprimento_poco)
-    especificacoes["Altura do Poço"] = safe_decimal(pedido.altura_poco)
+    especificacoes["Largura do Poço"] = safe_float(pedido.largura_poco)
+    especificacoes["Comprimento do Poço"] = safe_float(pedido.comprimento_poco)
+    especificacoes["Altura do Poço"] = safe_float(pedido.altura_poco)
     especificacoes["Pavimentos"] = safe_int(pedido.pavimentos)
     
     # === DADOS DAS PORTAS ===
@@ -189,39 +153,38 @@ def extrair_especificacoes_do_pedido(pedido) -> Dict[str, Any]:
     especificacoes["Material Porta"] = pedido.material_porta_cabine
     if pedido.material_porta_cabine == "Outro":
         especificacoes["Material Porta Outro Nome"] = pedido.material_porta_cabine_outro or ""
-        especificacoes["Material Porta Outro Valor"] = safe_decimal(pedido.valor_porta_cabine_outro)
+        especificacoes["Material Porta Outro Valor"] = safe_float(pedido.valor_porta_cabine_outro)
     especificacoes["Folhas Porta"] = pedido.folhas_porta_cabine or ""
-    especificacoes["Largura Porta"] = safe_decimal(pedido.largura_porta_cabine)
-    especificacoes["Altura Porta"] = safe_decimal(pedido.altura_porta_cabine)
+    especificacoes["Largura Porta"] = safe_float(pedido.largura_porta_cabine)
+    especificacoes["Altura Porta"] = safe_float(pedido.altura_porta_cabine)
     
     # Porta do Pavimento
     especificacoes["Modelo Porta Pavimento"] = pedido.modelo_porta_pavimento
     especificacoes["Material Porta Pavimento"] = pedido.material_porta_pavimento
     if pedido.material_porta_pavimento == "Outro":
         especificacoes["Material Porta Pavimento Outro Nome"] = pedido.material_porta_pavimento_outro or ""
-        especificacoes["Material Porta Pavimento Outro Valor"] = safe_decimal(pedido.valor_porta_pavimento_outro)
+        especificacoes["Material Porta Pavimento Outro Valor"] = safe_float(pedido.valor_porta_pavimento_outro)
     especificacoes["Folhas Porta Pavimento"] = pedido.folhas_porta_pavimento or ""
-    especificacoes["Largura Porta Pavimento"] = safe_decimal(pedido.largura_porta_pavimento)
-    especificacoes["Altura Porta Pavimento"] = safe_decimal(pedido.altura_porta_pavimento)
+    especificacoes["Largura Porta Pavimento"] = safe_float(pedido.largura_porta_pavimento)
+    especificacoes["Altura Porta Pavimento"] = safe_float(pedido.altura_porta_pavimento)
     
     # === DADOS DA CABINE ===
     especificacoes["Material"] = pedido.material_cabine
     if pedido.material_cabine == "Outro":
         especificacoes["Material Outro Nome"] = pedido.material_cabine_outro or ""
-        especificacoes["Material Outro Valor"] = safe_decimal(pedido.valor_cabine_outro)
+        especificacoes["Material Outro Valor"] = safe_float(pedido.valor_cabine_outro)
     especificacoes["Espessura"] = pedido.espessura_cabine
     especificacoes["Saída"] = pedido.saida_cabine
-    especificacoes["Altura da Cabine"] = safe_decimal(pedido.altura_cabine)
+    especificacoes["Altura da Cabine"] = safe_float(pedido.altura_cabine)
     
     # Piso da Cabine
     especificacoes["Piso"] = pedido.piso_cabine
     especificacoes["Material Piso Cabine"] = pedido.material_piso_cabine or ""
     if pedido.material_piso_cabine == "Outro":
         especificacoes["Material Piso Outro Nome"] = pedido.material_piso_cabine_outro or ""
-        especificacoes["Material Piso Outro Valor"] = safe_decimal(pedido.valor_piso_cabine_outro)
+        especificacoes["Material Piso Outro Valor"] = safe_float(pedido.valor_piso_cabine_outro)
     
     return especificacoes
-
 
 def agrupar_respostas_por_pagina(respostas: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
     """
@@ -287,6 +250,7 @@ def agrupar_respostas_por_pagina(respostas: Dict[str, Any]) -> Dict[str, Dict[st
 
                 if valor == "Outro" and (outro_nome or outro_valor):
                     try:
+                        # Using the local formato_moeda_br to format the 'Outro' value
                         outro_valor_formatado = formato_moeda_br(outro_valor, incluir_simbolo=False)
                     except Exception:
                         outro_valor_formatado = str(outro_valor)
@@ -295,6 +259,12 @@ def agrupar_respostas_por_pagina(respostas: Dict[str, Any]) -> Dict[str, Dict[st
                 unidade = get_unidade(campo, valor, modelo_elevador)
                 if unidade:
                     valor = f"{valor} {unidade}"
+                
+                # Special handling for 'Capacidade' to use 'Capacidade (pessoas)' if applicable
+                if campo == "Capacidade" and "passageiro" in modelo_elevador:
+                    if "Capacidade (pessoas)" in respostas:
+                        dados_pagina["Capacidade (pessoas)"] = f"{safe_int(respostas['Capacidade (pessoas)'])} pessoas"
+                    continue # Skip the general capacity if 'Capacidade (pessoas)' is more specific
 
                 dados_pagina[campo] = valor
 
