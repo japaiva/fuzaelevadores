@@ -12,7 +12,7 @@
     <h5 class="card-title mb-0">
       <i class="fas fa-dollar-sign me-2"></i>Proposta {{ proposta.numero }} - Dados Comerciais
     </h5>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_list' %}"  ✅ Sempre para a lista
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_list' %}">
       <i class="fas fa-arrow-left me-1"></i> Voltar
     </a>
   </div>
@@ -281,7 +281,8 @@
 
       <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4 mb-4">
-        <a class="btn btn-outline-secondary" href="{% url 'vendedor:proposta_step2' proposta.pk %}">
+        <!-- ✅ CORRIGIDO: usar pedido_step2 com PK para voltar -->
+        <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step2' proposta.pk %}">
           <i class="fas fa-arrow-left me-1"></i> Anterior
         </a>
         <button class="btn btn-success" type="submit">
@@ -379,15 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Atualizar campo de desconto
         if (percentualDescontoInput) {
             percentualDescontoInput.value = percentualDesconto.toFixed(2);
-        }
-        
-        // Calcular valor da entrada baseado no percentual
-        let valorEntradaCalculado = valorEntrada;
-        if (percentualEntrada > 0 && !valorEntrada) {
-            valorEntradaCalculado = precoNegociado * (percentualEntrada / 100);
-            if (valorEntradaInput) {
-                valorEntradaInput.value = valorEntradaCalculado.toFixed(2);
-            }
         }
         
         // Calcular valor das parcelas

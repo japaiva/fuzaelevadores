@@ -10,7 +10,8 @@
       <i class="fas fa-clipboard-list me-2"></i>Propostas
     </h5>
     <div>
-      <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
+      <!-- ✅ CORRIGIDO: usar pedido_step1 sem argumentos para nova proposta -->
+                        <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
         <i class="fas fa-plus me-1"></i> Nova Proposta
       </a>
       <a href="{% url 'vendedor:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
@@ -80,7 +81,6 @@
                 </div>
               </td>
 
-
               <td>
                 <div class="d-flex align-items-start">
                   <div class="flex-grow-1">
@@ -93,13 +93,13 @@
 
               <td>
                 <div class="valor-info">
-                  {% if pedido.preco_negociado or pedido.preco_venda_calculado %}
+                  <!-- ✅ CORRIGIDO: usar novos campos de valor -->
+                  {% if pedido.valor_proposta or pedido.valor_calculado or pedido.preco_negociado or pedido.preco_venda_calculado %}
                     <div class="valor-principal">
                       <strong class="text-success">
-                      {{ pedido.preco_negociado|default:pedido.preco_venda_calculado|formato_br }}
+                        {{ pedido.valor_proposta|default:pedido.valor_calculado|default:pedido.preco_negociado|default:pedido.preco_venda_calculado|formato_br }}
                       </strong>
                     </div>
-
                   {% else %}
                     <span class="text-muted">
                       <i class="fas fa-calculator me-1"></i>Não calculado
@@ -107,10 +107,6 @@
                   {% endif %}
                 </div>
               </td>
-
-
-
-
 
               <td class="text-end">
                 <div class="btn-group" role="group">
@@ -121,7 +117,7 @@
                     <i class="fas fa-eye"></i>
                   </a>
                   {% if pedido.pode_editar %}
-                  <a href="{% url 'vendedor:pedido_step1' pedido.pk %}" 
+                  <a href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}" 
                      class="btn btn-sm btn-outline-warning" 
                      title="Editar Proposta"
                      data-bs-toggle="tooltip">
@@ -141,7 +137,8 @@
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
                         </a>
                       </li>
-                      {% if pedido.preco_venda_calculado %}
+                      <!-- ✅ CORRIGIDO: verificar novos campos de valor -->
+                      {% if pedido.valor_proposta or pedido.valor_calculado or pedido.preco_venda_calculado %}
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" target="_blank">
                           <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
@@ -175,9 +172,6 @@
               <td colspan="7" class="text-center py-5">
                 <div class="empty-state">
                   <h5 class="text-muted">Nenhuma proposta encontrada</h5>
-                  <p class="text-muted mb-4">
-
-                  </p>
                   <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-lg">
                     <i class="fas fa-plus me-2"></i>Criar Primeira Proposta
                   </a>

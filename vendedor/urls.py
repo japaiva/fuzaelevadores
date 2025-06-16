@@ -94,10 +94,6 @@ urlpatterns = [
     path('api/clientes/<int:cliente_id>/info/', views.api_cliente_info, name='api_cliente_info'),
     path('api/clientes/create/', views.cliente_create_ajax, name='cliente_create_ajax'),
     
-    # =============================================================================
-    # RELATÓRIOS
-    # =============================================================================
-    path('relatorios/', views.relatorios_vendedor, name='relatorios'),
 ]
 
 # =============================================================================
