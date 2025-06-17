@@ -1,4 +1,4 @@
-# management/commands/popular_grupos_subgrupos.py - VERSÃO CORRIGIDA
+# management/commands/popular_grupos_subgrupos.py - VERSÃO CORRIGIDA SEM CAMPOS REMOVIDOS
 
 import os
 import pandas as pd
@@ -147,8 +147,7 @@ class Command(BaseCommand):
                     # Dados únicos do grupo
                     if grupo_codigo not in grupos_data:
                         grupos_data[grupo_codigo] = {
-                            'nome': grupo_nome,
-                            'tipo_produto': 'MP'
+                            'nome': grupo_nome
                         }
 
                     # Dados do subgrupo
@@ -166,15 +165,23 @@ class Command(BaseCommand):
                 grupos_objetos = {}
                 
                 for codigo, dados in grupos_data.items():
+                    # Verificar quais campos o modelo realmente tem
+                    defaults = {
+                        'nome': dados['nome'],
+                        'criado_por': usuario_admin
+                    }
+                    
+                    # Adicionar campos opcionais se existirem no modelo
+                    grupo_fields = [field.name for field in GrupoProduto._meta.get_fields()]
+                    
+                    if 'ativo' in grupo_fields:
+                        defaults['ativo'] = True
+                    if 'tipo_produto' in grupo_fields:
+                        defaults['tipo_produto'] = 'MP'
+                    
                     grupo, created = GrupoProduto.objects.get_or_create(
                         codigo=codigo,
-                        defaults={
-                            'nome': dados['nome'],
-                            'tipo_produto': 'MP',
-                            'descricao': f'Grupo importado: {dados["nome"]}',
-                            'ativo': True,
-                            'criado_por': usuario_admin
-                        }
+                        defaults=defaults
                     )
                     grupos_objetos[codigo] = grupo
                     
@@ -201,16 +208,24 @@ class Command(BaseCommand):
                 for chave, subgrupo_data in subgrupos_unicos.items():
                     grupo = grupos_objetos[subgrupo_data['grupo_codigo']]
                     
+                    # Verificar quais campos o modelo SubgrupoProduto realmente tem
+                    defaults = {
+                        'nome': subgrupo_data['nome'],
+                        'criado_por': usuario_admin
+                    }
+                    
+                    # Adicionar campos opcionais se existirem no modelo
+                    subgrupo_fields = [field.name for field in SubgrupoProduto._meta.get_fields()]
+                    
+                    if 'ativo' in subgrupo_fields:
+                        defaults['ativo'] = True
+                    if 'ultimo_numero' in subgrupo_fields:
+                        defaults['ultimo_numero'] = 0
+                    
                     subgrupo, created = SubgrupoProduto.objects.get_or_create(
                         grupo=grupo,
                         codigo=subgrupo_data['codigo'],
-                        defaults={
-                            'nome': subgrupo_data['nome'],
-                            'descricao': f'Subgrupo importado: {subgrupo_data["nome"]}',
-                            'ultimo_numero': 0,
-                            'ativo': True,
-                            'criado_por': usuario_admin
-                        }
+                        defaults=defaults
                     )
                     subgrupos_objetos[chave] = subgrupo
                     
@@ -257,22 +272,36 @@ class Command(BaseCommand):
                         if gr_sg_normalizado in subgrupos_objetos:
                             subgrupo = subgrupos_objetos[gr_sg_normalizado]
                             
+                            # Verificar quais campos o modelo Produto realmente tem
+                            defaults = {
+                                'nome': nome_produto,
+                                'tipo': 'MP',
+                                'grupo': subgrupo.grupo,
+                                'subgrupo': subgrupo,
+                                'criado_por': usuario_admin,
+                                'atualizado_por': usuario_admin
+                            }
+                            
+                            # Adicionar campos opcionais se existirem no modelo
+                            produto_fields = [field.name for field in Produto._meta.get_fields()]
+                            
+                            if 'descricao' in produto_fields:
+                                defaults['descricao'] = descricao
+                            if 'unidade_medida' in produto_fields:
+                                defaults['unidade_medida'] = 'UN'
+                            if 'controla_estoque' in produto_fields:
+                                defaults['controla_estoque'] = True
+                            if 'estoque_minimo' in produto_fields:
+                                defaults['estoque_minimo'] = 5
+                            if 'estoque_atual' in produto_fields:
+                                defaults['estoque_atual'] = 0
+                            if 'status' in produto_fields:
+                                defaults['status'] = 'ATIVO'
+                            if 'disponivel' in produto_fields:
+                                defaults['disponivel'] = True
+                            
                             # SEMPRE criar produto (sem verificar se existe)
-                            produto = Produto.objects.create(
-                                nome=nome_produto,
-                                descricao=descricao,
-                                tipo='MP',
-                                grupo=subgrupo.grupo,
-                                subgrupo=subgrupo,
-                                unidade_medida='UN',
-                                controla_estoque=True,
-                                estoque_minimo=5,
-                                estoque_atual=0,
-                                status='ATIVO',
-                                disponivel=True,
-                                criado_por=usuario_admin,
-                                atualizado_por=usuario_admin
-                            )
+                            produto = Produto.objects.create(**defaults)
                             produtos_criados += 1
                             
                             # Log de progresso
@@ -299,7 +328,7 @@ class Command(BaseCommand):
                 
                 for chave, subgrupo in subgrupos_objetos.items():
                     total_produtos = Produto.objects.filter(subgrupo=subgrupo).count()
-                    if total_produtos > 0:
+                    if total_produtos > 0 and hasattr(subgrupo, 'ultimo_numero'):
                         subgrupo.ultimo_numero = total_produtos
                         subgrupo.save(update_fields=['ultimo_numero'])
                         self.stdout.write(f'  🔢 {chave}: {total_produtos} produtos')
@@ -325,7 +354,7 @@ class Command(BaseCommand):
 
                 # Exemplo de próximo código
                 primeiro_subgrupo = SubgrupoProduto.objects.order_by('grupo__codigo', 'codigo').first()
-                if primeiro_subgrupo:
+                if primeiro_subgrupo and hasattr(primeiro_subgrupo, 'ultimo_numero'):
                     proximo_codigo = f"{primeiro_subgrupo.grupo.codigo}.{primeiro_subgrupo.codigo}.{primeiro_subgrupo.ultimo_numero + 1:04d}"
                     self.stdout.write(f'\n💡 Próximo produto será: {proximo_codigo}')
 

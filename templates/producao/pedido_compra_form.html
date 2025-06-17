@@ -30,124 +30,139 @@
         </div>
       {% endif %}
 
-      <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-          <h6 class="card-title mb-0">
-            <i class="fas fa-info-circle me-2"></i>
-            Dados do Pedido
-          </h6>
-        </div>
-        <div class="card-body">
-          <!-- PRIMEIRA LINHA: Número/Status + Fornecedor -->
-          <div class="row g-3 mb-3">
-            {% if pedido %}
-              <div class="col-md-3">
-                <label class="form-label fw-bold">Número</label>
-                <div class="form-control-plaintext fw-bold text-primary fs-5">{{ pedido.numero }}</div>
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-bold">Status</label>
-                <div class="form-control-plaintext">
-                  <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
-                </div>
-              </div>
-              <div class="col-md-6">
-            {% else %}
-              <div class="col-md-12">
-            {% endif %}
-              <label for="{{ form.fornecedor.id_for_label }}" class="form-label fw-bold">
-                Fornecedor <span class="text-danger">*</span>
-              </label>
-              {{ form.fornecedor }}
-              {% if form.fornecedor.errors %}
-                <div class="invalid-feedback d-block">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  {% for error in form.fornecedor.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-          
-          <!-- SEGUNDA LINHA: Data Emissão + Prazo + Data Entrega + Prioridade - CORRIGIDA -->
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label for="{{ form.data_emissao.id_for_label }}" class="form-label fw-bold">
-                Data de Emissão <span class="text-danger">*</span>
-              </label>
-              {{ form.data_emissao }}
-              {% if form.data_emissao.errors %}
-                <div class="invalid-feedback d-block">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  {% for error in form.data_emissao.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.prazo_entrega.id_for_label }}" class="form-label fw-bold">
-                Prazo <span class="text-danger">*</span>
-              </label>
-              <div class="input-group">
-                {{ form.prazo_entrega }}
-                <span class="input-group-text">dias</span>
-              </div>
-              {% if form.prazo_entrega.errors %}
-                <div class="invalid-feedback d-block">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  {% for error in form.prazo_entrega.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.data_entrega_prevista.id_for_label }}" class="form-label fw-bold">
-                Data Entrega Prevista <span class="text-danger">*</span>
-              </label>
-              {{ form.data_entrega_prevista }}
-              {% if form.data_entrega_prevista.errors %}
-                <div class="invalid-feedback d-block">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  {% for error in form.data_entrega_prevista.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.prioridade.id_for_label }}" class="form-label fw-bold">Prioridade</label>
-              {{ form.prioridade }}
-              {% if form.prioridade.errors %}
-                <div class="invalid-feedback d-block">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-          
-          <!-- TERCEIRA LINHA: Condição Pagamento -->
-          <div class="row g-3 mt-2">
-            <div class="col-md-12">
-              <label for="{{ form.condicao_pagamento.id_for_label }}" class="form-label">Condição de Pagamento</label>
-              {{ form.condicao_pagamento }}
-              {% if form.condicao_pagamento.errors %}
-                <div class="invalid-feedback d-block">
-                  <i class="fas fa-exclamation-triangle me-1"></i>
-                  {% for error in form.condicao_pagamento.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div class="card shadow-sm mb-4">
+          <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-file-alt me-2"></i>
+                Dados do Pedido
+              </h5>
+            </div>
+            <div class="card-body">
+
+
+
+              <div class="row g-3 mb-3">
+                {% if pedido %}
+                  <div class="col-md-3">
+                    <label class="form-label">Número</label>
+                    <div class="form-control-plaintext fw-bold text-primary fs-5">{{ pedido.numero }}</div>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <div class="form-control-plaintext">
+                      <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                {% else %}
+                  <div class="col-md-12">
+                {% endif %}
+
+
+                    <label for="{{ form.fornecedor.id_for_label }}" class="form-label">
+                      Fornecedor <span class="text-danger">*</span>
+                    </label>
+                    <div class="mt-1"> {# ADIÇÃO AQUI: Adiciona uma margem superior ao wrapper do campo #}
+                      {{ form.fornecedor }}
+                    </div>
+                    {% if form.fornecedor.errors %}
+                      <div class="text-danger small mt-1">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        {% for error in form.fornecedor.errors %}{{ error }}{% endfor %}
+                      </div>
+                    {% endif %}
+
+
+                    
+                  </div>
+              </div>
+              
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
+                    Data de Emissão <span class="text-danger">*</span>
+                  </label>
+                  {{ form.data_emissao }}
+                  {% if form.data_emissao.errors %}
+                    <div class="text-danger small mt-1">
+                      <i class="fas fa-exclamation-triangle me-1"></i>
+                      {% for error in form.data_emissao.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <div class="col-md-3">
+                  <label for="{{ form.prazo_entrega.id_for_label }}" class="form-label">
+                    Prazo <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    {{ form.prazo_entrega }}
+                    <span class="input-group-text">dias</span>
+                  </div>
+                  {% if form.prazo_entrega.errors %}
+                    <div class="text-danger small mt-1">
+                      <i class="fas fa-exclamation-triangle me-1"></i>
+                      {% for error in form.prazo_entrega.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                
+                <div class="col-md-3">
+                  <label for="{{ form.data_entrega_prevista.id_for_label }}" class="form-label">
+                    Data Entrega Prevista <span class="text-danger">*</span>
+                  </label>
+                  {{ form.data_entrega_prevista }}
+                  {% if form.data_entrega_prevista.errors %}
+                    <div class="text-danger small mt-1">
+                      <i class="fas fa-exclamation-triangle me-1"></i>
+                      {% for error in form.data_entrega_prevista.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                  <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
+                  <div class="mt-1"> {# ADIÇÃO AQUI para empurrar o campo ligeiramente para baixo #}
+                    {{ form.prioridade }}
+                  </div>
+                  {% if form.prioridade.errors %}
+                    <div class="text-danger small mt-1">
+                      <i class="fas fa-exclamation-triangle me-1"></i>
+                      {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+              </div>
+              
+              <div class="row g-3 mt-2">
+                <div class="col-md-12">
+                  <label for="{{ form.condicao_pagamento.id_for_label }}" class="form-label">Condição de Pagamento</label>
+                  <div class="mt-1"> {# ADIÇÃO AQUI: Aplica o mesmo ajuste para Condição de Pagamento #}
+                    {{ form.condicao_pagamento }}
+                  </div>
+                  {% if form.condicao_pagamento.errors %}
+                    <div class="text-danger small mt-1">
+                      <i class="fas fa-exclamation-triangle me-1"></i>
+                      {% for error in form.condicao_pagamento.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+                
+              </div>
+            </div>
+          </div>
+
+      <!-- Bloco de Itens do Pedido -->
+      <div class="card shadow mt-4">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <h6 class="card-title mb-0">
-            <i class="fas fa-boxes me-2"></i>
+          <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>
             Itens do Pedido
-            <span class="badge bg-primary ms-2" id="contador-itens">0</span>
-          </h6>
-          <button type="button" class="btn btn-sm btn-primary" id="btn-adicionar-item">
+            <span class="badge bg-secondary ms-2" id="contador-itens">0</span>
+          </h5>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-adicionar-item">
             <i class="fas fa-plus me-1"></i> Adicionar Item
           </button>
         </div>
@@ -158,13 +173,13 @@
             <table class="table table-bordered table-hover mb-0" id="itens-table">
               <thead class="table-light">
                 <tr>
-                  <th style="width: 5%">#</th>
+                  <th style="width: 5%" class="text-center">#</th>
                   <th style="width: 30%">Produto <span class="text-danger">*</span></th>
-                  <th style="width: 12%">Quantidade <span class="text-danger">*</span></th>
-                  <th style="width: 15%">Valor Unitário <span class="text-danger">*</span></th>
-                  <th style="width: 15%">Total</th>
+                  <th style="width: 12%" class="text-center">Quantidade <span class="text-danger">*</span></th>
+                  <th style="width: 15%" class="text-center">Valor Unitário <span class="text-danger">*</span></th>
+                  <th style="width: 15%" class="text-center">Total</th>
                   <th style="width: 18%">Observações</th>
-                  <th style="width: 5%">Ações</th>
+                  <th style="width: 5%" class="text-center">Ações</th>
                 </tr>
               </thead>
               <tbody id="itens-tbody">
@@ -178,47 +193,47 @@
                       <span class="fw-bold text-muted item-numero">{{ forloop.counter }}</span>
                     </td>
                     
-                    <td>
+                    <td class="align-middle">
                       {{ form_item.produto }}
                       {% if form_item.produto.errors %}
-                        <div class="invalid-feedback d-block">
+                        <div class="text-danger small mt-1">
                           <i class="fas fa-exclamation-triangle me-1"></i>
                           {{ form_item.produto.errors.0 }}
                         </div>
                       {% endif %}
                     </td>
                     
-                    <td>
+                    <td class="align-middle">
                       {{ form_item.quantidade }}
                       {% if form_item.quantidade.errors %}
-                        <div class="invalid-feedback d-block">
+                        <div class="text-danger small mt-1">
                           <i class="fas fa-exclamation-triangle me-1"></i>
                           {{ form_item.quantidade.errors.0 }}
                         </div>
                       {% endif %}
                     </td>
                     
-                    <td>
+                    <td class="align-middle">
                       <div class="input-group">
                         <span class="input-group-text">R$</span>
                         {{ form_item.valor_unitario }}
                       </div>
                       {% if form_item.valor_unitario.errors %}
-                        <div class="invalid-feedback d-block">
+                        <div class="text-danger small mt-1">
                           <i class="fas fa-exclamation-triangle me-1"></i>
                           {{ form_item.valor_unitario.errors.0 }}
                         </div>
                       {% endif %}
                     </td>
                     
-                    <td class="align-middle">
+                    <td class="text-center align-middle">
                       <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
                     </td>
                     
-                    <td>
+                    <td class="align-middle">
                       {{ form_item.observacoes }}
                       {% if form_item.observacoes.errors %}
-                        <div class="invalid-feedback d-block">
+                        <div class="text-danger small mt-1">
                           <i class="fas fa-exclamation-triangle me-1"></i>
                           {{ form_item.observacoes.errors.0 }}
                         </div>
@@ -245,17 +260,18 @@
         </div>
       </div>
 
-      <div class="card shadow-sm mb-4">
+      <!-- Bloco de Resumo Financeiro -->
+      <div class="card shadow mt-4">
         <div class="card-header bg-light">
-          <h6 class="card-title mb-0">
+          <h5 class="card-title mb-0">
             <i class="fas fa-calculator me-2"></i>
             Resumo Financeiro
-          </h6>
+          </h5>
         </div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-3">
-              <label class="form-label fw-bold">Subtotal dos Itens</label>
+              <label class="form-label">Subtotal dos Itens</label>
               <div class="form-control-plaintext fw-bold fs-5" id="subtotal-display">R$ 0,00</div>
             </div>
             
@@ -266,12 +282,11 @@
                 <span class="input-group-text">%</span>
               </div>
               {% if form.desconto_percentual.errors %}
-                <div class="invalid-feedback d-block">
+                <div class="text-danger small mt-1">
                   <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.desconto_percentual.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
-              <small class="form-text text-muted">Desconto sobre o subtotal</small>
             </div>
             
             <div class="col-md-3">
@@ -281,7 +296,7 @@
                 {{ form.valor_frete }}
               </div>
               {% if form.valor_frete.errors %}
-                <div class="invalid-feedback d-block">
+                <div class="text-danger small mt-1">
                   <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.valor_frete.errors %}{{ error }}{% endfor %}
                 </div>
@@ -289,41 +304,24 @@
             </div>
             
             <div class="col-md-3">
-              <label class="form-label fw-bold text-primary">Total Geral</label>
+              <label class="form-label text-primary">Total Geral</label>
               <div class="form-control-plaintext fw-bold fs-4 text-primary" id="total-geral">
                 R$ 0,00
               </div>
             </div>
           </div>
           
-          <hr class="my-3">
-          <div class="row text-center">
-            <div class="col-3">
-              <div class="small text-muted">Subtotal</div>
-              <div class="fw-bold" id="resumo-subtotal">R$ 0,00</div>
-            </div>
-            <div class="col-3">
-              <div class="small text-muted">Desconto</div>
-              <div class="fw-bold text-warning" id="resumo-desconto">R$ 0,00</div>
-            </div>
-            <div class="col-3">
-              <div class="small text-muted">Frete</div>
-              <div class="fw-bold" id="resumo-frete">R$ 0,00</div>
-            </div>
-            <div class="col-3">
-              <div class="small text-muted">Total</div>
-              <div class="fw-bold text-primary" id="resumo-total">R$ 0,00</div>
-            </div>
-          </div>
+
         </div>
       </div>
 
-      <div class="card shadow-sm mb-4">
+      <!-- Bloco de Observações -->
+      <div class="card shadow mt-4">
         <div class="card-header bg-light">
-          <h6 class="card-title mb-0">
+          <h5 class="card-title mb-0">
             <i class="fas fa-comment me-2"></i>
             Observações
-          </h6>
+          </h5>
         </div>
         <div class="card-body">
           <div class="row g-3">
@@ -334,7 +332,7 @@
               </label>
               {{ form.observacoes }}
               {% if form.observacoes.errors %}
-                <div class="invalid-feedback d-block">
+                <div class="text-danger small mt-1">
                   <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
                 </div>
@@ -348,7 +346,7 @@
               </label>
               {{ form.observacoes_internas }}
               {% if form.observacoes_internas.errors %}
-                <div class="invalid-feedback d-block">
+                <div class="text-danger small mt-1">
                   <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.observacoes_internas.errors %}{{ error }}{% endfor %}
                 </div>
@@ -358,22 +356,12 @@
         </div>
       </div>
 
-      <div class="d-flex justify-content-between">
-        <div>
-          <a href="{% url 'producao:pedido_compra_list' %}" class="btn btn-secondary">
-            <i class="fas fa-times me-1"></i> Cancelar
-          </a>
-        </div>
-        
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-primary" id="btn-rascunho">
-            <i class="fas fa-save me-1"></i> Salvar Rascunho
-          </button>
-          <button type="submit" class="btn btn-primary" id="btn-salvar">
-            <i class="fas fa-check me-1"></i> 
-            {% if pedido %}Atualizar Pedido{% else %}Criar Pedido{% endif %}
-          </button>
-        </div>
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> 
+          {% if pedido %}Atualizar Pedido{% else %}Criar Pedido{% endif %}
+        </button>
       </div>
     </form>
   </div>
@@ -385,7 +373,7 @@
     <td class="text-center align-middle">
       <span class="fw-bold text-muted item-numero">1</span>
     </td>
-    <td>
+    <td class="align-middle">
       <select name="form-__prefix__-produto" id="id_form-__prefix__-produto" class="form-control" required>
         <option value="">Selecione o produto...</option>
         {% if form.instance.itens.model.produto.field.queryset %}
@@ -395,21 +383,21 @@
         {% endif %}
       </select>
     </td>
-    <td>
+    <td class="align-middle">
       <input type="number" name="form-__prefix__-quantidade" id="id_form-__prefix__-quantidade" 
              class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
     </td>
-    <td>
+    <td class="align-middle">
       <div class="input-group">
         <span class="input-group-text">R$</span>
         <input type="number" name="form-__prefix__-valor_unitario" id="id_form-__prefix__-valor_unitario" 
                class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
       </div>
     </td>
-    <td class="align-middle">
+    <td class="text-center align-middle">
       <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
     </td>
-    <td>
+    <td class="align-middle">
       <input type="text" name="form-__prefix__-observacoes" id="id_form-__prefix__-observacoes" 
              class="form-control" placeholder="Observações do item...">
     </td>
@@ -695,218 +683,22 @@ function formatarMoeda(valor) {
         maximumFractionDigits: 2
     });
 }
-</script>
-{% endblock %}
 
-{% block extra_css %}
-<style>
-/* =============================================================================
-   UNIFORMIZAÇÃO COMPLETA DOS CAMPOS DE FORMULÁRIO - CORRIGIDO
-   ============================================================================= */
-
-/* Reset e base para todos os campos */
-.form-control, 
-.form-select {
-    height: 38px !important;
-    font-size: 0.875rem !important;
-    line-height: 1.5 !important;
-    border: 1px solid #ced4da !important;
-    border-radius: 0.375rem !important;
-    padding: 0.375rem 0.75rem !important;
-    background-color: #fff !important;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
-}
-
-/* Input groups - uniformização da altura */
-.input-group {
-    display: flex !important;
-    width: 100% !important;
-}
-
-.input-group .form-control {
-    height: 38px !important;
-    border-top-right-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-    border-right: 0 !important;
-    flex: 1 !important;
-}
-
-.input-group-text {
-    height: 38px !important;
-    background-color: #e9ecef !important;
-    border: 1px solid #ced4da !important;
-    border-left: 0 !important;
-    border-top-left-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
-    font-size: 0.875rem !important;
-    padding: 0.375rem 0.75rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    white-space: nowrap !important;
-}
-
-/* Textarea - altura diferenciada */
-.form-control[rows] {
-    height: auto !important;
-    min-height: 76px !important;
-}
-
-.form-control[rows="3"] {
-    min-height: 100px !important;
-}
-
-/* Labels uniformes */
-.form-label {
-    margin-bottom: 0.5rem !important;
-    font-weight: 500 !important;
-    font-size: 0.875rem !important;
-    color: #212529 !important;
-    min-height: 21px !important;
-    display: block !important;
-    line-height: 1.2 !important;
-}
-
-.form-label.fw-bold {
-    font-weight: 600 !important;
-}
-
-/* Small text / help text */
-.text-muted.d-block,
-.form-text {
-    font-size: 0.75rem !important;
-    margin-top: 0.25rem !important;
-    min-height: 18px !important;
-    line-height: 1.2 !important;
-    color: #6c757d !important;
-}
-
-/* Focus states */
-.form-control:focus, 
-.form-select:focus {
-    border-color: #0d6efd !important;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
-    outline: 0 !important;
-}
-
-/* Estados de erro */
-.form-control.is-invalid,
-.form-select.is-invalid {
-    border-color: #dc3545 !important;
-}
-
-.invalid-feedback {
-    display: block !important;
-    color: #dc3545 !important;
-    font-size: 0.75rem !important;
-    margin-top: 0.25rem !important;
-}
-
-/* Fix específico para campos de data */
-input[type="date"].form-control {
-    height: 38px !important;
-    padding: 0.375rem 0.75rem !important;
-}
-
-/* Fix específico para campos number */
-input[type="number"].form-control {
-    height: 38px !important;
-    padding: 0.375rem 0.75rem !important;
-}
-
-/* Fix para campos readonly/disabled */
-.form-control:disabled,
-.form-control[readonly] {
-    background-color: #e9ecef !important;
-    opacity: 1 !important;
-}
-
-/* Cards e backgrounds */
-.card {
-    border: none !important;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-}
-
-.card-header {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125) !important;
-    background-color: #f8f9fa !important;
-}
-
-/* Tabela de itens */
-.table th {
-    border-top: none !important;
-    font-weight: 600 !important;
-    background-color: #f8f9fa !important;
-    font-size: 0.875rem !important;
-}
-
-.table td {
-    vertical-align: middle !important;
-    font-size: 0.875rem !important;
-}
-
-/* Botões */
-.btn {
-    font-size: 0.875rem !important;
-    padding: 0.375rem 0.75rem !important;
-    border-radius: 0.375rem !important;
-}
-
-.btn-sm {
-    font-size: 0.75rem !important;
-    padding: 0.25rem 0.5rem !important;
-}
-
-/* Estados hover e animações suaves */
-.btn:hover {
-    transform: translateY(-1px) !important;
-    transition: transform 0.2s ease !important;
-}
-
-.table-hover tbody tr:hover {
-    background-color: rgba(0, 0, 0, 0.02) !important;
-}
-
-/* Responsividade para telas menores */
-@media (max-width: 768px) {
-    .form-control,
-    .form-select {
-        font-size: 16px !important; /* Evita zoom em iOS */
+// JavaScript para máscaras, se necessário
+if (typeof IMask !== 'undefined') {
+    // Mascaras de moeda nos campos de frete
+    const valorFreteInput = document.getElementById('id_valor_frete');
+    if (valorFreteInput) {
+        IMask(valorFreteInput, {
+            mask: Number,
+            scale: 2,
+            signed: false,
+            thousandsSeparator: '.',
+            padFractionalZeros: true,
+            normalizeZeros: true,
+            radix: ','
+        });
     }
 }
-
-/* Garantir que todos os elementos respeitam o box-sizing */
-*, *::before, *::after {
-    box-sizing: border-box !important;
-}
-
-/* Estados de item */
-.item-row:hover {
-    background-color: #f8f9fa !important;
-}
-
-.valor-total {
-    font-family: 'Courier New', monospace !important;
-}
-
-#contador-itens {
-    animation: pulse 0.3s ease-in-out !important;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-.btn-remover-item:hover {
-    transform: scale(1.05) !important;
-}
-
-#sem-itens {
-    border: 2px dashed #dee2e6 !important;
-    border-radius: 0.375rem !important;
-    margin: 1rem !important;
-}
-</style>
+</script>
 {% endblock %}

@@ -10,8 +10,7 @@
       <i class="fas fa-clipboard-list me-2"></i>Propostas
     </h5>
     <div>
-      <!-- ✅ CORRIGIDO: usar pedido_step1 sem argumentos para nova proposta -->
-                        <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
+      <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
         <i class="fas fa-plus me-1"></i> Nova Proposta
       </a>
       <a href="{% url 'vendedor:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
@@ -32,7 +31,7 @@
         {{ form.periodo }}
       </div>
       <div class="col-md-2">
-        {{ form.vendedor }}
+        {{ form.status }}
       </div>
       <div class="col-md-3">
         {{ form.q }}
@@ -53,9 +52,10 @@
             <th width="8%">Número</th>
             <th width="10%">Data</th>
             <th width="20%">Cliente</th>
-            <th width="30%">Projeto</th>
-            <th width="20%">Valor</th>
-            <th width="5%" class="text-end">Ações</th>
+            <th width="25%">Projeto</th>
+            <th width="10%">Status</th>
+            <th width="15%">Valor</th>
+            <th width="12%" class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -84,7 +84,7 @@
               <td>
                 <div class="d-flex align-items-start">
                   <div class="flex-grow-1">
-                    <div class="text-truncate" style="max-width: 250px;" title="{{ pedido.nome_projeto }}">
+                    <div class="text-truncate" style="max-width: 200px;" title="{{ pedido.nome_projeto }}">
                       <strong>{{ pedido.nome_projeto }}</strong>
                     </div>
                   </div>
@@ -92,17 +92,22 @@
               </td>
 
               <td>
+                <span class="badge {{ pedido.status_badge_class }}">
+                  {{ pedido.get_status_display }}
+                </span>
+              </td>
+
+              <td>
                 <div class="valor-info">
-                  <!-- ✅ CORRIGIDO: usar novos campos de valor -->
-                  {% if pedido.valor_proposta or pedido.valor_calculado or pedido.preco_negociado or pedido.preco_venda_calculado %}
+                  {% if pedido.valor_proposta %}
                     <div class="valor-principal">
                       <strong class="text-success">
-                        {{ pedido.valor_proposta|default:pedido.valor_calculado|default:pedido.preco_negociado|default:pedido.preco_venda_calculado|formato_br }}
+                        {{ pedido.valor_proposta|formato_br }}
                       </strong>
                     </div>
                   {% else %}
                     <span class="text-muted">
-                      <i class="fas fa-calculator me-1"></i>Não calculado
+                      <i class="fas fa-calculator me-1"></i>Não informado
                     </span>
                   {% endif %}
                 </div>
@@ -137,8 +142,7 @@
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
                         </a>
                       </li>
-                      <!-- ✅ CORRIGIDO: verificar novos campos de valor -->
-                      {% if pedido.valor_proposta or pedido.valor_calculado or pedido.preco_venda_calculado %}
+                      {% if pedido.valor_proposta %}
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" target="_blank">
                           <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
@@ -152,7 +156,7 @@
                         </a>
                       </li>
                       {% endif %}
-                      {% if pedido.status == 'rascunho' or pedido.status == 'simulado' %}
+                      {% if pedido.status == 'rascunho' %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
                         <a class="dropdown-item text-danger" 
@@ -294,7 +298,7 @@
   padding: 0.25rem 0.5rem;
 }
 
-.client-info, .vendedor-info {
+.client-info {
   max-width: 180px;
 }
 
@@ -358,9 +362,18 @@
   padding: 0.375rem 0.75rem;
 }
 
-/* Cores dos badges */
-.badge.bg-secondary {
-  background-color: #6c757d !important;
+/* Cores dos badges de status */
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
 }
 
 /* Tooltips */
@@ -418,7 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Auto-submit do formulário quando filtros mudarem
-    const selects = document.querySelectorAll('select[name="cliente"], select[name="modelo_elevador"], select[name="periodo"], select[name="vendedor"]');
+    const selects = document.querySelectorAll('select[name="cliente"], select[name="modelo_elevador"], select[name="periodo"], select[name="status"]');
     selects.forEach(select => {
         select.addEventListener('change', function() {
             this.form.submit();

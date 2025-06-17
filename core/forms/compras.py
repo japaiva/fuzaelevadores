@@ -1,7 +1,7 @@
 # core/forms/compras.py
 
 """
-Formulários relacionados a pedidos de compra - ATUALIZADOS
+Formulários relacionados a pedidos de compra - ATUALIZADOS COM FORM-CONTROL
 """
 
 from django import forms
@@ -27,43 +27,56 @@ class PedidoCompraForm(DateAwareModelForm, AuditMixin):
         ]
         widgets = {
             'fornecedor': forms.Select(attrs={
+                'class': 'form-control',
                 'required': True
             }),
             'data_emissao': CustomDateInput(attrs={
+                'class': 'form-control',
                 'onchange': 'calcularDataEntrega()'
             }),
             'prazo_entrega': forms.NumberInput(attrs={
+                'class': 'form-control',
                 'placeholder': 'Dias',
                 'min': '1',
                 'step': '1',
                 'onchange': 'calcularDataEntrega()'
             }),
             'data_entrega_prevista': CustomDateInput(attrs={
+                'class': 'form-control',
                 'onchange': 'calcularPrazoEntrega()'
             }),
+            'prioridade': forms.Select(attrs={
+                'class': 'form-control'
+            }),
             'condicao_pagamento': forms.TextInput(attrs={
+                'class': 'form-control',
                 'placeholder': 'Ex: 30/60/90 dias, À vista, etc.'
             }),
             'desconto_percentual': forms.NumberInput(attrs={
+                'class': 'form-control',
                 'step': '0.01',
                 'min': '0',
                 'max': '100',
                 'value': '0'
             }),
-            'valor_frete': MoneyInput(),
+            'valor_frete': MoneyInput(attrs={
+                'class': 'form-control'
+            }),
             'comprador_responsavel': forms.TextInput(attrs={
+                'class': 'form-control',
                 'placeholder': 'Nome do comprador responsável'
             }),
             'contato_compras': forms.TextInput(attrs={
+                'class': 'form-control',
                 'placeholder': 'Email ou telefone de contato'
             }),
             'observacoes': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'Observações que aparecerão no PDF do pedido...'
+                'class': 'form-control',
+                'rows': 3
             }),
             'observacoes_internas': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'Observações internas (não aparecerão no PDF)...'
+                'class': 'form-control',
+                'rows': 3
             }),
         }
         labels = {
@@ -157,11 +170,17 @@ class ItemPedidoCompraForm(BaseModelForm):
         fields = ['produto', 'quantidade', 'valor_unitario', 'observacoes']
         widgets = {
             'produto': forms.Select(attrs={
+                'class': 'form-control',
                 'required': True
             }),
-            'quantidade': QuantityInput(),
-            'valor_unitario': MoneyInput(),
+            'quantidade': QuantityInput(attrs={
+                'class': 'form-control'
+            }),
+            'valor_unitario': MoneyInput(attrs={
+                'class': 'form-control'
+            }),
             'observacoes': forms.TextInput(attrs={
+                'class': 'form-control',
                 'placeholder': 'Observações do item...'
             }),
         }
@@ -226,30 +245,46 @@ class PedidoCompraFiltroForm(BaseFiltroForm):
         queryset=Fornecedor.objects.filter(ativo=True).order_by('razao_social'),
         required=False,
         empty_label="Todos os Fornecedores",
-        label='Fornecedor'
+        label='Fornecedor',
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
     )
     status = forms.ChoiceField(
         required=False,
-        label='Status'
+        label='Status',
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
     )
     prioridade = forms.ChoiceField(
         required=False,
-        label='Prioridade'
+        label='Prioridade',
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
     )
     status_prazo = forms.ChoiceField(
         choices=STATUS_PRAZO_CHOICES,
         required=False,
-        label='Status Prazo'
+        label='Status Prazo',
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        })
     )
     data_inicio = forms.DateField(
         required=False,
         label="Data Emissão Início",
-        widget=CustomDateInput()
+        widget=CustomDateInput(attrs={
+            'class': 'form-control'
+        })
     )
     data_fim = forms.DateField(
         required=False,
         label="Data Emissão Fim",
-        widget=CustomDateInput()
+        widget=CustomDateInput(attrs={
+            'class': 'form-control'
+        })
     )
     
     def __init__(self, *args, **kwargs):
@@ -267,9 +302,11 @@ class AlterarStatusPedidoForm(BaseModelForm):
         fields = ['status', 'observacoes_internas']
         widgets = {
             'status': forms.Select(attrs={
+                'class': 'form-control',
                 'required': True
             }),
             'observacoes_internas': forms.Textarea(attrs={
+                'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'Observações sobre a mudança de status...'
             }),
@@ -364,13 +401,16 @@ class RecebimentoItemForm(forms.Form):
         max_digits=10,
         decimal_places=2,
         min_value=0,
-        widget=QuantityInput(),
+        widget=QuantityInput(attrs={
+            'class': 'form-control'
+        }),
         label='Quantidade Recebida'
     )
     
     observacoes = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
+            'class': 'form-control',
             'rows': 2,
             'placeholder': 'Observações sobre o recebimento...'
         }),
@@ -434,6 +474,7 @@ class RecebimentoPedidoForm(forms.Form):
     observacoes_gerais = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={
+            'class': 'form-control',
             'rows': 3,
             'placeholder': 'Observações gerais sobre o recebimento...'
         }),
@@ -458,7 +499,9 @@ class RecebimentoPedidoForm(forms.Form):
                         max_value=quantidade_pendente,
                         initial=quantidade_pendente,
                         required=False,
-                        widget=QuantityInput(),
+                        widget=QuantityInput(attrs={
+                            'class': 'form-control'
+                        }),
                         label=f'{item.produto.nome} (Pendente: {quantidade_pendente})'
                     )
                     
@@ -467,6 +510,7 @@ class RecebimentoPedidoForm(forms.Form):
                     self.fields[obs_field_name] = forms.CharField(
                         required=False,
                         widget=forms.TextInput(attrs={
+                            'class': 'form-control',
                             'placeholder': 'Observações do item...'
                         }),
                         label='Observações'

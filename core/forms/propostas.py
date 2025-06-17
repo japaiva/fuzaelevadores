@@ -9,13 +9,12 @@ from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 
 from core.models import Proposta, Cliente, Usuario, AnexoProposta
-# IMPORTAR OS WIDGETS CUSTOMIZADOS AQUI
-from .base import BaseModelForm, AuditMixin, ValidacaoComumMixin, MoneyInput, QuantityInput, PercentageInput #
+from .base import BaseModelForm, AuditMixin, ValidacaoComumMixin, MoneyInput, QuantityInput, PercentageInput
 
 
 class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     """
-    Formulário unificado para a Etapa 1: Cliente + Elevador + Poço
+    Formulário unificado para a Etapa 1: Cliente + Elevador + Poço + Valor Principal
     """
     
     class Meta:
@@ -26,6 +25,9 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'nome_projeto', 
             'observacoes',
             'faturado_por',
+            
+            # Valor Principal da Proposta
+            'valor_proposta',
             
             # Dados do Elevador
             'modelo_elevador',
@@ -61,18 +63,26 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
                 'required': True
             }),
             
+            # Valor Principal
+            'valor_proposta': MoneyInput(attrs={
+                'required': True,
+                'placeholder': '0,00',
+                'class': 'form-control form-control-lg',  # Destaque para campo principal
+                'style': 'font-weight: bold; font-size: 1.2em;'
+            }),
+            
             # Elevador
             'modelo_elevador': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
-            'capacidade_pessoas': QuantityInput(attrs={ # Usar QuantityInput para capacidade de pessoas
+            'capacidade_pessoas': QuantityInput(attrs={
                 'min': 1,
                 'max': 50,
                 'placeholder': '0',
                 'step': 1,
             }),
-            'capacidade': QuantityInput(attrs={ # Usar QuantityInput para capacidade em kg
+            'capacidade': QuantityInput(attrs={
                 'min': 50,
                 'max': 10000,
                 'step': 10,
@@ -90,25 +100,25 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             }),
             
             # Poço
-            'largura_poco': QuantityInput(attrs={ # Usar QuantityInput
+            'largura_poco': QuantityInput(attrs={
                 'min': 0.8,
                 'max': 10,
                 'step': 0.01,
                 'required': True
             }),
-            'comprimento_poco': QuantityInput(attrs={ # Usar QuantityInput
+            'comprimento_poco': QuantityInput(attrs={
                 'min': 0.8,
                 'max': 10,
                 'step': 0.01,
                 'required': True
             }),
-            'altura_poco': QuantityInput(attrs={ # Usar QuantityInput
+            'altura_poco': QuantityInput(attrs={
                 'min': 2.0,
                 'max': 50,
                 'step': 0.01,
                 'required': True
             }),
-            'pavimentos': QuantityInput(attrs={ # Usar QuantityInput (mesmo para inteiros, mantém padrão visual)
+            'pavimentos': QuantityInput(attrs={
                 'min': 2,
                 'max': 50,
                 'step': 1,
@@ -129,43 +139,43 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         self.fields['capacidade'].required = False  # Será calculado automaticamente
         self.fields['tracao'].required = False
         self.fields['contrapeso'].required = False
-
+        
+        # Destacar o campo valor_proposta
+        self.fields['valor_proposta'].help_text = "Valor principal desta proposta"
 
     def clean(self):
         cleaned_data = super().clean()
 
+        # Validar valor da proposta
+        valor_proposta = cleaned_data.get('valor_proposta')
+        if not valor_proposta or float(valor_proposta) <= 0:
+            self.add_error('valor_proposta', 'O valor da proposta é obrigatório e deve ser maior que zero.')
+
         modelo_elevador = cleaned_data.get('modelo_elevador')
         capacidade_pessoas = cleaned_data.get('capacidade_pessoas')
-        capacidade_kg_from_post = cleaned_data.get('capacidade') # Valor que veio do input (pode ser o calculado ou digitado)
+        capacidade_kg_from_post = cleaned_data.get('capacidade')
 
         if modelo_elevador == 'Passageiro':
             if not capacidade_pessoas or capacidade_pessoas <= 0:
                 self.add_error('capacidade_pessoas', 'Para elevador de Passageiro, a capacidade em pessoas é obrigatória e deve ser maior que zero.')
-                # Se não houver capacidade_pessoas válida, defina capacidade como None para que a validação de DB falhe se necessário
                 cleaned_data['capacidade'] = None
             else:
                 # Sobrescreve o valor de 'capacidade' com o valor calculado
-                # Isso garante que o valor salvo seja sempre 80*pessoas para Passageiro
                 cleaned_data['capacidade'] = capacidade_pessoas * 80
         else: # Para outros modelos (Carga, etc.)
             if not capacidade_kg_from_post or float(capacidade_kg_from_post) <= 0:
                 self.add_error('capacidade', 'Para este modelo de elevador, a capacidade em kg é obrigatória e deve ser maior que zero.')
-                # Se o valor vindo do POST não for válido, defina capacidade como None para que a validação de DB falhe se necessário
                 cleaned_data['capacidade'] = None
-            # Se for válido e não for Passageiro, o valor já está em capacidade_kg_from_post, que permanece em cleaned_data['capacidade']
 
         # Lógica para Acionamento, Tração e Contrapeso
         acionamento = cleaned_data.get('acionamento')
         if acionamento == 'Hidraulico':
-            # Limpa os campos se o acionamento for Hidráulico
             cleaned_data['tracao'] = None
             cleaned_data['contrapeso'] = None
         elif acionamento == 'Carretel':
-            # Limpa o contrapeso se o acionamento for Carretel
             cleaned_data['contrapeso'] = None
-        # Para 'Motor', ambos (tração e contrapeso) permanecem como estão (podem ser Required=False por padrão no init se não selecionados)
 
-        # Validações de Poço (se quiser que sejam obrigatórias e maiores que zero)
+        # Validações de Poço
         largura_poco = cleaned_data.get('largura_poco')
         comprimento_poco = cleaned_data.get('comprimento_poco')
         altura_poco = cleaned_data.get('altura_poco')
@@ -179,7 +189,6 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             self.add_error('altura_poco', 'Altura do poço é obrigatória e deve ser maior que zero.')
         if not pavimentos or int(pavimentos) < 2:
             self.add_error('pavimentos', 'Número de pavimentos é obrigatório e deve ser no mínimo 2.')
-
 
         return cleaned_data
 
@@ -224,17 +233,97 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         ]
         
         widgets = {
-            # ... outros widgets ...
-            'valor_cabine_outro': MoneyInput(), #
-            'altura_cabine': QuantityInput(), #
-            'valor_piso_cabine_outro': MoneyInput(), #
-            'valor_porta_cabine_outro': MoneyInput(), #
-            'largura_porta_cabine': QuantityInput(attrs={'step': '0.01', 'placeholder': '0,00'}), #
-            'altura_porta_cabine': QuantityInput(attrs={'step': '0.01', 'placeholder': '0,00'}), #
-            'valor_porta_pavimento_outro': MoneyInput(), #
-            'largura_porta_pavimento': QuantityInput(attrs={'step': '0.01', 'placeholder': '0,00'}), #
-            'altura_porta_pavimento': QuantityInput(attrs={'step': '0.01', 'placeholder': '0,00'}), #
-            # ...
+            # Cabine
+            'material_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'material_cabine_outro': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Especifique o material'
+            }),
+            'valor_cabine_outro': MoneyInput(),
+            'espessura_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'saida_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'altura_cabine': QuantityInput(attrs={
+                'step': '0.01',
+                'placeholder': '0,00',
+                'required': True
+            }),
+            'piso_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'material_piso_cabine': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'material_piso_cabine_outro': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Especifique o material'
+            }),
+            'valor_piso_cabine_outro': MoneyInput(),
+            
+            # Porta Cabine
+            'modelo_porta_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'material_porta_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'material_porta_cabine_outro': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Especifique o material'
+            }),
+            'valor_porta_cabine_outro': MoneyInput(),
+            'folhas_porta_cabine': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'largura_porta_cabine': QuantityInput(attrs={
+                'step': '0.01',
+                'placeholder': '0,00',
+                'required': True
+            }),
+            'altura_porta_cabine': QuantityInput(attrs={
+                'step': '0.01',
+                'placeholder': '0,00',
+                'required': True
+            }),
+            
+            # Porta Pavimento
+            'modelo_porta_pavimento': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'material_porta_pavimento': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'material_porta_pavimento_outro': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Especifique o material'
+            }),
+            'valor_porta_pavimento_outro': MoneyInput(),
+            'folhas_porta_pavimento': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'largura_porta_pavimento': QuantityInput(attrs={
+                'step': '0.01',
+                'placeholder': '0,00',
+                'required': True
+            }),
+            'altura_porta_pavimento': QuantityInput(attrs={
+                'step': '0.01',
+                'placeholder': '0,00',
+                'required': True
+            }),
         }
 
 
@@ -271,7 +360,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'prazo_entrega_dias': QuantityInput(attrs={ # Usar QuantityInput
+            'prazo_entrega_dias': QuantityInput(attrs={
                 'min': 1,
                 'max': 365,
                 'placeholder': '45'
@@ -281,18 +370,18 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'forma_pagamento': forms.Select(attrs={
                 'class': 'form-select'
             }),
-            'valor_entrada': MoneyInput(), # Usar MoneyInput
-            'percentual_entrada': PercentageInput(), # Usar PercentageInput
+            'valor_entrada': MoneyInput(),
+            'percentual_entrada': PercentageInput(),
             'data_vencimento_entrada': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'numero_parcelas': QuantityInput(attrs={ # Usar QuantityInput
+            'numero_parcelas': QuantityInput(attrs={
                 'min': '1',
                 'max': '60',
                 'placeholder': '1'
             }),
-            'valor_parcela': MoneyInput(), # Usar MoneyInput
+            'valor_parcela': MoneyInput(),
             'tipo_parcela': forms.Select(attrs={
                 'class': 'form-select'
             }),
@@ -302,8 +391,8 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             
             # Preços
-            'preco_negociado': MoneyInput(), # Usar MoneyInput
-            'percentual_desconto': PercentageInput(), # Usar PercentageInput
+            'preco_negociado': MoneyInput(),
+            'percentual_desconto': PercentageInput(),
         }
     
     def __init__(self, *args, **kwargs):
@@ -426,6 +515,23 @@ class PropostaFiltroForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
     )
     
+    # Filtro por faixa de valor
+    valor_min = forms.DecimalField(
+        required=False,
+        widget=MoneyInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Valor mínimo'
+        })
+    )
+    
+    valor_max = forms.DecimalField(
+        required=False,
+        widget=MoneyInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Valor máximo'
+        })
+    )
+    
     q = forms.CharField(
         required=False,
         widget=forms.TextInput(attrs={
@@ -433,6 +539,61 @@ class PropostaFiltroForm(forms.Form):
             'placeholder': 'Buscar por número, projeto ou cliente...'
         })
     )
+
+
+class PropostaStatusForm(forms.ModelForm):
+    """Formulário para alteração de status da proposta"""
+    
+    observacao_status = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Observação sobre a mudança de status...'
+        }),
+        required=False,
+        label="Observação"
+    )
+    
+    class Meta:
+        model = Proposta
+        fields = ['status']
+        widgets = {
+            'status': forms.Select(attrs={
+                'class': 'form-select'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.usuario = kwargs.pop('usuario', None)
+        super().__init__(*args, **kwargs)
+        
+        # Limitar opções de status baseado no status atual
+        if self.instance and self.instance.status:
+            status_atual = self.instance.status
+            if status_atual == 'rascunho':
+                # De rascunho pode ir para aprovado ou rejeitado
+                choices = [
+                    ('rascunho', 'Rascunho'),
+                    ('aprovado', 'Aprovado'),
+                    ('rejeitado', 'Rejeitado'),
+                ]
+            elif status_atual == 'aprovado':
+                # De aprovado só pode voltar para rascunho
+                choices = [
+                    ('aprovado', 'Aprovado'),
+                    ('rascunho', 'Rascunho'),
+                ]
+            elif status_atual == 'rejeitado':
+                # De rejeitado pode ir para rascunho ou aprovado
+                choices = [
+                    ('rejeitado', 'Rejeitado'),
+                    ('rascunho', 'Rascunho'),
+                    ('aprovado', 'Aprovado'),
+                ]
+            else:
+                choices = Proposta.STATUS_CHOICES
+            
+            self.fields['status'].choices = choices
 
 
 class ClienteCreateForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
@@ -544,3 +705,25 @@ class AnexoPropostaForm(BaseModelForm):
                 )
         
         return arquivo
+
+
+class PropostaValorForm(forms.ModelForm):
+    """Formulário específico para edição rápida do valor da proposta"""
+    
+    class Meta:
+        model = Proposta
+        fields = ['valor_proposta']
+        widgets = {
+            'valor_proposta': MoneyInput(attrs={
+                'required': True,
+                'placeholder': '0,00',
+                'class': 'form-control form-control-lg',
+                'style': 'font-weight: bold; font-size: 1.2em;'
+            })
+        }
+    
+    def clean_valor_proposta(self):
+        valor = self.cleaned_data.get('valor_proposta')
+        if not valor or float(valor) <= 0:
+            raise ValidationError('O valor da proposta deve ser maior que zero.')
+        return valor

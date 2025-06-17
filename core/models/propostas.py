@@ -16,14 +16,8 @@ class Proposta(models.Model):
     """
     STATUS_CHOICES = [
         ('rascunho', 'Rascunho'),
-        ('simulado', 'Simulado'),
-        ('proposta_gerada', 'Proposta Gerada'),
-        ('enviado_cliente', 'Enviado ao Cliente'),
         ('aprovado', 'Aprovado'),
         ('rejeitado', 'Rejeitado'),
-        ('em_producao', 'Em Produção'),
-        ('concluido', 'Concluído'),
-        ('cancelado', 'Cancelado'),
     ]
 
     FORMA_PAGAMENTO_CHOICES = [
@@ -53,7 +47,7 @@ class Proposta(models.Model):
 
     # === IDENTIFICAÇÃO ===
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    numero = models.CharField(max_length=20, unique=True, verbose_name="Número da Proposta")
+    numero = models.CharField(max_length=8, unique=True, verbose_name="Número da Proposta")
     nome_projeto = models.CharField(max_length=200, verbose_name="Nome do Projeto")
     
     # === RELACIONAMENTOS ===
@@ -78,6 +72,14 @@ class Proposta(models.Model):
     observacoes = models.TextField(blank=True, verbose_name="Observações")
     
     # === DADOS COMERCIAIS ===
+    # Valor Principal
+    valor_proposta = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        verbose_name="Valor da Proposta",
+        help_text="Valor principal da proposta"
+    )
+    
     # Validade e Vencimento
     data_validade = models.DateField(
         blank=True, 
@@ -540,35 +542,39 @@ class Proposta(models.Model):
             models.Index(fields=['-criado_em']),
             models.Index(fields=['status']),
             models.Index(fields=['data_validade']),
+            models.Index(fields=['valor_proposta']),  # Índice para o campo principal
         ]
     
     def __str__(self):
-        return f"{self.numero} - {self.nome_projeto}"
+        return f"{self.numero} - {self.nome_projeto} - R$ {self.valor_proposta:,.2f}"
     
     def save(self, *args, **kwargs):
-        """Salvar com número automático e definir data de validade"""
+        """Salvar com número automático formato 25.00001 e definir data de validade"""
         if not self.numero:
-            # Gerar número sequencial PROP2025001
+            # Gerar número sequencial formato YY.00001
             from datetime import datetime
             
             ano_atual = datetime.now().year
+            ano_dois_digitos = str(ano_atual)[-2:]  # Pega os dois últimos dígitos do ano
+            
+            # Buscar último número do ano atual
             ultimo_pedido = Proposta.objects.filter(
-                criado_em__year=ano_atual
+                numero__startswith=f'{ano_dois_digitos}.'
             ).order_by('-numero').first()
             
             if ultimo_pedido:
                 try:
-                    # Extrair número sequencial do último pedido
-                    numero_limpo = ultimo_pedido.numero.replace('PROP', '').replace(str(ano_atual), '')
-                    ultimo_numero = int(numero_limpo)
+                    # Extrair número sequencial: "25.00001" -> "00001" -> 1
+                    numero_parte = ultimo_pedido.numero.split('.')[1]
+                    ultimo_numero = int(numero_parte)
                     novo_numero = ultimo_numero + 1
-                except ValueError:
+                except (ValueError, IndexError):
                     novo_numero = 1
             else:
                 novo_numero = 1
             
-            # Formato: PROP2025001
-            self.numero = f'PROP{ano_atual}{novo_numero:03d}'
+            # Formato: YY.00001 (ex: 25.00001)
+            self.numero = f'{ano_dois_digitos}.{novo_numero:05d}'
         
         # Definir data de validade padrão se não informada
         if not self.data_validade:
@@ -583,37 +589,21 @@ class Proposta(models.Model):
     def status_badge_class(self):
         """Retorna classe CSS para badge de status"""
         badges = {
-            'rascunho': 'bg-secondary',
-            'simulado': 'bg-info',
-            'proposta_gerada': 'bg-primary',
-            'enviado_cliente': 'bg-warning',
+            'rascunho': 'bg-warning',
             'aprovado': 'bg-success',
             'rejeitado': 'bg-danger',
-            'em_producao': 'bg-dark',
-            'concluido': 'bg-success',
-            'cancelado': 'bg-danger',
         }
         return badges.get(self.status, 'bg-secondary')
     
     @property
     def pode_editar(self):
         """Verifica se a proposta ainda pode ser editada"""
-        return self.status in ['rascunho', 'simulado']
-    
-    @property
-    def pode_simular(self):
-        """Verifica se a proposta pode ser simulada"""
-        return self.status in ['rascunho', 'simulado']
-    
-    @property
-    def pode_gerar_proposta(self):
-        """Verifica se pode gerar proposta"""
-        return self.status in ['simulado', 'proposta_gerada']
+        return self.status == 'rascunho'
     
     @property
     def pode_excluir(self):
         """Verifica se a proposta pode ser excluída"""
-        return self.status in ['rascunho', 'simulado']
+        return self.status == 'rascunho'
     
     @property
     def esta_vencida(self):
@@ -759,6 +749,7 @@ class Proposta(models.Model):
         """Calcula percentual de conclusão da proposta"""
         campos_obrigatorios = [
             self.cliente_id,
+            self.valor_proposta,
             self.modelo_elevador,
             self.capacidade,
             self.acionamento,
@@ -783,6 +774,7 @@ class Proposta(models.Model):
         # Verificar campos obrigatórios básicos
         campos_obrigatorios = [
             self.cliente_id,
+            self.valor_proposta,
             self.modelo_elevador,
             self.capacidade,
             self.acionamento,
@@ -799,6 +791,7 @@ class Proposta(models.Model):
         
         # Verificar valores numéricos positivos
         valores_positivos = (
+            self.valor_proposta and float(self.valor_proposta) > 0 and
             self.capacidade and float(self.capacidade) > 0 and
             self.largura_poco and float(self.largura_poco) > 0 and
             self.comprimento_poco and float(self.comprimento_poco) > 0 and
