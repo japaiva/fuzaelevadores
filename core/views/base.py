@@ -81,6 +81,7 @@ def home_view(request):
 def logout_view(request):
     """
     View para realizar o logout do usuário.
+    CORRIGIDO: Redireciona para login centralizado
     """
     # Obter o contexto antes de fazer logout
     app_context = request.session.get('app_context', 'home')
@@ -91,16 +92,12 @@ def logout_view(request):
     # Mensagem de sucesso
     messages.success(request, 'Você foi desconectado com sucesso.')
     
-    # Redirecionar com base no contexto
-    if app_context == 'gestor':
-        return redirect('gestor:login')
-    elif app_context == 'vendedor':
-        return redirect('vendedor:login')
-    elif app_context == 'producao':  # ← DESCOMENTADO
-        return redirect('producao:login')
+    # 🎯 CORRIGIDO: Login centralizado para todos os portais
+    if app_context in ['gestor', 'vendedor', 'producao']:
+        return redirect('gestor:login')  # ← MUDANÇA AQUI
     else:
         return redirect('home')
-
+    
 
 # === LOGIN VIEWS PARA CADA PORTAL ===
 

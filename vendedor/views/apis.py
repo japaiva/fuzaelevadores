@@ -318,37 +318,39 @@ def api_cliente_info(request, cliente_id):
             'success': False,
             'error': str(e)
         }, status=500)
-
+    
 
 @login_required
 @require_http_methods(["GET", "POST"])
 def cliente_create_ajax(request):
     """
     API para criar cliente via modal AJAX
+    CORRIGIDA: Retorna HTML direto no GET
     """
     if request.method == 'GET':
-        # Retornar formulário HTML
-        from core.forms.propostas import ClienteCreateForm
+        # Retornar formulário HTML diretamente
+        from core.forms.clientes import ClienteCreateForm
         form = ClienteCreateForm()
         
-        # Render do formulário como HTML
+        # Render do template como HTML direto
         from django.template.loader import render_to_string
-        html = render_to_string('vendedor/cliente_create_form.html', {
+        html = render_to_string('vendedor/cliente_create_modal.html', {
             'form': form
-        })
+        }, request=request)
         
-        return JsonResponse({
-            'success': True,
-            'html': html
-        })
+        # 🎯 MUDANÇA: Retorna HttpResponse com HTML, não JSON
+        from django.http import HttpResponse
+        return HttpResponse(html)
     
     elif request.method == 'POST':
-        from core.forms.propostas import ClienteCreateForm
+        from core.forms.clientes import ClienteCreateForm
         form = ClienteCreateForm(request.POST)
         
         if form.is_valid():
             try:
-                cliente = form.save()
+                cliente = form.save(commit=False)
+                cliente.criado_por = request.user  # Definir quem criou
+                cliente.save()
                 
                 logger.info(f"Cliente {cliente.nome} criado via AJAX pelo usuário {request.user.username}")
                 
@@ -357,7 +359,8 @@ def cliente_create_ajax(request):
                     'cliente': {
                         'id': cliente.id,
                         'nome': cliente.nome,
-                        'nome_fantasia': cliente.nome_fantasia,
+                        'nome_fantasia': cliente.nome_fantasia or '',
+                        'tipo_pessoa': cliente.get_tipo_pessoa_display(),
                     }
                 })
                 
@@ -366,37 +369,9 @@ def cliente_create_ajax(request):
                 return JsonResponse({
                     'success': False,
                     'errors': {'__all__': [str(e)]}
-                })
+                }, status=500)
         else:
             return JsonResponse({
                 'success': False,
                 'errors': form.errors
-            })
-
-
-# === FUNÇÕES AUXILIARES ===
-
-def _formatar_valor_brasileiro(valor):
-    """Formatar valor para padrão brasileiro"""
-    if not valor:
-        return "0,00"
-    return f"{float(valor):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-
-
-def _validar_desconto_usuario(usuario, percentual_desconto):
-    """
-    Validar se usuário pode aplicar o desconto
-    TODO: Implementar sistema de alçadas real
-    """
-    # Simulação de alçadas por nível de usuário
-    alcadas = {
-        'vendedor': 10.0,
-        'supervisor': 20.0,
-        'gerente': 35.0,
-        'diretor': 50.0,
-    }
-    
-    nivel_usuario = getattr(usuario, 'nivel', 'vendedor')
-    alcada_maxima = alcadas.get(nivel_usuario, 5.0)
-    
-    return percentual_desconto <= alcada_maxima, alcada_maxima
+            }, status=400)

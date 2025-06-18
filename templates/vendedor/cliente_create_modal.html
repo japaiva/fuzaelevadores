@@ -1,5 +1,5 @@
 <!-- templates/vendedor/cliente_create_modal.html -->
-<!-- Formulário simplificado para criar cliente -->
+<!-- Formulário para criação de cliente via modal -->
 
 <div class="row g-3">
   <div class="col-md-6">
@@ -139,100 +139,122 @@
   </div>
 </div>
 
-<div class="alert alert-info mt-3">
-  <i class="fas fa-info-circle me-2"></i>
-  <strong>Dica:</strong> Preencha pelo menos o nome e tipo de pessoa. Os demais campos podem ser completados depois.
-</div>
 <script>
-// Máscara para CPF/CNPJ - VERSÃO CORRIGIDA
-document.addEventListener('DOMContentLoaded', function() {
-    const tipoPessoaSelect = document.getElementById('{{ form.tipo_pessoa.id_for_label }}');
-    const cpfCnpjInput = document.getElementById('{{ form.cpf_cnpj.id_for_label }}');
-    const cepInput = document.getElementById('{{ form.cep.id_for_label }}');
-    const telefoneInput = document.getElementById('{{ form.telefone.id_for_label }}');
+// 🎯 MÁSCARAS E VALIDAÇÕES PARA O MODAL
+(function() {
+    'use strict';
     
-    // 🔧 CORRIGIDO: Máscara para telefone com limitação
+    // Aguardar um momento para garantir que os elementos foram inseridos no DOM
+    setTimeout(function() {
+        initializeModalMasks();
+    }, 100);
+    
+    function initializeModalMasks() {
+        // Buscar elementos dentro do modal
+        const tipoPessoaSelect = document.querySelector('#clienteModal [id*="tipo_pessoa"]');
+        const cpfCnpjInput = document.querySelector('#clienteModal [id*="cpf_cnpj"]');
+        const cepInput = document.querySelector('#clienteModal [id*="cep"]');
+        const telefoneInput = document.querySelector('#clienteModal [id*="telefone"]');
+        
+        console.log('Inicializando máscaras do modal...', {
+            tipoPessoa: !!tipoPessoaSelect,
+            cpfCnpj: !!cpfCnpjInput,
+            cep: !!cepInput,
+            telefone: !!telefoneInput
+        });
+        
+        // Aplicar máscara de telefone
+        if (telefoneInput) {
+            aplicarMascaraTelefone(telefoneInput);
+        }
+        
+        // Aplicar máscara de CEP
+        if (cepInput) {
+            aplicarMascaraCEP(cepInput);
+            configurarBuscaCEP(cepInput);
+        }
+        
+        // Configurar CPF/CNPJ
+        if (tipoPessoaSelect && cpfCnpjInput) {
+            configurarCpfCnpj(tipoPessoaSelect, cpfCnpjInput);
+        }
+    }
+    
     function aplicarMascaraTelefone(input) {
         input.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
-            // 🔧 LIMITAÇÃO: máximo 11 dígitos
             if (value.length > 11) {
                 value = value.substring(0, 11);
             }
             
-            // Aplicar formatação
             if (value.length <= 10) {
-                // Telefone fixo: (11) 1234-5678
                 value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
             } else {
-                // Celular: (11) 91234-5678
                 value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
             }
             e.target.value = value;
         });
         
-        // 🔧 ADICIONADO: Bloquear caracteres não numéricos
-        input.addEventListener('keydown', function(e) {
-            // Permite: backspace, delete, tab, escape, enter, setas
-            if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
-                // Permite: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                (e.keyCode === 65 && e.ctrlKey === true) ||
-                (e.keyCode === 67 && e.ctrlKey === true) ||
-                (e.keyCode === 86 && e.ctrlKey === true) ||
-                (e.keyCode === 88 && e.ctrlKey === true)) {
-                return;
-            }
-            // Bloqueia tudo que não for número
-            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                e.preventDefault();
-            }
-        });
+        bloquearNaoNumericos(input);
     }
     
-    // 🔧 CORRIGIDO: Máscara para CEP com limitação
     function aplicarMascaraCEP(input) {
         input.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
-            // 🔧 LIMITAÇÃO: máximo 8 dígitos
             if (value.length > 8) {
                 value = value.substring(0, 8);
             }
             
-            // Aplicar formatação: 12345-678
             if (value.length > 5) {
                 value = value.replace(/(\d{5})(\d{0,3})/, '$1-$2');
             }
             e.target.value = value;
         });
         
-        // 🔧 ADICIONADO: Bloquear caracteres não numéricos
-        input.addEventListener('keydown', function(e) {
-            if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
-                (e.keyCode === 65 && e.ctrlKey === true) ||
-                (e.keyCode === 67 && e.ctrlKey === true) ||
-                (e.keyCode === 86 && e.ctrlKey === true) ||
-                (e.keyCode === 88 && e.ctrlKey === true)) {
-                return;
-            }
-            if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                e.preventDefault();
-            }
-        });
+        bloquearNaoNumericos(input);
     }
     
-    // 🔧 CORRIGIDO: Máscara para CPF/CNPJ com limitação
+    function configurarCpfCnpj(tipoPessoaSelect, cpfCnpjInput) {
+        function updateCPFCNPJMask() {
+            const tipo = tipoPessoaSelect.value;
+            
+            // Remover listeners antigos
+            const newInput = cpfCnpjInput.cloneNode(true);
+            cpfCnpjInput.parentNode.replaceChild(newInput, cpfCnpjInput);
+            
+            aplicarMascaraCPFCNPJ(newInput, tipo);
+            
+            if (tipo === 'PF') {
+                newInput.placeholder = '000.000.000-00';
+                newInput.maxLength = 14;
+            } else if (tipo === 'PJ') {
+                newInput.placeholder = '00.000.000/0000-00';
+                newInput.maxLength = 18;
+            } else {
+                newInput.placeholder = 'CPF ou CNPJ';
+                newInput.maxLength = 18;
+            }
+            
+            if (newInput.value) {
+                const event = new Event('input', { bubbles: true });
+                newInput.dispatchEvent(event);
+            }
+        }
+        
+        tipoPessoaSelect.addEventListener('change', updateCPFCNPJMask);
+        updateCPFCNPJMask();
+    }
+    
     function aplicarMascaraCPFCNPJ(input, tipo) {
         input.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
             if (tipo === 'PF') {
-                // 🔧 LIMITAÇÃO CPF: máximo 11 dígitos
                 if (value.length > 11) {
                     value = value.substring(0, 11);
                 }
-                // CPF: 000.000.000-00
                 if (value.length >= 10) {
                     value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
                 } else if (value.length >= 7) {
@@ -241,11 +263,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     value = value.replace(/(\d{3})(\d{0,3})/, '$1.$2');
                 }
             } else if (tipo === 'PJ') {
-                // 🔧 LIMITAÇÃO CNPJ: máximo 14 dígitos
                 if (value.length > 14) {
                     value = value.substring(0, 14);
                 }
-                // CNPJ: 00.000.000/0000-00
                 if (value.length >= 13) {
                     value = value.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
                 } else if (value.length >= 9) {
@@ -260,7 +280,38 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.value = value;
         });
         
-        // 🔧 ADICIONADO: Bloquear caracteres não numéricos
+        bloquearNaoNumericos(input);
+    }
+    
+    function configurarBuscaCEP(cepInput) {
+        cepInput.addEventListener('blur', function() {
+            const cep = this.value.replace(/\D/g, '');
+            
+            if (cep.length === 8) {
+                fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.erro) {
+                            // Buscar campos dentro do modal
+                            const enderecoInput = document.querySelector('#clienteModal [id*="endereco"]');
+                            const bairroInput = document.querySelector('#clienteModal [id*="bairro"]');
+                            const cidadeInput = document.querySelector('#clienteModal [id*="cidade"]');
+                            const estadoInput = document.querySelector('#clienteModal [id*="estado"]');
+                            
+                            if (enderecoInput && !enderecoInput.value) enderecoInput.value = data.logradouro;
+                            if (bairroInput && !bairroInput.value) bairroInput.value = data.bairro;
+                            if (cidadeInput && !cidadeInput.value) cidadeInput.value = data.localidade;
+                            if (estadoInput && !estadoInput.value) estadoInput.value = data.uf;
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Erro ao buscar CEP:', error);
+                    });
+            }
+        });
+    }
+    
+    function bloquearNaoNumericos(input) {
         input.addEventListener('keydown', function(e) {
             if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
                 (e.keyCode === 65 && e.ctrlKey === true) ||
@@ -275,74 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Aplicar máscaras iniciais
-    if (telefoneInput) aplicarMascaraTelefone(telefoneInput);
-    if (cepInput) aplicarMascaraCEP(cepInput);
-    
-    // 🔧 CORRIGIDO: Atualizar máscara do CPF/CNPJ conforme tipo
-    if (tipoPessoaSelect && cpfCnpjInput) {
-        function updateCPFCNPJMask() {
-            const tipo = tipoPessoaSelect.value;
-            
-            // 🔧 MELHORIA: Não limpar o campo se já tem valor válido
-            // cpfCnpjInput.value = ''; // Removido para não apagar ao editar
-            
-            // Remover listeners antigos (simplificado)
-            const newInput = cpfCnpjInput.cloneNode(true);
-            cpfCnpjInput.parentNode.replaceChild(newInput, cpfCnpjInput);
-            
-            // 🔧 CORRIGIDO: Referenciar o novo input
-            aplicarMascaraCPFCNPJ(newInput, tipo);
-            
-            // Atualizar placeholder e maxlength
-            if (tipo === 'PF') {
-                newInput.placeholder = '000.000.000-00';
-                newInput.maxLength = 14; // 🔧 ADICIONADO
-            } else if (tipo === 'PJ') {
-                newInput.placeholder = '00.000.000/0000-00';
-                newInput.maxLength = 18; // 🔧 ADICIONADO
-            } else {
-                newInput.placeholder = 'CPF ou CNPJ';
-                newInput.maxLength = 18; // 🔧 ADICIONADO
-            }
-            
-            // 🔧 ADICIONADO: Se tem valor, reformatar
-            if (newInput.value) {
-                const event = new Event('input', { bubbles: true });
-                newInput.dispatchEvent(event);
-            }
-        }
-        
-        tipoPessoaSelect.addEventListener('change', updateCPFCNPJMask);
-        updateCPFCNPJMask(); // Aplicar inicialmente
-    }
-    
-    // Buscar CEP (funcionalidade opcional) - MANTIDO IGUAL
-    if (cepInput) {
-        cepInput.addEventListener('blur', function() {
-            const cep = this.value.replace(/\D/g, '');
-            
-            if (cep.length === 8) {
-                fetch(`https://viacep.com.br/ws/${cep}/json/`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (!data.erro) {
-                            const enderecoInput = document.getElementById('{{ form.endereco.id_for_label }}');
-                            const bairroInput = document.getElementById('{{ form.bairro.id_for_label }}');
-                            const cidadeInput = document.getElementById('{{ form.cidade.id_for_label }}');
-                            const estadoInput = document.getElementById('{{ form.estado.id_for_label }}');
-                            
-                            if (enderecoInput && !enderecoInput.value) enderecoInput.value = data.logradouro;
-                            if (bairroInput && !bairroInput.value) bairroInput.value = data.bairro;
-                            if (cidadeInput && !cidadeInput.value) cidadeInput.value = data.localidade;
-                            if (estadoInput && !estadoInput.value) estadoInput.value = data.uf;
-                        }
-                    })
-                    .catch(error => {
-                        console.log('Erro ao buscar CEP:', error);
-                    });
-            }
-        });
-    }
-});
+    // Expor função globalmente para ser chamada do pedido_step1.html
+    window.initializeClienteModalMasks = initializeModalMasks;
+})();
 </script>

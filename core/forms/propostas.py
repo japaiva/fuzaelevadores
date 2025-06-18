@@ -25,10 +25,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'nome_projeto', 
             'observacoes',
             'faturado_por',
-            
-            # Valor Principal da Proposta
-            'valor_proposta',
-            
+                    
             # Dados do Elevador
             'modelo_elevador',
             'capacidade_pessoas',
@@ -63,13 +60,6 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
                 'required': True
             }),
             
-            # Valor Principal
-            'valor_proposta': MoneyInput(attrs={
-                'required': True,
-                'placeholder': '0,00',
-                'class': 'form-control form-control-lg',  # Destaque para campo principal
-                'style': 'font-weight: bold; font-size: 1.2em;'
-            }),
             
             # Elevador
             'modelo_elevador': forms.Select(attrs={
@@ -139,17 +129,9 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         self.fields['capacidade'].required = False  # Será calculado automaticamente
         self.fields['tracao'].required = False
         self.fields['contrapeso'].required = False
-        
-        # Destacar o campo valor_proposta
-        self.fields['valor_proposta'].help_text = "Valor principal desta proposta"
 
     def clean(self):
         cleaned_data = super().clean()
-
-        # Validar valor da proposta
-        valor_proposta = cleaned_data.get('valor_proposta')
-        if not valor_proposta or float(valor_proposta) <= 0:
-            self.add_error('valor_proposta', 'O valor da proposta é obrigatório e deve ser maior que zero.')
 
         modelo_elevador = cleaned_data.get('modelo_elevador')
         capacidade_pessoas = cleaned_data.get('capacidade_pessoas')

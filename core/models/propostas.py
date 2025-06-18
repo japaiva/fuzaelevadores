@@ -9,6 +9,18 @@ from django.conf import settings
 from datetime import datetime, timedelta
 import uuid
 
+# core/models/propostas.py
+
+"""
+Modelo de Propostas compartilhado entre Vendedor e Produção
+VERSÃO CORRIGIDA: Campos de Step 2 e 3 com null=True, blank=True
+"""
+
+from django.db import models
+from django.conf import settings
+from datetime import datetime, timedelta
+import uuid
+
 
 class Proposta(models.Model):
     """
@@ -72,10 +84,11 @@ class Proposta(models.Model):
     observacoes = models.TextField(blank=True, verbose_name="Observações")
     
     # === DADOS COMERCIAIS ===
-    # Valor Principal
+    # Valor Principal - ✅ CORRIGIDO: Agora opcional para permitir workflow em steps
     valor_proposta = models.DecimalField(
         max_digits=12, 
-        decimal_places=2, 
+        decimal_places=2,
+        null=True, blank=True,  # ← CORRIGIDO: Permite NULL no Step 1
         verbose_name="Valor da Proposta",
         help_text="Valor principal da proposta"
     )
@@ -158,7 +171,7 @@ class Proposta(models.Model):
         verbose_name="Vencimento da 1ª Parcela"
     )
     
-    # === DADOS DO ELEVADOR ===
+    # === DADOS DO ELEVADOR === (Step 1)
     # Modelo e Capacidade
     modelo_elevador = models.CharField(
         max_length=50, 
@@ -222,7 +235,7 @@ class Proposta(models.Model):
     )
     pavimentos = models.IntegerField(verbose_name="Número de Pavimentos")
 
-    # === DADOS DAS PORTAS ===
+    # === DADOS DAS PORTAS === (Step 2) - ✅ CORRIGIDO: Todos agora são opcionais
     # Porta da Cabine
     modelo_porta_cabine = models.CharField(
         max_length=20,
@@ -235,6 +248,7 @@ class Proposta(models.Model):
             ('Cancela', 'Cancela'),
             ('Rampa', 'Rampa'),
         ],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Modelo Porta Cabine"
     )
     material_porta_cabine = models.CharField(
@@ -245,6 +259,7 @@ class Proposta(models.Model):
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
         ],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Material Porta Cabine"
     )
     material_porta_cabine_outro = models.CharField(
@@ -267,12 +282,14 @@ class Proposta(models.Model):
     )
     largura_porta_cabine = models.DecimalField(
         max_digits=8, 
-        decimal_places=2, 
+        decimal_places=2,
+        null=True, blank=True,  # ← CORRIGIDO (era este o erro!)
         verbose_name="Largura Porta Cabine (m)"
     )
     altura_porta_cabine = models.DecimalField(
         max_digits=8, 
-        decimal_places=2, 
+        decimal_places=2,
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Altura Porta Cabine (m)"
     )
     
@@ -288,6 +305,7 @@ class Proposta(models.Model):
             ('Cancela', 'Cancela'),
             ('Rampa', 'Rampa'),
         ],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Modelo Porta Pavimento"
     )
     material_porta_pavimento = models.CharField(
@@ -298,6 +316,7 @@ class Proposta(models.Model):
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
         ],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Material Porta Pavimento"
     )
     material_porta_pavimento_outro = models.CharField(
@@ -320,16 +339,18 @@ class Proposta(models.Model):
     )
     largura_porta_pavimento = models.DecimalField(
         max_digits=8, 
-        decimal_places=2, 
+        decimal_places=2,
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Largura Porta Pavimento (m)"
     )
     altura_porta_pavimento = models.DecimalField(
         max_digits=8, 
-        decimal_places=2, 
+        decimal_places=2,
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Altura Porta Pavimento (m)"
     )
 
-    # === DADOS DA CABINE ===
+    # === DADOS DA CABINE === (Step 2) - ✅ CORRIGIDO: Todos agora são opcionais
     material_cabine = models.CharField(
         max_length=50,
         choices=[
@@ -339,6 +360,7 @@ class Proposta(models.Model):
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
         ],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Material da Cabine"
     )
     material_cabine_outro = models.CharField(
@@ -356,16 +378,19 @@ class Proposta(models.Model):
     espessura_cabine = models.CharField(
         max_length=10,
         choices=[('1,2', '1,2 mm'), ('1,5', '1,5 mm'), ('2,0', '2,0 mm')],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Espessura"
     )
     saida_cabine = models.CharField(
         max_length=20,
         choices=[('Padrão', 'Padrão'), ('Oposta', 'Oposta')],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Saída"
     )
     altura_cabine = models.DecimalField(
         max_digits=8, 
-        decimal_places=2, 
+        decimal_places=2,
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Altura da Cabine (m)"
     )
     
@@ -376,6 +401,7 @@ class Proposta(models.Model):
             ('Por conta do cliente', 'Por conta do cliente'),
             ('Por conta da empresa', 'Por conta da empresa'),
         ],
+        null=True, blank=True,  # ← CORRIGIDO
         verbose_name="Piso"
     )
     material_piso_cabine = models.CharField(
@@ -546,7 +572,8 @@ class Proposta(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.numero} - {self.nome_projeto} - R$ {self.valor_proposta:,.2f}"
+        valor_display = f"R$ {self.valor_proposta:,.2f}" if self.valor_proposta else "Valor não definido"
+        return f"{self.numero} - {self.nome_projeto} - {valor_display}"
     
     def save(self, *args, **kwargs):
         """Salvar com número automático formato 25.00001 e definir data de validade"""

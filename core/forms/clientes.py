@@ -30,48 +30,48 @@ class ClienteForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'onchange': 'toggleCpfCnpjMask(this.value)'
             }),
             'nome': forms.TextInput(attrs={
-                'placeholder': 'Nome completo ou Razão Social'
+
             }),
             'nome_fantasia': forms.TextInput(attrs={
-                'placeholder': 'Nome Fantasia (para PJ)'
+
             }),
             'cpf_cnpj': forms.TextInput(attrs={
-                'placeholder': 'CPF ou CNPJ',
+
                 'data-mask': 'cpf'
             }),
             'telefone': forms.TextInput(attrs={
-                'placeholder': '(11) 99999-9999',
+                'placeholder': '(11) 99999-9999',  
                 'data-mask': 'phone'
             }),
             'email': forms.EmailInput(attrs={
-                'placeholder': 'email@exemplo.com'
+
             }),
             'contato_principal': forms.TextInput(attrs={
-                'placeholder': 'Nome do responsável'
+
             }),
             'cep': forms.TextInput(attrs={
-                'placeholder': '00000-000',
+                'placeholder': '99999-999',  
                 'data-mask': 'cep'
             }),
             'endereco': forms.TextInput(attrs={
-                'placeholder': 'Rua, Avenida, etc.'
+
             }),
             'numero': forms.TextInput(attrs={
-                'placeholder': 'Número'
+  
             }),
             'complemento': forms.TextInput(attrs={
-                'placeholder': 'Apto, Sala, etc.'
+
             }),
             'bairro': forms.TextInput(attrs={
-                'placeholder': 'Bairro'
+
             }),
             'cidade': forms.TextInput(attrs={
-                'placeholder': 'Cidade'
+
             }),
             'estado': forms.Select(choices=ESTADOS_BRASIL), # Use ESTADOS_BRASIL from core.choices
             'observacoes': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'Observações adicionais...'
+                'rows': 3
+
             }),
         }
         labels = {
@@ -165,14 +165,14 @@ class ClienteCreateForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'onchange': 'toggleCpfCnpjMask(this.value)'
             }),
             'nome': forms.TextInput(attrs={
-                'placeholder': 'Nome completo ou Razão Social',
+
                 'required': True
             }),
             'nome_fantasia': forms.TextInput(attrs={
-                'placeholder': 'Nome Fantasia (opcional)'
+
             }),
             'cpf_cnpj': forms.TextInput(attrs={
-                'placeholder': 'CPF ou CNPJ',
+
                 'data-mask': 'cpf'
             }),
             'telefone': forms.TextInput(attrs={
@@ -180,26 +180,26 @@ class ClienteCreateForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'data-mask': 'phone'
             }),
             'email': forms.EmailInput(attrs={
-                'placeholder': 'email@exemplo.com'
+
             }),
             'contato_principal': forms.TextInput(attrs={
-                'placeholder': 'Nome do responsável'
+
             }),
             'endereco': forms.TextInput(attrs={
-                'placeholder': 'Rua, Avenida, etc.'
+
             }),
             'numero': forms.TextInput(attrs={
-                'placeholder': 'Número'
+
             }),
             'bairro': forms.TextInput(attrs={
-                'placeholder': 'Bairro'
+  
             }),
             'cidade': forms.TextInput(attrs={
-                'placeholder': 'Cidade'
+
             }),
             'estado': forms.Select(choices=ESTADOS_BRASIL), # Use ESTADOS_BRASIL from core.choices
             'cep': forms.TextInput(attrs={
-                'placeholder': '00000-000',
+                'placeholder': '99999-999',  
                 'data-mask': 'cep'
             }),
         }

@@ -64,15 +64,6 @@ def proposta_step1(request, pk=None):
                 acao = "atualizada" if editing else "criada"
                 logger.info(f"Proposta {proposta.numero} {acao} pelo usuário {request.user.username}")
                 
-                # Mensagem de sucesso
-                if editing:
-                    messages.success(request, 
-                        f'Dados do cliente/elevador da proposta {proposta.numero} atualizados com sucesso!'
-                    )
-                else:
-                    messages.success(request, 
-                        f'Proposta {proposta.numero} criada com sucesso! Prossiga para configurar a cabine.'
-                    )
                 
                 # Redirecionar para próxima etapa
                 return redirect('vendedor:proposta_step2', pk=proposta.pk)
@@ -123,9 +114,6 @@ def proposta_step2(request, pk):
                 # Log da ação
                 logger.info(f"Etapa 2 da proposta {proposta.numero} salva pelo usuário {request.user.username}")
                 
-                messages.success(request, 
-                    f'Dados da cabine/portas da proposta {proposta.numero} salvos com sucesso!'
-                )
                 
                 # Redirecionar para próxima etapa
                 return redirect('vendedor:proposta_step3', pk=proposta.pk)
@@ -196,10 +184,6 @@ def proposta_step3(request, pk):
                     f"Valor final: R$ {proposta.valor_proposta or 0:.2f}"
                 )
                 
-                messages.success(request, 
-                    f'Proposta {proposta.numero} finalizada com sucesso! '
-                    f'Valor: R$ {proposta.valor_proposta:.2f}'
-                )
                 
                 # Redirecionar para detalhes da proposta
                 return redirect('vendedor:proposta_detail', pk=proposta.pk)

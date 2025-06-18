@@ -18,7 +18,8 @@
         <i class="fas fa-plus-circle me-2"></i>Nova Proposta - Cliente/Elevador
       {% endif %}
     </h5>
-    <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+
+    <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary btn-sm">
       <i class="fas fa-arrow-left me-1"></i> {% if editing %}Cancelar{% else %}Voltar{% endif %}
     </a>
   </div>
@@ -230,9 +231,11 @@
       </div>
 
       <div class="d-flex justify-content-between mt-4">
-        <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary">
-          <i class="fas fa-times me-1"></i> {% if editing %}Cancelar{% else %}Cancelar{% endif %}
+
+        <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-times me-1"></i> Cancelar
         </a>
+
         <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
           Próximo <i class="fas fa-arrow-right me-1"></i>
         </button>
@@ -518,10 +521,10 @@ document.addEventListener('DOMContentLoaded', function() {
     alturaInput.addEventListener('input', updateCalculos);
     pavimentosInput.addEventListener('input', updateCalculos);
     
-    // === VALIDAÇÃO DO FORMULÁRIO CLIENTE/ELEVADOR/POÇO ===
-    
+
+    // === SUBMIT UNIFICADO: VALIDAÇÃO ===
     form.addEventListener('submit', function(e) {
-        // Validação básica do lado do cliente para UX, mas a validação mais importante é no servidor (Django Form clean)
+        console.log('🚀 SUBMIT - Validando formulário...');
         
         // Validar cliente e projeto
         const cliente = clienteSelect.value;
@@ -550,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validar elevador
         const modelo = modeloSelect.value;
         const pessoas = parseInt(capacidadePessoasInput.value) || 0;
-        const capacidade = parseFloat(capacidadeInput.value.replace(',', '.')) || 0; // Garante que é numérico
+        const capacidade = parseFloat(capacidadeInput.value.replace(',', '.')) || 0;
         const acionamento = acionamentoSelect.value;
         
         if (modelo === 'Passageiro') {
@@ -576,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Validações de tração/contrapeso baseado no acionamento (se required=True nos campos do Django Form)
+        // Validações de tração/contrapeso baseado no acionamento
         if (acionamento === 'Motor') {
             const tracaoSelect = tracaoDiv.querySelector('select');
             const contrapesoSelect = contrapesoDiv.querySelector('select');
@@ -623,6 +626,8 @@ document.addEventListener('DOMContentLoaded', function() {
             pavimentosInput.focus();
             return;
         }
+        
+        console.log('✅ Validação concluída - enviando formulário');
     });
     
     // === INICIALIZAÇÃO ===
