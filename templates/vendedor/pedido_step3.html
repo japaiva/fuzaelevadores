@@ -11,7 +11,7 @@
       <i class="fas fa-dollar-sign me-2"></i>Proposta {{ proposta.numero }} - Dados Comerciais
     </h5>
     
-    <div class="btn-group" role="group">
+    <div class="d-flex gap-2">
       <button type="button" class="btn btn-primary btn-sm" id="btnCalcular" data-pedido-id="{{ proposta.pk }}">
         <i class="fas fa-calculator me-1"></i>Calcular
       </button>
@@ -206,7 +206,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-4" id="parcelas-div" style="display: none;"> {# Ajustado para col-md-4 #}
+            <div class="col-md-4" id="parcelas-div" style="display: none;">
               <label class="form-label" for="{{ form.numero_parcelas.id_for_label }}">Número de Parcelas*</label>
               {{ form.numero_parcelas }}
               {% if form.numero_parcelas.errors %}
@@ -216,7 +216,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-4" id="tipo-parcela-div" style="display: none;"> {# Ajustado para col-md-4 #}
+            <div class="col-md-4" id="tipo-parcela-div" style="display: none;">
               <label class="form-label" for="{{ form.tipo_parcela.id_for_label }}">Tipo de Parcela</label>
               {{ form.tipo_parcela }}
               {% if form.tipo_parcela.errors %}
@@ -226,7 +226,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-4" id="primeira-parcela-div" style="display: none;"> {# Ajustado para col-md-4 #}
+            <div class="col-md-4" id="primeira-parcela-div" style="display: none;">
               <label class="form-label" for="{{ form.primeira_parcela.id_for_label }}">Vencimento 1ª Parcela</label>
               {{ form.primeira_parcela }}
               {% if form.primeira_parcela.errors %}
@@ -236,16 +236,14 @@
               {% endif %}
             </div>
             
-            <div class="col-md-4" id="valor-parcela-div" style="display: none;"> {# Ajustado para col-md-4 #}
+            <div class="col-md-4" id="valor-parcela-div" style="display: none;">
               <label class="form-label">Valor da Parcela (calculado)</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
                 <input type="text" class="form-control text-end fw-bold bg-light text-success" id="valorParcelaCalculado" readonly>
               </div>
-
             </div>
           </div>
-          
         </div>
       </div>
 
@@ -277,8 +275,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const vendedorSelect = document.getElementById('{{ form.vendedor.id_for_label }}');
     const indicadorDesconto = document.getElementById('indicador-desconto');
     const textoDesconto = document.getElementById('texto-desconto');
-    // Adicionado: Prazo de entrega
     const prazoEntregaDiasInput = document.getElementById('{{ form.prazo_entrega_dias.id_for_label }}');
+    
+    // Campos de data
+    const dataValidadeInput = document.getElementById('{{ form.data_validade.id_for_label }}');
+    const primeiraParcelaInput = document.getElementById('{{ form.primeira_parcela.id_for_label }}');
     
     // Forma de pagamento
     const formaPagamentoSelect = document.getElementById('{{ form.forma_pagamento.id_for_label }}');
@@ -304,6 +305,35 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Botão calcular
     const btnCalcular = document.getElementById('btnCalcular');
+    
+    // === FUNÇÃO PARA CALCULAR DATA +30 DIAS ===
+    function calcularData30Dias() {
+        const hoje = new Date();
+        const data30Dias = new Date(hoje);
+        data30Dias.setDate(hoje.getDate() + 30);
+        
+        // Formato YYYY-MM-DD para input date
+        const ano = data30Dias.getFullYear();
+        const mes = String(data30Dias.getMonth() + 1).padStart(2, '0');
+        const dia = String(data30Dias.getDate()).padStart(2, '0');
+        
+        return `${ano}-${mes}-${dia}`;
+    }
+    
+    // === DEFINIR DATAS PADRÃO ===
+    function definirDatasPadrao() {
+        const data30Dias = calcularData30Dias();
+        
+        // Definir data de validade se estiver vazia
+        if (dataValidadeInput && !dataValidadeInput.value) {
+            dataValidadeInput.value = data30Dias;
+        }
+        
+        // Definir primeira parcela se estiver vazia
+        if (primeiraParcelaInput && !primeiraParcelaInput.value) {
+            primeiraParcelaInput.value = data30Dias;
+        }
+    }
     
     // === FUNÇÕES DE CÁLCULO ===
     
@@ -562,12 +592,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Validar data de validade
-            const dataValidade = document.getElementById('{{ form.data_validade.id_for_label }}').value;
-            if (dataValidade) {
+            if (dataValidadeInput.value) {
                 const hoje = new Date();
-                // Reset hours, minutes, seconds, milliseconds for comparison
                 hoje.setHours(0, 0, 0, 0); 
-                const validade = new Date(dataValidade + 'T00:00:00'); 
+                const validade = new Date(dataValidadeInput.value + 'T00:00:00'); 
                 
                 if (validade <= hoje) {
                     e.preventDefault();
@@ -581,6 +609,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // === INICIALIZAÇÃO ===
+    
+    // Definir datas padrão
+    definirDatasPadrao();
     
     updateFormaPagamento();
     calcularDesconto();
