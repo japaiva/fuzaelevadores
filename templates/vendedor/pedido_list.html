@@ -22,21 +22,27 @@
   <div class="card-header bg-white py-2">
     <form method="get" class="row g-2 align-items-center">
       <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Clientes</label>
         {{ form.cliente }}
       </div>
       <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Modelos</label>
         {{ form.modelo_elevador }}
       </div>
       <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Período</label>
         {{ form.periodo }}
       </div>
       <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Status</label>
         {{ form.status }}
       </div>
       <div class="col-md-3">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Buscar</label>
         {{ form.q }}
       </div>
       <div class="col-md-1">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">&nbsp;</label>
         <button type="submit" class="btn btn-sm btn-primary w-100">
           <i class="fas fa-search"></i>
         </button>
@@ -50,12 +56,13 @@
         <thead class="table-light">
           <tr>
             <th width="8%">Número</th>
-            <th width="10%">Data</th>
-            <th width="20%">Cliente</th>
-            <th width="25%">Projeto</th>
-            <th width="10%">Status</th>
-            <th width="15%">Valor</th>
-            <th width="12%" class="text-end">Ações</th>
+            <th width="8%">Data</th>
+            <th width="15%">Cliente</th>
+            <th width="15%">Projeto</th>
+            <th width="12%">Vendedor</th>
+            <th width="8%">Status</th>
+            <th width="18%">Valor</th>
+            <th width="11%" class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -75,7 +82,7 @@
 
               <td>
                 <div class="client-info">
-                  <div class="text-truncate" style="max-width: 180px;" title="{{ pedido.cliente.nome }}">
+                  <div class="text-truncate" style="max-width: 140px;" title="{{ pedido.cliente.nome }}">
                     <strong>{{ pedido.cliente.nome }}</strong>
                   </div>
                 </div>
@@ -84,10 +91,22 @@
               <td>
                 <div class="d-flex align-items-start">
                   <div class="flex-grow-1">
-                    <div class="text-truncate" style="max-width: 200px;" title="{{ pedido.nome_projeto }}">
+                    <div class="text-truncate" style="max-width: 140px;" title="{{ pedido.nome_projeto }}">
                       <strong>{{ pedido.nome_projeto }}</strong>
                     </div>
                   </div>
+                </div>
+              </td>
+
+              <td>
+                <div class="vendedor-info">
+                  {% if pedido.vendedor %}
+                    <div class="text-truncate" style="max-width: 120px;" title="{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}">
+                      <span class="text-muted">{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</span>
+                    </div>
+                  {% else %}
+                    <span class="text-muted fst-italic">Sem vendedor</span>
+                  {% endif %}
                 </div>
               </td>
 
@@ -97,7 +116,7 @@
                 </span>
               </td>
 
-              <td>
+              <td class="text-end">
                 <div class="valor-info">
                   {% if pedido.valor_proposta %}
                     <div class="valor-principal">
@@ -106,8 +125,8 @@
                       </strong>
                     </div>
                   {% else %}
-                    <span class="text-muted">
-                      <i class="fas fa-calculator me-1"></i>Não informado
+                    <span class="text-warning">
+                      <strong>R$ 0,00</strong>
                     </span>
                   {% endif %}
                 </div>
@@ -142,13 +161,18 @@
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
                         </a>
                       </li>
-                      {% if pedido.valor_proposta %}
+                      <!-- Orçamento sempre visível -->
                       <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:pdf_orcamento' pedido.pk %}" target="_blank">
+                        <a class="dropdown-item" href="{% url 'vendedor:gerar_pdf_orcamento' pedido.pk %}" target="_blank">
                           <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
                         </a>
                       </li>
-                      {% endif %}
+                      <!-- Alterar Status sempre visível -->
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:pedido_status' pedido.pk %}">
+                          <i class="fas fa-exchange-alt me-2"></i>Alterar Status
+                        </a>
+                      </li>
                       {% if pedido.pode_calcular %}
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_calcular' pedido.pk %}">
@@ -173,7 +197,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-center py-5">
+              <td colspan="8" class="text-center py-5">
                 <div class="empty-state">
                   <h5 class="text-muted">Nenhuma proposta encontrada</h5>
                   <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-lg">
@@ -299,16 +323,23 @@
 }
 
 .client-info {
-  max-width: 180px;
+  max-width: 160px;
+}
+
+.vendedor-info {
+  max-width: 120px;
 }
 
 .valor-info {
   text-align: right;
+  width: 100%;
+  white-space: nowrap; /* Evita quebra de linha */
 }
 
 .valor-principal {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   margin-bottom: 0.25rem;
+  white-space: nowrap; /* Garante que o valor não quebre */
 }
 
 .data-info {
@@ -362,6 +393,13 @@
   padding: 0.375rem 0.75rem;
 }
 
+/* Labels dos filtros */
+.card-header .form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
 /* Cores dos badges de status */
 .badge.bg-warning {
   background-color: #ffc107 !important;
@@ -379,6 +417,12 @@
 /* Tooltips */
 [data-bs-toggle="tooltip"] {
   cursor: pointer;
+}
+
+/* Estilo para valor zerado */
+.text-warning strong {
+  color: #f57c00 !important;
+  font-weight: 600;
 }
 
 /* Responsividade para mobile */
@@ -402,6 +446,14 @@
   
   .empty-state .fa-4x {
     font-size: 2.5rem !important;
+  }
+  
+  /* Ocultar colunas menos importantes em mobile */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
   }
 }
 

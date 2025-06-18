@@ -317,6 +317,12 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     class Meta:
         model = Proposta
         fields = [
+
+            # Dados comerciais básicos
+            'vendedor',  
+            'valor_proposta', 
+
+
             # Validade e Prazos
             'data_validade',
             'prazo_entrega_dias',
@@ -376,18 +382,29 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'preco_negociado': MoneyInput(),
             'percentual_desconto': PercentageInput(),
         }
-    
+
+
+    # Em core/forms/propostas.py na classe PropostaComercialForm
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Definir data de validade padrão
+        # Configurar queryset dos vendedores (apenas usuários com nível vendedor)
+        from core.models import Usuario
+        self.fields['vendedor'].queryset = Usuario.objects.filter(
+            nivel='vendedor', 
+            is_active=True
+        ).order_by('first_name', 'last_name')
+        self.fields['vendedor'].empty_label = "-- Selecione um vendedor --"
+        
+        # Definir data de validade padrão se não informada
         if not self.instance.pk and not self.initial.get('data_validade'):
             self.initial['data_validade'] = date.today() + timedelta(days=30)
         
         # Definir primeira parcela padrão
         if not self.instance.pk and not self.initial.get('primeira_parcela'):
             self.initial['primeira_parcela'] = date.today() + timedelta(days=30)
-    
+        
     def clean(self):
         cleaned_data = super().clean()
         forma_pagamento = cleaned_data.get('forma_pagamento')
@@ -434,94 +451,6 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             })
         
         return cleaned_data
-
-
-class PropostaFiltroForm(forms.Form):
-    """Formulário para filtros na listagem de propostas"""
-    
-    STATUS_CHOICES = [('', 'Todos')] + Proposta.STATUS_CHOICES
-    MODELO_CHOICES = [('', 'Todos')] + [
-        ('Passageiro', 'Passageiro'),
-        ('Carga', 'Carga'),
-        ('Monta Prato', 'Monta Prato'),
-        ('Plataforma Acessibilidade', 'Plataforma Acessibilidade'),
-    ]
-    
-    status = forms.ChoiceField(
-        choices=STATUS_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
-    )
-    
-    modelo_elevador = forms.ChoiceField(
-        choices=MODELO_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
-    )
-    
-    cliente = forms.ModelChoiceField(
-        queryset=Cliente.objects.filter(ativo=True).order_by('nome'),
-        required=False,
-        empty_label='Todos os clientes',
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
-    )
-    
-    vendedor = forms.ModelChoiceField(
-        queryset=Usuario.objects.filter(nivel='vendedor', is_active=True).order_by('first_name'),
-        required=False,
-        empty_label='Todos os vendedores',
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
-    )
-    
-    periodo = forms.ChoiceField(
-        choices=[
-            ('', 'Todos'),
-            ('hoje', 'Hoje'),
-            ('semana', 'Esta semana'),
-            ('mes', 'Este mês'),
-            ('ano', 'Este ano'),
-        ],
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
-    )
-    
-    validade = forms.ChoiceField(
-        choices=[
-            ('', 'Todas'),
-            ('vencidas', 'Vencidas'),
-            ('vence_hoje', 'Vencem hoje'),
-            ('vence_semana', 'Vencem esta semana'),
-            ('vigentes', 'Vigentes'),
-        ],
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
-    )
-    
-    # Filtro por faixa de valor
-    valor_min = forms.DecimalField(
-        required=False,
-        widget=MoneyInput(attrs={
-            'class': 'form-control form-control-sm',
-            'placeholder': 'Valor mínimo'
-        })
-    )
-    
-    valor_max = forms.DecimalField(
-        required=False,
-        widget=MoneyInput(attrs={
-            'class': 'form-control form-control-sm',
-            'placeholder': 'Valor máximo'
-        })
-    )
-    
-    q = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control form-control-sm',
-            'placeholder': 'Buscar por número, projeto ou cliente...'
-        })
-    )
-
 
 class PropostaStatusForm(forms.ModelForm):
     """Formulário para alteração de status da proposta"""
@@ -709,3 +638,89 @@ class PropostaValorForm(forms.ModelForm):
         if not valor or float(valor) <= 0:
             raise ValidationError('O valor da proposta deve ser maior que zero.')
         return valor
+
+class PropostaFiltroForm(forms.Form):
+    """Formulário para filtros na listagem de propostas"""
+    
+    STATUS_CHOICES = [('', 'Todos')] + Proposta.STATUS_CHOICES
+    MODELO_CHOICES = [('', 'Todos')] + [
+        ('Passageiro', 'Passageiro'),
+        ('Carga', 'Carga'),
+        ('Monta Prato', 'Monta Prato'),
+        ('Plataforma Acessibilidade', 'Plataforma Acessibilidade'),
+    ]
+    
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+    
+    modelo_elevador = forms.ChoiceField(
+        choices=MODELO_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+    
+    cliente = forms.ModelChoiceField(
+        queryset=Cliente.objects.filter(ativo=True).order_by('nome'),
+        required=False,
+        empty_label='Todos',  # ← MUDANÇA: de 'Todos os clientes' para 'Todos'
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+    
+    vendedor = forms.ModelChoiceField(
+        queryset=Usuario.objects.filter(nivel='vendedor', is_active=True).order_by('first_name'),
+        required=False,
+        empty_label='Todos',  # ← CONSISTENTE: também 'Todos'
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+    
+    periodo = forms.ChoiceField(
+        choices=[
+            ('', 'Todos'),
+            ('hoje', 'Hoje'),
+            ('semana', 'Esta semana'),
+            ('mes', 'Este mês'),
+            ('ano', 'Este ano'),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+    
+    validade = forms.ChoiceField(
+        choices=[
+            ('', 'Todas'),
+            ('vencidas', 'Vencidas'),
+            ('vence_hoje', 'Vencem hoje'),
+            ('vence_semana', 'Vencem esta semana'),
+            ('vigentes', 'Vigentes'),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+    
+    # Filtro por faixa de valor
+    valor_min = forms.DecimalField(
+        required=False,
+        widget=MoneyInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Valor mínimo'
+        })
+    )
+    
+    valor_max = forms.DecimalField(
+        required=False,
+        widget=MoneyInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Valor máximo'
+        })
+    )
+    
+    q = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control form-control-sm',
+            'placeholder': 'Buscar por número, projeto ou cliente...'
+        })
+    )

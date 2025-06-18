@@ -1,7 +1,8 @@
-# vendedor/urls.py - VERSÃO CORRIGIDA FINAL
+# vendedor/urls.py - SEU ARQUIVO CORRIGIDO COM AS ALTERAÇÕES
 
 from django.urls import path
 from . import views
+from core.views.status import vendedor_proposta_alterar_status  # ← LINHA ADICIONADA
 
 app_name = 'vendedor'
 
@@ -56,6 +57,7 @@ urlpatterns = [
     path('pedidos/<uuid:pk>/gerar-numero/', views.proposta_gerar_numero_definitivo, name='pedido_gerar_numero'),
     path('pedidos/<uuid:pk>/historico/', views.proposta_historico, name='pedido_historico'),
     path('pedidos/<uuid:pk>/anexos/', views.proposta_anexos, name='pedido_anexos'),
+    path('pedidos/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='pedido_status'),  # ← LINHA ADICIONADA
     
     # Padrão proposta (futuro)
     path('propostas/<uuid:pk>/calcular/', views.proposta_calcular, name='proposta_calcular'),
@@ -65,6 +67,7 @@ urlpatterns = [
     path('propostas/<uuid:pk>/gerar-numero/', views.proposta_gerar_numero_definitivo, name='proposta_gerar_numero'),
     path('propostas/<uuid:pk>/historico/', views.proposta_historico, name='proposta_historico'),
     path('propostas/<uuid:pk>/anexos/', views.proposta_anexos, name='proposta_anexos'),
+    path('propostas/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='proposta_status'),  # ← LINHA ADICIONADA
     
     # =============================================================================
     # GERAÇÃO DE PDFs - AMBOS OS PADRÕES
@@ -77,7 +80,10 @@ urlpatterns = [
     # Padrão proposta
     path('propostas/<uuid:pk>/pdf/orcamento/', views.gerar_pdf_orcamento, name='proposta_pdf_orcamento'),
     path('propostas/<uuid:pk>/pdf/demonstrativo/', views.gerar_pdf_demonstrativo, name='proposta_pdf_demonstrativo'),
-    
+
+    # URLs simplificadas (compatibilidade com templates)
+    path('pedidos/<uuid:pk>/orcamento.pdf', views.gerar_pdf_orcamento, name='pdf_orcamento'),  # ← MANTIDA DO SEU ARQUIVO
+
     # =============================================================================
     # APIS AJAX - AMBOS OS PADRÕES
     # =============================================================================
@@ -95,31 +101,3 @@ urlpatterns = [
     path('api/clientes/create/', views.cliente_create_ajax, name='cliente_create_ajax'),
     
 ]
-
-# =============================================================================
-# RESUMO DAS CORREÇÕES APLICADAS
-# =============================================================================
-
-"""
-PROBLEMA CORRIGIDO:
-
-1. ✅ ROTAS DE CRIAÇÃO ADICIONADAS
-   - path('pedidos/novo/step1/', views.proposta_step1, name='pedido_step1')
-   - Permite {% url 'vendedor:pedido_step1' %} sem argumentos
-
-2. ✅ ROTAS DE EDIÇÃO MANTIDAS  
-   - path('pedidos/<uuid:pk>/step1/', views.proposta_step1, name='pedido_step1_edit')
-   - Permite {% url 'vendedor:pedido_step1_edit' pk=pedido.pk %}
-
-3. ✅ COMPATIBILIDADE TOTAL
-   - Templates podem usar qualquer padrão
-   - Criação e edição funcionam separadamente
-   - Sem conflitos de URL
-
-AGORA FUNCIONA:
-- /vendedor/pedidos/novo/ → Criar proposta
-- /vendedor/pedidos/novo/step1/ → Step 1 de criação  
-- /vendedor/pedidos/{uuid}/step1/ → Step 1 de edição
-- /vendedor/pedidos/{uuid}/step2/ → Step 2
-- /vendedor/pedidos/{uuid}/step3/ → Step 3
-"""

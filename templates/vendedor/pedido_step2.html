@@ -36,7 +36,6 @@
       </div>
     </div>
     
-    
     <div class="card-body">
       <form id="cabinePortasForm" method="post">
         {% csrf_token %}
@@ -192,7 +191,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3" id="folhas-cabine-div">
+              <div class="col-md-3" id="folhas-cabine-div" style="display: none;">
                 <label class="form-label" for="{{ form.folhas_porta_cabine.id_for_label }}">Folhas</label>
                 {{ form.folhas_porta_cabine }}
                 {% if form.folhas_porta_cabine.errors %}
@@ -275,7 +274,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3" id="folhas-pavimento-div">
+              <div class="col-md-3" id="folhas-pavimento-div" style="display: none;">
                 <label class="form-label" for="{{ form.folhas_porta_pavimento.id_for_label }}">Folhas</label>
                 {{ form.folhas_porta_pavimento }}
                 {% if form.folhas_porta_pavimento.errors %}
@@ -335,7 +334,6 @@
 
         <!-- Botões de ação -->
         <div class="d-flex justify-content-between mt-4 mb-4">
-          <!-- ✅ CORRIGIDO: usar URL de edição quando tem PK -->
           <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}">
             <i class="fas fa-arrow-left me-1"></i> Anterior
           </a>
@@ -353,208 +351,248 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 STEP 2: JavaScript inicializado');
+    
     const form = document.getElementById('cabinePortasForm');
     
-    // Elementos da cabine
+    // === ELEMENTOS DO FORMULÁRIO ===
+    
+    // Cabine
     const materialCabineSelect = document.getElementById('{{ form.material_cabine.id_for_label }}');
     const materialOutroCabineDiv = document.getElementById('material-outro-cabine');
     
+    // Piso
     const pisoCabineSelect = document.getElementById('{{ form.piso_cabine.id_for_label }}');
     const materialPisoDiv = document.getElementById('material-piso-div');
     const materialPisoSelect = document.getElementById('{{ form.material_piso_cabine.id_for_label }}');
     const materialPisoOutroDiv = document.getElementById('material-piso-outro');
     
-    // Elementos da porta da cabine
-    const modeloCabineSelect = document.getElementById('{{ form.modelo_porta_cabine.id_for_label }}');
-    const materialPortaCabineSelect = document.getElementById('{{ form.material_porta_cabine.id_for_label }}');
+    // Porta da Cabine
+    const modeloPortaCabineSelect = document.getElementById('{{ form.modelo_porta_cabine.id_for_label }}');
     const folhasCabineDiv = document.getElementById('folhas-cabine-div');
+    const materialPortaCabineSelect = document.getElementById('{{ form.material_porta_cabine.id_for_label }}');
     const materialOutroPortaCabineDiv = document.getElementById('material-outro-porta-cabine');
     
-    // Elementos da porta do pavimento
-    const modeloPavimentoSelect = document.getElementById('{{ form.modelo_porta_pavimento.id_for_label }}');
-    const materialPortaPavimentoSelect = document.getElementById('{{ form.material_porta_pavimento.id_for_label }}');
+    // Porta do Pavimento
+    const modeloPortaPavimentoSelect = document.getElementById('{{ form.modelo_porta_pavimento.id_for_label }}');
     const folhasPavimentoDiv = document.getElementById('folhas-pavimento-div');
+    const materialPortaPavimentoSelect = document.getElementById('{{ form.material_porta_pavimento.id_for_label }}');
     const materialOutroPortaPavimentoDiv = document.getElementById('material-outro-porta-pavimento');
     
-    // === FUNÇÕES DA CABINE ===
+    // === FUNÇÕES UNITÁRIAS E ESPECÍFICAS ===
     
-    function updateMaterialCabine() {
-        if (!materialCabineSelect) return;
+    function toggleMaterialCabine() {
+        if (!materialCabineSelect || !materialOutroCabineDiv) return;
         
-        const material = materialCabineSelect.value;
-        if (materialOutroCabineDiv) {
-            materialOutroCabineDiv.style.display = material === 'Outro' ? 'block' : 'none';
-        }
+        const isOutro = materialCabineSelect.value === 'Outro';
+        materialOutroCabineDiv.style.display = isOutro ? 'block' : 'none';
+        
+        console.log('Material cabine:', materialCabineSelect.value, '| Mostrar outro:', isOutro);
     }
     
-    function updatePisoCabine() {
-        if (!pisoCabineSelect) return;
+    function togglePisoCabine() {
+        if (!pisoCabineSelect || !materialPisoDiv) return;
         
-        const piso = pisoCabineSelect.value;
-        const materialPiso = materialPisoSelect ? materialPisoSelect.value : '';
+        const isPorContaEmpresa = pisoCabineSelect.value === 'Por conta da empresa';
+        materialPisoDiv.style.display = isPorContaEmpresa ? 'block' : 'none';
         
-        if (materialPisoDiv) {
-            if (piso === 'Por conta da empresa') {
-                materialPisoDiv.style.display = 'block';
-                
-                if (materialPisoOutroDiv) {
-                    materialPisoOutroDiv.style.display = materialPiso === 'Outro' ? 'block' : 'none';
-                }
-            } else {
-                materialPisoDiv.style.display = 'none';
-                if (materialPisoOutroDiv) {
-                    materialPisoOutroDiv.style.display = 'none';
-                }
-            }
+        // Se escondeu o material do piso, esconder também o "outro"
+        if (!isPorContaEmpresa && materialPisoOutroDiv) {
+            materialPisoOutroDiv.style.display = 'none';
+        } else {
+            // Se mostrou, verificar se o material selecionado é "Outro"
+            toggleMaterialPiso();
         }
+        
+        console.log('Piso cabine:', pisoCabineSelect.value, '| Mostrar material:', isPorContaEmpresa);
     }
     
-    // === FUNÇÕES DAS PORTAS ===
-    
-    function updatePortaCabine() {
-        if (!modeloCabineSelect || !materialPortaCabineSelect) return;
+    function toggleMaterialPiso() {
+        if (!materialPisoSelect || !materialPisoOutroDiv) return;
         
-        const modelo = modeloCabineSelect.value;
-        const material = materialPortaCabineSelect.value;
+        const isOutro = materialPisoSelect.value === 'Outro';
+        const pisoVisible = materialPisoDiv && materialPisoDiv.style.display !== 'none';
         
-        if (folhasCabineDiv) {
-            folhasCabineDiv.style.display = modelo === 'Automática' ? 'block' : 'none';
-        }
+        // Só mostrar se o piso estiver visível E for "Outro"
+        materialPisoOutroDiv.style.display = (pisoVisible && isOutro) ? 'block' : 'none';
         
-        if (materialOutroPortaCabineDiv) {
-            materialOutroPortaCabineDiv.style.display = material === 'Outro' ? 'block' : 'none';
-        }
+        console.log('Material piso:', materialPisoSelect.value, '| Mostrar outro:', isOutro, '| Piso visível:', pisoVisible);
     }
     
-    function updatePortaPavimento() {
-        if (!modeloPavimentoSelect || !materialPortaPavimentoSelect) return;
-        
-        const modelo = modeloPavimentoSelect.value;
-        const material = materialPortaPavimentoSelect.value;
-        
-        if (folhasPavimentoDiv) {
-            folhasPavimentoDiv.style.display = modelo === 'Automática' ? 'block' : 'none';
+    function togglePortaCabine() {
+        // Controlar modelo (folhas)
+        if (modeloPortaCabineSelect && folhasCabineDiv) {
+            const isAutomatica = modeloPortaCabineSelect.value === 'Automática';
+            folhasCabineDiv.style.display = isAutomatica ? 'block' : 'none';
+            console.log('Modelo porta cabine:', modeloPortaCabineSelect.value, '| Mostrar folhas:', isAutomatica);
         }
         
-        if (materialOutroPortaPavimentoDiv) {
-            materialOutroPortaPavimentoDiv.style.display = material === 'Outro' ? 'block' : 'none';
-        }
+        // Controlar material (outro)
+        toggleMaterialPortaCabine();
     }
     
-    // === FUNÇÃO PARA CAMPOS "OUTRO" ===
-    
-    function toggleOutro(selectId, divId) {
-        const select = document.getElementById(selectId);
-        const div = document.getElementById(divId);
-        if (select && div) {
-            const check = () => {
-                div.style.display = select.value === 'Outro' ? 'block' : 'none';
-            };
-            select.addEventListener('change', check);
-            check();
+    function togglePortaPavimento() {
+        // Controlar modelo (folhas)
+        if (modeloPortaPavimentoSelect && folhasPavimentoDiv) {
+            const isAutomatica = modeloPortaPavimentoSelect.value === 'Automática';
+            folhasPavimentoDiv.style.display = isAutomatica ? 'block' : 'none';
+            console.log('Modelo porta pavimento:', modeloPortaPavimentoSelect.value, '| Mostrar folhas:', isAutomatica);
         }
+        
+        // Controlar material (outro)
+        toggleMaterialPortaPavimento();
+    }
+    
+    function toggleMaterialPortaCabine() {
+        if (!materialPortaCabineSelect || !materialOutroPortaCabineDiv) return;
+        
+        const isOutro = materialPortaCabineSelect.value === 'Outro';
+        materialOutroPortaCabineDiv.style.display = isOutro ? 'block' : 'none';
+        
+        console.log('Material porta cabine:', materialPortaCabineSelect.value, '| Mostrar outro:', isOutro);
+    }
+    
+    function toggleMaterialPortaPavimento() {
+        if (!materialPortaPavimentoSelect || !materialOutroPortaPavimentoDiv) return;
+        
+        const isOutro = materialPortaPavimentoSelect.value === 'Outro';
+        materialOutroPortaPavimentoDiv.style.display = isOutro ? 'block' : 'none';
+        
+        console.log('Material porta pavimento:', materialPortaPavimentoSelect.value, '| Mostrar outro:', isOutro);
     }
     
     // === EVENT LISTENERS ===
     
     // Cabine
     if (materialCabineSelect) {
-        materialCabineSelect.addEventListener('change', updateMaterialCabine);
+        materialCabineSelect.addEventListener('change', toggleMaterialCabine);
     }
     
+    // Piso
     if (pisoCabineSelect) {
-        pisoCabineSelect.addEventListener('change', updatePisoCabine);
+        pisoCabineSelect.addEventListener('change', togglePisoCabine);
     }
     
     if (materialPisoSelect) {
-        materialPisoSelect.addEventListener('change', updatePisoCabine);
+        materialPisoSelect.addEventListener('change', toggleMaterialPiso);
     }
     
-    // Portas
-    if (modeloCabineSelect) {
-        modeloCabineSelect.addEventListener('change', updatePortaCabine);
+    // Portas - Modelo (controla folhas)
+    if (modeloPortaCabineSelect) {
+        modeloPortaCabineSelect.addEventListener('change', togglePortaCabine);
     }
     
+    if (modeloPortaPavimentoSelect) {
+        modeloPortaPavimentoSelect.addEventListener('change', togglePortaPavimento);
+    }
+    
+    // Portas - Material (controla outro)
     if (materialPortaCabineSelect) {
-        materialPortaCabineSelect.addEventListener('change', updatePortaCabine);
-    }
-    
-    if (modeloPavimentoSelect) {
-        modeloPavimentoSelect.addEventListener('change', updatePortaPavimento);
+        materialPortaCabineSelect.addEventListener('change', toggleMaterialPortaCabine);
     }
     
     if (materialPortaPavimentoSelect) {
-        materialPortaPavimentoSelect.addEventListener('change', updatePortaPavimento);
+        materialPortaPavimentoSelect.addEventListener('change', toggleMaterialPortaPavimento);
     }
-    
-    // Configurar campos "Outro"
-    toggleOutro('{{ form.material_cabine.id_for_label }}', 'material-outro-cabine');
-    toggleOutro('{{ form.material_piso_cabine.id_for_label }}', 'material-piso-outro');
-    toggleOutro('{{ form.material_porta_cabine.id_for_label }}', 'material-outro-porta-cabine');
-    toggleOutro('{{ form.material_porta_pavimento.id_for_label }}', 'material-outro-porta-pavimento');
     
     // === VALIDAÇÃO DO FORMULÁRIO ===
     
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Validações básicas
+            console.log('🚀 Validando formulário step 2...');
+            
+            // Array de validações
             const validacoes = [
                 {
-                    condicao: materialCabineSelect && materialCabineSelect.value === 'Outro',
-                    campos: ['{{ form.material_cabine_outro.id_for_label }}', '{{ form.valor_cabine_outro.id_for_label }}'],
-                    mensagem: 'Por favor, informe o nome e valor do material da cabine.'
+                    campo: materialCabineSelect,
+                    condicao: () => materialCabineSelect.value === 'Outro',
+                    campos_required: [
+                        document.getElementById('{{ form.material_cabine_outro.id_for_label }}'),
+                        document.getElementById('{{ form.valor_cabine_outro.id_for_label }}')
+                    ],
+                    mensagem: 'Para material "Outro" da cabine, informe o nome e valor do material.',
+                    focus_campo: document.getElementById('{{ form.material_cabine_outro.id_for_label }}')
                 },
                 {
-                    condicao: modeloCabineSelect && modeloCabineSelect.value === 'Automática',
-                    campos: ['{{ form.folhas_porta_cabine.id_for_label }}'],
-                    mensagem: 'Por favor, selecione o número de folhas da porta automática da cabine.'
+                    campo: modeloPortaCabineSelect,
+                    condicao: () => modeloPortaCabineSelect && modeloPortaCabineSelect.value === 'Automática',
+                    campos_required: [
+                        document.getElementById('{{ form.folhas_porta_cabine.id_for_label }}')
+                    ],
+                    mensagem: 'Para porta automática da cabine, selecione o número de folhas.',
+                    focus_campo: document.getElementById('{{ form.folhas_porta_cabine.id_for_label }}')
                 },
                 {
-                    condicao: modeloPavimentoSelect && modeloPavimentoSelect.value === 'Automática',
-                    campos: ['{{ form.folhas_porta_pavimento.id_for_label }}'],
-                    mensagem: 'Por favor, selecione o número de folhas da porta automática do pavimento.'
+                    campo: modeloPortaPavimentoSelect,
+                    condicao: () => modeloPortaPavimentoSelect && modeloPortaPavimentoSelect.value === 'Automática',
+                    campos_required: [
+                        document.getElementById('{{ form.folhas_porta_pavimento.id_for_label }}')
+                    ],
+                    mensagem: 'Para porta automática do pavimento, selecione o número de folhas.',
+                    focus_campo: document.getElementById('{{ form.folhas_porta_pavimento.id_for_label }}')
                 },
                 {
-                    condicao: pisoCabineSelect && pisoCabineSelect.value === 'Por conta da empresa' && materialPisoSelect && materialPisoSelect.value === 'Outro',
-                    campos: ['{{ form.material_piso_cabine_outro.id_for_label }}', '{{ form.valor_piso_cabine_outro.id_for_label }}'],
-                    mensagem: 'Por favor, informe o nome e valor do material do piso.'
+                    campo: pisoCabineSelect,
+                    condicao: () => pisoCabineSelect.value === 'Por conta da empresa' && materialPisoSelect && materialPisoSelect.value === 'Outro',
+                    campos_required: [
+                        document.getElementById('{{ form.material_piso_cabine_outro.id_for_label }}'),
+                        document.getElementById('{{ form.valor_piso_cabine_outro.id_for_label }}')
+                    ],
+                    mensagem: 'Para material "Outro" do piso, informe o nome e valor do material.',
+                    focus_campo: document.getElementById('{{ form.material_piso_cabine_outro.id_for_label }}')
                 },
                 {
-                    condicao: materialPortaCabineSelect && materialPortaCabineSelect.value === 'Outro',
-                    campos: ['{{ form.material_porta_cabine_outro.id_for_label }}', '{{ form.valor_porta_cabine_outro.id_for_label }}'],
-                    mensagem: 'Por favor, informe o nome e valor do material da porta da cabine.'
+                    campo: materialPortaCabineSelect,
+                    condicao: () => materialPortaCabineSelect.value === 'Outro',
+                    campos_required: [
+                        document.getElementById('{{ form.material_porta_cabine_outro.id_for_label }}'),
+                        document.getElementById('{{ form.valor_porta_cabine_outro.id_for_label }}')
+                    ],
+                    mensagem: 'Para material "Outro" da porta da cabine, informe o nome e valor do material.',
+                    focus_campo: document.getElementById('{{ form.material_porta_cabine_outro.id_for_label }}')
                 },
                 {
-                    condicao: materialPortaPavimentoSelect && materialPortaPavimentoSelect.value === 'Outro',
-                    campos: ['{{ form.material_porta_pavimento_outro.id_for_label }}', '{{ form.valor_porta_pavimento_outro.id_for_label }}'],
-                    mensagem: 'Por favor, informe o nome e valor do material da porta do pavimento.'
+                    campo: materialPortaPavimentoSelect,
+                    condicao: () => materialPortaPavimentoSelect.value === 'Outro',
+                    campos_required: [
+                        document.getElementById('{{ form.material_porta_pavimento_outro.id_for_label }}'),
+                        document.getElementById('{{ form.valor_porta_pavimento_outro.id_for_label }}')
+                    ],
+                    mensagem: 'Para material "Outro" da porta do pavimento, informe o nome e valor do material.',
+                    focus_campo: document.getElementById('{{ form.material_porta_pavimento_outro.id_for_label }}')
                 }
             ];
             
+            // Executar validações
             for (const validacao of validacoes) {
-                if (validacao.condicao) {
-                    for (const campoId of validacao.campos) {
-                        const campo = document.getElementById(campoId);
-                        if (campo && !campo.value.trim()) {
+                if (validacao.condicao()) {
+                    for (const campo of validacao.campos_required) {
+                        if (campo && (!campo.value || campo.value.trim() === '')) {
                             e.preventDefault();
                             alert(validacao.mensagem);
-                            campo.focus();
-                            return;
+                            if (validacao.focus_campo) {
+                                validacao.focus_campo.focus();
+                            }
+                            return false;
                         }
                     }
                 }
             }
+            
+            console.log('✅ Validação step 2 concluída - enviando formulário');
+            return true;
         });
     }
     
     // === INICIALIZAÇÃO ===
     
-    updateMaterialCabine();
-    updatePisoCabine();
-    updatePortaCabine();
-    updatePortaPavimento();
+    // Executar todas as funções de toggle na inicialização para definir estado correto
+    toggleMaterialCabine();
+    togglePisoCabine();
+    togglePortaCabine();
+    togglePortaPavimento();
     
-    console.log('JavaScript inicializado com sucesso');
+    console.log('✅ STEP 2: JavaScript inicializado com sucesso');
 });
 </script>
 {% endblock %}
