@@ -2,7 +2,7 @@
 
 from django.urls import path
 from . import views
-from core.views.status import vendedor_proposta_alterar_status  # ← LINHA ADICIONADA
+from core.views.status import vendedor_proposta_alterar_status
 
 app_name = 'vendedor'
 
@@ -31,9 +31,9 @@ urlpatterns = [
     
     # Criar nova proposta (SEM PK) 
     path('pedidos/novo/', views.proposta_step1, name='pedido_create'),
-    path('pedidos/novo/step1/', views.proposta_step1, name='pedido_step1'),  # ← ADICIONADO
+    path('pedidos/novo/step1/', views.proposta_step1, name='pedido_step1'),
     path('propostas/novo/', views.proposta_step1, name='proposta_create'),
-    path('propostas/novo/step1/', views.proposta_step1, name='proposta_step1'),  # ← ADICIONADO
+    path('propostas/novo/step1/', views.proposta_step1, name='proposta_step1'),
     
     # Editar proposta existente (COM PK) - PADRÃO PEDIDO (templates atuais)
     path('pedidos/<uuid:pk>/step1/', views.proposta_step1, name='pedido_step1_edit'),
@@ -57,7 +57,7 @@ urlpatterns = [
     path('pedidos/<uuid:pk>/gerar-numero/', views.proposta_gerar_numero_definitivo, name='pedido_gerar_numero'),
     path('pedidos/<uuid:pk>/historico/', views.proposta_historico, name='pedido_historico'),
     path('pedidos/<uuid:pk>/anexos/', views.proposta_anexos, name='pedido_anexos'),
-    path('pedidos/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='pedido_status'),  # ← LINHA ADICIONADA
+    path('pedidos/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='pedido_status'),
     
     # Padrão proposta (futuro)
     path('propostas/<uuid:pk>/calcular/', views.proposta_calcular, name='proposta_calcular'),
@@ -67,7 +67,7 @@ urlpatterns = [
     path('propostas/<uuid:pk>/gerar-numero/', views.proposta_gerar_numero_definitivo, name='proposta_gerar_numero'),
     path('propostas/<uuid:pk>/historico/', views.proposta_historico, name='proposta_historico'),
     path('propostas/<uuid:pk>/anexos/', views.proposta_anexos, name='proposta_anexos'),
-    path('propostas/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='proposta_status'),  # ← LINHA ADICIONADA
+    path('propostas/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='proposta_status'),
     
     # =============================================================================
     # GERAÇÃO DE PDFs - AMBOS OS PADRÕES
@@ -82,7 +82,7 @@ urlpatterns = [
     path('propostas/<uuid:pk>/pdf/demonstrativo/', views.gerar_pdf_demonstrativo, name='proposta_pdf_demonstrativo'),
 
     # URLs simplificadas (compatibilidade com templates)
-    path('pedidos/<uuid:pk>/orcamento.pdf', views.gerar_pdf_orcamento, name='pdf_orcamento'),  # ← MANTIDA DO SEU ARQUIVO
+    path('pedidos/<uuid:pk>/orcamento.pdf', views.gerar_pdf_orcamento, name='pdf_orcamento'),
 
     # =============================================================================
     # APIS AJAX - AMBOS OS PADRÕES
@@ -91,10 +91,14 @@ urlpatterns = [
     # APIs padrão pedido (compatibilidade com templates atuais)
     path('api/pedidos/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_dados_precificacao'),
     path('api/pedidos/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_salvar_preco_negociado'),
+    # ✅ LINHA ADICIONADA: API para o botão de cálculo
+    path('api/pedidos/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_pedido_calcular_preco'), # Note 'calcular/' matching your log
     
     # APIs padrão proposta (futuro)
     path('api/propostas/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_proposta_dados_precificacao'),
     path('api/propostas/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_proposta_salvar_preco'),
+    # ✅ LINHA ADICIONADA: API para o botão de cálculo
+    path('api/propostas/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_proposta_calcular_preco'), # Note 'calcular/' matching your log
     
     # APIs de cliente (sem mudança)
     path('api/clientes/<int:cliente_id>/info/', views.api_cliente_info, name='api_cliente_info'),

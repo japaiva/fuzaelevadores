@@ -9,19 +9,6 @@ from django.conf import settings
 from datetime import datetime, timedelta
 import uuid
 
-# core/models/propostas.py
-
-"""
-Modelo de Propostas compartilhado entre Vendedor e Produção
-VERSÃO CORRIGIDA: Campos de Step 2 e 3 com null=True, blank=True
-"""
-
-from django.db import models
-from django.conf import settings
-from datetime import datetime, timedelta
-import uuid
-
-
 class Proposta(models.Model):
     """
     Modelo completo para propostas de elevadores - compartilhado entre vendedor e produção
@@ -88,9 +75,9 @@ class Proposta(models.Model):
     valor_proposta = models.DecimalField(
         max_digits=12, 
         decimal_places=2,
-        null=True, blank=True,  # ← CORRIGIDO: Permite NULL no Step 1
+        null=True, blank=True,
         verbose_name="Valor da Proposta",
-        help_text="Valor principal da proposta"
+        help_text="Valor principal da proposta (pode ser negociado)"
     )
     
     # Validade e Vencimento
@@ -248,7 +235,7 @@ class Proposta(models.Model):
             ('Cancela', 'Cancela'),
             ('Rampa', 'Rampa'),
         ],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Modelo Porta Cabine"
     )
     material_porta_cabine = models.CharField(
@@ -259,7 +246,7 @@ class Proposta(models.Model):
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
         ],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Material Porta Cabine"
     )
     material_porta_cabine_outro = models.CharField(
@@ -283,13 +270,13 @@ class Proposta(models.Model):
     largura_porta_cabine = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
-        null=True, blank=True,  # ← CORRIGIDO (era este o erro!)
+        null=True, blank=True,
         verbose_name="Largura Porta Cabine (m)"
     )
     altura_porta_cabine = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Altura Porta Cabine (m)"
     )
     
@@ -305,7 +292,7 @@ class Proposta(models.Model):
             ('Cancela', 'Cancela'),
             ('Rampa', 'Rampa'),
         ],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Modelo Porta Pavimento"
     )
     material_porta_pavimento = models.CharField(
@@ -316,7 +303,7 @@ class Proposta(models.Model):
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
         ],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Material Porta Pavimento"
     )
     material_porta_pavimento_outro = models.CharField(
@@ -340,13 +327,13 @@ class Proposta(models.Model):
     largura_porta_pavimento = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Largura Porta Pavimento (m)"
     )
     altura_porta_pavimento = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Altura Porta Pavimento (m)"
     )
 
@@ -360,7 +347,7 @@ class Proposta(models.Model):
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
         ],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Material da Cabine"
     )
     material_cabine_outro = models.CharField(
@@ -378,19 +365,19 @@ class Proposta(models.Model):
     espessura_cabine = models.CharField(
         max_length=10,
         choices=[('1,2', '1,2 mm'), ('1,5', '1,5 mm'), ('2,0', '2,0 mm')],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Espessura"
     )
     saida_cabine = models.CharField(
         max_length=20,
         choices=[('Padrão', 'Padrão'), ('Oposta', 'Oposta')],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Saída"
     )
     altura_cabine = models.DecimalField(
         max_digits=8, 
         decimal_places=2,
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Altura da Cabine (m)"
     )
     
@@ -401,7 +388,7 @@ class Proposta(models.Model):
             ('Por conta do cliente', 'Por conta do cliente'),
             ('Por conta da empresa', 'Por conta da empresa'),
         ],
-        null=True, blank=True,  # ← CORRIGIDO
+        null=True, blank=True,
         verbose_name="Piso"
     )
     material_piso_cabine = models.CharField(
@@ -487,33 +474,34 @@ class Proposta(models.Model):
     )
     
     # === PREÇOS ===
-    preco_venda_calculado = models.DecimalField(
+    preco_venda_calculado = models.DecimalField( # This will hold the system-calculated price
         max_digits=12, 
         decimal_places=2, 
         blank=True, 
         null=True,
-        verbose_name="Preço de Venda Calculado"
+        verbose_name="Preço de Venda Calculado",
+        help_text="Preço de venda sugerido pelo sistema, antes da negociação"
     )
-    preco_sem_impostos = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
+    # preco_sem_impostos = models.DecimalField( # REMOVIDO: Unificado com preco_venda_calculado
+    #     max_digits=12,
+    #     decimal_places=2,
+    #     blank=True,
+    #     null=True,
+    #     verbose_name="Preço sem Impostos"
+    # )
+    preco_negociado = models.DecimalField( # DEPRECATED: Use valor_proposta
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
         null=True,
-        verbose_name="Preço sem Impostos"
+        verbose_name="Preço Negociado" # This field will eventually be removed in favor of valor_proposta
     )
-    preco_negociado = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
+    preco_venda_final = models.DecimalField( # DEPRECATED: Use valor_proposta
+        max_digits=12,
+        decimal_places=2,
+        blank=True,
         null=True,
-        verbose_name="Preço Negociado"
-    )
-    preco_venda_final = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Preço de Venda Final"
+        verbose_name="Preço de Venda Final" # This field will eventually be removed in favor of valor_proposta
     )
     percentual_desconto = models.DecimalField(
         max_digits=5, 
@@ -607,7 +595,11 @@ class Proposta(models.Model):
         if not self.data_validade:
             from datetime import date, timedelta
             self.data_validade = date.today() + timedelta(days=30)
-        
+
+        # ✅ NEW LOGIC: If valor_proposta is not set by the user, default it to the calculated price
+        if self.preco_venda_calculado and self.valor_proposta is None:
+            self.valor_proposta = self.preco_venda_calculado
+
         super().save(*args, **kwargs)
 
     # === PROPRIEDADES DE STATUS ===
@@ -625,7 +617,8 @@ class Proposta(models.Model):
     @property
     def pode_editar(self):
         """Verifica se a proposta ainda pode ser editada"""
-        return self.status == 'rascunho'
+        return True
+        #return self.status == 'rascunho'
     
     @property
     def pode_excluir(self):
@@ -751,7 +744,8 @@ class Proposta(models.Model):
     @property
     def tem_precos(self):
         """Verifica se a proposta tem preços calculados"""
-        return bool(self.formacao_preco or self.preco_venda_calculado)
+        # Checks if either the calculated price or a manually set proposal value exists.
+        return bool(self.formacao_preco or self.preco_venda_calculado or self.valor_proposta)
     
     @property
     def resumo_elevador(self):
@@ -801,7 +795,6 @@ class Proposta(models.Model):
         # Verificar campos obrigatórios básicos
         campos_obrigatorios = [
             self.cliente_id,
-            self.valor_proposta,
             self.modelo_elevador,
             self.capacidade,
             self.acionamento,
@@ -818,7 +811,6 @@ class Proposta(models.Model):
         
         # Verificar valores numéricos positivos
         valores_positivos = (
-            self.valor_proposta and float(self.valor_proposta) > 0 and
             self.capacidade and float(self.capacidade) > 0 and
             self.largura_poco and float(self.largura_poco) > 0 and
             self.comprimento_poco and float(self.comprimento_poco) > 0 and

@@ -1,9 +1,5 @@
 # core/forms/propostas.py
 
-"""
-Formulários para Propostas - Compartilhado entre Vendedor e Produção
-"""
-
 from django import forms
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
@@ -176,10 +172,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
 
 
 class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
-    """
-    Formulário unificado para a Etapa 2: Cabine + Portas
-    """
-    
+
     class Meta:
         model = Proposta
         fields = [
@@ -307,25 +300,17 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'required': True
             }),
         }
-
-
 class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
-    """
-    Formulário para dados comerciais da proposta
-    """
-    
     class Meta:
         model = Proposta
         fields = [
-
             # Dados comerciais básicos
             'vendedor',  
             'valor_proposta', 
 
-
             # Validade e Prazos
+            'prazo_entrega_dias', # <--- MOVIDO PARA CÁ
             'data_validade',
-            'prazo_entrega_dias',
             
             # Forma de Pagamento
             'forma_pagamento',
@@ -337,9 +322,10 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'tipo_parcela',
             'primeira_parcela',
             
-            # Preços
-            'preco_negociado',
-            'percentual_desconto',
+            # Preços (percentual_desconto REMOVIDO)
+            'preco_negociado', # <-- Este campo não será mais utilizado diretamente no form.
+                               #     Seu valor será calculado implicitamente pelo valor_proposta
+                               #     em relação ao valor_calculado na API.
         ]
         
         widgets = {
@@ -348,7 +334,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'prazo_entrega_dias': QuantityInput(attrs={
+            'prazo_entrega_dias': QuantityInput(attrs={ # <--- MANTIDO AQUI PARA O WIDGET
                 'min': 1,
                 'max': 365,
                 'placeholder': '45'
@@ -377,14 +363,8 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            
-            # Preços
             'preco_negociado': MoneyInput(),
-            'percentual_desconto': PercentageInput(),
         }
-
-
-    # Em core/forms/propostas.py na classe PropostaComercialForm
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

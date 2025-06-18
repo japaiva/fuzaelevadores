@@ -56,16 +56,16 @@ class CalculoPedidoService:
         # CABINE - Chapas do Corpo, Piso e Parafusos
         logger.info("Calculando custos da cabine...")
         try:
-            # calculo_cabine.py agora retorna {'componentes': {'chapas_corpo': {...}, 'chapas_piso': {...}}, 'total': Decimal}
+            # calculo_cabine.py agora retorna {'componentes': {...}, 'total': Decimal}
             custo_cabine = CalculoCabineService.calcular_custo_cabine(pedido, dimensionamento, custos_db)
-            componentes_consolidados["CABINE"] = custo_cabine['componentes'] # Armazena a estrutura hierárquica da cabine
+            componentes_consolidados["CABINE"] = custo_cabine['componentes']
             # Adiciona o total da categoria ao dicionário de componentes consolidados para fácil acesso no template
-            componentes_consolidados["CABINE"]["total_categoria"] = float(custo_cabine['total']) 
+            componentes_consolidados["CABINE"]["total_categoria"] = float(custo_cabine['total'])
             custos_por_categoria['CABINE'] = safe_decimal(custo_cabine['total'])
             logger.info(f"Custo cabine: R$ {custo_cabine['total']}")
         except Exception as e:
             logger.error(f"Erro no cálculo da cabine: {e}")
-            componentes_consolidados["CABINE"] = {} # Garante que a chave existe mesmo em erro
+            componentes_consolidados["CABINE"] = {}
             custos_por_categoria['CABINE'] = Decimal('0')
         
         # CARRINHO - Chassi, Plataforma, Travessas, Longarinas, Perfis e Barras
@@ -133,7 +133,7 @@ class CalculoPedidoService:
             'custo_mao_obra': custo_mao_obra,
             'custo_instalacao': custo_instalacao,
             'custo_total': custo_total,
-            'total_componentes': len(componentes_consolidados) # Isso precisaria ser reavaliado, mas não afeta a funcionalidade
+            'total_componentes': len(componentes_consolidados)
         }
 
     @staticmethod
@@ -165,11 +165,12 @@ class CalculoPedidoService:
             logger.info(f"Custos calculados - Total: R$ {custos_resultado['custo_total']}")
             
             # 4. Calcular formação de preço
-            formacao_preco = PricingService.calcular_formacao_preco(
+            # PricingService now directly returns the final calculated price to be stored in preco_venda_calculado
+            formacao_preco_result = PricingService.calcular_formacao_preco(
                 custos_resultado['custo_total'], 
                 pedido.faturado_por
             )
-            logger.info(f"Preço calculado - Sem impostos: R$ {formacao_preco['preco_sem_impostos']}")
+            logger.info(f"Preço calculado - Sugerido: R$ {formacao_preco_result['preco_com_impostos']}")
             
             # 5. Montar ficha técnica
             ficha_tecnica = CalculoPedidoService._montar_ficha_tecnica(pedido, dimensionamento, custos_resultado)
@@ -177,7 +178,7 @@ class CalculoPedidoService:
             # 6. Salvar tudo no pedido
             CalculoPedidoService._salvar_calculos_no_pedido(
                 pedido, dimensionamento, explicacao_dimensionamento, 
-                custos_resultado, formacao_preco, ficha_tecnica
+                custos_resultado, formacao_preco_result, ficha_tecnica
             )
             
             logger.info(f"Cálculo completo finalizado para pedido {pedido.numero}")
@@ -187,7 +188,7 @@ class CalculoPedidoService:
                 'dimensionamento': dimensionamento,
                 'explicacao': explicacao_dimensionamento,
                 'custos': custos_resultado,
-                'formacao_preco': formacao_preco,
+                'formacao_preco': formacao_preco_result,
                 'ficha_tecnica': ficha_tecnica
             }
             
@@ -230,7 +231,7 @@ class CalculoPedidoService:
         }
     
     @staticmethod
-    def _salvar_calculos_no_pedido(pedido, dimensionamento, explicacao, custos_resultado, formacao_preco, ficha_tecnica):
+    def _salvar_calculos_no_pedido(pedido, dimensionamento, explicacao, custos_resultado, formacao_preco_result, ficha_tecnica):
         """Salva todos os cálculos no pedido"""
         # Dimensões calculadas
         cab = dimensionamento.get('cab', {})
@@ -246,8 +247,9 @@ class CalculoPedidoService:
         pedido.custo_producao = custos_resultado['custo_total']
         
         # Preços
-        pedido.preco_venda_calculado = formacao_preco['preco_sem_impostos']
-        pedido.preco_sem_impostos = formacao_preco['preco_sem_impostos']
+        # This is the single calculated price that the system suggests.
+        pedido.preco_venda_calculado = formacao_preco_result['preco_com_impostos'] # Use preco_com_impostos from PricingService
+        # pedido.preco_sem_impostos = formacao_preco['preco_sem_impostos'] # REMOVIDO: Unificado
         
         # Dados detalhados em JSON
         pedido.ficha_tecnica = ficha_tecnica
@@ -268,12 +270,18 @@ class CalculoPedidoService:
         # Por enquanto, para segurança, vamos manter e garantir que receba a nova estrutura
         pedido.componentes_calculados = custos_resultado['componentes']
         
-        pedido.formacao_preco = formacao_preco
+        pedido.formacao_preco = formacao_preco_result # Changed to formacao_preco_result
         
         # Atualizar status se necessário
         if pedido.status == 'rascunho':
-            pedido.status = 'simulado'
-        
+            # Only set valor_proposta if it hasn't been manually set by the user yet.
+            if pedido.valor_proposta is None:
+                pedido.valor_proposta = pedido.preco_venda_calculado # Default to calculated if not set
+            
+            # If a calculated price or a manually set price exists, mark as simulated/pending
+            if pedido.preco_venda_calculado or pedido.valor_proposta:
+                 pedido.status = 'simulado' # More appropriate for calculated but not finalized
+            
         pedido.save()
         logger.info(f"Cálculos salvos no pedido {pedido.numero}")
 

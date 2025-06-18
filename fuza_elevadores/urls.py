@@ -17,10 +17,11 @@ urlpatterns = [
     # Página inicial do site
     path('', home_view, name='home'),
     
+
     # 🏭 PORTAIS FINAIS (3 portais)
-    path('gestor/', include('gestor.urls')),      # 👔 Gestão executiva
-    path('vendedor/', include('vendedor.urls')),  # 💼 Vendas e simulações  
-    path('producao/', include('producao.urls')),  # 🏭 Produção + Compras
+    path('gestor/', include('gestor.urls')),
+    path('vendedor/', include('vendedor.urls', namespace='vendedor')), # 💼 Vendas e simulações
+    path('producao/', include('producao.urls')),
     
     # APIs e configurações - COMENTADO TEMPORARIAMENTE
     # path('configuracao/', include('configuracao.urls')),  # ⚙️ Configurações

@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 
-from core.models import Proposta
+from core.models import Proposta, AnexoProposta, HistoricoProposta
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +85,7 @@ def proposta_duplicar(request, pk):
                 observacoes=proposta_original.observacoes,
                 
                 # Vendedor
-                vendedor=request.user,
-                vendedor_responsavel=request.user,
+                vendedor=request.user,  
                 
                 # Dados do elevador
                 modelo_elevador=proposta_original.modelo_elevador,

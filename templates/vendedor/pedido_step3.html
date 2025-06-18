@@ -12,7 +12,6 @@
     </h5>
     
     <div class="btn-group" role="group">
-      <!-- Botão de Calcular -->
       <button type="button" class="btn btn-primary btn-sm" id="btnCalcular" data-pedido-id="{{ proposta.pk }}">
         <i class="fas fa-calculator me-1"></i>Calcular
       </button>
@@ -23,7 +22,6 @@
     </div>
   </div>
   
-  <!-- Progress Bar -->
   <div class="card-header bg-white">
     <div class="progress" style="height: 6px;">
       <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemax="100"></div>
@@ -37,7 +35,6 @@
   
   <div class="card-body">
 
-    <!-- Bloco 1: Resumo da Proposta (Somente Exibição) -->
     <div class="card shadow-sm border-info mb-4">
       <div class="card-header bg-info text-white">
         <h6 class="card-title mb-0">Resumo da Proposta</h6>
@@ -95,14 +92,13 @@
         </div>
       {% endif %}
       
-      <!-- Bloco 2: Dados Comerciais -->
       <div class="card shadow-sm border-success mb-4">
         <div class="card-header bg-success text-white">
           <h6 class="card-title mb-0">Dados Comerciais</h6>
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-4"> 
               <label class="form-label" for="{{ form.vendedor.id_for_label }}">Vendedor*</label>
               {{ form.vendedor }}
               {% if form.vendedor.errors %}
@@ -112,7 +108,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-3">
+            <div class="col-md-4"> 
               <label class="form-label">Valor Calculado</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
@@ -121,7 +117,7 @@
               </div>
             </div>
             
-            <div class="col-md-3">
+            <div class="col-md-4"> 
               <label class="form-label" for="{{ form.valor_proposta.id_for_label }}">Valor da Proposta*</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
@@ -134,7 +130,17 @@
               {% endif %}
             </div>
             
-            <div class="col-md-3">
+            <div class="col-md-4"> 
+              <label class="form-label" for="{{ form.prazo_entrega_dias.id_for_label }}">Prazo de Entrega (dias)*</label>
+              {{ form.prazo_entrega_dias }}
+              {% if form.prazo_entrega_dias.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.prazo_entrega_dias.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4"> 
               <label class="form-label" for="{{ form.data_validade.id_for_label }}">Validade da Proposta*</label>
               {{ form.data_validade }}
               {% if form.data_validade.errors %}
@@ -145,7 +151,6 @@
             </div>
           </div>
           
-          <!-- Indicador de Desconto/Acréscimo -->
           <div class="row mt-3" id="indicador-desconto" style="display: none;">
             <div class="col-12">
               <div class="alert alert-info p-2 mb-0">
@@ -159,7 +164,6 @@
         </div>
       </div>
 
-      <!-- Bloco 3: Forma de Pagamento -->
       <div class="card shadow-sm border-warning mb-4">
         <div class="card-header bg-warning text-dark">
           <h6 class="card-title mb-0">Forma de Pagamento</h6>
@@ -176,9 +180,6 @@
               {% endif %}
             </div>
             
-            <!-- Campos condicionais da forma de pagamento -->
-            
-            <!-- Entrada (para entrada + parcelas) -->
             <div class="col-md-4" id="entrada-div" style="display: none;">
               <label class="form-label" for="{{ form.valor_entrada.id_for_label }}">Valor da Entrada</label>
               <div class="input-group">
@@ -205,8 +206,7 @@
               {% endif %}
             </div>
             
-            <!-- Parcelas (para parcelado e entrada + parcelas) -->
-            <div class="col-md-3" id="parcelas-div" style="display: none;">
+            <div class="col-md-4" id="parcelas-div" style="display: none;"> {# Ajustado para col-md-4 #}
               <label class="form-label" for="{{ form.numero_parcelas.id_for_label }}">Número de Parcelas*</label>
               {{ form.numero_parcelas }}
               {% if form.numero_parcelas.errors %}
@@ -216,7 +216,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-3" id="tipo-parcela-div" style="display: none;">
+            <div class="col-md-4" id="tipo-parcela-div" style="display: none;"> {# Ajustado para col-md-4 #}
               <label class="form-label" for="{{ form.tipo_parcela.id_for_label }}">Tipo de Parcela</label>
               {{ form.tipo_parcela }}
               {% if form.tipo_parcela.errors %}
@@ -226,7 +226,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-3" id="primeira-parcela-div" style="display: none;">
+            <div class="col-md-4" id="primeira-parcela-div" style="display: none;"> {# Ajustado para col-md-4 #}
               <label class="form-label" for="{{ form.primeira_parcela.id_for_label }}">Vencimento 1ª Parcela</label>
               {{ form.primeira_parcela }}
               {% if form.primeira_parcela.errors %}
@@ -236,7 +236,7 @@
               {% endif %}
             </div>
             
-            <div class="col-md-3" id="valor-parcela-div" style="display: none;">
+            <div class="col-md-4" id="valor-parcela-div" style="display: none;"> {# Ajustado para col-md-4 #}
               <label class="form-label">Valor da Parcela (calculado)</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
@@ -249,7 +249,6 @@
         </div>
       </div>
 
-      <!-- Botões de ação -->
       <div class="d-flex justify-content-between mt-4 mb-4">
         <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step2' proposta.pk %}">
           <i class="fas fa-arrow-left me-1"></i> Anterior
@@ -278,6 +277,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const vendedorSelect = document.getElementById('{{ form.vendedor.id_for_label }}');
     const indicadorDesconto = document.getElementById('indicador-desconto');
     const textoDesconto = document.getElementById('texto-desconto');
+    // Adicionado: Prazo de entrega
+    const prazoEntregaDiasInput = document.getElementById('{{ form.prazo_entrega_dias.id_for_label }}');
     
     // Forma de pagamento
     const formaPagamentoSelect = document.getElementById('{{ form.forma_pagamento.id_for_label }}');
@@ -294,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const numeroParcelasInput = document.getElementById('{{ form.numero_parcelas.id_for_label }}');
     const valorParcelaCalculado = document.getElementById('valorParcelaCalculado');
     
-    // Resumo
+    // Resumo (se ainda forem utilizados, caso contrário, podem ser removidos)
     const resumoPagamento = document.getElementById('resumo-pagamento');
     const resumoEntrada = document.getElementById('resumo-entrada');
     const resumoParcelas = document.getElementById('resumo-parcelas');
@@ -317,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (Math.abs(diferenca) > 0.01) {
                 if (diferenca > 0) {
                     textoDesconto.innerHTML = `<strong>Acréscimo:</strong> R$ ${Math.abs(diferenca).toFixed(2).replace('.', ',')} (${percentual.toFixed(1)}%)`;
-                    indicadorDesconto.className = 'row mt-3';
+                    indicadorDesconto.className = 'row mt-3'; // Reset class
                     indicadorDesconto.innerHTML = `
                         <div class="col-12">
                             <div class="alert alert-warning p-2 mb-0">
@@ -327,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                 } else {
                     textoDesconto.innerHTML = `<strong>Desconto:</strong> R$ ${Math.abs(diferenca).toFixed(2).replace('.', ',')} (${Math.abs(percentual).toFixed(1)}%)`;
-                    indicadorDesconto.className = 'row mt-3';
+                    indicadorDesconto.className = 'row mt-3'; // Reset class
                     indicadorDesconto.innerHTML = `
                         <div class="col-12">
                             <div class="alert alert-info p-2 mb-0">
@@ -352,7 +353,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const percentualEntrada = parseFloat(percentualEntradaInput.value) || 0;
         const numeroParcelas = parseInt(numeroParcelasInput.value) || 0;
         
-        if (valorProposta <= 0) return;
+        if (valorProposta <= 0) {
+            // Limpa o valor da parcela se a proposta for zero
+            if (valorParcelaCalculado) valorParcelaCalculado.value = '0,00';
+            return;
+        }
         
         let entradaCalculada = 0;
         let valorParcelaCalculada = 0;
@@ -388,12 +393,12 @@ document.addEventListener('DOMContentLoaded', function() {
             valorParcelaCalculado.value = valorParcelaCalculada.toFixed(2).replace('.', ',');
         }
         
-        // Atualizar resumo
+        // Atualizar resumo (se houver elementos no DOM)
         if (resumoEntrada) resumoEntrada.textContent = `R$ ${entradaCalculada.toFixed(2).replace('.', ',')}`;
         if (resumoParcelas) resumoParcelas.textContent = `R$ ${totalParcelas.toFixed(2).replace('.', ',')}`;
         if (resumoTotal) resumoTotal.textContent = `R$ ${valorProposta.toFixed(2).replace('.', ',')}`;
         if (resumoImpostos) {
-            const impostos = valorProposta * 1.10; // 10% de impostos
+            const impostos = valorProposta * 1.10; // 10% de impostos - exemplo, ajuste conforme sua regra
             resumoImpostos.textContent = `R$ ${impostos.toFixed(2).replace('.', ',')}`;
         }
         
@@ -402,8 +407,6 @@ document.addEventListener('DOMContentLoaded', function() {
             resumoPagamento.style.display = 'block';
         }
     }
-    
-    // === FUNÇÕES DE FORMA DE PAGAMENTO ===
     
     function updateFormaPagamento() {
         if (!formaPagamentoSelect) return;
@@ -520,6 +523,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Prazo de entrega
+    if (prazoEntregaDiasInput) {
+        prazoEntregaDiasInput.addEventListener('input', function() {
+            // Adicione aqui qualquer lógica de validação/cálculo em tempo real para prazo de entrega se necessário
+        });
+    }
+
     // === VALIDAÇÃO DO FORMULÁRIO ===
     
     if (form) {
@@ -541,12 +551,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 valorPropostaInput.focus();
                 return;
             }
+
+            // Validar prazo de entrega
+            const prazoEntrega = parseInt(prazoEntregaDiasInput.value) || 0;
+            if (prazoEntrega <= 0) {
+                e.preventDefault();
+                alert('O prazo de entrega deve ser maior que zero.');
+                prazoEntregaDiasInput.focus();
+                return;
+            }
             
             // Validar data de validade
             const dataValidade = document.getElementById('{{ form.data_validade.id_for_label }}').value;
             if (dataValidade) {
                 const hoje = new Date();
-                const validade = new Date(dataValidade);
+                // Reset hours, minutes, seconds, milliseconds for comparison
+                hoje.setHours(0, 0, 0, 0); 
+                const validade = new Date(dataValidade + 'T00:00:00'); 
                 
                 if (validade <= hoje) {
                     e.preventDefault();
