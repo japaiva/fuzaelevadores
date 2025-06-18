@@ -14,19 +14,8 @@
         <i class="fas fa-clipboard-check me-2"></i>Proposta {{ proposta.numero }} - {{ proposta.nome_projeto }}
       </h5>
       <div>
-        {% if is_vendedor and proposta.pode_calcular %}
-        <a href="{% if is_vendedor %}{% url 'vendedor:proposta_calcular' proposta.pk %}{% else %}{% url 'producao:proposta_calcular' proposta.pk %}{% endif %}" class="btn btn-primary">
-          <i class="fas fa-calculator"></i> Calcular
-        </a>
-        {% endif %}
         
-        {% if is_vendedor and proposta.pode_editar %}
-        <a href="{% url 'vendedor:proposta_step1' proposta.pk %}" class="btn btn-outline-secondary">
-          <i class="fas fa-edit"></i> Editar
-        </a>
-        {% endif %}
-        
-        <a href="{% if is_vendedor %}{% url 'vendedor:proposta_list' %}{% else %}{% url 'producao:proposta_list' %}{% endif %}" class="btn btn-outline-secondary">
+        <a href="{% if is_vendedor %}{% url 'vendedor:pedido_list' %}{% else %}{% url 'producao:proposta_list' %}{% endif %}" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-left me-1"></i> Voltar
         </a>
       </div>
