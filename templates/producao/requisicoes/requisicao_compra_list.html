@@ -1,0 +1,235 @@
+<!-- templates/producao/requisicao_compra_list.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Requisições de Compra | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-list me-2"></i> Requisições de Compra
+      {% if total_requisicoes > 0 %}
+        <span class="badge bg-primary ms-2">{{ total_requisicoes }}</span>
+      {% endif %}
+    </h5>
+    <div>
+      <a href="{% url 'producao:requisicao_compra_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Nova Requisição
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <!-- Filtros -->
+  <div class="card-header bg-white border-bottom">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label small">Status</label>
+        {{ form_filtros.status }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Prioridade</label>
+        {{ form_filtros.prioridade }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Data Início</label>
+        {{ form_filtros.data_inicio }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Data Fim</label>
+        {{ form_filtros.data_fim }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Buscar</label>
+        <div class="input-group">
+          {{ form_filtros.q }}
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-search"></i>
+          </button>
+          {% if request.GET %}
+            <a href="{% url 'producao:requisicao_compra_list' %}" class="btn btn-outline-secondary btn-sm" title="Limpar Filtros">
+              <i class="fas fa-times"></i>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <div class="card-body p-0">
+    {% if requisicoes %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Número</th>
+              <th>Proposta</th>
+              <th>Solicitante</th>
+              <th>Data</th>
+              <th>Necessidade</th>
+              <th>Status</th>
+              <th class="text-end">Valor Est.</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for requisicao in requisicoes %}
+              <tr>
+                <td>
+                  <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="text-decoration-none fw-bold">
+                    {{ requisicao.numero }}
+                  </a>
+                </td>
+                
+                <td>
+                  <div class="fw-semibold">{{ requisicao.lista_materiais.proposta.numero }}</div>
+                  <small class="text-muted">{{ requisicao.lista_materiais.proposta.nome_projeto|truncatechars:30 }}</small>
+                </td>
+                
+                <td>
+                  <div>{{ requisicao.solicitante.get_full_name|default:requisicao.solicitante.username }}</div>
+                  <small class="text-muted">{{ requisicao.departamento }}</small>
+                </td>
+                
+                <td>{{ requisicao.data_requisicao|date:"d/m/Y" }}</td>
+                
+                <td>
+                  {% if requisicao.data_necessidade %}
+                    {{ requisicao.data_necessidade|date:"d/m/Y" }}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                
+                <td>
+                  <span class="badge {{ requisicao.status_badge_class }}">
+                    {{ requisicao.get_status_display }}
+                  </span>
+                  {% if requisicao.prioridade != 'NORMAL' %}
+                    <br><span class="badge bg-warning small">
+                      {{ requisicao.get_prioridade_display }}
+                    </span>
+                  {% endif %}
+                </td>
+                
+                <td class="text-end">
+                  {% if requisicao.get_valor_total_estimado > 0 %}
+                    <div class="fw-bold">R$ {{ requisicao.get_valor_total_estimado|floatformat:2 }}</div>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                  <small class="text-muted">{{ requisicao.get_total_itens }} itens</small>
+                </td>
+              
+                <td class="text-center">
+                  <div class="btn-group" role="group">
+                    <!-- Ver detalhes -->
+                    <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" 
+                       class="btn btn-outline-info btn-sm" 
+                       title="Ver Detalhes">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    
+                    <!-- Editar -->
+                    {% if requisicao.pode_editar %}
+                      <a href="{% url 'producao:requisicao_compra_update' requisicao.pk %}" 
+                         class="btn btn-outline-primary btn-sm" 
+                         title="Editar">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                    {% endif %}
+                    
+                    <!-- Alterar Status -->
+                    {% if requisicao.status not in 'cancelada,aprovada' %}
+                      <a href="{% url 'producao:requisicao_compra_alterar_status' requisicao.pk %}" 
+                         class="btn btn-outline-warning btn-sm" 
+                         title="Alterar Status">
+                        <i class="fas fa-exchange-alt"></i>
+                      </a>
+                    {% endif %}
+                    
+                    <!-- Gerar Orçamento -->
+                    {% if requisicao.status in 'orcada,aprovada' %}
+                      <a href="{% url 'producao:requisicao_compra_gerar_orcamento' requisicao.pk %}" 
+                         class="btn btn-outline-success btn-sm" 
+                         title="Gerar Orçamento"
+                         onclick="return confirm('Deseja gerar orçamento a partir desta requisição?')">
+                        <i class="fas fa-calculator"></i>
+                      </a>
+                    {% endif %}
+                    
+                    <!-- Excluir -->
+                    {% if requisicao.status in 'rascunho,aberta' %}
+                      <a href="{% url 'producao:requisicao_compra_delete' requisicao.pk %}" 
+                         class="btn btn-outline-danger btn-sm" 
+                         title="Excluir">
+                        <i class="fas fa-trash"></i>
+                      </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <div class="h5 text-muted">Nenhuma requisição encontrada</div>
+        <a href="{% url 'producao:requisicao_compra_create' %}" class="btn btn-primary">
+          <i class="fas fa-plus me-1"></i> Criar Primeira Requisição
+        </a>
+      </div>
+    {% endif %}
+  </div>
+  
+  <!-- Paginação -->
+  {% if requisicoes.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white">
+      <nav aria-label="Navegação de páginas">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+          {% if requisicoes.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                <i class="fas fa-angle-double-left"></i>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ requisicoes.previous_page_number }}">
+                <i class="fas fa-angle-left"></i>
+              </a>
+            </li>
+          {% endif %}
+          
+          {% for num in requisicoes.paginator.page_range %}
+            {% if num == requisicoes.number %}
+              <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+              </li>
+            {% elif num >= requisicoes.number|add:'-2' and num <= requisicoes.number|add:'2' %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if requisicoes.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ requisicoes.next_page_number }}">
+                <i class="fas fa-angle-right"></i>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ requisicoes.paginator.num_pages }}">
+                <i class="fas fa-angle-double-right"></i>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

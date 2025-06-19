@@ -58,7 +58,7 @@ def grupo_list(request):
     except EmptyPage:
         grupos = paginator.page(paginator.num_pages)
 
-    return render(request, 'producao/grupo_list.html', {
+    return render(request, 'producao/produtos/grupo_list.html', {
         'grupos': grupos,
         'status_filtro': status,
         'tipo_filtro': tipo,
@@ -80,7 +80,7 @@ def grupo_create(request):
     else:
         form = GrupoProdutoForm()
     
-    return render(request, 'producao/grupo_form.html', {'form': form})
+    return render(request, 'producao/produtos/grupo_form.html', {'form': form})
 
 
 @login_required
@@ -97,7 +97,7 @@ def grupo_update(request, pk):
     else:
         form = GrupoProdutoForm(instance=grupo)
     
-    return render(request, 'producao/grupo_form.html', {
+    return render(request, 'producao/produtos/grupo_form.html', {
         'form': form, 
         'grupo': grupo
     })
@@ -120,7 +120,7 @@ def grupo_delete(request, pk):
         
         return redirect('producao:grupo_list')
 
-    return render(request, 'producao/grupo_delete.html', {'grupo': grupo})
+    return render(request, 'producao/produtos/grupo_delete.html', {'grupo': grupo})
 
 
 @login_required
@@ -183,7 +183,7 @@ def subgrupo_list(request):
     # Para o filtro de grupos
     grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
 
-    return render(request, 'producao/subgrupo_list.html', {
+    return render(request, 'producao/produtos/subgrupo_list.html', {
         'subgrupos': subgrupos,
         'grupos': grupos,
         'grupo_filtro': grupo_id,
@@ -212,7 +212,7 @@ def subgrupo_create(request):
             initial['grupo'] = grupo_id
         form = SubgrupoProdutoForm(initial=initial)
 
-    return render(request, 'producao/subgrupo_form.html', {'form': form})
+    return render(request, 'producao/produtos/subgrupo_form.html', {'form': form})
 
 
 @login_required
@@ -229,7 +229,7 @@ def subgrupo_update(request, pk):
     else:
         form = SubgrupoProdutoForm(instance=subgrupo)
     
-    return render(request, 'producao/subgrupo_form.html', {
+    return render(request, 'producao/produtos/subgrupo_form.html', {
         'form': form, 
         'subgrupo': subgrupo
     })
@@ -252,7 +252,7 @@ def subgrupo_delete(request, pk):
         
         return redirect('producao:subgrupo_list')
 
-    return render(request, 'producao/subgrupo_delete.html', {'subgrupo': subgrupo})
+    return render(request, 'producao/produtos/subgrupo_delete.html', {'subgrupo': subgrupo})
 
 
 @login_required

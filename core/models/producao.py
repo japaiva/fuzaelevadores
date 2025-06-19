@@ -589,7 +589,7 @@ class OrcamentoCompra(models.Model):
         ano_mes = agora.strftime('%y%m')
         
         ultimo_orcamento = OrcamentoCompra.objects.filter(
-            numero__startswith=f'ORC-{ano_mes}'
+            numero__startswith=f'{ano_mes}'
         ).order_by('-numero').first()
         
         if ultimo_orcamento:
@@ -601,7 +601,7 @@ class OrcamentoCompra(models.Model):
         else:
             proximo_seq = 1
         
-        return f'ORC-{ano_mes}{proximo_seq:04d}'
+        return f'{ano_mes}{proximo_seq:04d}'
     
     @property
     def status_badge_class(self):

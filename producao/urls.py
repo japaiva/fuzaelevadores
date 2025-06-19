@@ -1,4 +1,4 @@
-# producao/urls.py - URLS CORRIGIDAS
+# producao/urls.py - URLS ATUALIZADAS COM REQUISIÇÕES
 
 from django.urls import path
 from . import views
@@ -53,17 +53,25 @@ urlpatterns = [
     path('produtos-acabados/<uuid:pk>/excluir/', views.produto_acabado_delete, name='produto_acabado_delete'),
     path('produtos-acabados/<uuid:pk>/toggle-status/', views.produto_acabado_toggle_status, name='produto_acabado_toggle_status'),
     
-    # PEDIDOS DE COMPRA - URLS CORRIGIDAS
-    path('pedidos-compra/', views.pedido_compra_list, name='pedido_compra_list'),
-    path('pedidos-compra/novo/', views.pedido_compra_create, name='pedido_compra_create'),
-    path('pedidos-compra/<int:pk>/', views.pedido_compra_detail, name='pedido_compra_detail'),
-    path('pedidos-compra/<int:pk>/editar/', views.pedido_compra_update, name='pedido_compra_update'),
-    path('pedidos-compra/<int:pk>/excluir/', views.pedido_compra_delete, name='pedido_compra_delete'),
-    path('pedidos-compra/<int:pk>/alterar-status/', views.pedido_compra_alterar_status, name='pedido_compra_alterar_status'),
-    path('pedidos-compra/<int:pk>/pdf/', views.pedido_compra_gerar_pdf, name='pedido_compra_gerar_pdf'),
-    path('pedidos-compra/<int:pk>/duplicar/', views.pedido_compra_duplicar, name='pedido_compra_duplicar'),
-    path('pedidos-compra/<int:pk>/recebimento/', views.pedido_compra_recebimento, name='pedido_compra_recebimento'),
-    path('pedidos-compra/<int:pedido_pk>/item/<int:item_pk>/receber/', views.receber_item_pedido, name='receber_item_pedido'),
+    # PROPOSTAS - Visualização no Portal de Produção
+    #path('propostas/', views.proposta_list_producao, name='proposta_list_producao'),
+    #path('propostas/<uuid:pk>/', views.proposta_detail_producao, name='proposta_detail_producao'),
+    #path('propostas/<uuid:pk>/gerar-lista-materiais/', views.gerar_lista_materiais, name='gerar_lista_materiais'),
+    
+    # LISTAS DE MATERIAIS
+    #path('listas-materiais/', views.lista_materiais_list, name='lista_materiais_list'),
+    #path('listas-materiais/<int:pk>/', views.lista_materiais_detail, name='lista_materiais_detail'),
+    #path('listas-materiais/<int:pk>/editar/', views.lista_materiais_update, name='lista_materiais_update'),
+    #path('listas-materiais/<int:pk>/aprovar/', views.lista_materiais_aprovar, name='lista_materiais_aprovar'),
+    
+    # REQUISIÇÕES DE COMPRA - NOVO CRUD
+    path('requisicoes-compra/', views.requisicao_compra_list, name='requisicao_compra_list'),
+    path('requisicoes-compra/nova/', views.requisicao_compra_create, name='requisicao_compra_create'),
+    path('requisicoes-compra/<int:pk>/', views.requisicao_compra_detail, name='requisicao_compra_detail'),
+    path('requisicoes-compra/<int:pk>/editar/', views.requisicao_compra_update, name='requisicao_compra_update'),
+    path('requisicoes-compra/<int:pk>/excluir/', views.requisicao_compra_delete, name='requisicao_compra_delete'),
+    path('requisicoes-compra/<int:pk>/alterar-status/', views.requisicao_compra_alterar_status, name='requisicao_compra_alterar_status'),
+    path('requisicoes-compra/<int:pk>/gerar-orcamento/', views.requisicao_compra_gerar_orcamento, name='requisicao_compra_gerar_orcamento'),
     
     # ORÇAMENTOS DE COMPRA
     path('orcamentos-compra/', views.orcamento_compra_list, name='orcamento_compra_list'),
@@ -75,6 +83,17 @@ urlpatterns = [
     path('orcamentos-compra/<int:pk>/duplicar/', views.orcamento_compra_duplicar, name='orcamento_compra_duplicar'),
     path('orcamentos-compra/<int:pk>/gerar-pedido/', views.orcamento_compra_gerar_pedido, name='orcamento_compra_gerar_pedido'),
     
+    # PEDIDOS DE COMPRA
+    path('pedidos-compra/', views.pedido_compra_list, name='pedido_compra_list'),
+    path('pedidos-compra/novo/', views.pedido_compra_create, name='pedido_compra_create'),
+    path('pedidos-compra/<int:pk>/', views.pedido_compra_detail, name='pedido_compra_detail'),
+    path('pedidos-compra/<int:pk>/editar/', views.pedido_compra_update, name='pedido_compra_update'),
+    path('pedidos-compra/<int:pk>/excluir/', views.pedido_compra_delete, name='pedido_compra_delete'),
+    path('pedidos-compra/<int:pk>/alterar-status/', views.pedido_compra_alterar_status, name='pedido_compra_alterar_status'),
+    path('pedidos-compra/<int:pk>/pdf/', views.pedido_compra_gerar_pdf, name='pedido_compra_gerar_pdf'),
+    path('pedidos-compra/<int:pk>/duplicar/', views.pedido_compra_duplicar, name='pedido_compra_duplicar'),
+    path('pedidos-compra/<int:pk>/recebimento/', views.pedido_compra_recebimento, name='pedido_compra_recebimento'),
+    path('pedidos-compra/<int:pedido_pk>/item/<int:item_pk>/receber/', views.receber_item_pedido, name='receber_item_pedido'),
     
     # APIs AJAX
     path('api/subgrupos/', views.get_subgrupos_by_grupo, name='api_subgrupos'),

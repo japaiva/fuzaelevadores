@@ -37,6 +37,15 @@ from .orcamentos_compra import (
     orcamento_compra_gerar_pedido,
 )
 
+from .requisicoes_compra import (
+    requisicao_compra_list,
+    requisicao_compra_create,
+    requisicao_compra_detail,
+    requisicao_compra_update,
+    requisicao_compra_delete,
+    requisicao_compra_alterar_status,
+    requisicao_compra_gerar_orcamento
+)
 
 # CRUD Fornecedores
 from .fornecedores import (
@@ -112,7 +121,12 @@ __all__ = [
     'fornecedor_list', 'fornecedor_create', 'fornecedor_update',
     'fornecedor_delete', 'fornecedor_toggle_status',
     'produto_fornecedores', 'fornecedor_produto_toggle',
-    
+
+    # Requisicoes Compra
+    'requisicao_compra_list', 'requisicao_compra_create', 'requisicao_compra_detail',
+    'requisicao_compra_update', 'requisicao_compra_delete',
+    'requisicao_compra_alterar_status', 'requisicao_compra_gerar_orcamento',
+
     # Grupos e Subgrupos
     'grupo_list', 'grupo_create', 'grupo_update', 'grupo_delete', 'grupo_toggle_status',
     'subgrupo_list', 'subgrupo_create', 'subgrupo_update', 'subgrupo_delete', 'subgrupo_toggle_status',

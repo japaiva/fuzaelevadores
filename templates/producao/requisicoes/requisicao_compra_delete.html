@@ -1,0 +1,101 @@
+<!-- templates/producao/requisicao_compra_delete.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Excluir Requisição {{ requisicao.numero }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-warning">
+    <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h4>
+    <p>Deseja realmente excluir a requisição de compra <strong>{{ requisicao.numero }}</strong>?</p>
+    
+    <div class="row mt-3">
+      <div class="col-md-6">
+        <h6>Dados da Requisição:</h6>
+        <ul class="list-unstyled">
+          <li><strong>Proposta:</strong> {{ requisicao.lista_materiais.proposta.numero }}</li>
+          <li><strong>Projeto:</strong> {{ requisicao.lista_materiais.proposta.nome_projeto }}</li>
+          <li><strong>Solicitante:</strong> {{ requisicao.solicitante.get_full_name }}</li>
+          <li><strong>Status:</strong> 
+            <span class="badge {{ requisicao.status_badge_class }}">{{ requisicao.get_status_display }}</span>
+          </li>
+        </ul>
+      </div>
+      <div class="col-md-6">
+        <h6>Resumo:</h6>
+        <ul class="list-unstyled">
+          <li><strong>Total de Itens:</strong> {{ requisicao.get_total_itens }}</li>
+          <li><strong>Valor Estimado:</strong> R$ {{ requisicao.get_valor_total_estimado|floatformat:2 }}</li>
+          <li><strong>Data:</strong> {{ requisicao.data_requisicao|date:"d/m/Y" }}</li>
+        </ul>
+      </div>
+    </div>
+    
+    {% if requisicao.itens.exists %}
+    <div class="alert alert-info mt-3">
+      <i class="fas fa-info-circle me-1"></i>
+      <strong>Atenção:</strong> Esta requisição possui {{ requisicao.itens.count }} item(ns) que também serão excluído(s).
+    </div>
+    {% endif %}
+    
+    {% if requisicao.orcamentos.exists %}
+    <div class="alert alert-danger mt-3">
+      <i class="fas fa-exclamation-triangle me-1"></i>
+      <strong>Orçamentos Vinculados:</strong> Esta requisição já gerou {{ requisicao.orcamentos.count }} orçamento(s). 
+      A exclusão pode afetar o fluxo de compras.
+    </div>
+    {% endif %}
+    
+    {% if requisicao.status not in 'rascunho,aberta' %}
+    <div class="alert alert-danger mt-3">
+      <i class="fas fa-ban me-2"></i>
+      <strong>Requisição não pode ser excluída!</strong><br>
+      Apenas requisições com status "Rascunho" ou "Aberta" podem ser excluídas.<br>
+      Status atual: <strong>{{ requisicao.get_status_display }}</strong>
+    </div>
+    
+    <div class="mt-4">
+      <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+    {% else %}
+    <div class="mt-4">
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="btn btn-secondary me-2">
+          <i class="fas fa-times me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Tem certeza que deseja excluir esta requisição? Esta ação não pode ser desfeita.')">
+          <i class="fas fa-trash me-1"></i> Confirmar Exclusão
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.alert-warning {
+  border-left: 4px solid #ffc107;
+}
+
+.alert-danger {
+  border-left: 4px solid #dc3545;
+}
+
+.alert-info {
+  border-left: 4px solid #0dcaf0;
+}
+
+.list-unstyled li {
+  padding: 2px 0;
+}
+
+.btn {
+  min-width: 120px;
+}
+</style>
+{% endblock %}

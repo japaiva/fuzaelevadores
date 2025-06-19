@@ -88,7 +88,7 @@ def materiaprima_list(request):
             ativo=True
         ).select_related('grupo').order_by('grupo__codigo', 'codigo')
 
-    return render(request, 'producao/materiaprima_list.html', {
+    return render(request, 'producao/produtos/materiaprima_list.html', {
         'produtos': produtos,
         'grupos': grupos,
         'subgrupos': subgrupos,
@@ -119,7 +119,7 @@ def materiaprima_create(request):
     else:
         form = ProdutoForm()
 
-    return render(request, 'producao/materiaprima_form.html', {'form': form})
+    return render(request, 'producao/produtos/materiaprima_form.html', {'form': form})
 
 
 @login_required
@@ -143,7 +143,7 @@ def materiaprima_update(request, pk):
     else:
         form = ProdutoForm(instance=produto)
 
-    return render(request, 'producao/materiaprima_form.html', {
+    return render(request, 'producao/produtos/materiaprima_form.html', {
         'form': form,
         'produto': produto
     })
@@ -158,7 +158,7 @@ def materiaprima_detail(request, pk):
         'produto': produto,
     }
 
-    return render(request, 'producao/materiaprima_detail.html', context)
+    return render(request, 'producao/produtos/materiaprima_detail.html', context)
 
 
 @login_required
@@ -176,7 +176,7 @@ def materiaprima_delete(request, pk):
 
         return redirect('producao:materiaprima_list')
 
-    return render(request, 'producao/materiaprima_delete.html', {'produto': produto})
+    return render(request, 'producao/produtos/materiaprima_delete.html', {'produto': produto})
 
 
 @login_required

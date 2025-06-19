@@ -102,7 +102,7 @@ def orcamento_compra_list(request):
         'total_orcamentos': orcamentos_list.count(),
     }
 
-    return render(request, 'producao/orcamento_compra_list.html', context)
+    return render(request, 'producao/orcamentos/orcamento_compra_list.html', context)
 
 
 @login_required
@@ -184,7 +184,7 @@ def orcamento_compra_create(request):
         'title': 'Novo Orçamento de Compra'
     }
 
-    return render(request, 'producao/orcamento_compra_form.html', context)
+    return render(request, 'producao/orcamentos/orcamento_compra_form.html', context)
 
 
 @login_required
@@ -203,7 +203,7 @@ def orcamento_compra_detail(request, pk):
         'pode_gerar_pedido': orcamento.pode_gerar_pedido,
     }
 
-    return render(request, 'producao/orcamento_compra_detail.html', context)
+    return render(request, 'producao/orcamentos/orcamento_compra_detail.html', context)
 
 
 @login_required
@@ -272,7 +272,7 @@ def orcamento_compra_update(request, pk):
         'title': f'Editar Orçamento {orcamento.numero}'
     }
 
-    return render(request, 'producao/orcamento_compra_form.html', context)
+    return render(request, 'producao/orcamentos/orcamento_compra_form.html', context)
 
 
 @login_required
@@ -299,7 +299,7 @@ def orcamento_compra_delete(request, pk):
             messages.error(request, f'Erro ao excluir orçamento: {str(e)}')
             return redirect('producao:orcamento_compra_detail', pk=pk)
 
-    return render(request, 'producao/orcamento_compra_delete.html', {'orcamento': orcamento})
+    return render(request, 'producao/orcamentos/orcamento_compra_delete.html', {'orcamento': orcamento})
 
 
 @login_required
@@ -322,7 +322,7 @@ def orcamento_compra_alterar_status(request, pk):
         'orcamento': orcamento
     }
 
-    return render(request, 'producao/orcamento_compra_alterar_status.html', context)
+    return render(request, 'producao/orcamentos/orcamento_compra_alterar_status.html', context)
 
 
 @login_required

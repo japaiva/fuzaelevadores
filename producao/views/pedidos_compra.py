@@ -85,7 +85,7 @@ def pedido_compra_list(request):
         'total_pedidos': pedidos_list.count(),
     }
 
-    return render(request, 'producao/pedido_compra_list.html', context)
+    return render(request, 'producao/pedidos/pedido_compra_list.html', context)
 
 
 @login_required
@@ -170,7 +170,7 @@ def pedido_compra_create(request):
         'title': 'Novo Pedido de Compra'
     }
 
-    return render(request, 'producao/pedido_compra_form.html', context)
+    return render(request, 'producao/pedidos/pedido_compra_form.html', context)
 
 
 @login_required
@@ -188,7 +188,7 @@ def pedido_compra_detail(request, pk):
         'pode_cancelar': pedido.pode_cancelar,
     }
 
-    return render(request, 'producao/pedido_compra_detail.html', context)
+    return render(request, 'producao/pedidos/pedido_compra_detail.html', context)
 
 
 @login_required
@@ -257,7 +257,7 @@ def pedido_compra_update(request, pk):
         'title': f'Editar Pedido {pedido.numero}'
     }
 
-    return render(request, 'producao/pedido_compra_form.html', context)
+    return render(request, 'producao/pedidos/pedido_compra_form.html', context)
 
 
 @login_required
@@ -284,7 +284,7 @@ def pedido_compra_delete(request, pk):
             messages.error(request, f'Erro ao excluir pedido: {str(e)}')
             return redirect('producao:pedido_compra_detail', pk=pk)
 
-    return render(request, 'producao/pedido_compra_delete.html', {'pedido': pedido})
+    return render(request, 'producao/pedidos/pedido_compra_delete.html', {'pedido': pedido})
 
 
 @login_required
@@ -308,7 +308,7 @@ def pedido_compra_alterar_status(request, pk):
         'pedido': pedido
     }
 
-    return render(request, 'producao/pedido_compra_alterar_status.html', context)
+    return render(request, 'producao/pedidos/pedido_compra_alterar_status.html', context)
 
 
 @login_required
@@ -431,7 +431,7 @@ def pedido_compra_recebimento(request, pk):
         'itens_pendentes': pedido.itens.filter(quantidade_recebida__lt=models.F('quantidade')),
     }
 
-    return render(request, 'producao/pedido_compra_recebimento.html', context)
+    return render(request, 'producao/pedidos/pedido_compra_recebimento.html', context)
 
 
 @login_required
