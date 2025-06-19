@@ -65,6 +65,17 @@ urlpatterns = [
     path('pedidos-compra/<int:pk>/recebimento/', views.pedido_compra_recebimento, name='pedido_compra_recebimento'),
     path('pedidos-compra/<int:pedido_pk>/item/<int:item_pk>/receber/', views.receber_item_pedido, name='receber_item_pedido'),
     
+    # ORÇAMENTOS DE COMPRA
+    path('orcamentos-compra/', views.orcamento_compra_list, name='orcamento_compra_list'),
+    path('orcamentos-compra/novo/', views.orcamento_compra_create, name='orcamento_compra_create'),
+    path('orcamentos-compra/<int:pk>/', views.orcamento_compra_detail, name='orcamento_compra_detail'),
+    path('orcamentos-compra/<int:pk>/editar/', views.orcamento_compra_update, name='orcamento_compra_update'),
+    path('orcamentos-compra/<int:pk>/excluir/', views.orcamento_compra_delete, name='orcamento_compra_delete'),
+    path('orcamentos-compra/<int:pk>/alterar-status/', views.orcamento_compra_alterar_status, name='orcamento_compra_alterar_status'),
+    path('orcamentos-compra/<int:pk>/duplicar/', views.orcamento_compra_duplicar, name='orcamento_compra_duplicar'),
+    path('orcamentos-compra/<int:pk>/gerar-pedido/', views.orcamento_compra_gerar_pedido, name='orcamento_compra_gerar_pedido'),
+    
+    
     # APIs AJAX
     path('api/subgrupos/', views.get_subgrupos_by_grupo, name='api_subgrupos'),
     path('api/produto-codigo/', views.get_info_produto_codigo, name='api_produto_codigo'),

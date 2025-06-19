@@ -23,6 +23,21 @@ Estrutura modular das views do portal de produção:
 # Dashboard e páginas principais
 from .dashboard import home, dashboard, dashboard_analytics
 
+from .orcamentos_compra import (
+    # CRUD Views
+    orcamento_compra_list,
+    orcamento_compra_create,
+    orcamento_compra_detail,
+    orcamento_compra_update,
+    orcamento_compra_delete,
+    
+    # Action Views  
+    orcamento_compra_alterar_status,
+    orcamento_compra_duplicar,
+    orcamento_compra_gerar_pedido,
+)
+
+
 # CRUD Fornecedores
 from .fornecedores import (
     fornecedor_list, fornecedor_create, fornecedor_update,
@@ -81,6 +96,17 @@ from .relatorios import (
 __all__ = [
     # Dashboard
     'home', 'dashboard', 'dashboard_analytics',
+
+
+    # Orcamento Compra
+    'orcamento_compra_list',
+    'orcamento_compra_create', 
+    'orcamento_compra_detail',
+    'orcamento_compra_update',
+    'orcamento_compra_delete',
+    'orcamento_compra_alterar_status',
+    'orcamento_compra_duplicar',
+    'orcamento_compra_gerar_pedido',
     
     # Fornecedores
     'fornecedor_list', 'fornecedor_create', 'fornecedor_update',

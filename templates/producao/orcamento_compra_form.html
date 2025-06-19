@@ -1,0 +1,656 @@
+<!-- templates/producao/orcamento_compra_form.html -->
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if orcamento %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+      {{ title }}
+    </h5>
+    <a href="{% url 'producao:orcamento_compra_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <form method="post" id="orcamento-form" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors or formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+          {% endfor %}
+          {% for error in formset.non_form_errors %}
+            <p class="mb-0"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-file-alt me-2"></i>
+            Dados do Orçamento
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 mb-3">
+            {% if orcamento %}
+              <div class="col-md-3">
+                <label class="form-label">Número</label>
+                <div class="form-control-plaintext fw-bold text-primary fs-5">{{ orcamento.numero }}</div>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <div class="form-control-plaintext">
+                  <span class="badge {{ orcamento.status_badge_class }} fs-6">{{ orcamento.get_status_display }}</span>
+                </div>
+              </div>
+              <div class="col-md-6">
+            {% else %}
+              <div class="col-md-12">
+            {% endif %}
+                <label for="{{ form.titulo.id_for_label }}" class="form-label">
+                  Título do Orçamento <span class="text-danger">*</span>
+                </label>
+                <div class="mt-1">
+                  {{ form.titulo }}
+                </div>
+                {% if form.titulo.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.titulo.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+          </div>
+          
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="{{ form.data_orcamento.id_for_label }}" class="form-label">
+                Data do Orçamento <span class="text-danger">*</span>
+              </label>
+              {{ form.data_orcamento }}
+              {% if form.data_orcamento.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.data_orcamento.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.data_validade.id_for_label }}" class="form-label">
+                Data de Validade
+              </label>
+              {{ form.data_validade }}
+              {% if form.data_validade.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.data_validade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.data_necessidade.id_for_label }}" class="form-label">
+                Data de Necessidade
+              </label>
+              {{ form.data_necessidade }}
+              {% if form.data_necessidade.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.data_necessidade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-3">
+              <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
+              <div class="mt-1">
+                {{ form.prioridade }}
+              </div>
+              {% if form.prioridade.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="row g-3 mt-2">
+            <div class="col-md-6">
+              <label for="{{ form.comprador_responsavel.id_for_label }}" class="form-label">
+                Comprador Responsável <span class="text-danger">*</span>
+              </label>
+              <div class="mt-1">
+                {{ form.comprador_responsavel }}
+              </div>
+              {% if form.comprador_responsavel.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.comprador_responsavel.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.solicitante.id_for_label }}" class="form-label">
+                Solicitante <span class="text-danger">*</span>
+              </label>
+              <div class="mt-1">
+                {{ form.solicitante }}
+              </div>
+              {% if form.solicitante.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.solicitante.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Requisições -->
+          {% if not orcamento %}
+          <div class="row g-3 mt-2">
+            <div class="col-md-12">
+              <label for="{{ form.requisicoes.id_for_label }}" class="form-label">
+                Requisições
+              </label>
+              <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                {{ form.requisicoes }}
+              </div>
+              {% if form.requisicoes.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.requisicoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <small class="text-muted">Selecione as requisições que farão parte deste orçamento</small>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Bloco de Itens do Orçamento -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>
+            Itens do Orçamento
+            <span class="badge bg-secondary ms-2" id="contador-itens">0</span>
+          </h5>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-adicionar-item">
+            <i class="fas fa-plus me-1"></i> Adicionar Item
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+          
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0" id="itens-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 5%" class="text-center">#</th>
+                  <th style="width: 25%">Produto <span class="text-danger">*</span></th>
+                  <th style="width: 10%" class="text-center">Qtd <span class="text-danger">*</span></th>
+                  <th style="width: 12%" class="text-center">Valor Est.</th>
+                  <th style="width: 20%">Fornecedor</th>
+                  <th style="width: 12%" class="text-center">Valor Cotado</th>
+                  <th style="width: 8%" class="text-center">Prazo</th>
+                  <th style="width: 8%" class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="itens-tbody">
+                {% for form_item in formset %}
+                  <tr class="item-row" data-form-index="{{ forloop.counter0 }}">
+                    {% for hidden in form_item.hidden_fields %}
+                      {{ hidden }}
+                    {% endfor %}
+                    
+                    <td class="text-center align-middle">
+                      <span class="fw-bold text-muted item-numero">{{ forloop.counter }}</span>
+                    </td>
+                    
+                    <td class="align-middle">
+                      {{ form_item.produto }}
+                      {% if form_item.produto.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.produto.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="align-middle">
+                      {{ form_item.quantidade }}
+                      {% if form_item.quantidade.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.quantidade.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="align-middle">
+                      <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        {{ form_item.valor_unitario_estimado }}
+                      </div>
+                      {% if form_item.valor_unitario_estimado.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.valor_unitario_estimado.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="align-middle">
+                      {{ form_item.fornecedor }}
+                      {% if form_item.fornecedor.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.fornecedor.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="align-middle">
+                      <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        {{ form_item.valor_unitario_cotado }}
+                      </div>
+                      {% if form_item.valor_unitario_cotado.errors %}
+                        <div class="text-danger small mt-1">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          {{ form_item.valor_unitario_cotado.errors.0 }}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="align-middle">
+                      <div class="input-group">
+                        {{ form_item.prazo_entrega }}
+                        <span class="input-group-text">d</span>
+                      </div>
+                    </td>
+                    
+                    <td class="text-center align-middle">
+                      {{ form_item.DELETE }}
+                      <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <div id="sem-itens" class="text-center py-5" style="display: none;">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <div class="text-muted h5">Nenhum item adicionado</div>
+            <small class="text-muted">Clique em "Adicionar Item" para começar</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Resumo Financeiro -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-calculator me-2"></i>
+            Resumo Financeiro
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Total Estimado</label>
+              <div class="form-control-plaintext fw-bold fs-5" id="total-estimado">R$ 0,00</div>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label">Total Cotado</label>
+              <div class="form-control-plaintext fw-bold fs-5 text-success" id="total-cotado">R$ 0,00</div>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label text-primary">Economia</label>
+              <div class="form-control-plaintext fw-bold fs-4" id="economia-total">
+                R$ 0,00
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Observações -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-comment me-2"></i>
+            Observações
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label for="{{ form.descricao.id_for_label }}" class="form-label">
+                Descrição
+              </label>
+              {{ form.descricao }}
+              {% if form.descricao.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="row g-3 mt-2">
+            <div class="col-md-6">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                Observações Gerais
+              </label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.observacoes_internas.id_for_label }}" class="form-label">
+                Observações Internas
+              </label>
+              {{ form.observacoes_internas }}
+              {% if form.observacoes_internas.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.observacoes_internas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de ação -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> 
+          {% if orcamento %}Atualizar Orçamento{% else %}Criar Orçamento{% endif %}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Variáveis globais
+let formIndex = {{ formset.total_form_count|default:0 }};
+
+// =============================================================================
+// INICIALIZAÇÃO
+// =============================================================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 DOM carregado - inicializando...');
+    
+    // Inicializar componentes
+    inicializarEventListeners();
+    atualizarNumeracaoItens();
+    calcularTotais();
+    verificarItensVazios();
+    
+    console.log('✅ Inicialização completa');
+});
+
+// =============================================================================
+// EVENT LISTENERS
+// =============================================================================
+function inicializarEventListeners() {
+    // Botão adicionar item
+    const btnAdicionar = document.getElementById('btn-adicionar-item');
+    if (btnAdicionar) {
+        btnAdicionar.addEventListener('click', function(e) {
+            e.preventDefault();
+            adicionarItem();
+        });
+    }
+    
+    // Event listeners para cálculos automáticos
+    document.addEventListener('input', function(e) {
+        if (e.target.name && (
+            e.target.name.includes('-quantidade') || 
+            e.target.name.includes('-valor_unitario_estimado') ||
+            e.target.name.includes('-valor_unitario_cotado')
+        )) {
+            calcularTotais();
+        }
+    });
+    
+    // Event listener para remover itens
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remover-item')) {
+            e.preventDefault();
+            removerItem(e.target.closest('.btn-remover-item'));
+        }
+    });
+}
+
+// =============================================================================
+// GERENCIAMENTO DE ITENS
+// =============================================================================
+function adicionarItem() {
+    const tbody = document.getElementById('itens-tbody');
+    const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
+    
+    if (!tbody || !totalFormsInput) {
+        console.error('❌ Elementos necessários não encontrados');
+        return;
+    }
+    
+    try {
+        // Criar nova linha HTML
+        const novaLinha = document.createElement('tr');
+        novaLinha.className = 'item-row';
+        novaLinha.setAttribute('data-form-index', formIndex);
+        
+        novaLinha.innerHTML = `
+            <td class="text-center align-middle">
+                <span class="fw-bold text-muted item-numero">1</span>
+            </td>
+            <td class="align-middle">
+                <select name="form-${formIndex}-produto" id="id_form-${formIndex}-produto" class="form-control" required>
+                    <option value="">Selecione o produto...</option>
+                </select>
+            </td>
+            <td class="align-middle">
+                <input type="number" name="form-${formIndex}-quantidade" id="id_form-${formIndex}-quantidade" 
+                       class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
+            </td>
+            <td class="align-middle">
+                <div class="input-group">
+                    <span class="input-group-text">R$</span>
+                    <input type="number" name="form-${formIndex}-valor_unitario_estimado" id="id_form-${formIndex}-valor_unitario_estimado" 
+                           class="form-control" step="0.01" min="0.01" placeholder="0,00">
+                </div>
+            </td>
+            <td class="align-middle">
+                <select name="form-${formIndex}-fornecedor" id="id_form-${formIndex}-fornecedor" class="form-control">
+                    <option value="">Selecione o fornecedor...</option>
+                </select>
+            </td>
+            <td class="align-middle">
+                <div class="input-group">
+                    <span class="input-group-text">R$</span>
+                    <input type="number" name="form-${formIndex}-valor_unitario_cotado" id="id_form-${formIndex}-valor_unitario_cotado" 
+                           class="form-control" step="0.01" min="0.01" placeholder="0,00">
+                </div>
+            </td>
+            <td class="align-middle">
+                <div class="input-group">
+                    <input type="number" name="form-${formIndex}-prazo_entrega" id="id_form-${formIndex}-prazo_entrega" 
+                           class="form-control" min="0" step="1" placeholder="0">
+                    <span class="input-group-text">d</span>
+                </div>
+            </td>
+            <td class="text-center align-middle">
+                <input type="hidden" name="form-${formIndex}-id" id="id_form-${formIndex}-id">
+                <input type="checkbox" name="form-${formIndex}-DELETE" id="id_form-${formIndex}-DELETE" style="display:none;">
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+        
+        // Adicionar ao tbody
+        tbody.appendChild(novaLinha);
+        
+        // Atualizar contador de forms
+        const novoTotal = parseInt(totalFormsInput.value) + 1;
+        totalFormsInput.value = novoTotal;
+        formIndex++;
+        
+        // Atualizar interface
+        atualizarNumeracaoItens();
+        verificarItensVazios();
+        atualizarContadorItens();
+        
+        // Focar no select de produto
+        const novoProdutoSelect = novaLinha.querySelector('select[name*="-produto"]');
+        if (novoProdutoSelect) {
+            novoProdutoSelect.focus();
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao adicionar item:', error);
+        alert('Erro ao adicionar item. Tente novamente.');
+    }
+}
+
+function removerItem(btn) {
+    try {
+        const row = btn.closest('.item-row');
+        const deleteCheckbox = row.querySelector('[name$="-DELETE"]');
+        
+        if (deleteCheckbox) {
+            if (row.querySelector('[name$="-id"]').value) {
+                // Item existente - marcar para deleção
+                deleteCheckbox.checked = true;
+                row.style.display = 'none';
+            } else {
+                // Item novo - remover da DOM
+                row.remove();
+            }
+        } else {
+            // Sem checkbox DELETE - item novo
+            row.remove();
+        }
+        
+        // Atualizar interface
+        atualizarNumeracaoItens();
+        verificarItensVazios();
+        atualizarContadorItens();
+        calcularTotais();
+        
+    } catch (error) {
+        console.error('❌ Erro ao remover item:', error);
+    }
+}
+
+function atualizarNumeracaoItens() {
+    let contador = 1;
+    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(function(row) {
+        const numeroSpan = row.querySelector('.item-numero');
+        if (numeroSpan) {
+            numeroSpan.textContent = contador;
+        }
+        contador++;
+    });
+}
+
+function atualizarContadorItens() {
+    const contador = document.querySelectorAll('.item-row:not([style*="display: none"])').length;
+    const contadorElement = document.getElementById('contador-itens');
+    if (contadorElement) {
+        contadorElement.textContent = contador;
+    }
+}
+
+function verificarItensVazios() {
+    const tbody = document.getElementById('itens-tbody');
+    const semItens = document.getElementById('sem-itens');
+    const itensVisiveis = tbody.querySelectorAll('.item-row:not([style*="display: none"])');
+    
+    if (itensVisiveis.length === 0) {
+        if (semItens) semItens.style.display = 'block';
+        tbody.style.display = 'none';
+    } else {
+        if (semItens) semItens.style.display = 'none';
+        tbody.style.display = '';
+    }
+}
+
+// =============================================================================
+// CÁLCULOS FINANCEIROS
+// =============================================================================
+function calcularTotais() {
+    let totalEstimado = 0;
+    let totalCotado = 0;
+    
+    // Calcular totais de cada item visível
+    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(function(row) {
+        const qtdInput = row.querySelector('[name*="-quantidade"]');
+        const valorEstInput = row.querySelector('[name*="-valor_unitario_estimado"]');
+        const valorCotInput = row.querySelector('[name*="-valor_unitario_cotado"]');
+        
+        if (qtdInput && valorEstInput && valorCotInput) {
+            const qtd = parseFloat(qtdInput.value) || 0;
+            const valorEst = parseFloat(valorEstInput.value) || 0;
+            const valorCot = parseFloat(valorCotInput.value) || 0;
+            
+            totalEstimado += qtd * valorEst;
+            totalCotado += qtd * valorCot;
+        }
+    });
+    
+    // Calcular economia
+    const economia = totalEstimado - totalCotado;
+    
+    // Atualizar displays
+    const totalEstimadoDisplay = document.getElementById('total-estimado');
+    const totalCotadoDisplay = document.getElementById('total-cotado');
+    const economiaTotalDisplay = document.getElementById('economia-total');
+    
+    if (totalEstimadoDisplay) totalEstimadoDisplay.textContent = formatarMoeda(totalEstimado);
+    if (totalCotadoDisplay) totalCotadoDisplay.textContent = formatarMoeda(totalCotado);
+    if (economiaTotalDisplay) {
+        economiaTotalDisplay.textContent = formatarMoeda(Math.abs(economia));
+        economiaTotalDisplay.className = economia >= 0 ? 
+            'form-control-plaintext fw-bold fs-4 text-success' : 
+            'form-control-plaintext fw-bold fs-4 text-danger';
+    }
+}
+
+function formatarMoeda(valor) {
+    return 'R$ ' + valor.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+</script>
+{% endblock %}

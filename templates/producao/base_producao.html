@@ -19,29 +19,14 @@
      Cadastros
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-
     <li><a class="dropdown-item" href="{% url 'producao:fornecedor_list' %}">
         Fornecedores
-    </a></li>
-    
-
-  </ul>
-</li>
-
-<!-- Menu de Produtos -->
-
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'produto' in request.resolver_match.url_name or 'materiaprima' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Suprimentos
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
-        Pedidos de Compra
     </a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
         Matérias-Primas
     </a></li>
+
     <li><a class="dropdown-item" href="{% url 'producao:grupo_list' %}">
         Grupos de Produtos
     </a></li>
@@ -51,5 +36,27 @@
 
   </ul>
 </li>
+
+<!-- Menu de Compras e Orçamentos -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'compra' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'requisicao' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Suprimentos
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+
+    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
+        Requisições de Compra
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:orcamento_compra_list' %}">
+        Orçamentos de Compra
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
+        Pedidos de Compra
+    </a></li>
+
+  </ul>
+</li>
+
 
 {% endblock %}

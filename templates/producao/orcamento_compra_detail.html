@@ -1,0 +1,402 @@
+<!-- templates/producao/orcamento_compra_detail.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Orçamento {{ orcamento.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-calculator me-2"></i> Orçamento {{ orcamento.numero }}
+    </h5>
+    <div class="btn-group">
+      {% if pode_editar %}
+        <a href="{% url 'producao:orcamento_compra_update' orcamento.pk %}" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-edit me-1"></i> Editar
+        </a>
+      {% endif %}
+      
+      <a href="{% url 'producao:orcamento_compra_duplicar' orcamento.pk %}" class="btn btn-outline-info btn-sm" 
+         onclick="return confirm('Deseja duplicar este orçamento?')">
+        <i class="fas fa-copy me-1"></i> Duplicar
+      </a>
+      
+      {% if pode_gerar_pedido %}
+        <a href="{% url 'producao:orcamento_compra_gerar_pedido' orcamento.pk %}" class="btn btn-outline-success btn-sm"
+           onclick="return confirm('Deseja gerar pedido(s) de compra a partir deste orçamento?')">
+          <i class="fas fa-shopping-cart me-1"></i> Gerar Pedido
+        </a>
+      {% endif %}
+      
+      <a href="{% url 'producao:orcamento_compra_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+      <!-- COLUNA 1 - Informações do Orçamento -->
+      <div class="col-md-6">
+        <!-- Status e Informações Básicas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Informações do Orçamento</h6>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <strong>Número:</strong> 
+                <span class="badge bg-primary fs-6">{{ orcamento.numero }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Título:</strong> {{ orcamento.titulo }}
+              </li>
+              <li class="list-group-item">
+                <strong>Status:</strong>
+                <span class="badge {{ orcamento.status_badge_class }}">{{ orcamento.get_status_display }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Prioridade:</strong>
+                <span class="badge bg-warning">{{ orcamento.get_prioridade_display }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Data do Orçamento:</strong> {{ orcamento.data_orcamento|date:"d/m/Y" }}
+              </li>
+              {% if orcamento.data_validade %}
+              <li class="list-group-item">
+                <strong>Validade:</strong> 
+                <span class="{% if orcamento.esta_vencido %}text-danger fw-bold{% endif %}">
+                  {{ orcamento.data_validade|date:"d/m/Y" }}
+                </span>
+                {% if orcamento.esta_vencido %}
+                  <span class="badge bg-danger ms-2">Vencido</span>
+                {% endif %}
+              </li>
+              {% endif %}
+              {% if orcamento.data_necessidade %}
+              <li class="list-group-item">
+                <strong>Data de Necessidade:</strong> {{ orcamento.data_necessidade|date:"d/m/Y" }}
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Responsáveis -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Responsáveis</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-6">
+                <h6>Comprador</h6>
+                <div>{{ orcamento.comprador_responsavel.get_full_name|default:orcamento.comprador_responsavel.username }}</div>
+              </div>
+              <div class="col-6">
+                <h6>Solicitante</h6>
+                <div>{{ orcamento.solicitante.get_full_name|default:orcamento.solicitante.username }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLUNA 2 - Valores e Estatísticas -->
+      <div class="col-md-6">
+        <!-- Resumo Financeiro -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Resumo Financeiro</h6>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-6">
+                <div class="text-muted">Valor Estimado</div>
+                <div class="h5">R$ {{ orcamento.valor_total_estimado|floatformat:2 }}</div>
+              </div>
+              <div class="col-6">
+                <div class="text-muted">Valor Cotado</div>
+                <div class="h5 text-success">R$ {{ orcamento.valor_total_cotado|floatformat:2 }}</div>
+              </div>
+            </div>
+            {% if orcamento.valor_total_estimado > 0 and orcamento.valor_total_cotado > 0 %}
+            <hr>
+            <div class="d-flex justify-content-between">
+              <strong>Economia:</strong>
+              {% with economia=orcamento.valor_total_estimado|floatformat:2|add:"-"|add:orcamento.valor_total_cotado|floatformat:2 %}
+                <strong class="{% if economia > 0 %}text-success{% else %}text-danger{% endif %}">
+                  R$ {{ economia|floatformat:2 }}
+                </strong>
+              {% endwith %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Estatísticas</h6>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-4">
+                <div class="h4 text-info">{{ orcamento.get_total_itens }}</div>
+                <div class="small text-muted">Itens</div>
+              </div>
+              <div class="col-4">
+                <div class="h4 text-warning">{{ orcamento.get_total_fornecedores }}</div>
+                <div class="small text-muted">Fornecedores</div>
+              </div>
+              <div class="col-4">
+                <div class="h4 text-primary">{{ orcamento.requisicoes.count }}</div>
+                <div class="small text-muted">Requisições</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requisições Relacionadas -->
+    {% if orcamento.requisicoes.exists %}
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-list me-2"></i>
+          Requisições Relacionadas
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          {% for requisicao in orcamento.requisicoes.all %}
+            <div class="col-md-6 mb-2">
+              <div class="card border-left-primary">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{{ requisicao.numero }}</strong>
+                      <div class="small text-muted">{{ requisicao.lista_materiais.proposta.numero }}</div>
+                    </div>
+                    <span class="badge {{ requisicao.status_badge_class }}">{{ requisicao.get_status_display }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Itens do Orçamento -->
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-boxes me-2"></i>
+          Itens do Orçamento
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Item</th>
+                <th>Código</th>
+                <th>Produto</th>
+                <th class="text-end">Qtd</th>
+                <th class="text-end">Valor Est.</th>
+                <th>Fornecedor</th>
+                <th class="text-end">Valor Cotado</th>
+                <th class="text-end">Total</th>
+                <th class="text-center">Economia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in orcamento.itens.all %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td><code>{{ item.produto.codigo }}</code></td>
+                  <td>
+                    <strong>{{ item.produto.nome }}</strong>
+                    {% if item.observacoes %}
+                      <div class="small text-muted">{{ item.observacoes }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">{{ item.quantidade|floatformat:2 }} {{ item.unidade }}</td>
+                  <td class="text-end">
+                    {% if item.valor_unitario_estimado %}
+                      R$ {{ item.valor_unitario_estimado|floatformat:2 }}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item.fornecedor %}
+                      <strong>{{ item.fornecedor.nome_fantasia|default:item.fornecedor.razao_social }}</strong>
+                      {% if item.prazo_entrega %}
+                        <div class="small text-muted">{{ item.prazo_entrega }} dias</div>
+                      {% endif %}
+                    {% else %}
+                      <span class="text-muted">Não cotado</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if item.valor_unitario_cotado %}
+                      <strong class="text-success">R$ {{ item.valor_unitario_cotado|floatformat:2 }}</strong>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if item.valor_total_cotado %}
+                      <strong>R$ {{ item.valor_total_cotado|floatformat:2 }}</strong>
+                    {% elif item.valor_total_estimado %}
+                      <span class="text-muted">R$ {{ item.valor_total_estimado|floatformat:2 }}</span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    {% if item.economia_percentual != 0 %}
+                      <span class="badge {% if item.economia_percentual > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                        {{ item.economia_percentual|floatformat:1 }}%
+                      </span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="9" class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <div>Nenhum item cadastrado</div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observações -->
+    {% if orcamento.descricao or orcamento.observacoes or orcamento.observacoes_internas %}
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-comment me-2"></i>
+          Observações
+        </h6>
+      </div>
+      <div class="card-body">
+        {% if orcamento.descricao %}
+          <div class="mb-3">
+            <strong>Descrição:</strong>
+            <div class="mt-1">{{ orcamento.descricao|linebreaks }}</div>
+          </div>
+        {% endif %}
+        {% if orcamento.observacoes %}
+          <div class="mb-3">
+            <strong>Observações Gerais:</strong>
+            <div class="mt-1">{{ orcamento.observacoes|linebreaks }}</div>
+          </div>
+        {% endif %}
+        {% if orcamento.observacoes_internas %}
+          <div class="alert alert-info">
+            <strong>Observações Internas:</strong>
+            <div class="mt-1">{{ orcamento.observacoes_internas|linebreaks }}</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Histórico -->
+    {% if orcamento.historico.exists %}
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-history me-2"></i>
+          Histórico de Alterações
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="timeline">
+          {% for hist in orcamento.historico.all %}
+            <div class="timeline-item">
+              <div class="timeline-marker"></div>
+              <div class="timeline-content">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <strong>{{ hist.acao }}</strong>
+                    <div class="text-muted small">
+                      por {{ hist.usuario.get_full_name|default:hist.usuario.username }}
+                    </div>
+                    {% if hist.observacao %}
+                      <div class="mt-1">{{ hist.observacao }}</div>
+                    {% endif %}
+                  </div>
+                  <small class="text-muted">{{ hist.data_alteracao|date:"d/m/Y H:i" }}</small>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+   </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.border-left-primary {
+  border-left: 3px solid #007bff !important;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.timeline-marker {
+  position: absolute;
+  left: -23px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #007bff;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 3px solid #007bff;
+}
+</style>
+{% endblock %}

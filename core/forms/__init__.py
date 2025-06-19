@@ -14,6 +14,8 @@ from .base import (
     MoneyInput,
     PercentageInput,
     QuantityInput,
+    CustomDateInput,
+    DateAwareModelForm,
     validar_positivo,
     validar_porcentagem,
     validar_codigo_sequencial
@@ -98,6 +100,25 @@ from .parametros import (
     PermissoesForm
 )
 
+# === FORMULÁRIOS DE PRODUÇÃO ===
+from .producao import (
+    # Lista de Materiais
+    ListaMateriaisForm,
+    ItemListaMateriaisForm,
+    ItemListaMateriaisFormSet,
+    
+    # Requisição de Compra
+    RequisicaoCompraForm,
+    RequisicaoCompraFiltroForm,
+    
+    # Orçamento de Compra
+    OrcamentoCompraForm,
+    ItemOrcamentoCompraForm,
+    ItemOrcamentoCompraFormSet,
+    OrcamentoCompraFiltroForm,
+    AlterarStatusOrcamentoForm,
+)
+
 # === LISTA DE TODOS OS FORMULÁRIOS DISPONÍVEIS ===
 __all__ = [
     # Classes Base
@@ -108,6 +129,8 @@ __all__ = [
     'MoneyInput',
     'PercentageInput',
     'QuantityInput',
+    'CustomDateInput',
+    'DateAwareModelForm',
     'validar_positivo',
     'validar_porcentagem',
     'validar_codigo_sequencial',
@@ -174,4 +197,16 @@ __all__ = [
     'ConfiguracaoEmailForm',
     'ConfiguracaoSistemaForm',
     'PermissoesForm',
+    
+    # Produção - Fluxo Completo
+    'ListaMateriaisForm',
+    'ItemListaMateriaisForm', 
+    'ItemListaMateriaisFormSet',
+    'RequisicaoCompraForm',
+    'RequisicaoCompraFiltroForm',
+    'OrcamentoCompraForm',
+    'ItemOrcamentoCompraForm',
+    'ItemOrcamentoCompraFormSet',
+    'OrcamentoCompraFiltroForm',
+    'AlterarStatusOrcamentoForm',
 ]

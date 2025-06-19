@@ -1,0 +1,335 @@
+<!-- templates/producao/orcamento_compra_list.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Orçamentos de Compra | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-calculator me-2"></i> Orçamentos de Compra
+      {% if total_orcamentos > 0 %}
+        <span class="badge bg-primary ms-2">{{ total_orcamentos }}</span>
+      {% endif %}
+    </h5>
+    <div>
+      <a href="{% url 'producao:orcamento_compra_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Orçamento
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <!-- Filtros -->
+  <div class="card-header bg-white border-bottom">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-2">
+        <label class="form-label small">Status</label>
+        {{ form_filtros.status }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Prioridade</label>
+        {{ form_filtros.prioridade }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Situação</label>
+        {{ form_filtros.situacao }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small">Comprador</label>
+        {{ form_filtros.comprador }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Buscar</label>
+        <div class="input-group">
+          {{ form_filtros.q }}
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-search"></i>
+          </button>
+          {% if request.GET %}
+            <a href="{% url 'producao:orcamento_compra_list' %}" class="btn btn-outline-secondary btn-sm" title="Limpar Filtros">
+              <i class="fas fa-times"></i>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <div class="card-body p-0">
+    {% if orcamentos %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Número</th>
+              <th>Título</th>
+              <th>Comprador</th>
+              <th>Data</th>
+              <th>Validade</th>
+              <th>Status</th>
+              <th class="text-end">Valor Cotado</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for orcamento in orcamentos %}
+              <tr>
+                <td>
+                  <a href="{% url 'producao:orcamento_compra_detail' orcamento.pk %}" class="text-decoration-none fw-bold">
+                    {{ orcamento.numero }}
+                  </a>
+                  {% if orcamento.observacoes_internas %}
+                    <i class="fas fa-comment-dots text-muted ms-1" title="Tem observações internas"></i>
+                  {% endif %}
+                </td>
+                
+                <td>
+                  <div class="fw-semibold">{{ orcamento.titulo|truncatechars:40 }}</div>
+                  {% if orcamento.descricao %}
+                    <small class="text-muted">{{ orcamento.descricao|truncatechars:60 }}</small>
+                  {% endif %}
+                </td>
+                
+                <td>
+                  <div>{{ orcamento.comprador_responsavel.get_full_name|default:orcamento.comprador_responsavel.username }}</div>
+                  <small class="text-muted">{{ orcamento.solicitante.get_full_name|default:orcamento.solicitante.username }}</small>
+                </td>
+                
+                <td>
+                  <div>{{ orcamento.data_orcamento|date:"d/m/Y" }}</div>
+                </td>
+                
+                <td>
+                  {% if orcamento.data_validade %}
+                    <div class="{% if orcamento.esta_vencido %}text-danger{% elif orcamento.data_validade == today %}text-warning{% endif %}">
+                      {{ orcamento.data_validade|date:"d/m/Y" }}
+                    </div>
+                    {% if orcamento.esta_vencido %}
+                      <small class="text-danger">Vencido</small>
+                    {% endif %}
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                
+                <td>
+                  <span class="badge {{ orcamento.status_badge_class }}">
+                    {{ orcamento.get_status_display }}
+                  </span>
+                  {% if orcamento.prioridade != 'NORMAL' %}
+                    <br><span class="badge bg-warning small">
+                      {{ orcamento.get_prioridade_display }}
+                    </span>
+                  {% endif %}
+                </td>
+                
+                <td class="text-end">
+                  {% if orcamento.valor_total_cotado > 0 %}
+                    <div class="fw-bold text-success">R$ {{ orcamento.valor_total_cotado|floatformat:2 }}</div>
+                  {% endif %}
+                  {% if orcamento.valor_total_estimado > 0 %}
+                    <small class="text-muted">Est: R$ {{ orcamento.valor_total_estimado|floatformat:2 }}</small>
+                  {% endif %}
+                </td>
+              
+                <td class="text-center">
+                  <div class="btn-group" role="group">
+                    <!-- Ver detalhes -->
+                    <a href="{% url 'producao:orcamento_compra_detail' orcamento.pk %}" 
+                       class="btn btn-outline-info btn-sm" 
+                       title="Ver Detalhes">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    
+                    <!-- Editar (se permitido) -->
+                    {% if orcamento.pode_editar %}
+                      <a href="{% url 'producao:orcamento_compra_update' orcamento.pk %}" 
+                         class="btn btn-outline-primary btn-sm" 
+                         title="Editar Orçamento">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                    {% endif %}
+                    
+                    <!-- Duplicar -->
+                    <a href="{% url 'producao:orcamento_compra_duplicar' orcamento.pk %}" 
+                       class="btn btn-outline-secondary btn-sm" 
+                       title="Duplicar Orçamento"
+                       onclick="return confirm('Deseja duplicar este orçamento?')">
+                      <i class="fas fa-copy"></i>
+                    </a>
+                    
+                    <!-- Alterar Status -->
+                    {% if orcamento.status not in 'cancelado,rejeitado' %}
+                      <a href="{% url 'producao:orcamento_compra_alterar_status' orcamento.pk %}" 
+                         class="btn btn-outline-warning btn-sm" 
+                         title="Alterar Status">
+                        <i class="fas fa-exchange-alt"></i>
+                      </a>
+                    {% endif %}
+                    
+                    <!-- Gerar Pedido -->
+                    {% if orcamento.pode_gerar_pedido %}
+                      <a href="{% url 'producao:orcamento_compra_gerar_pedido' orcamento.pk %}" 
+                         class="btn btn-outline-success btn-sm" 
+                         title="Gerar Pedido"
+                         onclick="return confirm('Deseja gerar pedido(s) de compra a partir deste orçamento?')">
+                        <i class="fas fa-shopping-cart"></i>
+                      </a>
+                    {% endif %}
+                    
+                    <!-- Excluir (se permitido) -->
+                    {% if orcamento.status in 'rascunho,cotando' %}
+                      <a href="{% url 'producao:orcamento_compra_delete' orcamento.pk %}" 
+                         class="btn btn-outline-danger btn-sm" 
+                         title="Excluir Orçamento">
+                        <i class="fas fa-trash"></i>
+                      </a>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <!-- Estado vazio -->
+      <div class="text-center py-5">
+        <div class="h5 text-muted">Nenhum orçamento encontrado</div>
+        <a href="{% url 'producao:orcamento_compra_create' %}" class="btn btn-primary">
+          <i class="fas fa-plus me-1"></i> Criar Primeiro Orçamento
+        </a>
+      </div>
+    {% endif %}
+  </div>
+  
+  <!-- Paginação -->
+  {% if orcamentos.paginator.num_pages > 1 %}
+    <div class="card-footer bg-white">
+      <nav aria-label="Navegação de páginas">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+          <!-- Primeira página -->
+          {% if orcamentos.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page=1">
+                <i class="fas fa-angle-double-left"></i>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ orcamentos.previous_page_number }}">
+                <i class="fas fa-angle-left"></i>
+              </a>
+            </li>
+          {% endif %}
+          
+          <!-- Páginas -->
+          {% for num in orcamentos.paginator.page_range %}
+            {% if num == orcamentos.number %}
+              <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+              </li>
+            {% elif num >= orcamentos.number|add:'-2' and num <= orcamentos.number|add:'2' %}
+              <li class="page-item">
+                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          
+          <!-- Última página -->
+          {% if orcamentos.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ orcamentos.next_page_number }}">
+                <i class="fas fa-angle-right"></i>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ orcamentos.paginator.num_pages }}">
+                <i class="fas fa-angle-double-right"></i>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+      
+      <div class="text-center mt-2">
+        <small class="text-muted">
+          Mostrando {{ orcamentos.start_index }} a {{ orcamentos.end_index }} de {{ orcamentos.paginator.count }} orçamentos
+        </small>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem;
+    margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.pagination .page-link {
+    color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Hover effects */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .btn-group {
+        flex-wrap: wrap;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 2px;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.5rem;
+    }
+}
+
+/* Status colors */
+.badge.bg-secondary { background-color: #6c757d !important; }
+.badge.bg-warning { background-color: #ffc107 !important; color: #000; }
+.badge.bg-info { background-color: #0dcaf0 !important; }
+.badge.bg-primary { background-color: #0d6efd !important; }
+.badge.bg-success { background-color: #198754 !important; }
+.badge.bg-danger { background-color: #dc3545 !important; }
+.badge.bg-dark { background-color: #212529 !important; }
+</style>
+{% endblock %}

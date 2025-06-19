@@ -1,0 +1,35 @@
+<!-- templates/producao/orcamento_compra_delete.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Excluir Orçamento {{ orcamento.numero }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="alert alert-warning">
+    <h4><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h4>
+    <p>Deseja realmente excluir o orçamento de compra <strong>{{ orcamento.numero }}</strong> - <strong>{{ orcamento.titulo }}</strong>?</p>
+    
+    {% if orcamento.itens.exists %}
+    <p class="text-muted mb-2">
+      <small><i class="fas fa-info-circle me-1"></i>Este orçamento possui {{ orcamento.itens.count }} item(ns) que também serão excluído(s).</small>
+    </p>
+    {% endif %}
+    
+    {% if orcamento.status not in 'rascunho,cotando' %}
+    <div class="alert alert-danger mt-3">
+      <i class="fas fa-ban me-2"></i>
+      <strong>Orçamento não pode ser excluído!</strong><br>
+      Apenas orçamentos com status "Rascunho" ou "Em Cotação" podem ser excluídos.
+      Status atual: <strong>{{ orcamento.get_status_display }}</strong>
+    </div>
+    <a href="{% url 'producao:orcamento_compra_detail' orcamento.pk %}" class="btn btn-secondary">Voltar</a>
+    {% else %}
+    <form method="post">
+      {% csrf_token %}
+      <a href="{% url 'producao:orcamento_compra_detail' orcamento.pk %}" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

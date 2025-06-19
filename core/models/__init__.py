@@ -21,6 +21,17 @@ from .elevadores import (
 )
 from .propostas import Proposta, HistoricoProposta, AnexoProposta, ParcelaProposta
 
+# === MODELS DE PRODUÇÃO ===
+from .producao import (
+    ListaMateriais,
+    ItemListaMateriais,
+    RequisicaoCompra,
+    ItemRequisicaoCompra,
+    OrcamentoCompra,
+    ItemOrcamentoCompra,
+    HistoricoOrcamentoCompra
+)
+
 # === LISTA ESSENCIAL ===
 __all__ = [
     # Usuários
@@ -55,4 +66,13 @@ __all__ = [
     'HistoricoProposta',
     'AnexoProposta',
     'ParcelaProposta',
+    
+    # Produção - Fluxo Completo
+    'ListaMateriais',
+    'ItemListaMateriais',
+    'RequisicaoCompra', 
+    'ItemRequisicaoCompra',
+    'OrcamentoCompra',
+    'ItemOrcamentoCompra',
+    'HistoricoOrcamentoCompra',
 ]
