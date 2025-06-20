@@ -103,34 +103,39 @@
               <td>
                 {% if proposta.lista_materiais %}
                   <div class="lista-status-info">
-                    {% if proposta.lista_materiais.status == 'em_edicao' %}
+                    {% if proposta.lista_materiais.status == 'calculando' %}
                       <span class="badge bg-warning text-dark">
-                        Em Edição
+                        <i class="fas fa-spinner fa-spin me-1"></i>Calculando
                       </span>
-                    {% elif proposta.lista_materiais.status == 'pronta' %}
+                    {% elif proposta.lista_materiais.status == 'em_edicao' %}
                       <span class="badge bg-info">
-                        Pronta
+                        <i class="fas fa-edit me-1"></i>Em Edição
                       </span>
                     {% elif proposta.lista_materiais.status == 'aprovada' %}
                       <span class="badge bg-success">
-                        Aprovada
+                        <i class="fas fa-check me-1"></i>Aprovada
                       </span>
+                      <div class="small text-muted mt-1">
+                        Pronta para requisição
+                      </div>
                     {% else %}
                       <span class="badge bg-secondary">
                         <i class="fas fa-question me-1"></i>{{ proposta.lista_materiais.get_status_display }}
                       </span>
                     {% endif %}
-                    
                   </div>
                 {% else %}
                   <div class="lista-status-info">
                     {% if proposta.pode_calcular %}
                       <span class="badge bg-outline-secondary border">
-                        Não Gerada
+                        <i class="fas fa-plus me-1"></i>Não Gerada
                       </span>
+                      <div class="small text-muted mt-1">
+                        Pronta para gerar
+                      </div>
                     {% else %}
                       <span class="badge bg-light text-muted border">
-                        </i>Pendente
+                        <i class="fas fa-exclamation-triangle me-1"></i>Pendente
                       </span>
                       <div class="small text-warning mt-1">
                         Dados incompletos
@@ -153,18 +158,18 @@
                   {% if proposta.lista_materiais %}
                     <!-- TEM LISTA DE MATERIAIS -->
                     
-                    <!-- Botão CRUD Simples (sempre que tem lista editável) -->
-                    {% if proposta.lista_materiais.status in 'calculando,pronta,editada' %}
+                    <!-- Botão Editar Lista (só quando status = em_edicao) -->
+                    {% if proposta.lista_materiais.status == 'em_edicao' %}
                     <a href="{% url 'producao:item_lista_materiais_list' proposta.lista_materiais.id %}" 
                       class="btn btn-sm btn-outline-success" 
-                      title="Editar Lista"
+                      title="Editar Lista de Materiais"
                       data-bs-toggle="tooltip">
-                      <i class="fas fa-list"></i>
+                      <i class="fas fa-edit"></i>
                     </a>
                     {% endif %}
                     
-                    <!-- Botão Aprovar Lista -->
-                    {% if proposta.lista_materiais.status in 'pronta,editada' %}
+                    <!-- Botão Aprovar Lista (só quando status = em_edicao) -->
+                    {% if proposta.lista_materiais.status == 'em_edicao' %}
                     <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" 
                       class="btn btn-sm btn-outline-info" 
                       title="Aprovar Lista"
@@ -173,18 +178,18 @@
                     </a>
                     {% endif %}
                     
-                    <!-- Botão Recalcular (se puder calcular) -->
-  
+                    <!-- Botão Recalcular (sempre disponível se proposta pode calcular) -->
+                    {% if proposta.pode_calcular %}
                     <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
                       class="btn btn-sm btn-outline-warning text-dark" 
                       title="Recalcular Lista"
                       data-bs-toggle="tooltip"
-                      onclick="return confirm('Isso irá substituir a lista atual. Confirma?')">
+                      onclick="return confirm('Isso irá substituir a lista atual e voltar para status \'Em Edição\'. Confirma?')">
                       <i class="fas fa-sync"></i>
                     </a>
-                  
+                    {% endif %}
                     
-                    <!-- Botão Gerar Requisição (se lista aprovada) -->
+                    <!-- Botão Gerar Requisição (só quando status = aprovada) -->
                     {% if proposta.lista_materiais.status == 'aprovada' %}
                     <a href="{% url 'producao:requisicao_compra_create' %}?lista_materiais={{ proposta.lista_materiais.pk }}" 
                       class="btn btn-sm btn-outline-secondary" 
@@ -194,13 +199,23 @@
                     </a>
                     {% endif %}
                     
+                    <!-- Mostrar lista somente leitura (quando aprovada) -->
+                    {% if proposta.lista_materiais.status == 'aprovada' %}
+                    <a href="{% url 'producao:lista_materiais_detail' proposta.pk %}" 
+                      class="btn btn-sm btn-outline-dark" 
+                      title="Ver Lista (somente leitura)"
+                      data-bs-toggle="tooltip">
+                      <i class="fas fa-list"></i>
+                    </a>
+                    {% endif %}
+                    
                   {% else %}
                     <!-- NÃO TEM LISTA DE MATERIAIS -->
                     
                     {% if proposta.pode_calcular %}
                       <!-- Pode gerar lista -->
                       <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
-                        class="btn btn-sm btn-outline-info" 
+                        class="btn btn-sm btn-outline-success" 
                         title="Gerar Lista de Materiais"
                         data-bs-toggle="tooltip">
                         <i class="fas fa-cogs"></i>
@@ -209,7 +224,7 @@
                       <!-- Não pode gerar lista ainda -->
                       <button type="button" 
                               class="btn btn-sm btn-outline-secondary" 
-                              title="Lista não pode ser gerada ainda - dados incompletos"
+                              title="Lista não pode ser gerada - dados da proposta incompletos"
                               data-bs-toggle="tooltip"
                               disabled>
                         <i class="fas fa-exclamation-triangle"></i>
@@ -349,7 +364,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 90px;
+  min-width: 110px;
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
@@ -358,6 +373,7 @@
 .lista-status-info .small {
   font-size: 0.7rem;
   font-weight: 500;
+  text-align: center;
 }
 
 .data-info {
@@ -371,6 +387,7 @@
 
 .btn-group .btn {
   border-radius: 0;
+  min-width: 36px;
 }
 
 .btn-group .btn:first-child {
@@ -418,6 +435,49 @@
   margin-bottom: 2px;
 }
 
+/* === STATUS DA LISTA DE MATERIAIS === */
+
+/* Calculando - amarelo com animação */
+.badge.bg-warning.text-dark {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border: 1px solid #ffeaa7;
+}
+
+.badge.bg-warning .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Em Edição - azul claro */
+.badge.bg-info {
+  background-color: #d1ecf1 !important;
+  color: #0c5460 !important;
+  border: 1px solid #b8daff;
+}
+
+/* Aprovada - verde */
+.badge.bg-success {
+  background-color: #d4edda !important;
+  color: #155724 !important;
+  border: 1px solid #c3e6cb;
+}
+
+/* Não gerada - cinza com borda */
+.badge.bg-outline-secondary {
+  background-color: transparent !important;
+  border: 1px solid #6c757d !important;
+  color: #6c757d !important;
+}
+
+/* Pendente - cinza claro */
+.badge.bg-light.text-muted {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+/* === STATUS DA PROPOSTA === */
+
 /* Cores dos badges de status da proposta */
 .badge.bg-warning {
   background-color: #ffc107 !important;
@@ -432,16 +492,10 @@
   background-color: #dc3545 !important;
 }
 
-/* Cores dos badges de status da lista */
-.badge.bg-outline-secondary {
-  background-color: transparent !important;
-  border: 1px solid #6c757d !important;
-  color: #6c757d !important;
-}
-
-.badge.bg-info {
-  background-color: #0dcaf0 !important;
-  color: #000 !important;
+/* Animação de loading */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Tooltips */
@@ -456,7 +510,8 @@
   }
   
   .btn-group .btn {
-    padding: 0.25rem 0.5rem;
+    min-width: 32px;
+    padding: 0.25rem 0.4rem;
   }
   
   .empty-state {
@@ -474,7 +529,7 @@
   }
   
   .lista-status-info .badge {
-    min-width: 70px;
+    min-width: 90px;
     font-size: 0.65rem;
     padding: 0.3rem 0.5rem;
   }
@@ -493,32 +548,6 @@
 .lista-status-info .badge:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Cores específicas para cada status */
-.badge.bg-warning.text-dark {
-  background-color: #fff3cd !important;
-  color: #856404 !important;
-  border: 1px solid #ffeaa7;
-}
-
-.badge.bg-info {
-  background-color: #d1ecf1 !important;
-  color: #0c5460 !important;
-  border: 1px solid #b8daff;
-}
-
-.badge.bg-success {
-  background-color: #d4edda !important;
-  color: #155724 !important;
-  border: 1px solid #c3e6cb;
-}
-
-/* Estado "não gerada" */
-.badge.bg-light.text-muted {
-  background-color: #f8f9fa !important;
-  color: #6c757d !important;
-  border: 1px solid #dee2e6 !important;
 }
 </style>
 {% endblock %}
@@ -544,13 +573,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const acoesConfirmacao = document.querySelectorAll('a[onclick*="confirm"]');
     acoesConfirmacao.forEach(link => {
         link.addEventListener('click', function(e) {
-            if (!confirm(this.getAttribute('onclick').match(/confirm\('([^']+)'\)/)[1])) {
+            const confirmText = this.getAttribute('onclick').match(/confirm\('([^']+)'\)/);
+            if (confirmText && !confirm(confirmText[1])) {
                 e.preventDefault();
             }
         });
     });
     
-    console.log('✅ Lista de propostas de produção com status da lista inicializada');
+    console.log('✅ Lista de propostas de produção com status simplificados inicializada');
 });
 </script>
 {% endblock %}

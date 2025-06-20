@@ -14,11 +14,7 @@ from datetime import datetime, date, timedelta
 
 from .base import STATUS_PEDIDO_CHOICES, PRIORIDADE_PEDIDO_CHOICES
 
-
 class ListaMateriais(models.Model):
-    """
-    Lista de materiais calculada/editável gerada a partir de uma proposta
-    """
     
     # Relacionamento com proposta
     proposta = models.OneToOneField(
@@ -28,19 +24,18 @@ class ListaMateriais(models.Model):
         verbose_name="Proposta"
     )
     
-    # Status e controle
+    # Status e controle - ✅ SIMPLIFICADO
     status = models.CharField(
         max_length=20,
         choices=[
-            ('calculando', 'Calculando'),
-            ('pronta', 'Pronta'),
-            ('editada', 'Editada'),
-            ('aprovada', 'Aprovada'),
+            ('calculando', 'Calculando'),      # Processando cálculo
+            ('em_edicao', 'Em Edição'),        # Calculada, pode editar
+            ('aprovada', 'Aprovada'),          # Aprovada para requisição
         ],
         default='calculando',
         verbose_name="Status"
     )
-    
+        
     # Dados calculados originais (para comparação)
     dados_calculo_original = models.JSONField(
         default=dict,
@@ -85,23 +80,23 @@ class ListaMateriais(models.Model):
     def status_badge_class(self):
         """Retorna classe CSS para badge de status"""
         classes = {
-            'calculando': 'bg-warning',
-            'pronta': 'bg-info',
-            'editada': 'bg-primary',
-            'aprovada': 'bg-success',
+            'calculando': 'bg-warning',      # Amarelo
+            'em_edicao': 'bg-info',          # Azul
+            'aprovada': 'bg-success',        # Verde
         }
         return classes.get(self.status, 'bg-secondary')
     
     @property
     def pode_editar(self):
         """Verifica se a lista pode ser editada"""
-        return self.status in ['pronta', 'editada']
+        return self.status == 'em_edicao'  # ✅ CORRIGIDO: Só em edição
     
     @property
     def pode_gerar_requisicao(self):
         """Verifica se pode gerar requisição"""
         return self.status == 'aprovada' and self.itens.exists()
     
+    @property
     def calcular_valor_total(self):
         """Calcula valor total da lista de materiais"""
         if not self.pk:

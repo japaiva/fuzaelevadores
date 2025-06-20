@@ -57,17 +57,7 @@
             <div class="h5 mb-0 text-info">{{ lista.itens.count }}</div>
             <small class="text-muted">Total</small>
           </div>
-          <div class="col-4">
-            {% if not lista.pode_editar %}
-              <span class="badge bg-warning">
-                <i class="fas fa-lock me-1"></i>Bloqueada
-              </span>
-            {% else %}
-              <span class="badge bg-success">
-                <i class="fas fa-edit me-1"></i>Editável
-              </span>
-            {% endif %}
-          </div>
+
         </div>
       </div>
     </div>

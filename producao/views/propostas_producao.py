@@ -3,7 +3,7 @@
 """
 Views para Propostas e Lista de Materiais no Portal de Produção
 Portal de Produção - Sistema Elevadores FUZA
-✅ ATUALIZADA: Lista idêntica ao portal vendedor
+✅ ATUALIZADA: Lista idêntica ao portal vendedor + Status simplificados + Correções de valor total
 """
 
 import json
@@ -18,15 +18,45 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
-from django.utils import timezone  # ✅ CORRIGIDO: Import correto
+from django.utils import timezone
 
 from core.models import Proposta, ListaMateriais, ItemListaMateriais, Produto, Cliente, Usuario
 from core.forms import ListaMateriaisForm, ItemListaMateriaisForm, ItemListaMateriaisFormSet
-from core.forms.propostas import PropostaFiltroForm  # ✅ ADICIONADO: Usar mesmo formulário
+from core.forms.propostas import PropostaFiltroForm
 from core.services.calculo_pedido import CalculoPedidoService
 from core.views.propostas import proposta_detail_base
 
 logger = logging.getLogger(__name__)
+
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def get_valor_total_seguro(lista_materiais):
+    """
+    Helper function para obter valor total de forma segura
+    """
+    if not lista_materiais:
+        return 0
+        
+    try:
+        valor = lista_materiais.calcular_valor_total()
+        
+        # Se for callable, chama
+        if callable(valor):
+            return valor()
+        
+        # Se for None, retorna 0
+        if valor is None:
+            return 0
+            
+        # Tenta converter para float
+        return float(valor)
+        
+    except Exception as e:
+        logger.warning(f"Erro ao obter valor total: {e}")
+        return 0
+
 
 # =============================================================================
 # PROPOSTAS NO PORTAL DE PRODUÇÃO
@@ -134,16 +164,25 @@ def proposta_list_producao(request):
 def proposta_detail_producao(request, pk):
     """
     Detalhe da proposta no portal de produção
-    ✅ ATUALIZADA: Usa o template compartilhado igual ao vendedor
+    ✅ CORRIGIDO: Tratamento seguro do calcular_valor_total
     """
     
     # Verificar se já tem lista de materiais
     lista_materiais = None
+    valor_total_lista = 0
+    
     try:
         proposta = get_object_or_404(Proposta, pk=pk)
         lista_materiais = proposta.lista_materiais
+        
+        # ✅ CORREÇÃO: Tratamento seguro do valor total
+        if lista_materiais:
+            valor_total_lista = get_valor_total_seguro(lista_materiais)
+                
     except ListaMateriais.DoesNotExist:
         pass
+    except Exception as e:
+        logger.error(f"Erro ao buscar lista de materiais: {e}")
     
     # Contexto específico da produção
     extra_context = {
@@ -154,9 +193,9 @@ def proposta_detail_producao(request, pk):
         'base_template': 'producao/base_producao.html',
         
         # Informações específicas para produção
-        'pode_aprovar': lista_materiais.status in ['pronta', 'editada'] if lista_materiais else False,
+        'pode_aprovar': lista_materiais and lista_materiais.status == 'em_edicao',
         'total_itens': lista_materiais.itens.count() if lista_materiais else 0,
-        'valor_total': lista_materiais.calcular_valor_total() if lista_materiais else 0,
+        'valor_total': valor_total_lista,  # ✅ CORRIGIDO: Usa variável tratada
     }
     
     # ✅ MUDANÇA PRINCIPAL: Usa template unificado
@@ -172,6 +211,7 @@ def proposta_detail_producao(request, pk):
 def lista_materiais_detail(request, pk):
     """
     View para detalhar/gerenciar lista de materiais de uma proposta
+    ✅ CORRIGIDO: Tratamento seguro do valor total
     """
     proposta = get_object_or_404(Proposta, pk=pk)
     
@@ -185,24 +225,24 @@ def lista_materiais_detail(request, pk):
         'lista_materiais': lista_materiais,
         'pode_gerar_lista': proposta.pode_calcular(),
         'tem_lista': lista_materiais is not None,
-        'pode_aprovar': lista_materiais.status in ['pronta', 'editada'] if lista_materiais else False,
+        'pode_aprovar': lista_materiais and lista_materiais.status == 'em_edicao',
         'total_itens': lista_materiais.itens.count() if lista_materiais else 0,
-        'valor_total': lista_materiais.calcular_valor_total() if lista_materiais else 0,
+        'valor_total': get_valor_total_seguro(lista_materiais),  # ✅ CORRIGIDO
     }
     
     return render(request, 'producao/propostas/lista_materiais_detail.html', context)
 
 
 # =============================================================================
-# LISTA DE MATERIAIS (mantidas as funções existentes)
+# LISTA DE MATERIAIS - CRUD OPERATIONS
 # =============================================================================
-
-
-# CORRIGIR a view gerar_lista_materiais em propostas_producao.py
 
 @login_required
 def gerar_lista_materiais(request, pk):
-    """Gera/regenera lista de materiais a partir dos cálculos da proposta"""
+    """
+    Gera/regenera lista de materiais a partir dos cálculos da proposta
+    ✅ CORRIGIDO: Status direto para 'em_edicao'
+    """
     proposta = get_object_or_404(Proposta, pk=pk)
     
     if not proposta.pode_calcular():
@@ -215,10 +255,12 @@ def gerar_lista_materiais(request, pk):
             try:
                 lista_existente = proposta.lista_materiais
                 lista_existente.delete()
+                logger.info(f"Lista existente da proposta {proposta.numero} foi excluída para regeneração")
             except ListaMateriais.DoesNotExist:
                 pass
             
             # Executar cálculos completos
+            logger.info(f"Iniciando cálculo da lista de materiais para proposta {proposta.numero}")
             resultado = CalculoPedidoService.calcular_custos_completo(proposta)
             
             # Converter Decimals para float no resultado antes de salvar no JSON
@@ -238,11 +280,11 @@ def gerar_lista_materiais(request, pk):
                 
                 custos_serializaveis = converter_decimais(resultado.get('custos', {}))
             
-            # Criar nova lista de materiais
+            # ✅ CORREÇÃO PRINCIPAL: Criar lista já com status 'em_edicao'
             lista_materiais = ListaMateriais.objects.create(
                 proposta=proposta,
-                status='pronta',
-                dados_calculo_original=custos_serializaveis,  # ✅ CORRIGIDO: Usar versão serializable
+                status='em_edicao',  # ✅ MUDANÇA: Direto para "em_edicao" após cálculo
+                dados_calculo_original=custos_serializaveis,
                 observacoes=f'Lista gerada automaticamente em {timezone.now().strftime("%d/%m/%Y %H:%M")}',
                 criado_por=request.user,
                 atualizado_por=request.user
@@ -252,42 +294,36 @@ def gerar_lista_materiais(request, pk):
             componentes = proposta.componentes_calculados
             total_itens_criados = 0
             
+            logger.info(f"Processando componentes calculados da proposta {proposta.numero}")
+            
             if componentes:
                 for categoria, categoria_dados in componentes.items():
-                    if isinstance(categoria_dados, dict) and 'itens' in str(categoria_dados):
-                        # Processar subcategorias
-                        for subcategoria, sub_dados in categoria_dados.items():
-                            if isinstance(sub_dados, dict) and 'itens' in sub_dados:
-                                # Processar itens da subcategoria
-                                for codigo, item_dados in sub_dados['itens'].items():
-                                    if isinstance(item_dados, dict) and 'codigo' in item_dados:
-                                        # Buscar produto pelo código
-                                        try:
-                                            produto = Produto.objects.get(
-                                                codigo=item_dados['codigo'],
-                                                tipo='MP'  # Apenas matérias-primas
+                    if isinstance(categoria_dados, dict):
+                        # Verificar se tem 'itens' diretamente na categoria
+                        if 'itens' in categoria_dados:
+                            # Processar itens da categoria
+                            for codigo, item_dados in categoria_dados['itens'].items():
+                                if isinstance(item_dados, dict) and 'codigo' in item_dados:
+                                    total_itens_criados += processar_item_lista(
+                                        lista_materiais, item_dados, logger
+                                    )
+                        else:
+                            # Processar subcategorias
+                            for subcategoria, sub_dados in categoria_dados.items():
+                                if isinstance(sub_dados, dict) and 'itens' in sub_dados:
+                                    # Processar itens da subcategoria
+                                    for codigo, item_dados in sub_dados['itens'].items():
+                                        if isinstance(item_dados, dict) and 'codigo' in item_dados:
+                                            total_itens_criados += processar_item_lista(
+                                                lista_materiais, item_dados, logger
                                             )
-                                            
-                                            # Criar item da lista
-                                            ItemListaMateriais.objects.create(
-                                                lista=lista_materiais,
-                                                produto=produto,
-                                                quantidade=item_dados.get('quantidade', 1),
-                                                unidade=item_dados.get('unidade', produto.unidade_medida),
-                                                valor_unitario_estimado=item_dados.get('valor_unitario', 0),
-                                                observacoes=item_dados.get('explicacao', ''),
-                                                item_calculado=True
-                                            )
-                                            total_itens_criados += 1
-                                            
-                                        except Produto.DoesNotExist:
-                                            logger.warning(f"Produto {item_dados['codigo']} não encontrado para lista de materiais")
-                                            continue
+            
+            logger.info(f"Lista de materiais criada com {total_itens_criados} itens para proposta {proposta.numero}")
             
             messages.success(request, 
                 f'Lista de materiais gerada com sucesso! '
                 f'{total_itens_criados} itens criados. '
-        
+                f'Status: Em Edição - você pode revisar e editar os itens.'
             )
             
             return redirect('producao:proposta_list_producao')
@@ -298,9 +334,43 @@ def gerar_lista_materiais(request, pk):
         return redirect('producao:proposta_detail_producao', pk=pk)
 
 
+def processar_item_lista(lista_materiais, item_dados, logger):
+    """
+    Helper function para processar um item da lista de materiais
+    """
+    try:
+        # Buscar produto pelo código
+        produto = Produto.objects.get(
+            codigo=item_dados['codigo'],
+            tipo='MP'  # Apenas matérias-primas
+        )
+        
+        # Criar item da lista
+        ItemListaMateriais.objects.create(
+            lista=lista_materiais,
+            produto=produto,
+            quantidade=item_dados.get('quantidade', 1),
+            unidade=item_dados.get('unidade', produto.unidade_medida),
+            valor_unitario_estimado=item_dados.get('valor_unitario', 0),
+            observacoes=item_dados.get('explicacao', ''),
+            item_calculado=True
+        )
+        return 1
+        
+    except Produto.DoesNotExist:
+        logger.warning(f"Produto {item_dados['codigo']} não encontrado para lista de materiais")
+        return 0
+    except Exception as e:
+        logger.error(f"Erro ao processar item {item_dados.get('codigo', 'desconhecido')}: {str(e)}")
+        return 0
+
+
 @login_required
 def lista_materiais_edit(request, pk):
-    """Interface editável para lista de materiais"""
+    """
+    Interface editável para lista de materiais
+    ✅ CORRIGIDO: Verificação de status + tratamento seguro do valor total
+    """
     proposta = get_object_or_404(Proposta, pk=pk)
     
     # Verificar se tem lista de materiais
@@ -308,6 +378,11 @@ def lista_materiais_edit(request, pk):
         lista_materiais = proposta.lista_materiais
     except ListaMateriais.DoesNotExist:
         messages.error(request, 'Proposta não possui lista de materiais. Gere a lista primeiro.')
+        return redirect('producao:proposta_list_producao')
+    
+    # ✅ VERIFICAÇÃO DE PERMISSÃO: Só pode editar se status for 'em_edicao'
+    if lista_materiais.status != 'em_edicao':
+        messages.error(request, f'Lista não pode ser editada. Status atual: {lista_materiais.get_status_display()}')
         return redirect('producao:proposta_list_producao')
     
     if request.method == 'POST':
@@ -320,14 +395,13 @@ def lista_materiais_edit(request, pk):
                     # Salvar lista
                     lista = form.save(commit=False)
                     lista.atualizado_por = request.user
-                    lista.status = 'editada'
+                    # ✅ MANTER STATUS: Permanece 'em_edicao' após salvar edições
                     lista.save()
                     
                     # Salvar itens
                     formset.save()
                     
                     messages.success(request, 'Lista de materiais atualizada com sucesso!')
-                    # ✅ CORREÇÃO: Voltar para lista de propostas após salvar
                     return redirect('producao:proposta_list_producao')
                     
             except Exception as e:
@@ -339,45 +413,56 @@ def lista_materiais_edit(request, pk):
         form = ListaMateriaisForm(instance=lista_materiais)
         formset = ItemListaMateriaisFormSet(instance=lista_materiais)
     
+    # ✅ CORREÇÃO: Tratamento seguro do valor total
+    valor_total_lista = get_valor_total_seguro(lista_materiais)
+    
     context = {
         'proposta': proposta,
         'lista_materiais': lista_materiais,
         'form': form,
         'formset': formset,
         'total_itens': lista_materiais.itens.count(),
-        'valor_total': lista_materiais.calcular_valor_total(),
-        'pode_aprovar': lista_materiais.status in ['pronta', 'editada'],
+        'valor_total': valor_total_lista,  # ✅ CORRIGIDO
+        'pode_aprovar': lista_materiais.status == 'em_edicao',  # ✅ SIMPLIFICADO
     }
     
-    # ✅ CORREÇÃO: Mostrar o template de edição (removido o redirect incorreto)
     return render(request, 'producao/propostas/lista_materiais_edit.html', context)
 
 
 @login_required
 def lista_materiais_aprovar(request, pk):
-    """Aprovar lista de materiais para gerar requisição"""
+    """
+    Aprovar lista de materiais para gerar requisição
+    ✅ CORRIGIDO: Verificação de status simplificada
+    """
     proposta = get_object_or_404(Proposta, pk=pk)
     
     try:
         lista_materiais = proposta.lista_materiais
     except ListaMateriais.DoesNotExist:
         messages.error(request, 'Proposta não possui lista de materiais.')
-        return redirect('producao:proposta_list_producao')  # ✅ CORREÇÃO: Voltar para lista
+        return redirect('producao:proposta_list_producao')
+    
+    # ✅ VERIFICAÇÃO: Só pode aprovar se estiver 'em_edicao'
+    if lista_materiais.status != 'em_edicao':
+        messages.error(request, f'Lista não pode ser aprovada. Status atual: {lista_materiais.get_status_display()}')
+        return redirect('producao:proposta_list_producao')
     
     if request.method == 'POST':
         try:
             with transaction.atomic():
-                lista_materiais.status = 'aprovada'
+                lista_materiais.status = 'aprovada'  # ✅ MUDANÇA: 'em_edicao' → 'aprovada'
                 lista_materiais.atualizado_por = request.user
                 lista_materiais.save()
+                
+                logger.info(f"Lista de materiais da proposta {proposta.numero} foi aprovada por {request.user}")
                 
                 messages.success(request, 
                     'Lista de materiais aprovada! '
                     'Agora você pode gerar uma requisição de compra.'
                 )
                 
-                # ✅ CORREÇÃO: Após aprovar, voltar para lista de propostas
-                # Se não tiver requisição implementada, vai para lista
+                # Redirecionar para criar requisição (se existir) ou voltar para lista
                 try:
                     return redirect(f"{reverse('producao:requisicao_compra_create')}?lista_materiais={lista_materiais.pk}")
                 except:
@@ -387,12 +472,12 @@ def lista_materiais_aprovar(request, pk):
         except Exception as e:
             logger.error(f"Erro ao aprovar lista de materiais: {str(e)}")
             messages.error(request, f'Erro ao aprovar lista: {str(e)}')
-            # ✅ CORREÇÃO: Em caso de erro, voltar para lista
             return redirect('producao:proposta_list_producao')
     
     context = {
         'proposta': proposta,
         'lista_materiais': lista_materiais,
+        'valor_total': get_valor_total_seguro(lista_materiais),  # ✅ CORRIGIDO
     }
     
     return render(request, 'producao/propostas/lista_materiais_aprovar.html', context)
@@ -430,3 +515,148 @@ def api_produto_info(request):
             'success': False, 
             'error': f'Produto {codigo} não encontrado ou indisponível'
         })
+
+
+# =============================================================================
+# VIEWS ADICIONAIS PARA CRUD DE ITENS DA LISTA
+# =============================================================================
+
+@login_required
+def item_lista_materiais_list(request, lista_id):
+    """
+    Lista simples dos itens da lista de materiais para edição CRUD
+    """
+    lista_materiais = get_object_or_404(ListaMateriais, pk=lista_id)
+    
+    # Verificar se pode editar
+    if lista_materiais.status != 'em_edicao':
+        messages.error(request, f'Lista não pode ser editada. Status: {lista_materiais.get_status_display()}')
+        return redirect('producao:proposta_list_producao')
+    
+    itens = lista_materiais.itens.select_related('produto', 'produto__grupo').order_by('produto__codigo')
+    
+    context = {
+        'lista_materiais': lista_materiais,
+        'proposta': lista_materiais.proposta,
+        'itens': itens,
+        'total_itens': itens.count(),
+        'valor_total': get_valor_total_seguro(lista_materiais),
+    }
+    
+    return render(request, 'producao/propostas/item_lista_materiais_list.html', context)
+
+
+@login_required
+def item_lista_materiais_create(request, lista_id):
+    """
+    Adicionar novo item à lista de materiais
+    """
+    lista_materiais = get_object_or_404(ListaMateriais, pk=lista_id)
+    
+    # Verificar se pode editar
+    if lista_materiais.status != 'em_edicao':
+        messages.error(request, 'Lista não pode ser editada.')
+        return redirect('producao:item_lista_materiais_list', lista_id=lista_id)
+    
+    if request.method == 'POST':
+        form = ItemListaMateriaisForm(request.POST)
+        if form.is_valid():
+            try:
+                item = form.save(commit=False)
+                item.lista = lista_materiais
+                item.item_calculado = False  # Item adicionado manualmente
+                item.save()
+                
+                messages.success(request, f'Item {item.produto.codigo} adicionado com sucesso!')
+                return redirect('producao:item_lista_materiais_list', lista_id=lista_id)
+                
+            except Exception as e:
+                logger.error(f"Erro ao criar item: {str(e)}")
+                messages.error(request, f'Erro ao criar item: {str(e)}')
+        else:
+            messages.error(request, 'Erro nos dados do formulário.')
+    else:
+        form = ItemListaMateriaisForm()
+    
+    context = {
+        'form': form,
+        'lista_materiais': lista_materiais,
+        'proposta': lista_materiais.proposta,
+        'action': 'Adicionar',
+    }
+    
+    return render(request, 'producao/propostas/item_lista_materiais_form.html', context)
+
+
+@login_required
+def item_lista_materiais_edit(request, lista_id, item_id):
+    """
+    Editar item da lista de materiais
+    """
+    lista_materiais = get_object_or_404(ListaMateriais, pk=lista_id)
+    item = get_object_or_404(ItemListaMateriais, pk=item_id, lista=lista_materiais)
+    
+    # Verificar se pode editar
+    if lista_materiais.status != 'em_edicao':
+        messages.error(request, 'Lista não pode ser editada.')
+        return redirect('producao:item_lista_materiais_list', lista_id=lista_id)
+    
+    if request.method == 'POST':
+        form = ItemListaMateriaisForm(request.POST, instance=item)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, f'Item {item.produto.codigo} atualizado com sucesso!')
+                return redirect('producao:item_lista_materiais_list', lista_id=lista_id)
+                
+            except Exception as e:
+                logger.error(f"Erro ao atualizar item: {str(e)}")
+                messages.error(request, f'Erro ao atualizar item: {str(e)}')
+        else:
+            messages.error(request, 'Erro nos dados do formulário.')
+    else:
+        form = ItemListaMateriaisForm(instance=item)
+    
+    context = {
+        'form': form,
+        'lista_materiais': lista_materiais,
+        'proposta': lista_materiais.proposta,
+        'item': item,
+        'action': 'Editar',
+    }
+    
+    return render(request, 'producao/propostas/item_lista_materiais_form.html', context)
+
+
+@login_required
+def item_lista_materiais_delete(request, lista_id, item_id):
+    """
+    Excluir item da lista de materiais
+    """
+    lista_materiais = get_object_or_404(ListaMateriais, pk=lista_id)
+    item = get_object_or_404(ItemListaMateriais, pk=item_id, lista=lista_materiais)
+    
+    # Verificar se pode editar
+    if lista_materiais.status != 'em_edicao':
+        messages.error(request, 'Lista não pode ser editada.')
+        return redirect('producao:item_lista_materiais_list', lista_id=lista_id)
+    
+    if request.method == 'POST':
+        try:
+            codigo_produto = item.produto.codigo
+            item.delete()
+            messages.success(request, f'Item {codigo_produto} excluído com sucesso!')
+            
+        except Exception as e:
+            logger.error(f"Erro ao excluir item: {str(e)}")
+            messages.error(request, f'Erro ao excluir item: {str(e)}')
+            
+        return redirect('producao:item_lista_materiais_list', lista_id=lista_id)
+    
+    context = {
+        'item': item,
+        'lista_materiais': lista_materiais,
+        'proposta': lista_materiais.proposta,
+    }
+    
+    return render(request, 'producao/propostas/item_lista_materiais_delete.html', context)
