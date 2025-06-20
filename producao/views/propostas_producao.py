@@ -215,7 +215,6 @@ def gerar_lista_materiais(request, pk):
             try:
                 lista_existente = proposta.lista_materiais
                 lista_existente.delete()
-                messages.info(request, 'Lista de materiais anterior foi substituída.')
             except ListaMateriais.DoesNotExist:
                 pass
             
@@ -288,15 +287,16 @@ def gerar_lista_materiais(request, pk):
             messages.success(request, 
                 f'Lista de materiais gerada com sucesso! '
                 f'{total_itens_criados} itens criados. '
-                f'Agora você pode editar a lista conforme necessário.'
+        
             )
             
-            return redirect('producao:lista_materiais_edit', pk=proposta.pk)
+            return redirect('producao:proposta_list_producao')
             
     except Exception as e:
         logger.error(f"Erro ao gerar lista de materiais para proposta {proposta.numero}: {str(e)}")
         messages.error(request, f'Erro ao gerar lista de materiais: {str(e)}')
         return redirect('producao:proposta_detail_producao', pk=pk)
+
 
 @login_required
 def lista_materiais_edit(request, pk):
@@ -308,7 +308,7 @@ def lista_materiais_edit(request, pk):
         lista_materiais = proposta.lista_materiais
     except ListaMateriais.DoesNotExist:
         messages.error(request, 'Proposta não possui lista de materiais. Gere a lista primeiro.')
-        return redirect('producao:proposta_detail_producao', pk=pk)
+        return redirect('producao:proposta_list_producao')
     
     if request.method == 'POST':
         form = ListaMateriaisForm(request.POST, instance=lista_materiais)
@@ -327,7 +327,8 @@ def lista_materiais_edit(request, pk):
                     formset.save()
                     
                     messages.success(request, 'Lista de materiais atualizada com sucesso!')
-                    return redirect('producao:lista_materiais_edit', pk=pk)
+                    # ✅ CORREÇÃO: Voltar para lista de propostas após salvar
+                    return redirect('producao:proposta_list_producao')
                     
             except Exception as e:
                 logger.error(f"Erro ao salvar lista de materiais: {str(e)}")
@@ -348,6 +349,7 @@ def lista_materiais_edit(request, pk):
         'pode_aprovar': lista_materiais.status in ['pronta', 'editada'],
     }
     
+    # ✅ CORREÇÃO: Mostrar o template de edição (removido o redirect incorreto)
     return render(request, 'producao/propostas/lista_materiais_edit.html', context)
 
 
@@ -360,7 +362,7 @@ def lista_materiais_aprovar(request, pk):
         lista_materiais = proposta.lista_materiais
     except ListaMateriais.DoesNotExist:
         messages.error(request, 'Proposta não possui lista de materiais.')
-        return redirect('producao:proposta_detail_producao', pk=pk)
+        return redirect('producao:proposta_list_producao')  # ✅ CORREÇÃO: Voltar para lista
     
     if request.method == 'POST':
         try:
@@ -374,12 +376,19 @@ def lista_materiais_aprovar(request, pk):
                     'Agora você pode gerar uma requisição de compra.'
                 )
                 
-                # Redirecionar para criar requisição com lista pré-selecionada
-                return redirect(f"{reverse('producao:requisicao_compra_create')}?lista_materiais={lista_materiais.pk}")
+                # ✅ CORREÇÃO: Após aprovar, voltar para lista de propostas
+                # Se não tiver requisição implementada, vai para lista
+                try:
+                    return redirect(f"{reverse('producao:requisicao_compra_create')}?lista_materiais={lista_materiais.pk}")
+                except:
+                    # Se URL de requisição não existir, voltar para lista de propostas
+                    return redirect('producao:proposta_list_producao')
                 
         except Exception as e:
             logger.error(f"Erro ao aprovar lista de materiais: {str(e)}")
             messages.error(request, f'Erro ao aprovar lista: {str(e)}')
+            # ✅ CORREÇÃO: Em caso de erro, voltar para lista
+            return redirect('producao:proposta_list_producao')
     
     context = {
         'proposta': proposta,

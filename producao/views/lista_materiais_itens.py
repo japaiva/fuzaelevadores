@@ -92,7 +92,6 @@ def item_lista_materiais_create(request, lista_id):
                     item_calculado=False  # Item adicionado manualmente
                 )
                 
-                messages.success(request, f'Item {produto.codigo} adicionado com sucesso!')
                 return redirect('producao:item_lista_materiais_list', lista_id=lista.id)
                 
         except Exception as e:

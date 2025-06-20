@@ -1,0 +1,278 @@
+<!-- templates/producao/propostas/lista_materiais_aprovar.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Aprovar Lista de Materiais - {{ proposta.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-success text-white">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-check-circle me-2"></i>
+        Aprovar Lista de Materiais
+      </h5>
+    </div>
+    
+    <div class="card-body">
+      <!-- Info da Proposta -->
+      <div class="alert alert-info">
+        <div class="row">
+          <div class="col-md-8">
+            <strong>Proposta:</strong> {{ proposta.numero }} - {{ proposta.nome_projeto }}<br>
+            <strong>Cliente:</strong> {{ proposta.cliente.nome_fantasia|default:proposta.cliente.nome }}
+          </div>
+          <div class="col-md-4 text-end">
+            <span class="badge bg-{{ proposta.status|yesno:'success,warning,danger' }}">
+              {{ proposta.get_status_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info da Lista de Materiais -->
+      <div class="card border-success">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0 text-success">
+            <i class="fas fa-list me-2"></i>Lista de Materiais a ser aprovada
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="text-center">
+                <div class="h4 text-primary mb-1">{{ lista_materiais.itens.count }}</div>
+                <small class="text-muted">Total de Itens</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-center">
+                <div class="h5 mb-1">R$ {{ lista_materiais.calcular_valor_total|floatformat:2 }}</div>
+                <small class="text-muted">Valor Estimado</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-center">
+                {% if lista_materiais.status == 'pronta' %}
+                  <span class="badge bg-primary">Pronta</span>
+                {% elif lista_materiais.status == 'editada' %}
+                  <span class="badge bg-warning">Editada</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ lista_materiais.get_status_display }}</span>
+                {% endif %}
+                <br><small class="text-muted">Status Atual</small>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="text-center">
+                <div class="h6 mb-1">{{ lista_materiais.criado_em|date:"d/m/Y" }}</div>
+                <small class="text-muted">Criada em</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Checkbox de confirmação -->
+      <div class="mt-4">
+        <div class="card border-info">
+          <div class="card-body">
+            <form method="post" id="formAprovacao">
+              {% csrf_token %}
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="confirmar_aprovacao" required>
+                <label class="form-check-label fw-bold" for="confirmar_aprovacao">
+                  Confirmo que revisei todos os itens da lista de materiais e autorizo sua aprovação para prosseguir com o processo de compras
+                </label>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="card-footer bg-light">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Cancelar
+          </a>
+        </div>
+        
+        <div>
+          <button type="submit" form="formAprovacao" class="btn btn-success">
+            <i class="fas fa-check me-1"></i>Confirmar Aprovação
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card-header.bg-success {
+  border-bottom: 1px solid #198754;
+}
+
+.alert-info {
+  background-color: #cff4fc;
+  border-color: #b6effb;
+  color: #055160;
+}
+
+.card.border-success {
+  border-color: #198754 !important;
+}
+
+.card.border-info {
+  border-color: #0dcaf0 !important;
+}
+
+.card.border-warning {
+  border-color: #ffc107 !important;
+}
+
+.h4, .h5, .h6 {
+  font-weight: 600;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+.text-success {
+  color: #198754 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.alert-heading {
+  color: inherit;
+  font-weight: 600;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.form-check-input:checked {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  .card-body {
+    padding: 1rem 0.75rem;
+  }
+  
+  .row .col-md-3,
+  .row .col-md-6 {
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .d-flex.justify-content-between > div {
+    text-align: center;
+  }
+}
+
+/* Hover effects */
+.btn:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Card hover */
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Alert icons */
+.alert .fas {
+  color: inherit;
+}
+
+/* Form styling */
+.form-check-label.fw-bold {
+  font-weight: 600 !important;
+}
+
+.form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.form-check-input {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmação extra ao submeter
+    const form = document.getElementById('formAprovacao');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const checkbox = document.getElementById('confirmar_aprovacao');
+            if (!checkbox.checked) {
+                e.preventDefault();
+                alert('Por favor, confirme que revisou a lista de materiais marcando a caixa de seleção.');
+                checkbox.focus();
+                return;
+            }
+            
+            const confirmacao = confirm(
+                'Confirma a aprovação da lista de materiais?\n\n' +
+                'Após a aprovação, não será mais possível editar os itens.\n' +
+                'Uma requisição de compra poderá ser gerada automaticamente.'
+            );
+            
+            if (!confirmacao) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // Focus no checkbox por padrão
+    const checkbox = document.getElementById('confirmar_aprovacao');
+    if (checkbox) {
+        checkbox.focus();
+    }
+    
+    console.log('✅ Aprovação de lista inicializada para proposta:', '{{ proposta.numero }}');
+});
+</script>
+{% endblock %}

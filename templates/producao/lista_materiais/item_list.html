@@ -5,22 +5,31 @@
 
 {% block content %}
 <div class="card shadow">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
-    <h5 class="card-title mb-0">
-      <i class="fas fa-list me-2"></i>
-      Itens da Lista - {{ lista.proposta.numero }}
-    </h5>
-    <div class="btn-group">
-      {% if lista.pode_editar %}
-      <a href="{% url 'producao:item_lista_materiais_create' lista.id %}" class="btn btn-primary btn-sm">
-        <i class="fas fa-plus me-1"></i> Novo Item
-      </a>
-      {% endif %}
-      <a href="{% url 'producao:proposta_detail_producao' lista.proposta.pk %}" class="btn btn-outline-secondary btn-sm">
-        <i class="fas fa-arrow-left me-1"></i> Voltar
-      </a>
-    </div>
+
+
+
+<!-- Correção do botão Voltar no cabeçalho -->
+<div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <h5 class="card-title mb-0">
+    <i class="fas fa-list me-2"></i>
+    Itens da Lista - {{ lista.proposta.numero }}
+  </h5>
+  <div class="btn-group">
+    {% if lista.pode_editar %}
+    <a href="{% url 'producao:item_lista_materiais_create' lista.id %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus me-1"></i> Novo Item
+    </a>
+    {% endif %}
+    <!-- ✅ CORREÇÃO: Voltar para lista de propostas ao invés do detalhe -->
+    <a href="{% url 'producao:proposta_list_producao' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
   </div>
+</div>
+
+
+
+
 
   <!-- Info da Lista -->
   <div class="card-header bg-white">
