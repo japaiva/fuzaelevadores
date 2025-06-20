@@ -63,7 +63,7 @@ class CalculoCabineService:
                     
                     # Componente adicional para corte/dobra se for Inox ou Alumínio
                     if 'Inox' in pedido.material_cabine:
-                        codigo_adicional = 'MP0111'  # CH50 → MP0111 (Corte/dobra inox)
+                        codigo_adicional = '05.02.00002'  # CH50 → 05.02.00002 (Corte/dobra inox)
                         if codigo_adicional in custos_db:
                             produto_adicional = custos_db[codigo_adicional]
                             valor_unitario_adicional = produto_adicional.custo_medio or produto_adicional.preco_venda or Decimal('50')
@@ -83,7 +83,7 @@ class CalculoCabineService:
                             componentes_cabine_estruturado["chapas_corpo"]["total_subcategoria"] += valor_adicional
                             total_cabine_categoria += valor_adicional
                     elif 'Alumínio' in pedido.material_cabine:
-                        codigo_adicional = 'MP0112'  # CH51 → MP0112 (Corte/dobra alumínio)
+                        codigo_adicional = '05.02.00001'  # CH51 → 05.02.00001 (Corte/dobra alumínio)
                         if codigo_adicional in custos_db:
                             produto_adicional = custos_db[codigo_adicional]
                             valor_unitario_adicional = produto_adicional.custo_medio or produto_adicional.preco_venda or Decimal('45')
@@ -104,7 +104,7 @@ class CalculoCabineService:
                             total_cabine_categoria += valor_adicional
         
         # Parafusos das chapas do corpo (agora em 'fixacao_cabine')
-        codigo_parafuso_chapa = "MP0113"  # FE01 → MP0113
+        codigo_parafuso_chapa = "01.04.00009"  # FE01 → 01.04.00009
         if codigo_parafuso_chapa in custos_db:
             produto_parafuso = custos_db[codigo_parafuso_chapa]
             valor_unitario_parafuso = produto_parafuso.custo_medio or produto_parafuso.preco_venda or Decimal('2')
@@ -136,14 +136,14 @@ class CalculoCabineService:
             # Determinar código do piso baseado na lógica original
             if pedido.piso_cabine == "Por conta da empresa":
                 if pedido.material_piso_cabine == "Antiderrapante":
-                    codigo_piso = "MP0109"  # CH09 → MP0109
+                    codigo_piso = "01.01.00005"  # CH09 → 01.01.00005
                 elif pedido.material_piso_cabine == "Outro":
                     codigo_piso = "MP0999"  # Material customizado
                 else:
-                    codigo_piso = "MP0110"  # CH10 → MP0110 (padrão)
+                    codigo_piso = "01.01.00008"  # CH10 → 01.01.00008 (padrão)
             else:
                 # Por conta do cliente - mas ainda precisa das chapas base
-                codigo_piso = "MP0110"  # CH10 → MP0110
+                codigo_piso = "01.01.00008"  # CH10 → 01.01.00008
             
             if codigo_piso == "MP0999":
                 # Material customizado do piso
@@ -175,7 +175,7 @@ class CalculoCabineService:
                     total_cabine_categoria += valor_piso
             
             # Parafusos para o piso (agora em 'fixacao_cabine')
-            codigo_parafuso_piso = "MP0116"  # FE04 → MP0116
+            codigo_parafuso_piso = "01.04.00013"  # FE04 → 01.04.00013
             if codigo_parafuso_piso in custos_db:
                 produto_parafuso_piso = custos_db[codigo_parafuso_piso]
                 valor_unitario_parafuso_piso = produto_parafuso_piso.custo_medio or produto_parafuso_piso.preco_venda or Decimal('1.5')
@@ -212,15 +212,15 @@ class CalculoCabineService:
     @staticmethod
     def _determinar_codigo_chapa(material_cabine: str, espessura_cabine: str) -> str:
         """Determina o código da chapa baseado no material e espessura"""
-        # Conversão seguindo a lógica original: CH01-CH08 → MP0101-MP0108
+        # Conversão seguindo a lógica original: CH01-CH08 → 01.01.00016-01.01.00003
         if "Inox 304" in material_cabine:
-            return "MP0103" if espessura_cabine == "1,2" else "MP0104"  # CH03 → MP0103, CH04 → MP0104
+            return "01.01.00013" if espessura_cabine == "1,2" else "01.01.00014"  # CH03 → 01.01.00013, CH04 → 01.01.00014
         elif "Inox 430" in material_cabine:
-            return "MP0101" if espessura_cabine == "1,2" else "MP0102"  # CH01 → MP0101, CH02 → MP0102
+            return "01.01.00016" if espessura_cabine == "1,2" else "01.01.00017"  # CH01 → 01.01.00016, CH02 → 01.01.00017
         elif "Chapa Pintada" in material_cabine:
-            return "MP0105" if espessura_cabine == "1,2" else "MP0106"  # CH05 → MP0105, CH06 → MP0106
+            return "01.01.00018" if espessura_cabine == "1,2" else "01.01.00019"  # CH05 → 01.01.00018, CH06 → 01.01.00019
         elif "Alumínio" in material_cabine:
-            return "MP0107" if espessura_cabine == "1,2" else "MP0108"  # CH07 → MP0107, CH08 → MP0108
+            return "01.01.00003" if espessura_cabine == "1,2" else "01.01.00004"  # CH07 → 01.01.00003, CH08 → 01.01.00004
         return None
     
     @staticmethod

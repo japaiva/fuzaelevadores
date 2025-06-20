@@ -46,11 +46,11 @@ class CalculoCarrinhoService:
         
         # Travessas do chassi
         if capacidade <= 1000:
-            codigo_travessa = "MP0122"  # PE01 → MP0122
+            codigo_travessa = "01.03.00001"  # PE01 → 01.03.00001
         elif capacidade <= 1800:
-            codigo_travessa = "MP0123"  # PE02 → MP0123
+            codigo_travessa = "01.03.00002"  # PE02 → 01.03.00002
         else:
-            codigo_travessa = "MP0124"  # PE03 → MP0124
+            codigo_travessa = "01.03.00003"  # PE03 → 01.03.00003
         
         qtd_travessas = 4
         if capacidade > 2000:
@@ -80,11 +80,11 @@ class CalculoCarrinhoService:
         
         # Longarinas do chassi
         if capacidade <= 1500:
-            codigo_longarina = "MP0125"  # PE04 → MP0125
+            codigo_longarina = "01.03.00005"  # PE04 → 01.03.00005
         elif capacidade <= 2000:
-            codigo_longarina = "MP0126"  # PE05 → MP0126
+            codigo_longarina = "01.03.00006"  # PE05 → 01.03.00006
         else:
-            codigo_longarina = "MP0127"  # PE06 → MP0127
+            codigo_longarina = "01.03.00007"  # PE06 → 01.03.00007
         
         qtd_longarinas = 2
         
@@ -111,7 +111,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_longarinas
         
         # Parafusos para chassi
-        codigo_parafuso_chassi = "MP0114"  # FE02 → MP0114
+        codigo_parafuso_chassi = "01.04.00008"  # FE02 → 01.04.00008
         if codigo_parafuso_chassi in custos_db:
             produto_parafuso = custos_db[codigo_parafuso_chassi]
             valor_unitario_parafuso = safe_decimal(produto_parafuso.custo_medio or produto_parafuso.preco_venda or 3)
@@ -136,11 +136,11 @@ class CalculoCarrinhoService:
         
         # Perfis externos da plataforma (2 de cada direção)
         if capacidade <= 1000:
-            codigo_perfil_externo = "MP0128"  # PE07 → MP0128
+            codigo_perfil_externo = "01.03.00008"  # PE07 → 01.03.00008
         elif capacidade <= 1800:
-            codigo_perfil_externo = "MP0129"  # PE08 → MP0129
+            codigo_perfil_externo = "01.03.00009"  # PE08 → 01.03.00009
         else:
-            codigo_perfil_externo = "MP0130"  # PE09 → MP0130
+            codigo_perfil_externo = "01.03.00010"  # PE09 → 01.03.00010
         
         if codigo_perfil_externo in custos_db:
             produto_perfil_externo = custos_db[codigo_perfil_externo]
@@ -168,11 +168,11 @@ class CalculoCarrinhoService:
         
         # Perfis internos da plataforma
         if capacidade <= 1000:
-            codigo_perfil_interno = "MP0131"  # PE10 → MP0131
+            codigo_perfil_interno = "01.03.00011"  # PE10 → 01.03.00011
         elif capacidade <= 1800:
-            codigo_perfil_interno = "MP0132"  # PE11 → MP0132
+            codigo_perfil_interno = "01.03.00012"  # PE11 → 01.03.00012
         else:
-            codigo_perfil_interno = "MP0133"  # PE12 → MP0133
+            codigo_perfil_interno = "01.03.00013"  # PE12 → 01.03.00013
         
         if codigo_perfil_interno in custos_db:
             produto_perfil_interno = custos_db[codigo_perfil_interno]
@@ -196,7 +196,7 @@ class CalculoCarrinhoService:
             componentes_carrinho_estruturado["plataforma"]["total_subcategoria"] += valor_perfis_internos
             total_carrinho_categoria += valor_perfis_internos
         
-        # Parafusos para plataforma (reutiliza o mesmo código MP0114 do chassi)
+        # Parafusos para plataforma (reutiliza o mesmo código 01.04.00008 do chassi)
         if codigo_parafuso_chassi in custos_db:
             # O produto_parafuso e valor_unitario_parafuso já foram definidos no cálculo do chassi
             qtd_parafusos_plataforma = 24 + (4 * qtd_perfis_internos)
@@ -219,7 +219,7 @@ class CalculoCarrinhoService:
         # === BARRA ROSCADA ===
         
         # Barras roscadas
-        codigo_barra_roscada = "MP0146"  # PE25 → MP0146
+        codigo_barra_roscada = "01.03.00004"  # PE25 → 01.03.00004
         if codigo_barra_roscada in custos_db:
             produto_barra = custos_db[codigo_barra_roscada]
             valor_unitario_barra = safe_decimal(produto_barra.custo_medio or produto_barra.preco_venda or 120)
@@ -245,7 +245,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_barras
         
         # Parafusos para barras roscadas (FE01)
-        codigo_parafuso_barra_fe01 = "MP0113"  # FE01 → MP0113
+        codigo_parafuso_barra_fe01 = "01.04.00009"  # FE01 → 01.04.00009
         if codigo_parafuso_barra_fe01 in custos_db:
             produto_parafuso_barra = custos_db[codigo_parafuso_barra_fe01]
             valor_unitario_parafuso_barra = safe_decimal(produto_parafuso_barra.custo_medio or produto_parafuso_barra.preco_venda or 2)
@@ -267,7 +267,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_barra_fe01
         
         # Parafusos para barras roscadas (FE02)
-        codigo_parafuso_barra_fe02 = "MP0114"  # FE02 → MP0114
+        codigo_parafuso_barra_fe02 = "01.04.00008"  # FE02 → 01.04.00008
         if codigo_parafuso_barra_fe02 in custos_db:
             produto_parafuso_barra_fe02 = custos_db[codigo_parafuso_barra_fe02]
             valor_unitario_parafuso_barra_fe02 = safe_decimal(produto_parafuso_barra_fe02.custo_medio or produto_parafuso_barra_fe02.preco_venda or 3)
@@ -289,7 +289,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_barra_fe02
         
         # Suportes para barras roscadas (PE26)
-        codigo_suporte_barra_pe26 = "MP0147"  # PE26 → MP0147
+        codigo_suporte_barra_pe26 = "01.03.00016"  # PE26 → 01.03.00016
         if codigo_suporte_barra_pe26 in custos_db:
             produto_suporte_pe26 = custos_db[codigo_suporte_barra_pe26]
             valor_unitario_suporte_pe26 = safe_decimal(produto_suporte_pe26.custo_medio or produto_suporte_pe26.preco_venda or 25)
@@ -311,7 +311,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_suportes_pe26
         
         # Suportes para barras roscadas (PE27)
-        codigo_suporte_barra_pe27 = "MP0148"  # PE27 → MP0148
+        codigo_suporte_barra_pe27 = "01.03.00017"  # PE27 → 01.03.00017
         if codigo_suporte_barra_pe27 in custos_db:
             produto_suporte_pe27 = custos_db[codigo_suporte_barra_pe27]
             valor_unitario_suporte_pe27 = safe_decimal(produto_suporte_pe27.custo_medio or produto_suporte_pe27.preco_venda or 30)

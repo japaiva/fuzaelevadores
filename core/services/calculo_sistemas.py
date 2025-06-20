@@ -31,7 +31,7 @@ class CalculoSistemasService:
         
         # Iluminação (seguindo lógica original)
         qtd_lampadas = 2 if comprimento_cabine <= 1.80 else 4
-        codigo_lampada = "MP0174"  # CC01 → MP0174
+        codigo_lampada = "02.05.00002"  # CC01 → 02.05.00002
         
         if codigo_lampada in custos_db:
             produto_lampada = custos_db[codigo_lampada]
@@ -57,7 +57,7 @@ class CalculoSistemasService:
         # Ventilação (só para elevador de passageiro)
         if 'Passageiro' in pedido.modelo_elevador:
             qtd_ventiladores = 1
-            codigo_ventilador = "MP0175"  # CC02 → MP0175
+            codigo_ventilador = "02.05.00003"  # CC02 → 02.05.00003
             
             if codigo_ventilador in custos_db:
                 produto_ventilador = custos_db[codigo_ventilador]

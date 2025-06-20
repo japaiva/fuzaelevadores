@@ -162,7 +162,7 @@
                     {% if proposta.lista_materiais.status == 'em_edicao' %}
                     <a href="{% url 'producao:item_lista_materiais_list' proposta.lista_materiais.id %}" 
                       class="btn btn-sm btn-outline-success" 
-                      title="Editar Lista de Materiais"
+                      title="Editar Lista"
                       data-bs-toggle="tooltip">
                       <i class="fas fa-edit"></i>
                     </a>
@@ -216,7 +216,7 @@
                       <!-- Pode gerar lista -->
                       <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
                         class="btn btn-sm btn-outline-success" 
-                        title="Gerar Lista de Materiais"
+                        title="Gerar Lista"
                         data-bs-toggle="tooltip">
                         <i class="fas fa-cogs"></i>
                       </a>
