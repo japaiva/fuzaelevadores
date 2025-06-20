@@ -86,6 +86,15 @@ from .pedidos_compra import (
     pedido_compra_recebimento, receber_item_pedido
 )
 
+from .propostas_producao import (
+    proposta_list_producao,
+    proposta_detail_producao,
+    gerar_lista_materiais,
+    lista_materiais_edit,
+    lista_materiais_aprovar,
+)
+
+
 # APIs e AJAX
 from .apis import (
     get_subgrupos_by_grupo, get_info_produto_codigo,
@@ -116,7 +125,16 @@ __all__ = [
     'orcamento_compra_alterar_status',
     'orcamento_compra_duplicar',
     'orcamento_compra_gerar_pedido',
-    
+
+
+    # Propostas e Lista de Materiais da Produção
+    'proposta_list_producao',
+    'proposta_detail_producao',
+    'gerar_lista_materiais',
+    'lista_materiais_edit',
+    'lista_materiais_aprovar',
+
+
     # Fornecedores
     'fornecedor_list', 'fornecedor_create', 'fornecedor_update',
     'fornecedor_delete', 'fornecedor_toggle_status',

@@ -54,15 +54,16 @@ urlpatterns = [
     path('produtos-acabados/<uuid:pk>/toggle-status/', views.produto_acabado_toggle_status, name='produto_acabado_toggle_status'),
     
     # PROPOSTAS - Visualização no Portal de Produção
-    #path('propostas/', views.proposta_list_producao, name='proposta_list_producao'),
-    #path('propostas/<uuid:pk>/', views.proposta_detail_producao, name='proposta_detail_producao'),
-    #path('propostas/<uuid:pk>/gerar-lista-materiais/', views.gerar_lista_materiais, name='gerar_lista_materiais'),
+    path('propostas/', views.proposta_list_producao, name='proposta_list_producao'),
+    path('propostas/<uuid:pk>/', views.proposta_detail_producao, name='proposta_detail_producao'),
+    path('propostas/<uuid:pk>/gerar-lista-materiais/', views.gerar_lista_materiais, name='gerar_lista_materiais'),
     
     # LISTAS DE MATERIAIS
-    #path('listas-materiais/', views.lista_materiais_list, name='lista_materiais_list'),
-    #path('listas-materiais/<int:pk>/', views.lista_materiais_detail, name='lista_materiais_detail'),
-    #path('listas-materiais/<int:pk>/editar/', views.lista_materiais_update, name='lista_materiais_update'),
-    #path('listas-materiais/<int:pk>/aprovar/', views.lista_materiais_aprovar, name='lista_materiais_aprovar'),
+    path('listas-materiais/<uuid:pk>/editar/', views.lista_materiais_edit, name='lista_materiais_edit'),
+    path('listas-materiais/<uuid:pk>/aprovar/', views.lista_materiais_aprovar, name='lista_materiais_aprovar'),
+    
+    # API para produtos
+    path('api/produto-info/', views.api_produto_info, name='api_produto_info'),
     
     # REQUISIÇÕES DE COMPRA - NOVO CRUD
     path('requisicoes-compra/', views.requisicao_compra_list, name='requisicao_compra_list'),

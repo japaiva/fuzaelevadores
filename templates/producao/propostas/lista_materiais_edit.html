@@ -1,0 +1,523 @@
+<!-- templates/producao/propostas/lista_materiais_edit.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Lista de Materiais - {{ proposta.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-list me-2"></i> Lista de Materiais - {{ proposta.numero }}
+    </h5>
+    <div class="btn-group">
+      {% if pode_aprovar %}
+        <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" class="btn btn-success btn-sm">
+          <i class="fas fa-check me-1"></i> Aprovar e Gerar Requisição
+        </a>
+      {% endif %}
+      <a href="{% url 'producao:proposta_list_producao' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Informações da Proposta -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <div class="card border-primary">
+          <div class="card-body p-3">
+            <h6 class="card-title mb-2">
+              <i class="fas fa-info-circle me-1"></i> Proposta {{ proposta.numero }}
+            </h6>
+            <div class="row">
+              <div class="col-6">
+                <small class="text-muted">Cliente:</small>
+                <div class="fw-bold">{{ proposta.cliente.nome }}</div>
+              </div>
+              <div class="col-6">
+                <small class="text-muted">Projeto:</small>
+                <div>{{ proposta.nome_projeto }}</div>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-6">
+                <small class="text-muted">Elevador:</small>
+                <div>{{ proposta.get_modelo_elevador_display }} - {{ proposta.capacidade }}kg</div>
+              </div>
+              <div class="col-6">
+                <small class="text-muted">Vendedor:</small>
+                <div>{{ proposta.vendedor.get_full_name }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-info">
+          <div class="card-body p-3">
+            <h6 class="card-title mb-2">
+              <i class="fas fa-chart-line me-1"></i> Resumo da Lista
+            </h6>
+            <div class="text-center">
+              <div class="h4 text-info">{{ total_itens }}</div>
+              <div class="small text-muted">Total de Itens</div>
+              <div class="h5 text-success mt-2">R$ {{ valor_total|floatformat:2 }}</div>
+              <div class="small text-muted">Valor Estimado</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status da Lista -->
+    <div class="alert alert-info">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <i class="fas fa-info-circle me-1"></i>
+          <strong>Status da Lista:</strong> 
+          <span class="badge {{ lista_materiais.status_badge_class }} fs-6">
+            {{ lista_materiais.get_status_display }}
+          </span>
+        </div>
+        <div class="small text-muted">
+          Atualizado em {{ lista_materiais.atualizado_em|date:"d/m/Y H:i" }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulário Editável -->
+    <form method="post" id="lista-materiais-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors or formset.non_form_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+          {% endfor %}
+          {% for error in formset.non_form_errors %}
+            <p class="mb-0"><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Observações da Lista -->
+      <div class="card mb-4">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0">Observações da Lista</h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações Gerais</label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ form.observacoes_internas.id_for_label }}" class="form-label">Observações Internas</label>
+              {{ form.observacoes_internas }}
+              {% if form.observacoes_internas.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.observacoes_internas.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de Itens -->
+      <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-boxes me-1"></i> Itens da Lista
+          </h6>
+          <button type="button" class="btn btn-primary btn-sm" onclick="adicionarItem()">
+            <i class="fas fa-plus me-1"></i> Adicionar Item
+          </button>
+        </div>
+        <div class="card-body">
+          
+          <!-- Formset Management Form -->
+          {{ formset.management_form }}
+
+          <div class="table-responsive">
+            <table class="table table-hover" id="itens-table">
+              <thead class="table-light">
+                <tr>
+                  <th width="3%">#</th>
+                  <th width="15%">Código do Produto</th>
+                  <th width="35%">Produto</th>
+                  <th width="12%">Quantidade</th>
+                  <th width="8%">Unidade</th>
+                  <th width="20%">Observações</th>
+                  <th width="7%" class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="formset-body">
+                {% for form in formset %}
+                  <tr class="formset-row" data-form-index="{{ forloop.counter0 }}">
+                    <td class="text-center">
+                      <span class="badge bg-secondary">{{ forloop.counter }}</span>
+                      <!-- Hidden fields -->
+                      {{ form.id }}
+                      {% if form.DELETE %}{{ form.DELETE }}{% endif %}
+                    </td>
+                    
+                    <td>
+                      {{ form.produto }}
+                      {% if form.produto.errors %}
+                        <div class="text-danger small">
+                          {% for error in form.produto.errors %}{{ error }}{% endfor %}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td>
+                      <div class="produto-info">
+                        {% if form.instance.produto %}
+                          <strong>{{ form.instance.produto.nome }}</strong>
+                          <div class="small text-muted">{{ form.instance.produto.grupo.nome }}</div>
+                        {% else %}
+                          <em class="text-muted">Selecione um produto</em>
+                        {% endif %}
+                      </div>
+                    </td>
+                    
+                    <td>
+                      {{ form.quantidade }}
+                      {% if form.quantidade.errors %}
+                        <div class="text-danger small">
+                          {% for error in form.quantidade.errors %}{{ error }}{% endfor %}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td>
+                      <span class="unidade-display">
+                        {% if form.instance.produto %}
+                          {{ form.instance.produto.unidade_medida }}
+                        {% else %}
+                          -
+                        {% endif %}
+                      </span>
+                    </td>
+                    
+                    <td>
+                      {{ form.observacoes }}
+                      {% if form.observacoes.errors %}
+                        <div class="text-danger small">
+                          {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                        </div>
+                      {% endif %}
+                    </td>
+                    
+                    <td class="text-center">
+                      <button type="button" class="btn btn-outline-danger btn-sm" 
+                              onclick="removerItem(this)" title="Remover Item">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if not formset %}
+            <div class="text-center py-4" id="empty-message">
+              <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+              <div class="text-muted">Nenhum item na lista</div>
+              <button type="button" class="btn btn-primary mt-2" onclick="adicionarItem()">
+                <i class="fas fa-plus me-1"></i> Adicionar Primeiro Item
+              </button>
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="d-flex justify-content-between mt-4">
+        <div>
+          <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </a>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i> Salvar Lista
+          </button>
+          {% if pode_aprovar %}
+            <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" class="btn btn-success ms-2">
+              <i class="fas fa-check me-1"></i> Salvar e Aprovar
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Template para novos itens -->
+<template id="item-template">
+  <tr class="formset-row" data-form-index="__prefix__">
+    <td class="text-center">
+      <span class="badge bg-secondary item-number"></span>
+    </td>
+    <td>
+      <select name="form-__prefix__-produto" class="form-control produto-select" required>
+        <option value="">Selecione um produto...</option>
+        {% for produto in produtos_mp %}
+          <option value="{{ produto.pk }}" data-nome="{{ produto.nome }}" 
+                  data-grupo="{{ produto.grupo.nome }}" data-unidade="{{ produto.unidade_medida }}">
+            {{ produto.codigo }} - {{ produto.nome }}
+          </option>
+        {% endfor %}
+      </select>
+    </td>
+    <td>
+      <div class="produto-info">
+        <em class="text-muted">Selecione um produto</em>
+      </div>
+    </td>
+    <td>
+      <input type="number" name="form-__prefix__-quantidade" class="form-control" 
+             step="0.01" min="0.01" required placeholder="1,00">
+    </td>
+    <td>
+      <span class="unidade-display">-</span>
+    </td>
+    <td>
+      <input type="text" name="form-__prefix__-observacoes" class="form-control" 
+             placeholder="Observações...">
+    </td>
+    <td class="text-center">
+      <button type="button" class="btn btn-outline-danger btn-sm" 
+              onclick="removerItem(this)" title="Remover Item">
+        <i class="fas fa-trash"></i>
+      </button>
+    </td>
+  </tr>
+</template>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.produto-info {
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.formset-row td {
+  vertical-align: middle;
+}
+
+.table td, .table th {
+  padding: 0.75rem 0.5rem;
+}
+
+.produto-select {
+  font-size: 0.9rem;
+}
+
+.unidade-display {
+  font-weight: 500;
+  color: #6c757d;
+}
+
+.item-number {
+  font-size: 0.8rem;
+}
+
+#empty-message {
+  display: none;
+}
+
+.btn-group .btn {
+  min-width: 35px;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Destacar linha sendo editada */
+.formset-row:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Animação para novos itens */
+.formset-row.novo-item {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let formIndex = {{ formset.total_form_count }};
+
+function adicionarItem() {
+    const template = document.getElementById('item-template');
+    const tbody = document.getElementById('formset-body');
+    const emptyMessage = document.getElementById('empty-message');
+    
+    // Clonar template
+    let newRow = template.content.cloneNode(true);
+    
+    // Substituir __prefix__ pelo índice atual
+    let rowHtml = newRow.querySelector('tr').outerHTML;
+    rowHtml = rowHtml.replace(/__prefix__/g, formIndex);
+    
+    // Criar elemento e adicionar classe de animação
+    const div = document.createElement('div');
+    div.innerHTML = rowHtml;
+    const row = div.firstElementChild;
+    row.classList.add('novo-item');
+    
+    // Adicionar à tabela
+    tbody.appendChild(row);
+    
+    // Atualizar número do item
+    updateItemNumbers();
+    
+    // Esconder mensagem vazia
+    if (emptyMessage) {
+        emptyMessage.style.display = 'none';
+    }
+    
+    // Atualizar management form
+    updateManagementForm();
+    
+    // Configurar eventos do novo item
+    setupItemEvents(row);
+    
+    // Incrementar índice
+    formIndex++;
+    
+    // Focar no select de produto
+    row.querySelector('.produto-select').focus();
+}
+
+function removerItem(button) {
+    const row = button.closest('.formset-row');
+    const deleteInput = row.querySelector('input[name$="-DELETE"]');
+    
+    if (deleteInput) {
+        // Item existente - marcar para deleção
+        deleteInput.checked = true;
+        row.style.display = 'none';
+    } else {
+        // Item novo - remover da DOM
+        row.remove();
+    }
+    
+    updateItemNumbers();
+    updateManagementForm();
+    
+    // Mostrar mensagem vazia se necessário
+    const tbody = document.getElementById('formset-body');
+    const visibleRows = tbody.querySelectorAll('.formset-row:not([style*="display: none"])');
+    
+    if (visibleRows.length === 0) {
+        const emptyMessage = document.getElementById('empty-message');
+        if (emptyMessage) {
+            emptyMessage.style.display = 'block';
+        }
+    }
+}
+
+function updateItemNumbers() {
+    const tbody = document.getElementById('formset-body');
+    const visibleRows = tbody.querySelectorAll('.formset-row:not([style*="display: none"])');
+    
+    visibleRows.forEach((row, index) => {
+        const numberBadge = row.querySelector('.item-number');
+        if (numberBadge) {
+            numberBadge.textContent = index + 1;
+        }
+    });
+}
+
+function updateManagementForm() {
+    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+    if (totalForms) {
+        totalForms.value = formIndex;
+    }
+}
+
+function setupItemEvents(row) {
+    const produtoSelect = row.querySelector('.produto-select');
+    
+    if (produtoSelect) {
+        produtoSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const produtoInfo = row.querySelector('.produto-info');
+            const unidadeDisplay = row.querySelector('.unidade-display');
+            
+            if (selectedOption.value) {
+                const nome = selectedOption.dataset.nome;
+                const grupo = selectedOption.dataset.grupo;
+                const unidade = selectedOption.dataset.unidade;
+                
+                produtoInfo.innerHTML = `
+                    <strong>${nome}</strong>
+                    <div class="small text-muted">${grupo}</div>
+                `;
+                unidadeDisplay.textContent = unidade;
+            } else {
+                produtoInfo.innerHTML = '<em class="text-muted">Selecione um produto</em>';
+                unidadeDisplay.textContent = '-';
+            }
+        });
+    }
+}
+
+// Configurar eventos para itens existentes
+document.addEventListener('DOMContentLoaded', function() {
+    const existingRows = document.querySelectorAll('.formset-row');
+    existingRows.forEach(setupItemEvents);
+    
+    // Verificar se deve mostrar mensagem vazia
+    const tbody = document.getElementById('formset-body');
+    const visibleRows = tbody.querySelectorAll('.formset-row:not([style*="display: none"])');
+    const emptyMessage = document.getElementById('empty-message');
+    
+    if (visibleRows.length === 0 && emptyMessage) {
+        emptyMessage.style.display = 'block';
+    }
+});
+
+// Confirmação antes de sair sem salvar
+let formChanged = false;
+document.getElementById('lista-materiais-form').addEventListener('input', function() {
+    formChanged = true;
+});
+
+window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+// Remover confirmação ao submeter
+document.getElementById('lista-materiais-form').addEventListener('submit', function() {
+    formChanged = false;
+});
+</script>
+{% endblock %}

@@ -16,10 +16,7 @@ from .base import (
 )
 
 from .propostas import (
-    proposta_detail_base,
-    executar_calculos_proposta,
-    api_dados_precificacao_base,
-    api_salvar_preco_base
+    proposta_detail_base
 )
 
 # === LISTA DE EXPORTAÇÕES ===
@@ -34,7 +31,4 @@ __all__ = [
     
     # Views Compartilhadas de Propostas
     'proposta_detail_base',
-    'executar_calculos_proposta',
-    'api_dados_precificacao_base',
-    'api_salvar_preco_base',
 ]

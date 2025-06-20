@@ -1,0 +1,27 @@
+<!-- templates/vendedor/proposta_detail_vendedor.html -->
+{% extends 'base/proposta_detail.html' %}
+
+{% block back_url %}{% url 'vendedor:pedido_list' %}{% endblock %}
+
+{% block extra_buttons %}
+<!-- Botões específicos do vendedor -->
+{% if pedido.pode_editar %}
+  <a href="{% url 'vendedor:pedido_update' pedido.pk %}" class="btn btn-primary btn-sm">
+    <i class="fas fa-edit me-1"></i> Editar
+  </a>
+{% endif %}
+
+{% if pedido.pode_calcular %}
+  <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-info btn-sm">
+    <i class="fas fa-calculator me-1"></i> Calcular
+  </a>
+{% endif %}
+
+{% if pedido.pode_excluir %}
+  <a href="{% url 'vendedor:pedido_delete' pedido.pk %}" class="btn btn-outline-danger btn-sm">
+    <i class="fas fa-trash me-1"></i> Excluir
+  </a>
+{% endif %}
+{% endblock %}
+
+<!-- O vendedor não precisa de alertas especiais, só usa o template base -->
