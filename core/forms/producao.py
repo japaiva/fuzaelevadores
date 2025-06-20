@@ -36,13 +36,11 @@ class ListaMateriaisForm(BaseModelForm, AuditMixin):
             }),
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Observações sobre a lista de materiais...'
+                'rows': 3
             }),
             'observacoes_internas': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Observações internas...'
+                'rows': 3
             }),
         }
         labels = {

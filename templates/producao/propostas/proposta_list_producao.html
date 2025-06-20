@@ -1,16 +1,13 @@
-<!-- templates/producao/propostas/proposta_list_producao.html -->
 {% extends 'producao/base_producao.html' %}
+{% load formato_br %}
 
 {% block title %}Propostas | Portal Produção{% endblock %}
 
 {% block content %}
 <div class="card shadow">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
     <h5 class="card-title mb-0">
-      <i class="fas fa-clipboard-list me-2"></i> Propostas para Produção
-      {% if total_propostas > 0 %}
-        <span class="badge bg-primary ms-2">{{ total_propostas }}</span>
-      {% endif %}
+      <i class="fas fa-clipboard-list me-2"></i>Propostas
     </h5>
     <div>
       <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
@@ -19,209 +16,527 @@
     </div>
   </div>
   
-  <!-- Filtros -->
-  <div class="card-header bg-white border-bottom">
-    <form method="get" class="row g-2 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label small">Status</label>
-        <select name="status" class="form-select form-select-sm">
-          {% for value, display in status_choices %}
-            <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>
-              {{ display }}
-            </option>
-          {% endfor %}
-        </select>
+  <div class="card-header bg-white py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Clientes</label>
+        {{ form.cliente }}
       </div>
-      <div class="col-md-7">
-        <label class="form-label small">Buscar</label>
-        <div class="input-group">
-          <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" 
-                 placeholder="Buscar por número, projeto ou cliente...">
-          <button type="submit" class="btn btn-primary btn-sm">
-            <i class="fas fa-search"></i>
-          </button>
-          {% if request.GET %}
-            <a href="{% url 'producao:proposta_list_producao' %}" class="btn btn-outline-secondary btn-sm" title="Limpar Filtros">
-              <i class="fas fa-times"></i>
-            </a>
-          {% endif %}
-        </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Modelos</label>
+        {{ form.modelo_elevador }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Período</label>
+        {{ form.periodo }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Status</label>
+        {{ form.status }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Buscar</label>
+        {{ form.q }}
+      </div>
+      <div class="col-md-1">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">&nbsp;</label>
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+          <i class="fas fa-search"></i>
+        </button>
       </div>
     </form>
   </div>
   
-  <div class="card-body p-0">
-    {% if propostas %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+  <div class="card-body py-2">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th width="10%">Número</th>
+            <th width="10%">Data</th>
+            <th width="20%">Cliente</th>
+            <th width="20%">Projeto</th>
+            <th width="10%">Proposta</th>
+            <th width="15%">Status Lista</th>
+            <th width="15%" class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for proposta in propostas %}
             <tr>
-              <th>Número</th>
-              <th>Cliente</th>
-              <th>Projeto</th>
-              <th>Vendedor</th>
-              <th>Data</th>
-              <th>Status</th>
-              <th class="text-end">Valor</th>
-              <th class="text-center">Lista Materiais</th>
-              <th class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for proposta in propostas %}
-              <tr>
-                <td>
-                  <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" class="text-decoration-none fw-bold text-primary">
-                    {{ proposta.numero }}
-                  </a>
-                </td>
-                
-                <td>
-                  <div class="fw-semibold">{{ proposta.cliente.nome|truncatechars:25 }}</div>
-                  {% if proposta.cliente.nome_fantasia %}
-                    <small class="text-muted">{{ proposta.cliente.nome_fantasia|truncatechars:20 }}</small>
-                  {% endif %}
-                </td>
-                
-                <td>
-                  <div class="fw-semibold">{{ proposta.nome_projeto|truncatechars:30 }}</div>
-                  <small class="text-muted">
-                    {{ proposta.get_modelo_elevador_display }} - {{ proposta.capacidade }}kg
-                  </small>
-                </td>
-                
-                <td>
-                  <div>{{ proposta.vendedor.get_full_name|default:proposta.vendedor.username }}</div>
-                </td>
-                
-                <td>{{ proposta.criado_em|date:"d/m/Y" }}</td>
-                
-                <td>
-                  <span class="badge {{ proposta.status_badge_class }}">
-                    {{ proposta.get_status_display }}
-                  </span>
-                </td>
-                
-                <td class="text-end">
-                  {% if proposta.valor_proposta %}
-                    <div class="fw-bold text-success">R$ {{ proposta.valor_proposta|floatformat:2 }}</div>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                
-                <td class="text-center">
-                  {% if proposta.lista_materiais %}
-                    <span class="badge {{ proposta.lista_materiais.status_badge_class }}">
-                      {{ proposta.lista_materiais.get_status_display }}
-                    </span>
-                    <div class="small text-muted">
-                      {{ proposta.lista_materiais.itens.count }} itens
-                    </div>
-                  {% else %}
-                    <span class="text-muted small">Não gerada</span>
-                  {% endif %}
-                </td>
-              
-                <td class="text-center">
-                  <div class="btn-group" role="group">
-                    <!-- Detalhe -->
-                    <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" 
-                       class="btn btn-outline-info btn-sm" 
-                       title="Ver Detalhes">
-                      <i class="fas fa-eye"></i>
-                    </a>
-                    
-                    <!-- Gerar Lista de Materiais -->
+              <td>
+                <strong class="text-primary">{{ proposta.numero }}</strong>
+              </td>
 
+              <td>
+                <div class="data-info text-center">
+                  <div class="data-principal">
+                    <strong>{{ proposta.criado_em|date:"d/m/Y" }}</strong>
                   </div>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="text-center py-5">
-        <div class="h5 text-muted">Nenhuma proposta encontrada</div>
-      </div>
-    {% endif %}
+                </div>
+              </td>
+
+              <td>
+                <div class="client-info">
+                  <div class="text-truncate" style="max-width: 180px;" title="{{ proposta.cliente.nome }}">
+                    <strong>{{ proposta.cliente.nome }}</strong>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <div class="d-flex align-items-start">
+                  <div class="flex-grow-1">
+                    <div class="text-truncate" style="max-width: 180px;" title="{{ proposta.nome_projeto }}">
+                      <strong>{{ proposta.nome_projeto }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <span class="badge {{ proposta.status_badge_class }}">
+                  {{ proposta.get_status_display }}
+                </span>
+              </td>
+
+              <td>
+                {% if proposta.lista_materiais %}
+                  <div class="lista-status-info">
+                    {% if proposta.lista_materiais.status == 'em_edicao' %}
+                      <span class="badge bg-warning text-dark">
+                        Em Edição
+                      </span>
+                    {% elif proposta.lista_materiais.status == 'pronta' %}
+                      <span class="badge bg-info">
+                        Pronta
+                      </span>
+                    {% elif proposta.lista_materiais.status == 'aprovada' %}
+                      <span class="badge bg-success">
+                        Aprovada
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">
+                        <i class="fas fa-question me-1"></i>{{ proposta.lista_materiais.get_status_display }}
+                      </span>
+                    {% endif %}
+                    
+                  </div>
+                {% else %}
+                  <div class="lista-status-info">
+                    {% if proposta.pode_calcular %}
+                      <span class="badge bg-outline-secondary border">
+                        Não Gerada
+                      </span>
+                    {% else %}
+                      <span class="badge bg-light text-muted border">
+                        </i>Pendente
+                      </span>
+                      <div class="small text-warning mt-1">
+                        Dados incompletos
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </td>
+
+              <td class="text-end">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="Ver Proposta"
+                     data-bs-toggle="tooltip">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  {% if proposta.lista_materiais %}
+                    {% if proposta.lista_materiais.status in 'em_edicao,pronta' %}
+                    <a href="{% url 'producao:lista_materiais_edit' proposta.pk %}" 
+                       class="btn btn-sm btn-outline-success" 
+                       title="Editar Lista"
+                       data-bs-toggle="tooltip">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% if proposta.lista_materiais.status in 'pronta,em_edicao' %}
+                    <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" 
+                       class="btn btn-sm btn-outline-info" 
+                       title="Aprovar Lista"
+                       data-bs-toggle="tooltip">
+                      <i class="fas fa-check"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% if proposta.pode_calcular %}
+                    <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
+                       class="btn btn-sm btn-outline-warning text-dark" 
+                       title="Recalcular Lista"
+                       data-bs-toggle="tooltip"
+                       onclick="return confirm('Isso irá substituir a lista atual. Confirma?')">
+                      <i class="fas fa-sync"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% if proposta.lista_materiais.status == 'aprovada' %}
+                    <a href="{% url 'producao:requisicao_compra_create' %}?lista_materiais={{ proposta.lista_materiais.pk }}" 
+                       class="btn btn-sm btn-outline-secondary" 
+                       title="Gerar Requisição"
+                       data-bs-toggle="tooltip">
+                      <i class="fas fa-shopping-cart"></i>
+                    </a>
+                    {% endif %}
+                  {% else %}
+                    {% if proposta.pode_calcular %}
+                      <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
+                         class="btn btn-sm btn-outline-info" 
+                         title="Gerar Lista de Materiais"
+                         data-bs-toggle="tooltip">
+                        <i class="fas fa-cogs"></i>
+                      </a>
+                    {% else %}
+                      <button type="button" 
+                              class="btn btn-sm btn-outline-secondary" 
+                              title="Lista não pode ser gerada ainda"
+                              data-bs-toggle="tooltip"
+                              disabled>
+                        <i class="fas fa-list"></i>
+                      </button>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="empty-state">
+                  <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                  <h5 class="text-muted">Nenhuma proposta encontrada</h5>
+                  <p class="text-muted">Ajuste os filtros ou verifique se há propostas cadastradas</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
   
-  <!-- Paginação -->
   {% if propostas.paginator.num_pages > 1 %}
-    <div class="card-footer bg-white">
-      <nav aria-label="Navegação de páginas">
-        <ul class="pagination pagination-sm justify-content-center mb-0">
+  <div class="card-footer bg-white py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="pagination-info">
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} propostas
+        </small>
+      </div>
+      <nav aria-label="Navegação de página">
+        <ul class="pagination pagination-sm mb-0">
           {% if propostas.has_previous %}
             <li class="page-item">
-              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page=1">
-                <i class="fas fa-angle-double-left"></i>
+              <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
+                <span aria-hidden="true">&laquo;&laquo;</span>
               </a>
             </li>
             <li class="page-item">
-              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ propostas.previous_page_number }}">
-                <i class="fas fa-angle-left"></i>
+              <a class="page-link" href="?page={{ propostas.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
               </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;&laquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
             </li>
           {% endif %}
           
-          {% for num in propostas.paginator.page_range %}
-            {% if num == propostas.number %}
-              <li class="page-item active">
-                <span class="page-link">{{ num }}</span>
-              </li>
-            {% elif num >= propostas.number|add:'-2' and num <= propostas.number|add:'2' %}
-              <li class="page-item">
-                <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
-              </li>
+          {% for i in propostas.paginator.page_range %}
+            {% if propostas.number == i %}
+              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% elif i > propostas.number|add:'-3' and i < propostas.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
             {% endif %}
           {% endfor %}
           
           {% if propostas.has_next %}
             <li class="page-item">
-              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ propostas.next_page_number }}">
-                <i class="fas fa-angle-right"></i>
+              <a class="page-link" href="?page={{ propostas.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
+                <span aria-hidden="true">&raquo;</span>
               </a>
             </li>
             <li class="page-item">
-              <a class="page-link" href="?{% if request.GET.urlencode %}{{ request.GET.urlencode }}&{% endif %}page={{ propostas.paginator.num_pages }}">
-                <i class="fas fa-angle-double-right"></i>
+              <a class="page-link" href="?page={{ propostas.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
+                <span aria-hidden="true">&raquo;&raquo;</span>
               </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;&raquo;</span>
             </li>
           {% endif %}
         </ul>
       </nav>
     </div>
+  </div>
   {% endif %}
 </div>
+
+{% if request.GET %}
+<div class="card mt-3">
+  <div class="card-body py-2">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <small class="text-muted">
+          <i class="fas fa-filter me-1"></i>
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} propostas
+        </small>
+      </div>
+      <div>
+        <a href="{% url 'producao:proposta_list_producao' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-times me-1"></i>Limpar Filtros
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}
 
 {% block extra_css %}
 <style>
-.btn-group .btn {
-  min-width: 35px;
-}
-
-.table td {
-  vertical-align: middle;
+.table-sm td, .table-sm th {
   padding: 0.75rem 0.5rem;
+  vertical-align: middle;
 }
 
-.table th {
-  font-weight: 600;
-  border-bottom: 2px solid #dee2e6;
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.badge {
+.client-info {
+  max-width: 180px;
+}
+
+.lista-status-info {
+  text-align: center;
+  min-width: 120px;
+}
+
+.lista-status-info .badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
-  padding: 0.35em 0.65em;
+  font-weight: 500;
 }
 
-.card:hover {
-  transform: translateY(-2px);
+.lista-status-info .small {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.data-info {
+  min-width: 80px;
+}
+
+.data-principal {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.btn-group .btn {
+  border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.pagination-info {
+  flex-grow: 1;
+}
+
+.dropdown-menu {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.card-header form .form-select,
+.card-header form .form-control {
+  font-size: 0.9rem;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Labels dos filtros */
+.card-header .form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* Cores dos badges de status da proposta */
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+/* Cores dos badges de status da lista */
+.badge.bg-outline-secondary {
+  background-color: transparent !important;
+  border: 1px solid #6c757d !important;
+  color: #6c757d !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+}
+
+/* Tooltips */
+[data-bs-toggle="tooltip"] {
+  cursor: pointer;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+  
+  .btn-group .btn {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .empty-state {
+    padding: 2rem 0.5rem;
+  }
+  
+  .empty-state .fa-3x {
+    font-size: 2rem !important;
+  }
+  
+  /* Ocultar colunas menos importantes em mobile */
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    display: none;
+  }
+  
+  .lista-status-info .badge {
+    min-width: 70px;
+    font-size: 0.65rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
+
+/* Hover effects */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Animação para badges */
+.lista-status-info .badge {
   transition: all 0.2s ease;
 }
+
+.lista-status-info .badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Cores específicas para cada status */
+.badge.bg-warning.text-dark {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border: 1px solid #ffeaa7;
+}
+
+.badge.bg-info {
+  background-color: #d1ecf1 !important;
+  color: #0c5460 !important;
+  border: 1px solid #b8daff;
+}
+
+.badge.bg-success {
+  background-color: #d4edda !important;
+  color: #155724 !important;
+  border: 1px solid #c3e6cb;
+}
+
+/* Estado "não gerada" */
+.badge.bg-light.text-muted {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6 !important;
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Auto-submit do formulário quando filtros mudarem
+    const selects = document.querySelectorAll('select[name="cliente"], select[name="modelo_elevador"], select[name="periodo"], select[name="status"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+    
+    // Confirmar ações sensíveis
+    const acoesConfirmacao = document.querySelectorAll('a[onclick*="confirm"]');
+    acoesConfirmacao.forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!confirm(this.getAttribute('onclick').match(/confirm\('([^']+)'\)/)[1])) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    console.log('✅ Lista de propostas de produção com status da lista inicializada');
+});
+</script>
 {% endblock %}
