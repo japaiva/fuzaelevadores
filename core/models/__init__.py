@@ -2,7 +2,6 @@
 
 """
 Importações dos models do sistema FUZA
-Keep it simple - apenas imports essenciais
 """
 
 # === MODELS PRINCIPAIS ===

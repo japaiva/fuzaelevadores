@@ -32,14 +32,6 @@
         </div>
         <div class="text-end">
           <small class="text-muted">Criado em: {{ pedido.criado_em|date:"d/m/Y H:i" }}</small>
-          {% if tem_lista and is_producao %}
-            <div class="mt-1">
-              <span class="badge {{ lista_materiais.status_badge_class }}">
-                Lista: {{ lista_materiais.get_status_display }}
-              </span>
-              <small class="text-muted ms-2">{{ total_itens }} itens</small>
-            </div>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -105,17 +97,7 @@
                   {% if lista_materiais.observacoes %}
                     <p class="text-muted small mt-2">{{ lista_materiais.observacoes }}</p>
                   {% endif %}
-                </div>
-                <div class="col-md-6 text-end">
-                  <a href="{% url 'producao:lista_materiais_edit' proposta.pk %}" class="btn btn-primary">
-                    <i class="fas fa-edit me-1"></i> Editar Lista
-                  </a>
-                  {% if pode_aprovar %}
-                    <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" class="btn btn-success ms-2">
-                      <i class="fas fa-check me-1"></i> Aprovar Lista
-                    </a>
-                  {% endif %}
-                </div>
+
               </div>
               
               <div class="table-responsive">

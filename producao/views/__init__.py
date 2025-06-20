@@ -12,6 +12,7 @@ Estrutura modular das views do portal de produção:
 - produtos_intermediarios: CRUD de produtos intermediários (PI)
 - produtos_acabados: CRUD de produtos acabados (PA)
 - pedidos_compra: Sistema completo de pedidos de compra
+- lista_materiais_itens: CRUD de itens da lista de materiais
 - apis: Endpoints AJAX e APIs
 - relatorios: Relatórios específicos da produção
 """
@@ -86,6 +87,7 @@ from .pedidos_compra import (
     pedido_compra_recebimento, receber_item_pedido
 )
 
+# Propostas e Lista de Materiais
 from .propostas_producao import (
     proposta_list_producao,
     proposta_detail_producao,
@@ -94,6 +96,14 @@ from .propostas_producao import (
     lista_materiais_aprovar,
 )
 
+# CRUD Itens da Lista de Materiais
+from .lista_materiais_itens import (
+    item_lista_materiais_list,
+    item_lista_materiais_create,
+    item_lista_materiais_update,
+    item_lista_materiais_delete,
+    api_buscar_produtos
+)
 
 # APIs e AJAX
 from .apis import (
@@ -115,7 +125,6 @@ __all__ = [
     # Dashboard
     'home', 'dashboard', 'dashboard_analytics',
 
-
     # Orcamento Compra
     'orcamento_compra_list',
     'orcamento_compra_create', 
@@ -126,7 +135,6 @@ __all__ = [
     'orcamento_compra_duplicar',
     'orcamento_compra_gerar_pedido',
 
-
     # Propostas e Lista de Materiais da Produção
     'proposta_list_producao',
     'proposta_detail_producao',
@@ -134,6 +142,12 @@ __all__ = [
     'lista_materiais_edit',
     'lista_materiais_aprovar',
 
+    # CRUD Itens da Lista de Materiais
+    'item_lista_materiais_list',
+    'item_lista_materiais_create',
+    'item_lista_materiais_update',
+    'item_lista_materiais_delete',
+    'api_buscar_produtos',
 
     # Fornecedores
     'fornecedor_list', 'fornecedor_create', 'fornecedor_update',

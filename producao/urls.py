@@ -101,7 +101,31 @@ urlpatterns = [
     path('api/produto-codigo/', views.get_info_produto_codigo, name='api_produto_codigo'),
     path('api/produto-info/', views.api_produto_info, name='api_produto_info'),
     path('api/fornecedor/<int:fornecedor_id>/produtos/', views.api_fornecedor_produtos, name='api_fornecedor_produtos'),
-    
+
+    # CRUD DE ITENS DA LISTA DE MATERIAIS - NOVO
+    path('listas-materiais/<int:lista_id>/itens/', 
+        views.item_lista_materiais_list, 
+        name='item_lista_materiais_list'),
+
+    path('listas-materiais/<int:lista_id>/itens/novo/', 
+        views.item_lista_materiais_create, 
+        name='item_lista_materiais_create'),
+
+    path('listas-materiais/<int:lista_id>/itens/<int:item_id>/editar/', 
+        views.item_lista_materiais_update, 
+        name='item_lista_materiais_update'),
+
+    path('listas-materiais/<int:lista_id>/itens/<int:item_id>/excluir/', 
+        views.item_lista_materiais_delete, 
+        name='item_lista_materiais_delete'),
+
+    # API para busca de produtos
+    path('api/buscar-produtos/', 
+        views.api_buscar_produtos, 
+        name='api_buscar_produtos'),
+
+
+
     # Relatórios
     path('relatorios/estoque-baixo/', views.relatorio_estoque_baixo, name='relatorio_estoque_baixo'),
     path('relatorios/produtos-sem-fornecedor/', views.relatorio_produtos_sem_fornecedor, name='relatorio_produtos_sem_fornecedor'),

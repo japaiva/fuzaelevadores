@@ -197,6 +197,9 @@ def lista_materiais_detail(request, pk):
 # LISTA DE MATERIAIS (mantidas as funções existentes)
 # =============================================================================
 
+
+# CORRIGIR a view gerar_lista_materiais em propostas_producao.py
+
 @login_required
 def gerar_lista_materiais(request, pk):
     """Gera/regenera lista de materiais a partir dos cálculos da proposta"""
@@ -294,7 +297,6 @@ def gerar_lista_materiais(request, pk):
         logger.error(f"Erro ao gerar lista de materiais para proposta {proposta.numero}: {str(e)}")
         messages.error(request, f'Erro ao gerar lista de materiais: {str(e)}')
         return redirect('producao:proposta_detail_producao', pk=pk)
-
 
 @login_required
 def lista_materiais_edit(request, pk):

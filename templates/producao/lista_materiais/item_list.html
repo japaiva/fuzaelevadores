@@ -1,0 +1,346 @@
+<!-- templates/producao/lista_materiais/item_list.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Itens da Lista - {{ lista.proposta.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-list me-2"></i>
+      Itens da Lista - {{ lista.proposta.numero }}
+    </h5>
+    <div class="btn-group">
+      {% if lista.pode_editar %}
+      <a href="{% url 'producao:item_lista_materiais_create' lista.id %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Item
+      </a>
+      {% endif %}
+      <a href="{% url 'producao:proposta_detail_producao' lista.proposta.pk %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Info da Lista -->
+  <div class="card-header bg-white">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <span class="badge {{ lista.status_badge_class }}">
+              {{ lista.get_status_display }}
+            </span>
+          </div>
+          <div>
+            <small class="text-muted d-block">Projeto: {{ lista.proposta.nome_projeto }}</small>
+            <small class="text-muted">Cliente: {{ lista.proposta.cliente.nome }}</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="row text-center">
+          <div class="col-4">
+            <div class="h5 mb-0 text-primary">{{ total_itens }}</div>
+            <small class="text-muted">Itens</small>
+          </div>
+          <div class="col-4">
+            <div class="h5 mb-0 text-info">{{ lista.itens.count }}</div>
+            <small class="text-muted">Total</small>
+          </div>
+          <div class="col-4">
+            {% if not lista.pode_editar %}
+              <span class="badge bg-warning">
+                <i class="fas fa-lock me-1"></i>Bloqueada
+              </span>
+            {% else %}
+              <span class="badge bg-success">
+                <i class="fas fa-edit me-1"></i>Editável
+              </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card-header bg-white border-top">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-8">
+        <input type="text" name="q" class="form-control form-control-sm" 
+               placeholder="Buscar por código ou nome do produto..." 
+               value="{{ search|default:'' }}">
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-sm btn-primary w-100">
+          <i class="fas fa-search me-1"></i>Buscar
+        </button>
+      </div>
+      <div class="col-md-2">
+        {% if search %}
+        <a href="{% url 'producao:item_lista_materiais_list' lista.id %}" class="btn btn-sm btn-outline-secondary w-100">
+          <i class="fas fa-times me-1"></i>Limpar
+        </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th width="15%">Código</th>
+            <th width="35%">Produto</th>
+            <th width="12%">Quantidade</th>
+            <th width="8%">Unidade</th>
+            <th width="20%">Observações</th>
+            {% if lista.pode_editar %}
+            <th width="10%" class="text-center">Ações</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
+            <tr>
+              <td>
+                <strong class="text-primary">{{ item.produto.codigo }}</strong>
+                {% if item.item_calculado %}
+                  <br><small class="badge bg-info">Calculado</small>
+                {% else %}
+                  <br><small class="badge bg-secondary">Manual</small>
+                {% endif %}
+              </td>
+              
+              <td>
+                <div>
+                  <strong>{{ item.produto.nome }}</strong>
+                </div>
+              </td>
+              
+              <td>
+                <span class="fw-bold">{{ item.quantidade|floatformat:2 }}</span>
+              </td>
+              
+              <td>
+                <span class="badge bg-light text-dark">{{ item.unidade }}</span>
+              </td>
+              
+              <td>
+                {% if item.observacoes %}
+                  <small>{{ item.observacoes|truncatechars:50 }}</small>
+                {% else %}
+                  <small class="text-muted">-</small>
+                {% endif %}
+              </td>
+              
+              {% if lista.pode_editar %}
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:item_lista_materiais_update' lista.id item.id %}" 
+                     class="btn btn-outline-primary btn-sm" 
+                     title="Editar Item">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'producao:item_lista_materiais_delete' lista.id item.id %}" 
+                     class="btn btn-outline-danger btn-sm" 
+                     title="Remover Item">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="{% if lista.pode_editar %}6{% else %}5{% endif %}" class="text-center py-5">
+                <div class="empty-state">
+  
+                  <h5 class="text-muted">Nenhum item na lista</h5>
+                  {% if lista.pode_editar %}
+                    <a href="{% url 'producao:item_lista_materiais_create' lista.id %}" class="btn btn-primary">
+                      <i class="fas fa-plus me-2"></i>Adicionar Item
+                    </a>
+                  {% else %}
+                    <p class="text-muted">Esta lista não possui itens</p>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Paginação -->
+  {% if itens.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Mostrando {{ itens.start_index }}-{{ itens.end_index }} de {{ itens.paginator.count }} itens
+        </small>
+      </div>
+      <nav aria-label="Navegação de página">
+        <ul class="pagination pagination-sm mb-0">
+          {% if itens.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1{% if search %}&q={{ search }}{% endif %}" aria-label="Primeiro">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ itens.previous_page_number }}{% if search %}&q={{ search }}{% endif %}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% endif %}
+          
+          {% for i in itens.paginator.page_range %}
+            {% if itens.number == i %}
+              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% elif i > itens.number|add:'-3' and i < itens.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% if search %}&q={{ search }}{% endif %}">{{ i }}</a></li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if itens.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ itens.next_page_number }}{% if search %}&q={{ search }}{% endif %}" aria-label="Próximo">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ itens.paginator.num_pages }}{% if search %}&q={{ search }}{% endif %}" aria-label="Último">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table td, .table th {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.btn-group .btn {
+  border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+}
+
+.badge.bg-light {
+  border: 1px solid #dee2e6;
+}
+
+/* Status da lista */
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+  
+  .btn-group .btn {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .empty-state {
+    padding: 2rem 0.5rem;
+  }
+  
+  .empty-state .fa-3x {
+    font-size: 2rem !important;
+  }
+}
+
+/* Hover effects */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Info cards */
+.card-header .h5 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+.text-info {
+  color: #0dcaf0 !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit da busca com delay
+    const searchInput = document.querySelector('input[name="q"]');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.length >= 3 || this.value.length === 0) {
+                    this.form.submit();
+                }
+            }, 500);
+        });
+    }
+    
+    // Confirmação para remoção
+    const deleteButtons = document.querySelectorAll('a[href*="delete"]');
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Tem certeza que deseja remover este item da lista?')) {
+                e.preventDefault();
+            }
+        });
+    });
+    
+    console.log('✅ Lista de itens inicializada - Total:', {{ total_itens }});
+});
+</script>
+{% endblock %}

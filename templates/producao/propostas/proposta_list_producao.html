@@ -142,69 +142,83 @@
 
               <td class="text-end">
                 <div class="btn-group" role="group">
+                  <!-- Botão Ver Proposta (sempre aparece) -->
                   <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" 
-                     class="btn btn-sm btn-outline-primary" 
-                     title="Ver Proposta"
-                     data-bs-toggle="tooltip">
+                    class="btn btn-sm btn-outline-primary" 
+                    title="Ver Proposta"
+                    data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
                   </a>
+                  
                   {% if proposta.lista_materiais %}
-                    {% if proposta.lista_materiais.status in 'em_edicao,pronta' %}
-                    <a href="{% url 'producao:lista_materiais_edit' proposta.pk %}" 
-                       class="btn btn-sm btn-outline-success" 
-                       title="Editar Lista"
-                       data-bs-toggle="tooltip">
-                      <i class="fas fa-edit"></i>
+                    <!-- TEM LISTA DE MATERIAIS -->
+                    
+                    <!-- Botão CRUD Simples (sempre que tem lista editável) -->
+                    {% if proposta.lista_materiais.status in 'calculando,pronta,editada' %}
+                    <a href="{% url 'producao:item_lista_materiais_list' proposta.lista_materiais.id %}" 
+                      class="btn btn-sm btn-outline-success" 
+                      title="Editar Itens da Lista (CRUD)"
+                      data-bs-toggle="tooltip">
+                      <i class="fas fa-list"></i>
                     </a>
                     {% endif %}
                     
-                    {% if proposta.lista_materiais.status in 'pronta,em_edicao' %}
+                    <!-- Botão Aprovar Lista -->
+                    {% if proposta.lista_materiais.status in 'pronta,editada' %}
                     <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" 
-                       class="btn btn-sm btn-outline-info" 
-                       title="Aprovar Lista"
-                       data-bs-toggle="tooltip">
+                      class="btn btn-sm btn-outline-info" 
+                      title="Aprovar Lista"
+                      data-bs-toggle="tooltip">
                       <i class="fas fa-check"></i>
                     </a>
                     {% endif %}
                     
-                    {% if proposta.pode_calcular %}
+                    <!-- Botão Recalcular (se puder calcular) -->
+  
                     <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
-                       class="btn btn-sm btn-outline-warning text-dark" 
-                       title="Recalcular Lista"
-                       data-bs-toggle="tooltip"
-                       onclick="return confirm('Isso irá substituir a lista atual. Confirma?')">
+                      class="btn btn-sm btn-outline-warning text-dark" 
+                      title="Recalcular Lista"
+                      data-bs-toggle="tooltip"
+                      onclick="return confirm('Isso irá substituir a lista atual. Confirma?')">
                       <i class="fas fa-sync"></i>
                     </a>
-                    {% endif %}
+                  
                     
+                    <!-- Botão Gerar Requisição (se lista aprovada) -->
                     {% if proposta.lista_materiais.status == 'aprovada' %}
                     <a href="{% url 'producao:requisicao_compra_create' %}?lista_materiais={{ proposta.lista_materiais.pk }}" 
-                       class="btn btn-sm btn-outline-secondary" 
-                       title="Gerar Requisição"
-                       data-bs-toggle="tooltip">
+                      class="btn btn-sm btn-outline-secondary" 
+                      title="Gerar Requisição de Compra"
+                      data-bs-toggle="tooltip">
                       <i class="fas fa-shopping-cart"></i>
                     </a>
                     {% endif %}
+                    
                   {% else %}
+                    <!-- NÃO TEM LISTA DE MATERIAIS -->
+                    
                     {% if proposta.pode_calcular %}
+                      <!-- Pode gerar lista -->
                       <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" 
-                         class="btn btn-sm btn-outline-info" 
-                         title="Gerar Lista de Materiais"
-                         data-bs-toggle="tooltip">
+                        class="btn btn-sm btn-outline-info" 
+                        title="Gerar Lista de Materiais"
+                        data-bs-toggle="tooltip">
                         <i class="fas fa-cogs"></i>
                       </a>
                     {% else %}
+                      <!-- Não pode gerar lista ainda -->
                       <button type="button" 
                               class="btn btn-sm btn-outline-secondary" 
-                              title="Lista não pode ser gerada ainda"
+                              title="Lista não pode ser gerada ainda - dados incompletos"
                               data-bs-toggle="tooltip"
                               disabled>
-                        <i class="fas fa-list"></i>
+                        <i class="fas fa-exclamation-triangle"></i>
                       </button>
                     {% endif %}
                   {% endif %}
                 </div>
               </td>
+
             </tr>
           {% empty %}
             <tr>

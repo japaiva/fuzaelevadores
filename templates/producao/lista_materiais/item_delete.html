@@ -1,0 +1,241 @@
+<!-- templates/producao/lista_materiais/item_delete.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Remover Item - {{ lista.proposta.numero }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-warning text-dark">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Confirmar Remoção de Item
+      </h5>
+    </div>
+    
+    <div class="card-body">
+      <!-- Info da Lista -->
+      <div class="alert alert-info">
+        <div class="row">
+          <div class="col-md-8">
+            <strong>Lista:</strong> {{ lista.proposta.numero }} - {{ lista.proposta.nome_projeto }}<br>
+            <strong>Cliente:</strong> {{ lista.proposta.cliente.nome }}
+          </div>
+          <div class="col-md-4 text-end">
+            <span class="badge {{ lista.status_badge_class }}">
+              {{ lista.get_status_display }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info do Item -->
+      <div class="card border-danger">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0 text-danger">
+            <i class="fas fa-box me-2"></i>Item a ser removido
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="text-center">
+                <div class="h4 text-primary mb-1">{{ item.produto.codigo }}</div>
+                <small class="text-muted">Código</small>
+              </div>
+            </div>
+            <div class="col-md-5">
+              <div>
+                <strong>{{ item.produto.nome }}</strong>
+                {% if item.produto.grupo %}
+                  <br><small class="text-muted">Grupo: {{ item.produto.grupo.nome }}</small>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h5 mb-1">{{ item.quantidade|floatformat:2 }}</div>
+                <small class="text-muted">{{ item.unidade }}</small>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                {% if item.item_calculado %}
+                  <span class="badge bg-info">Calculado</span>
+                {% else %}
+                  <span class="badge bg-secondary">Manual</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          {% if item.observacoes %}
+          <div class="mt-3">
+            <strong>Observações:</strong><br>
+            <div class="bg-light p-2 rounded">{{ item.observacoes }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+
+    <!-- Botões de Ação -->
+    <div class="card-footer bg-light">
+      <form method="post" class="d-flex justify-content-between align-items-center">
+        {% csrf_token %}
+        
+        <div>
+          <a href="{% url 'producao:item_lista_materiais_list' lista.id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Cancelar
+          </a>
+        </div>
+        
+        <div>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-1"></i>Confirmar Remoção
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card-header.bg-warning {
+  border-bottom: 1px solid #ffc107;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  border-color: #ffecb5;
+  color: #664d03;
+}
+
+.card.border-danger {
+  border-color: #dc3545 !important;
+}
+
+.card.border-info {
+  border-color: #0dcaf0 !important;
+}
+
+.card.border-warning {
+  border-color: #ffc107 !important;
+}
+
+.h4, .h5 {
+  font-weight: 600;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+.text-info {
+  color: #0dcaf0 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+}
+
+.alert-heading {
+  color: inherit;
+  font-weight: 600;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  .card-body {
+    padding: 1rem 0.75rem;
+  }
+  
+  .row .col-md-3,
+  .row .col-md-5,
+  .row .col-md-2 {
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .d-flex.justify-content-between > div {
+    text-align: center;
+  }
+}
+
+/* Hover effects */
+.btn:hover {
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Card hover */
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Alert icons */
+.alert .fas {
+  color: inherit;
+}
+
+/* Status badge specific colors */
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmação extra ao submeter
+    const form = document.querySelector('form[method="post"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const confirmacao = confirm(
+                'Tem certeza que deseja remover o item "{{ item.produto.codigo }}" da lista?\n\n' +
+                'Esta ação não pode ser desfeita.'
+            );
+            
+            if (!confirmacao) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // Focus no botão cancelar por segurança
+    const cancelButton = document.querySelector('.btn-secondary');
+    if (cancelButton) {
+        cancelButton.focus();
+    }
+    
+    console.log('✅ Confirmação de remoção inicializada para item:', '{{ item.produto.codigo }}');
+});
+</script>
+{% endblock %}

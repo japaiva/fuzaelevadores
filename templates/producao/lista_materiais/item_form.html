@@ -1,0 +1,355 @@
+<!-- templates/producao/lista_materiais/item_form.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}
+  {% if editing %}Editar{% else %}Novo{% endif %} Item - {{ lista.proposta.numero }} | Portal Produção
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if editing %}fa-edit{% else %}fa-plus{% endif %} me-2"></i>
+      {% if editing %}Editar{% else %}Novo{% endif %} Item - Lista {{ lista.proposta.numero }}
+    </h5>
+    <div>
+      <a href="{% url 'producao:item_lista_materiais_list' lista.id %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i>Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Info da Lista -->
+  <div class="card-header bg-white">
+    <div class="row align-items-center">
+      <div class="col-md-8">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <span class="badge {{ lista.status_badge_class }}">
+              {{ lista.get_status_display }}
+            </span>
+          </div>
+          <div>
+            <div><strong>{{ lista.proposta.nome_projeto }}</strong></div>
+            <small class="text-muted">Cliente: {{ lista.proposta.cliente.nome }}</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 text-end">
+        <small class="text-muted">Total de itens: <strong>{{ lista.itens.count }}</strong></small>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <form method="post" id="item-form">
+      {% csrf_token %}
+
+      <div class="row">
+        <!-- Seleção do Produto -->
+        <div class="col-md-12 mb-4">
+          <div class="card">
+            <div class="card-header bg-light">
+              <h6 class="card-title mb-0">
+                <i class="fas fa-box me-2"></i>Produto
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-8">
+                  <label for="produto" class="form-label">Produto*</label>
+                  <select name="produto" id="produto" class="form-select" required>
+                    <option value="">Selecione um produto...</option>
+                    {% for produto in produtos %}
+                      <option value="{{ produto.pk }}" 
+                              data-codigo="{{ produto.codigo }}"
+                              data-nome="{{ produto.nome }}"
+                              data-unidade="{{ produto.unidade_medida }}"
+                              data-grupo="{{ produto.grupo.nome|default:'' }}"
+                              {% if editing and item.produto.pk == produto.pk %}selected{% endif %}>
+                        {{ produto.codigo }} - {{ produto.nome }}
+                      </option>
+                    {% endfor %}
+                  </select>
+
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Busca Rápida</label>
+                  <input type="text" id="busca-produto" class="form-control" 
+                </div>
+              </div>
+              
+              <!-- Info do Produto Selecionado -->
+              <div id="produto-info" class="mt-3" style="display: none;">
+                <div class="alert alert-info">
+                  <div class="row">
+                    <div class="col-md-3">
+                      <strong>Código:</strong><br>
+                      <span id="info-codigo">-</span>
+                    </div>
+                    <div class="col-md-5">
+                      <strong>Nome:</strong><br>
+                      <span id="info-nome">-</span>
+                    </div>
+                    <div class="col-md-2">
+                      <strong>Unidade:</strong><br>
+                      <span id="info-unidade">-</span>
+                    </div>
+                    <div class="col-md-2">
+                      <strong>Grupo:</strong><br>
+                      <span id="info-grupo">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quantidade e Observações -->
+        <div class="col-md-6 mb-4">
+          <div class="card">
+            <div class="card-header bg-light">
+              <h6 class="card-title mb-0">
+                <i class="fas fa-calculator me-2"></i>Quantidade
+              </h6>
+            </div>
+            <div class="card-body">
+              <label for="quantidade" class="form-label">Quantidade*</label>
+              <div class="input-group">
+                <input type="number" name="quantidade" id="quantidade" 
+                       class="form-control" step="0.01" min="0.01" 
+                       value="{% if editing %}{{ item.quantidade }}{% else %}1{% endif %}" 
+                       required>
+                <span class="input-group-text" id="unidade-display">
+                  {% if editing %}{{ item.unidade }}{% else %}UN{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+          <div class="card">
+            <div class="card-header bg-light">
+              <h6 class="card-title mb-0">
+                <i class="fas fa-comment me-2"></i>Observações
+              </h6>
+            </div>
+            <div class="card-body">
+              <label for="observacoes" class="form-label">Observações</label>
+              <textarea name="observacoes" id="observacoes" class="form-control" 
+                        rows="3" >{% if editing %}{{ item.observacoes }}{% endif %}</textarea>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="d-flex justify-content-between">
+        <div>
+          <a href="{% url 'producao:item_lista_materiais_list' lista.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-1"></i>Cancelar
+          </a>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i>
+            {% if editing %}Atualizar{% else %}Adicionar{% endif %} Item
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card .card-header {
+  padding: 0.75rem 1rem;
+}
+
+.card .card-body {
+  padding: 1rem;
+}
+
+.input-group-text {
+  min-width: 50px;
+  justify-content: center;
+  font-weight: 600;
+  background-color: #e9ecef;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  border-color: #bee5eb;
+  color: #0c5460;
+}
+
+.form-select {
+  min-height: calc(2.25rem + 2px);
+}
+
+#produto-info {
+  transition: all 0.3s ease;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 0.75rem;
+  }
+  
+  .col-md-6 {
+    margin-bottom: 1rem !important;
+  }
+}
+
+/* Busca de produtos */
+#busca-produto {
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+#busca-produto:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Animação para info do produto */
+#produto-info.show {
+  display: block !important;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Select2 style simulation */
+.form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Status badges */
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const produtoSelect = document.getElementById('produto');
+    const buscaProduto = document.getElementById('busca-produto');
+    const produtoInfo = document.getElementById('produto-info');
+    const unidadeDisplay = document.getElementById('unidade-display');
+    
+    // Mostrar info do produto quando selecionado
+    function mostrarInfoProduto() {
+        const selectedOption = produtoSelect.options[produtoSelect.selectedIndex];
+        
+        if (selectedOption.value) {
+            document.getElementById('info-codigo').textContent = selectedOption.dataset.codigo || '-';
+            document.getElementById('info-nome').textContent = selectedOption.dataset.nome || '-';
+            document.getElementById('info-unidade').textContent = selectedOption.dataset.unidade || '-';
+            document.getElementById('info-grupo').textContent = selectedOption.dataset.grupo || '-';
+            
+            // Atualizar unidade no input
+            if (unidadeDisplay) {
+                unidadeDisplay.textContent = selectedOption.dataset.unidade || 'UN';
+            }
+            
+            produtoInfo.style.display = 'block';
+            produtoInfo.classList.add('show');
+        } else {
+            produtoInfo.style.display = 'none';
+            if (unidadeDisplay) {
+                unidadeDisplay.textContent = 'UN';
+            }
+        }
+    }
+    
+    // Event listener para mudança no select
+    produtoSelect.addEventListener('change', mostrarInfoProduto);
+    
+    // Busca rápida de produtos
+    if (buscaProduto) {
+        buscaProduto.addEventListener('input', function() {
+            const termo = this.value.toLowerCase();
+            const options = produtoSelect.options;
+            
+            for (let i = 1; i < options.length; i++) { // Pular primeira opção vazia
+                const option = options[i];
+                const texto = option.textContent.toLowerCase();
+                const codigo = option.dataset.codigo ? option.dataset.codigo.toLowerCase() : '';
+                
+                if (texto.includes(termo) || codigo.includes(termo)) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            }
+            
+            // Auto-selecionar se houver match exato de código
+            if (termo.length >= 3) {
+                for (let i = 1; i < options.length; i++) {
+                    const option = options[i];
+                    if (option.dataset.codigo && option.dataset.codigo.toLowerCase() === termo) {
+                        produtoSelect.value = option.value;
+                        mostrarInfoProduto();
+                        break;
+                    }
+                }
+            }
+        });
+    }
+    
+    // Mostrar info se já tem produto selecionado (modo edição)
+    if (produtoSelect.value) {
+        mostrarInfoProduto();
+    }
+    
+    // Validação do formulário
+    const form = document.getElementById('item-form');
+    form.addEventListener('submit', function(e) {
+        const produto = produtoSelect.value;
+        const quantidade = document.getElementById('quantidade').value;
+        
+        if (!produto) {
+            e.preventDefault();
+            alert('Selecione um produto.');
+            produtoSelect.focus();
+            return;
+        }
+        
+        if (!quantidade || parseFloat(quantidade) <= 0) {
+            e.preventDefault();
+            alert('Informe uma quantidade válida maior que zero.');
+            document.getElementById('quantidade').focus();
+            return;
+        }
+    });
+    
+    // Focar no select de produto ao carregar
+    produtoSelect.focus();
+    
+    console.log('✅ Formulário de item inicializado');
+});
+</script>
+{% endblock %}
