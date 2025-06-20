@@ -2,6 +2,7 @@
 
 """
 Views para CRUD básico de propostas - listagem, detalhes e exclusão
+✅ ATUALIZADA: Para usar template unificado
 """
 
 import logging
@@ -113,15 +114,26 @@ def proposta_list(request):
 
 @login_required
 def proposta_detail(request, pk):
-    """Detalhes da proposta - SEM filtro por vendedor"""
+    """
+    Detalhes da proposta - Vendedor
+    ✅ ATUALIZADA: Usa template unificado
+    """
     # 🎯 REMOVIDO: vendedor=request.user
     proposta = get_object_or_404(Proposta, pk=pk)
     
     extra_context = {
         'is_vendedor': True,
+        'is_producao': False,  # ✅ ADICIONADO: Para controlar exibição
         'base_template': 'vendedor/base_vendedor.html',
     }
-    return proposta_detail_base(request, pk, 'base/proposta_detail.html', extra_context)
+    
+    # ✅ MUDANÇA: Usa template unificado
+    return proposta_detail_base(
+        request, 
+        pk, 
+        'base/proposta_detail_unified.html', 
+        extra_context
+    )
 
 
 @login_required

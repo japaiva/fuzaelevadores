@@ -1,0 +1,379 @@
+<!-- TAB CUSTOS -->
+{% load formato_br %}
+{% load pedido_filters %}
+
+<div class="tab-pane fade" id="custos" role="tabpanel">
+  <div class="card-body">
+    {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.custo_instalacao or pedido.componentes_calculados %}
+      
+      <div class="card shadow-sm border-success mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">
+            Resumo dos Custos de Produção
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            {% if pedido.custo_materiais %}
+            <div class="col-md-3">
+              <div class="border rounded p-3 bg-light">
+                <strong class="d-block text-primary fs-4">R$ {{ pedido.custo_materiais|formato_br }}</strong>
+                <small class="text-muted">Materiais</small>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if pedido.custo_mao_obra %}
+            <div class="col-md-3">
+              <div class="border rounded p-3 bg-light">
+                <strong class="d-block text-info fs-4">R$ {{ pedido.custo_mao_obra|formato_br }}</strong>
+                <small class="text-muted">Mão de Obra (15%)</small>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if pedido.custo_instalacao %}
+            <div class="col-md-3">
+              <div class="border rounded p-3 bg-light">
+                <strong class="d-block text-dark fs-4">R$ {{ pedido.custo_instalacao|formato_br }}</strong>
+                <small class="text-muted">Instalação (10%)</small>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if pedido.custo_producao %}
+            <div class="col-md-3">
+              <div class="border rounded p-3 bg-success text-white">
+                <strong class="d-block fs-4">R$ {{ pedido.custo_producao|formato_br }}</strong>
+                <small>TOTAL</small>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if pedido.componentes_calculados %}
+      <div class="accordion" id="custosAccordion">
+        
+        {% if pedido.componentes_calculados.CABINE %}
+        <div class="accordion-item border-dark">
+          <h2 class="accordion-header" id="cabineHeader">
+            <button class="accordion-button collapsed bg-dark text-white" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#cabineCollapse">
+              <div class="d-flex justify-content-between w-100 me-3">
+                <span><strong>CABINE</strong> </span>
+                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.CABINE.total_categoria|formato_br }}</span>
+              </div>
+            </button>
+          </h2>
+          <div id="cabineCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+            <div class="accordion-body">
+              
+              {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.CABINE.items %}
+              {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+              
+              <div class="card border-dark mb-3">
+                <div class="card-header bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-dark">
+                      {% if 'chapas' in subcategoria_nome %}Chapas{% elif 'piso' in subcategoria_nome %}Piso{% elif 'fixacao' in subcategoria_nome %}Fixação{% else %}{{ subcategoria_nome|title }}{% endif %}
+                    </h6>
+                    <span class="badge bg-dark text-white">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  
+                  {% for codigo, comp in subcategoria_dados.itens.items %}
+                  <div class="row border-bottom pb-2 mb-2">
+                    <div class="col-md-8">
+                      <div class="d-flex align-items-start">
+                        <div class="me-3">
+                          <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                        </div>
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                          <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                          
+                          {% if comp.explicacao %}
+                          <div class="mt-2 p-2 bg-light rounded">
+                            <small class="text-primary">
+                              <i class="fas fa-info-circle me-1"></i>
+                              {{ comp.explicacao }}
+                            </small>
+                          </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                      <div class="mb-1">
+                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                      </div>
+                      <div class="text-muted small">
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                      </div>
+                      <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-dark" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100 }}%"></div>
+                      </div>
+                      <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100|floatformat:1 }}% da cabine</small>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  
+                </div>
+              </div>
+              
+              {% endif %}
+              {% endfor %}
+              
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if pedido.componentes_calculados.CARRINHO %}
+        <div class="accordion-item border-info">
+          <h2 class="accordion-header" id="carrinhoHeader">
+            <button class="accordion-button collapsed bg-info text-white" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#carrinhoCollapse">
+              <div class="d-flex justify-content-between w-100 me-3">
+                <span><strong>CARRINHO</strong></span>
+                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.CARRINHO.total_categoria|formato_br }}</span>
+              </div>
+            </button>
+          </h2>
+          <div id="carrinhoCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+            <div class="accordion-body">
+              
+              {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.CARRINHO.items %}
+              {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+              
+              <div class="card border-info mb-3">
+                <div class="card-header bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-info">
+                      {% if 'chassi' in subcategoria_nome %}Chassi{% elif 'plataforma' in subcategoria_nome %}Plataforma{% elif 'barra' in subcategoria_nome %}Barra Roscada{% else %}{{ subcategoria_nome|title }}{% endif %}
+                    </h6>
+                    <span class="badge bg-info">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  
+                  {% for codigo, comp in subcategoria_dados.itens.items %}
+                  <div class="row border-bottom pb-2 mb-2">
+                    <div class="col-md-8">
+                      <div class="d-flex align-items-start">
+                        <div class="me-3">
+                          <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                        </div>
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                          <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                          
+                          {% if comp.explicacao %}
+                          <div class="mt-2 p-2 bg-light rounded">
+                            <small class="text-primary">
+                              <i class="fas fa-info-circle me-1"></i>
+                              {{ comp.explicacao }}
+                            </small>
+                          </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                      <div class="mb-1">
+                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                      </div>
+                      <div class="text-muted small">
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                      </div>
+                      <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-info" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CARRINHO.total_categoria|mul:100 }}%"></div>
+                      </div>
+                      <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.CARRINHO.total_categoria|mul:100|floatformat:1 }}% do carrinho</small>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  
+                </div>
+              </div>
+              
+              {% endif %}
+              {% endfor %}
+              
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if pedido.componentes_calculados.TRACAO %}
+        <div class="accordion-item border-primary">
+          <h2 class="accordion-header" id="tracaoHeader">
+            <button class="accordion-button collapsed bg-primary text-white" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#tracaoCollapse">
+              <div class="d-flex justify-content-between w-100 me-3">
+                <span><strong>TRAÇÃO</strong></span>
+                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.TRACAO.total_categoria|formato_br }}</span>
+              </div>
+            </button>
+          </h2>
+          <div id="tracaoCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+            <div class="accordion-body">
+              
+              {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.TRACAO.items %}
+              {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+              
+              <div class="card border-primary mb-3">
+                <div class="card-header bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-primary">
+                      {% if 'acionamento' in subcategoria_nome %}Acionamento{% elif 'tracionamento' in subcategoria_nome %}Tracionamento{% elif 'contrapeso' in subcategoria_nome %}Contrapeso{% elif 'guias' in subcategoria_nome %}Guias{% else %}{{ subcategoria_nome|title }}{% endif %}
+                    </h6>
+                    <span class="badge bg-primary">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  
+                  {% for codigo, comp in subcategoria_dados.itens.items %}
+                  <div class="row border-bottom pb-2 mb-2">
+                    <div class="col-md-8">
+                      <div class="d-flex align-items-start">
+                        <div class="me-3">
+                          <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                        </div>
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                          <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                          
+                          {% if comp.explicacao %}
+                          <div class="mt-2 p-2 bg-light rounded">
+                            <small class="text-primary">
+                              <i class="fas fa-info-circle me-1"></i>
+                              {{ comp.explicacao }}
+                            </small>
+                          </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                      <div class="mb-1">
+                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                      </div>
+                      <div class="text-muted small">
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                      </div>
+                      <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-primary" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100 }}%"></div>
+                      </div>
+                      <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100|floatformat:1 }}% da tração</small>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  
+                </div>
+              </div>
+              
+              {% endif %}
+              {% endfor %}
+              
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if pedido.componentes_calculados.SIST_COMPLEMENTARES %}
+        <div class="accordion-item border-secondary">
+          <h2 class="accordion-header" id="sistemasHeader">
+            <button class="accordion-button collapsed bg-secondary text-white" type="button" 
+                    data-bs-toggle="collapse" data-bs-target="#sistemasCollapse">
+              <div class="d-flex justify-content-between w-100 me-3">
+                <span><strong>SISTEMAS COMPLEMENTARES</strong></span>
+                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|formato_br }}</span>
+              </div>
+            </button>
+          </h2>
+          <div id="sistemasCollapse" class="accordion-collapse collapse" data-bs-parent="#custosAccordion">
+            <div class="accordion-body">
+              
+              {% for subcategoria_nome, subcategoria_dados in pedido.componentes_calculados.SIST_COMPLEMENTARES.items %}
+              {% if subcategoria_nome != 'total_categoria' and subcategoria_dados.itens %}
+              
+              <div class="card border-secondary mb-3">
+                <div class="card-header bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 text-secondary">
+                      {% if 'iluminacao' in subcategoria_nome %}Iluminação{% elif 'ventilacao' in subcategoria_nome %}Ventilação{% else %}{{ subcategoria_nome|title }}{% endif %}
+                    </h6>
+                    <span class="badge bg-secondary">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                  </div>
+                </div>
+                <div class="card-body">
+                  
+                  {% for codigo, comp in subcategoria_dados.itens.items %}
+                  <div class="row border-bottom pb-2 mb-2">
+                    <div class="col-md-8">
+                      <div class="d-flex align-items-start">
+                        <div class="me-3">
+                          <span class="badge bg-secondary">{{ comp.codigo }}</span>
+                        </div>
+                        <div class="flex-grow-1">
+                          <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
+                          <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                          
+                          {% if comp.explicacao %}
+                          <div class="mt-2 p-2 bg-light rounded">
+                            <small class="text-primary">
+                              <i class="fas fa-info-circle me-1"></i>
+                              {{ comp.explicacao }}
+                            </small>
+                          </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                      <div class="mb-1">
+                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                      </div>
+                      <div class="text-muted small">
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                      </div>
+                      <div class="progress mt-1" style="height: 4px;">
+                        <div class="progress-bar bg-secondary" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|mul:100 }}%"></div>
+                      </div>
+                      <small class="text-muted">{{ comp.valor_total|div:pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|mul:100|floatformat:1 }}% dos sistemas</small>
+                    </div>
+                  </div>
+                  {% endfor %}
+                  
+                </div>
+              </div>
+              
+              {% endif %}
+              {% endfor %}
+              
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      </div>
+      {% endif %}
+
+    {% else %}
+      <div class="text-center p-5">
+        <i class="fas fa-dollar-sign fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Custo de Produção Indisponível</h5>
+        <p class="text-muted">Execute os cálculos para gerar o detalhamento completo dos custos de produção.</p>
+        {% if pedido.pode_calcular %}
+          <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-primary">
+            <i class="fas fa-calculator"></i> Executar Cálculos
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,183 @@
+<!-- TAB FICHA TÉCNICA -->
+{% load formato_br %}
+{% load pedido_filters %}
+
+<div class="tab-pane fade" id="dimensionamento" role="tabpanel">
+  <div class="card-body">
+    {% if dimensionamento or pedido.dimensionamento_detalhado or pedido.ficha_tecnica %}
+      
+      {% if dimensionamento.cab or pedido.largura_cabine_calculada %}
+      <div class="card shadow-sm border-dark mb-4">
+        <div class="card-header bg-dark text-white">
+          <h6 class="card-title mb-0">
+            Ficha Técnica
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-dark border-bottom pb-2">Dimensões da Cabine</h6>
+              <div class="row g-3">
+                <div class="col-6">
+                  <label class="form-label text-muted small">Largura</label>
+                  <div class="form-control-plaintext fw-bold">
+                    {% if dimensionamento.cab.largura %}
+                      {{ dimensionamento.cab.largura|formato_br }} m
+                    {% else %}
+                      {{ pedido.largura_cabine_calculada|formato_br|default:"0,00" }} m
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-muted small">Comprimento</label>
+                  <div class="form-control-plaintext fw-bold">
+                    {% if dimensionamento.cab.compr %}
+                      {{ dimensionamento.cab.compr|formato_br }} m
+                    {% else %}
+                      {{ pedido.comprimento_cabine_calculado|formato_br|default:"0,00" }} m
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-6">
+                  <label class="form-label text-muted small">Altura</label>
+                  <div class="form-control-plaintext fw-bold">
+                    {% if dimensionamento.cab.altura %}
+                      {{ dimensionamento.cab.altura|formato_br }} m
+                    {% else %}
+                      {{ pedido.altura_cabine|formato_br|default:"0,00" }} m
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-dark border-bottom pb-2">Capacidades</h6>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label class="form-label text-muted small">Capacidade de Carga</label>
+                  <div class="form-control-plaintext fw-bold text-success fs-5">
+                    {% if dimensionamento.cab.capacidade %}
+                      {{ dimensionamento.cab.capacidade|formato_br }} kg
+                    {% else %}
+                      {{ pedido.capacidade_cabine_calculada|formato_br|default:pedido.capacidade|formato_br }} kg
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label text-muted small">Tração Necessária</label>
+                  <div class="form-control-plaintext fw-bold text-primary fs-5">
+                    {% if dimensionamento.cab.tracao %}
+                      {{ dimensionamento.cab.tracao|formato_br }} kg
+                    {% else %}
+                      {{ pedido.tracao_cabine_calculada|formato_br|default:"0" }} kg
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="row">
+        {% if dimensionamento.cab.chp %}
+        <div class="col-md-6">
+          <div class="card shadow-sm border-info mb-4">
+            <div class="card-header bg-info text-white">
+              <h6 class="card-title mb-0">
+                Chapas Metálicas
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Chapas do Corpo</span>
+                <span class="fw-bold">{{ dimensionamento.cab.chp.corpo|default:"0" }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Chapas do Piso</span>
+                <span class="fw-bold">{{ dimensionamento.cab.chp.piso|default:"0" }}</span>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted fw-bold">Total de Chapas</span>
+                {% if dimensionamento.cab.chp.corpo and dimensionamento.cab.chp.piso %}
+                  <span class="fw-bold text-info fs-5">{{ dimensionamento.cab.chp.corpo|add:dimensionamento.cab.chp.piso }}</span>
+                {% else %}
+                  <span class="fw-bold text-info fs-5">0</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if dimensionamento.cab.pnl %}
+        <div class="col-md-6">
+          <div class="card shadow-sm border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
+              <h6 class="card-title mb-0">
+                Painéis
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Painéis Laterais</span>
+                <span class="fw-bold">{{ dimensionamento.cab.pnl.lateral|default:"0" }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Painéis do Fundo</span>
+                <span class="fw-bold">{{ dimensionamento.cab.pnl.fundo|default:"0" }}</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted">Painéis do Teto</span>
+                <span class="fw-bold">{{ dimensionamento.cab.pnl.teto|default:"0" }}</span>
+              </div>
+              <hr class="my-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted fw-bold">Total de Painéis</span>
+                {% if dimensionamento.cab.pnl.lateral and dimensionamento.cab.pnl.fundo and dimensionamento.cab.pnl.teto %}
+                  <span class="fw-bold text-secondary fs-5">
+                    {{ dimensionamento.cab.pnl.lateral|add:dimensionamento.cab.pnl.fundo|add:dimensionamento.cab.pnl.teto }}
+                  </span>
+                {% else %}
+                  <span class="fw-bold text-secondary fs-5">0</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if explicacao or pedido.explicacao_calculo %}
+      <div class="card shadow-sm border-dark mb-4">
+        <div class="card-header bg-dark text-white">
+          <h6 class="card-title mb-0">
+            Explicação dos Cálculos
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="bg-light p-3 rounded">
+            <pre class="mb-0" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 0.9rem; line-height: 1.4;">
+              {% if explicacao %}{{ explicacao|safe }}{% else %}{{ pedido.explicacao_calculo|safe }}{% endif %}
+            </pre>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    {% else %}
+      <div class="text-center p-5">
+        <i class="fas fa-ruler fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Ficha Técnica Indisponível</h5>
+        <p class="text-muted">Execute os cálculos para gerar a ficha técnica detalhada dos componentes.</p>
+        {% if pedido.pode_calcular %}
+          <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-primary">
+            <i class="fas fa-calculator"></i> Executar Cálculos
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>

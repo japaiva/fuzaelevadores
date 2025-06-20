@@ -21,6 +21,7 @@ from pytz import timezone
 from core.models import Proposta, ListaMateriais, ItemListaMateriais, Produto
 from core.forms import ListaMateriaisForm, ItemListaMateriaisForm, ItemListaMateriaisFormSet
 from core.services.calculo_pedido import CalculoPedidoService
+from core.views.propostas import proposta_detail_base  # ✅ IMPORTAÇÃO ADICIONADA
 
 logger = logging.getLogger(__name__)
 
@@ -74,46 +75,42 @@ def proposta_list_producao(request):
     
     return render(request, 'producao/propostas/proposta_list_producao.html', context)
 
-
 @login_required
 def proposta_detail_producao(request, pk):
-    """Detalhe da proposta no portal de produção"""
-    proposta = get_object_or_404(Proposta, pk=pk)
+    """
+    Detalhe da proposta no portal de produção
+    ✅ ATUALIZADA: Usa o template compartilhado igual ao vendedor
+    """
     
     # Verificar se já tem lista de materiais
     lista_materiais = None
     try:
+        proposta = get_object_or_404(Proposta, pk=pk)
         lista_materiais = proposta.lista_materiais
     except ListaMateriais.DoesNotExist:
         pass
     
-    # Carregar dados de cálculo se existirem
-    dimensionamento = proposta.dimensionamento_detalhado or {}
-    componentes = proposta.componentes_calculados or {}
-    custos = proposta.custos_detalhados or {}
-    formacao_preco = proposta.formacao_preco or {}
-    
-    context = {
-        'proposta': proposta,
-        'pedido': proposta,  # Alias para compatibilidade com template compartilhado
+    # Contexto específico da produção
+    extra_context = {
+        'is_producao': True,
         'lista_materiais': lista_materiais,
         'pode_gerar_lista': proposta.pode_calcular(),
         'tem_lista': lista_materiais is not None,
-        'is_producao': True,
-        
-        # Dados para template compartilhado
-        'dimensionamento': dimensionamento,
-        'componentes': componentes,
-        'custos': custos,
-        'formacao_preco': formacao_preco,
-        'tem_calculos': proposta.tem_calculos,
-        'tem_precos': proposta.tem_precos,
-        
-        # Template base específico da produção
         'base_template': 'producao/base_producao.html',
+        
+        # Informações específicas para produção
+        'pode_aprovar': lista_materiais.status in ['pronta', 'editada'] if lista_materiais else False,
+        'total_itens': lista_materiais.itens.count() if lista_materiais else 0,
+        'valor_total': lista_materiais.calcular_valor_total() if lista_materiais else 0,
     }
     
-    return render(request, 'producao/propostas/proposta_detail_producao.html', context)
+    # ✅ MUDANÇA PRINCIPAL: Usa template unificado
+    return proposta_detail_base(
+        request, 
+        pk, 
+        'base/proposta_detail_unified.html',
+        extra_context
+    )
 
 
 # =============================================================================

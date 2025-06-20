@@ -1,0 +1,210 @@
+<style>
+/* Cores mais sóbrias */
+:root {
+    --primary-color: #4A6785; /* Azul mais escuro/sóbrio */
+    --secondary-color: #6c757d; /* Cinza */
+    --info-color: #17a2b8; /* Azul claro */
+    --success-color: #28a745; /* Verde */
+    --dark-color: #343a40; /* Preto */
+    --light-color: #f8f9fa; /* Branco off-white */
+}
+
+.bg-primary { background-color: var(--primary-color) !important; }
+.border-primary { border-color: var(--primary-color) !important; }
+.text-primary { color: var(--primary-color) !important; }
+
+.bg-secondary { background-color: var(--secondary-color) !important; }
+.border-secondary { border-color: var(--secondary-color) !important; }
+.text-secondary { color: var(--secondary-color) !important; }
+
+.bg-info { background-color: var(--info-color) !important; }
+.border-info { border-color: var(--info-color) !important; }
+.text-info { color: var(--info-color) !important; }
+
+.bg-success { background-color: var(--success-color) !important; }
+.border-success { border-color: var(--success-color) !important; }
+.text-success { color: var(--success-color) !important; }
+
+.bg-dark { background-color: var(--dark-color) !important; }
+.border-dark { border-color: var(--dark-color) !important; }
+.text-dark { color: var(--dark-color) !important; }
+
+.bg-light { background-color: var(--light-color) !important; }
+.text-light { color: var(--light-color) !important; }
+
+/* Ajustes para botões */
+.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.btn-primary:hover {
+    background: #3a5a7a;
+    border-color: #3a5a7a;
+}
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-outline-success {
+    color: var(--success-color);
+    border-color: var(--success-color);
+}
+.btn-outline-success:hover {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-outline-secondary {
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 8px 8px 0 0;
+    margin-right: 4px;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--primary-color), #3a5a7a);
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, #3a5a7a, #2d4a68);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-success {
+    background: linear-gradient(45deg, var(--success-color), #1e7e34);
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(45deg, #1e7e34, #155724);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.alert {
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+/* Accordion customizations */
+.accordion-button {
+    border-radius: 8px !important;
+    font-weight: 600;
+}
+
+.accordion-button.collapsed {
+    border-radius: 8px !important;
+}
+
+.accordion-button:not(.collapsed) {
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.accordion-body {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Progress bars */
+.progress {
+    height: 4px;
+    border-radius: 2px;
+}
+
+.progress-bar {
+    border-radius: 2px;
+}
+
+/* Cards dentro de accordion */
+.accordion-body .card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.accordion-body .card-header {
+    border-radius: 8px 8px 0 0;
+}
+
+.accordion-body .card-body {
+    border-radius: 0 0 8px 8px;
+}
+
+/* Badges */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.35em 0.65em;
+}
+
+/* Hover effects para cards */
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+/* Estilos para o tab ativo */
+.tab-pane {
+    min-height: 400px;
+}
+
+/* Loading states */
+.btn[disabled] {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Custom scrollbar para accordion */
+.accordion-body {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.accordion-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.accordion-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.accordion-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.accordion-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .accordion-button {
+        font-size: 0.9rem;
+    }
+}
+</style>

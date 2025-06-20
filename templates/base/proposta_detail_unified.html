@@ -1,0 +1,187 @@
+{% extends base_template|default:'vendedor/base_vendedor.html' %}
+{% load formato_br %}
+{% load pedido_filters %}
+
+{% block title %}{% if is_producao %}Proposta{% else %}Pedido{% endif %} {{ pedido.numero }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="card shadow">
+    <!-- Header dinâmico baseado no portal -->
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-clipboard-check me-2"></i>{% if is_producao %}Proposta{% else %}Pedido{% endif %} {{ pedido.numero }} - {{ pedido.nome_projeto }}
+      </h5>
+      <div>
+        {% if is_producao %}
+          <a href="{% url 'producao:proposta_list_producao' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Voltar
+          </a>
+          {% if pode_gerar_lista and not tem_lista %}
+            <a href="{% url 'producao:gerar_lista_materiais' proposta.pk %}" class="btn btn-success ms-2">
+              <i class="fas fa-list me-1"></i> Gerar Lista de Materiais
+            </a>
+          {% elif tem_lista %}
+            <a href="{% url 'producao:lista_materiais_edit' proposta.pk %}" class="btn btn-primary ms-2">
+              <i class="fas fa-edit me-1"></i> Editar Lista de Materiais
+            </a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Voltar
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="card-header bg-white">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <small class="text-muted">{{ pedido.get_modelo_elevador_display }} - {{ pedido.capacidade }} kg</small>
+        </div>
+        <div class="text-end">
+          <small class="text-muted">Criado em: {{ pedido.criado_em|date:"d/m/Y H:i" }}</small>
+          {% if tem_lista and is_producao %}
+            <div class="mt-1">
+              <span class="badge {{ lista_materiais.status_badge_class }}">
+                Lista: {{ lista_materiais.get_status_display }}
+              </span>
+              <small class="text-muted ms-2">{{ total_itens }} itens</small>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="pedidoTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="resumo-tab" data-bs-toggle="tab" data-bs-target="#resumo" type="button">
+          Resumo
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="especificacoes-tab" data-bs-toggle="tab" data-bs-target="#especificacoes" type="button">
+          Especificações
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="dimensionamento-tab" data-bs-toggle="tab" data-bs-target="#dimensionamento" type="button">
+          Ficha Técnica
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="custos-tab" data-bs-toggle="tab" data-bs-target="#custos" type="button">
+          Custo Produção
+        </button>
+      </li>
+      {% if tem_lista and is_producao %}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="lista-materiais-tab" data-bs-toggle="tab" data-bs-target="#lista-materiais" type="button">
+          Lista de Materiais
+        </button>
+      </li>
+      {% endif %}
+    </ul>
+
+    <!-- Conteúdo das tabs compartilhadas -->
+    <div class="tab-content" id="pedidoTabContent">
+      {% include 'base/proposta_detail_tab_resumo.html' %}
+      {% include 'base/proposta_detail_tab_especificacoes.html' %}
+      {% include 'base/proposta_detail_tab_ficha_tecnica.html' %}
+      {% include 'base/proposta_detail_tab_custos.html' %}
+      
+      <!-- Tab de Lista de Materiais (apenas produção) -->
+      {% if tem_lista and is_producao %}
+      <div class="tab-pane fade" id="lista-materiais" role="tabpanel">
+        <div class="card-body">
+          <div class="card shadow-sm border-warning mb-4">
+            <div class="card-header bg-warning text-dark">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">Lista de Materiais</h6>
+                <div>
+                  <span class="badge {{ lista_materiais.status_badge_class }}">
+                    {{ lista_materiais.get_status_display }}
+                  </span>
+                  <span class="badge bg-secondary ms-2">{{ total_itens }} itens</span>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <p class="mb-0"><strong>Valor Total Estimado:</strong> R$ {{ valor_total|formato_br }}</p>
+                  {% if lista_materiais.observacoes %}
+                    <p class="text-muted small mt-2">{{ lista_materiais.observacoes }}</p>
+                  {% endif %}
+                </div>
+                <div class="col-md-6 text-end">
+                  <a href="{% url 'producao:lista_materiais_edit' proposta.pk %}" class="btn btn-primary">
+                    <i class="fas fa-edit me-1"></i> Editar Lista
+                  </a>
+                  {% if pode_aprovar %}
+                    <a href="{% url 'producao:lista_materiais_aprovar' proposta.pk %}" class="btn btn-success ms-2">
+                      <i class="fas fa-check me-1"></i> Aprovar Lista
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Código</th>
+                      <th>Produto</th>
+                      <th>Qtd</th>
+                      <th>Unidade</th>
+                      <th class="text-end">Valor Unit.</th>
+                      <th class="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in lista_materiais.itens.all %}
+                      <tr>
+                        <td>
+                          <code>{{ item.produto.codigo }}</code>
+                        </td>
+                        <td>
+                          <strong>{{ item.produto.nome }}</strong>
+                          {% if item.observacoes %}
+                            <br><small class="text-muted">{{ item.observacoes }}</small>
+                          {% endif %}
+                        </td>
+                        <td>{{ item.quantidade|formato_br }}</td>
+                        <td>{{ item.unidade }}</td>
+                        <td class="text-end">R$ {{ item.valor_unitario_estimado|formato_br }}</td>
+                        <td class="text-end">
+                          <strong>R$ {{ item.valor_total|formato_br }}</strong>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="6" class="text-center py-3 text-muted">
+                          <i class="fas fa-inbox me-2"></i>Nenhum item na lista
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+{% include 'base/proposta_detail_css.html' %}
+{% endblock %}
+
+{% block extra_js %}
+{% include 'base/proposta_detail_js.html' %}
+{% endblock %}
