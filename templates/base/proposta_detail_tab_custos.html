@@ -1,69 +1,94 @@
-<!-- TAB CUSTOS -->
+<!-- TAB CUSTOS DE PRODUÇÃO - VERSÃO ORGANIZADA -->
 {% load formato_br %}
 {% load pedido_filters %}
 
 <div class="tab-pane fade" id="custos" role="tabpanel">
   <div class="card-body">
-    {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.custo_instalacao or pedido.componentes_calculados %}
+    {% if pedido.custo_producao or pedido.custo_materiais or pedido.custo_mao_obra or pedido.componentes_calculados %}
       
+      <!-- ✅ RESUMO CUSTO DE PRODUÇÃO (Contabilmente Correto) -->
       <div class="card shadow-sm border-success mb-4">
         <div class="card-header bg-success text-white">
           <h6 class="card-title mb-0">
-            Resumo dos Custos de Produção
+            <i class="fas fa-industry me-2"></i>Custo de Produção
           </h6>
         </div>
         <div class="card-body">
           <div class="row text-center">
+            
+            <!-- MATERIAIS DIRETOS -->
             {% if pedido.custo_materiais %}
             <div class="col-md-3">
               <div class="border rounded p-3 bg-light">
-                <strong class="d-block text-primary fs-4">R$ {{ pedido.custo_materiais|formato_br }}</strong>
-                <small class="text-muted">Materiais</small>
+                <strong class="d-block text-primary fs-4">{{ pedido.custo_materiais|formato_br }}</strong>
+                <small class="text-muted">Materiais Diretos</small>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-primary" style="width: {{ pedido.custo_materiais|div:pedido.custo_producao|mul:100 }}%"></div>
+                </div>
+                <small class="text-muted">{{ pedido.custo_materiais|div:pedido.custo_producao|mul:100|floatformat:1 }}%</small>
               </div>
             </div>
             {% endif %}
             
+            <!-- MÃO DE OBRA DIRETA -->
             {% if pedido.custo_mao_obra %}
             <div class="col-md-3">
               <div class="border rounded p-3 bg-light">
-                <strong class="d-block text-info fs-4">R$ {{ pedido.custo_mao_obra|formato_br }}</strong>
-                <small class="text-muted">Mão de Obra (15%)</small>
+                <strong class="d-block text-info fs-4">{{ pedido.custo_mao_obra|formato_br }}</strong>
+                <small class="text-muted">MOD Produção (15%)</small>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-info" style="width: {{ pedido.custo_mao_obra|div:pedido.custo_producao|mul:100 }}%"></div>
+                </div>
+                <small class="text-muted">{{ pedido.custo_mao_obra|div:pedido.custo_producao|mul:100|floatformat:1 }}%</small>
               </div>
             </div>
             {% endif %}
             
-            {% if pedido.custo_instalacao %}
+            <!-- CUSTOS INDIRETOS DE FABRICAÇÃO -->
+            {% if pedido.custo_indiretos_fabricacao %}
             <div class="col-md-3">
               <div class="border rounded p-3 bg-light">
-                <strong class="d-block text-dark fs-4">R$ {{ pedido.custo_instalacao|formato_br }}</strong>
-                <small class="text-muted">Instalação (10%)</small>
+                <strong class="d-block text-warning fs-4">{{ pedido.custo_indiretos_fabricacao|formato_br }}</strong>
+                <small class="text-muted">Custos Indiretos (5%)</small>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-warning" style="width: {{ pedido.custo_indiretos_fabricacao|div:pedido.custo_producao|mul:100 }}%"></div>
+                </div>
+                <small class="text-muted">{{ pedido.custo_indiretos_fabricacao|div:pedido.custo_producao|mul:100|floatformat:1 }}%</small>
               </div>
             </div>
             {% endif %}
             
+            <!-- TOTAL CUSTO DE PRODUÇÃO -->
             {% if pedido.custo_producao %}
             <div class="col-md-3">
               <div class="border rounded p-3 bg-success text-white">
-                <strong class="d-block fs-4">R$ {{ pedido.custo_producao|formato_br }}</strong>
-                <small>TOTAL</small>
+                <strong class="d-block fs-3">{{ pedido.custo_producao|formato_br }}</strong>
+                <small>CUSTO DE PRODUÇÃO</small>
+                <div class="mt-2">
+                  <i class="fas fa-industry fa-2x"></i>
+                </div>
               </div>
             </div>
             {% endif %}
+            
           </div>
+          
         </div>
       </div>
 
+      <!-- DETALHAMENTO DOS COMPONENTES -->
       {% if pedido.componentes_calculados %}
       <div class="accordion" id="custosAccordion">
         
+        <!-- CABINE -->
         {% if pedido.componentes_calculados.CABINE %}
         <div class="accordion-item border-dark">
           <h2 class="accordion-header" id="cabineHeader">
             <button class="accordion-button collapsed bg-dark text-white" type="button" 
                     data-bs-toggle="collapse" data-bs-target="#cabineCollapse">
               <div class="d-flex justify-content-between w-100 me-3">
-                <span><strong>CABINE</strong> </span>
-                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.CABINE.total_categoria|formato_br }}</span>
+                <span><strong>CABINE</strong></span>
+                <span class="badge bg-secondary fs-6">{{ pedido.componentes_calculados.CABINE.total_categoria|formato_br }}</span>
               </div>
             </button>
           </h2>
@@ -77,9 +102,17 @@
                 <div class="card-header bg-light">
                   <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 text-dark">
-                      {% if 'chapas' in subcategoria_nome %}Chapas{% elif 'piso' in subcategoria_nome %}Piso{% elif 'fixacao' in subcategoria_nome %}Fixação{% else %}{{ subcategoria_nome|title }}{% endif %}
+                      {% if 'chapas' in subcategoria_nome %}
+                        <i class="fas fa-square me-1"></i>Chapas
+                      {% elif 'piso' in subcategoria_nome %}
+                        <i class="fas fa-layer-group me-1"></i>Piso
+                      {% elif 'fixacao' in subcategoria_nome %}
+                        <i class="fas fa-bolt me-1"></i>Fixação
+                      {% else %}
+                        {{ subcategoria_nome|title }}
+                      {% endif %}
                     </h6>
-                    <span class="badge bg-dark text-white">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                    <span class="badge bg-dark text-white">{{ subcategoria_dados.total_subcategoria|formato_br }}</span>
                   </div>
                 </div>
                 <div class="card-body">
@@ -108,10 +141,10 @@
                     </div>
                     <div class="col-md-4 text-end">
                       <div class="mb-1">
-                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                        <strong class="text-success fs-5">{{ comp.valor_total|formato_br }}</strong>
                       </div>
                       <div class="text-muted small">
-                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × {{ comp.valor_unitario|formato_br }}
                       </div>
                       <div class="progress mt-1" style="height: 4px;">
                         <div class="progress-bar bg-dark" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CABINE.total_categoria|mul:100 }}%"></div>
@@ -132,6 +165,7 @@
         </div>
         {% endif %}
 
+        <!-- CARRINHO -->
         {% if pedido.componentes_calculados.CARRINHO %}
         <div class="accordion-item border-info">
           <h2 class="accordion-header" id="carrinhoHeader">
@@ -139,7 +173,7 @@
                     data-bs-toggle="collapse" data-bs-target="#carrinhoCollapse">
               <div class="d-flex justify-content-between w-100 me-3">
                 <span><strong>CARRINHO</strong></span>
-                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.CARRINHO.total_categoria|formato_br }}</span>
+                <span class="badge bg-secondary fs-6">{{ pedido.componentes_calculados.CARRINHO.total_categoria|formato_br }}</span>
               </div>
             </button>
           </h2>
@@ -153,9 +187,17 @@
                 <div class="card-header bg-light">
                   <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 text-info">
-                      {% if 'chassi' in subcategoria_nome %}Chassi{% elif 'plataforma' in subcategoria_nome %}Plataforma{% elif 'barra' in subcategoria_nome %}Barra Roscada{% else %}{{ subcategoria_nome|title }}{% endif %}
+                      {% if 'chassi' in subcategoria_nome %}
+                        <i class="fas fa-car me-1"></i>Chassi
+                      {% elif 'plataforma' in subcategoria_nome %}
+                        <i class="fas fa-table me-1"></i>Plataforma
+                      {% elif 'barra' in subcategoria_nome %}
+                        <i class="fas fa-arrows-alt-v me-1"></i>Barra Roscada
+                      {% else %}
+                        {{ subcategoria_nome|title }}
+                      {% endif %}
                     </h6>
-                    <span class="badge bg-info">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                    <span class="badge bg-info">{{ subcategoria_dados.total_subcategoria|formato_br }}</span>
                   </div>
                 </div>
                 <div class="card-body">
@@ -184,10 +226,10 @@
                     </div>
                     <div class="col-md-4 text-end">
                       <div class="mb-1">
-                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                        <strong class="text-success fs-5">{{ comp.valor_total|formato_br }}</strong>
                       </div>
                       <div class="text-muted small">
-                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × {{ comp.valor_unitario|formato_br }}
                       </div>
                       <div class="progress mt-1" style="height: 4px;">
                         <div class="progress-bar bg-info" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.CARRINHO.total_categoria|mul:100 }}%"></div>
@@ -208,6 +250,7 @@
         </div>
         {% endif %}
 
+        <!-- TRAÇÃO -->
         {% if pedido.componentes_calculados.TRACAO %}
         <div class="accordion-item border-primary">
           <h2 class="accordion-header" id="tracaoHeader">
@@ -215,7 +258,7 @@
                     data-bs-toggle="collapse" data-bs-target="#tracaoCollapse">
               <div class="d-flex justify-content-between w-100 me-3">
                 <span><strong>TRAÇÃO</strong></span>
-                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.TRACAO.total_categoria|formato_br }}</span>
+                <span class="badge bg-secondary fs-6">{{ pedido.componentes_calculados.TRACAO.total_categoria|formato_br }}</span>
               </div>
             </button>
           </h2>
@@ -229,9 +272,19 @@
                 <div class="card-header bg-light">
                   <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 text-primary">
-                      {% if 'acionamento' in subcategoria_nome %}Acionamento{% elif 'tracionamento' in subcategoria_nome %}Tracionamento{% elif 'contrapeso' in subcategoria_nome %}Contrapeso{% elif 'guias' in subcategoria_nome %}Guias{% else %}{{ subcategoria_nome|title }}{% endif %}
+                      {% if 'acionamento' in subcategoria_nome %}
+                        <i class="fas fa-power-off me-1"></i>Acionamento
+                      {% elif 'tracionamento' in subcategoria_nome %}
+                        <i class="fas fa-link me-1"></i>Tracionamento
+                      {% elif 'contrapeso' in subcategoria_nome %}
+                        <i class="fas fa-weight me-1"></i>Contrapeso
+                      {% elif 'guias' in subcategoria_nome %}
+                        <i class="fas fa-ruler-vertical me-1"></i>Guias
+                      {% else %}
+                        {{ subcategoria_nome|title }}
+                      {% endif %}
                     </h6>
-                    <span class="badge bg-primary">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                    <span class="badge bg-primary">{{ subcategoria_dados.total_subcategoria|formato_br }}</span>
                   </div>
                 </div>
                 <div class="card-body">
@@ -260,10 +313,10 @@
                     </div>
                     <div class="col-md-4 text-end">
                       <div class="mb-1">
-                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                        <strong class="text-success fs-5">{{ comp.valor_total|formato_br }}</strong>
                       </div>
                       <div class="text-muted small">
-                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × {{ comp.valor_unitario|formato_br }}
                       </div>
                       <div class="progress mt-1" style="height: 4px;">
                         <div class="progress-bar bg-primary" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.TRACAO.total_categoria|mul:100 }}%"></div>
@@ -284,6 +337,7 @@
         </div>
         {% endif %}
 
+        <!-- SISTEMAS COMPLEMENTARES -->
         {% if pedido.componentes_calculados.SIST_COMPLEMENTARES %}
         <div class="accordion-item border-secondary">
           <h2 class="accordion-header" id="sistemasHeader">
@@ -291,7 +345,7 @@
                     data-bs-toggle="collapse" data-bs-target="#sistemasCollapse">
               <div class="d-flex justify-content-between w-100 me-3">
                 <span><strong>SISTEMAS COMPLEMENTARES</strong></span>
-                <span class="badge bg-secondary fs-6">R$ {{ pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|formato_br }}</span>
+                <span class="badge bg-secondary fs-6">{{ pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|formato_br }}</span>
               </div>
             </button>
           </h2>
@@ -305,9 +359,15 @@
                 <div class="card-header bg-light">
                   <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 text-secondary">
-                      {% if 'iluminacao' in subcategoria_nome %}Iluminação{% elif 'ventilacao' in subcategoria_nome %}Ventilação{% else %}{{ subcategoria_nome|title }}{% endif %}
+                      {% if 'iluminacao' in subcategoria_nome %}
+                        <i class="fas fa-lightbulb me-1"></i>Iluminação
+                      {% elif 'ventilacao' in subcategoria_nome %}
+                        <i class="fas fa-fan me-1"></i>Ventilação
+                      {% else %}
+                        {{ subcategoria_nome|title }}
+                      {% endif %}
                     </h6>
-                    <span class="badge bg-secondary">R$ {{ subcategoria_dados.total_subcategoria|formato_br }}</span>
+                    <span class="badge bg-secondary">{{ subcategoria_dados.total_subcategoria|formato_br }}</span>
                   </div>
                 </div>
                 <div class="card-body">
@@ -336,10 +396,10 @@
                     </div>
                     <div class="col-md-4 text-end">
                       <div class="mb-1">
-                        <strong class="text-success fs-5">R$ {{ comp.valor_total|formato_br }}</strong>
+                        <strong class="text-success fs-5">{{ comp.valor_total|formato_br }}</strong>
                       </div>
                       <div class="text-muted small">
-                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × R$ {{ comp.valor_unitario|formato_br }}
+                        {{ comp.quantidade|formato_br }} {{ comp.unidade|default:"un" }} × {{ comp.valor_unitario|formato_br }}
                       </div>
                       <div class="progress mt-1" style="height: 4px;">
                         <div class="progress-bar bg-secondary" style="width: {{ comp.valor_total|div:pedido.componentes_calculados.SIST_COMPLEMENTARES.total_categoria|mul:100 }}%"></div>
@@ -364,8 +424,9 @@
       {% endif %}
 
     {% else %}
+      <!-- ESTADO SEM DADOS -->
       <div class="text-center p-5">
-        <i class="fas fa-dollar-sign fa-3x text-muted mb-3"></i>
+        <i class="fas fa-industry fa-3x text-muted mb-3"></i>
         <h5 class="text-muted">Custo de Produção Indisponível</h5>
         <p class="text-muted">Execute os cálculos para gerar o detalhamento completo dos custos de produção.</p>
         {% if pedido.pode_calcular %}

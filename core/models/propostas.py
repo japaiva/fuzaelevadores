@@ -1,20 +1,24 @@
-# core/models/propostas.py
+# core/models/propostas.py - MODELO COMPLETO CORRIGIDO
 
 """
-Modelo de Propostas compartilhado entre Vendedor e Produção
+Modelo de Propostas com estrutura de custos contabilmente correta
 """
 
 from django.db import models
 from django.conf import settings
 from datetime import datetime, timedelta
+from decimal import Decimal
 import uuid
 
 class Proposta(models.Model):
     """
-    Modelo completo para propostas de elevadores - compartilhado entre vendedor e produção
+    Modelo completo para propostas de elevadores
+    ATUALIZADO: Estrutura de custos contabilmente correta
     """
     STATUS_CHOICES = [
         ('rascunho', 'Rascunho'),
+        ('simulado', 'Simulado'),
+        ('pendente', 'Pendente'),
         ('aprovado', 'Aprovado'),
         ('rejeitado', 'Rejeitado'),
     ]
@@ -71,13 +75,12 @@ class Proposta(models.Model):
     observacoes = models.TextField(blank=True, verbose_name="Observações")
     
     # === DADOS COMERCIAIS ===
-    # Valor Principal - ✅ CORRIGIDO: Agora opcional para permitir workflow em steps
     valor_proposta = models.DecimalField(
         max_digits=12, 
         decimal_places=2,
         null=True, blank=True,
         verbose_name="Valor da Proposta",
-        help_text="Valor principal da proposta (pode ser negociado)"
+        help_text="Valor final negociado com o cliente"
     )
     
     # Validade e Vencimento
@@ -222,7 +225,7 @@ class Proposta(models.Model):
     )
     pavimentos = models.IntegerField(verbose_name="Número de Pavimentos")
 
-    # === DADOS DAS PORTAS === (Step 2) - ✅ CORRIGIDO: Todos agora são opcionais
+    # === DADOS DAS PORTAS === (Step 2)
     # Porta da Cabine
     modelo_porta_cabine = models.CharField(
         max_length=20,
@@ -337,7 +340,7 @@ class Proposta(models.Model):
         verbose_name="Altura Porta Pavimento (m)"
     )
 
-    # === DADOS DA CABINE === (Step 2) - ✅ CORRIGIDO: Todos agora são opcionais
+    # === DADOS DA CABINE === (Step 2)
     material_cabine = models.CharField(
         max_length=50,
         choices=[
@@ -443,71 +446,105 @@ class Proposta(models.Model):
         verbose_name="Tração Cabine Calculada (kg)"
     )
     
-    # === CUSTOS DETALHADOS ===
+    # =================================================================
+    # CUSTOS DETALHADOS (Estrutura Contábil Correta)
+    # =================================================================
+    
     custo_materiais = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Custo de Materiais"
-    )
-    custo_mao_obra = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Custo de Mão de Obra"
-    )
-    custo_instalacao = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Custo de Instalação"
-    )
-    custo_producao = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Custo de Produção"
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Custo de Materiais",
+        help_text="Materiais diretos (cabine + carrinho + tração + sistemas)"
     )
     
-    # === PREÇOS ===
-    preco_venda_calculado = models.DecimalField( # This will hold the system-calculated price
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
+    custo_mao_obra = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Custo de Mão de Obra Produção",
+        help_text="15% dos materiais - MOD para fabricação"
+    )
+    
+    # ✅ NOVO CAMPO
+    custo_indiretos_fabricacao = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Custos Indiretos de Fabricação",
+        help_text="5% dos materiais - energia, depreciação, etc."
+    )
+    
+    custo_instalacao = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Custo de Instalação",
+        help_text="5% dos materiais - serviços no cliente"
+    )
+    
+    # =================================================================
+    # TOTAIS DE CUSTO
+    # =================================================================
+    
+    custo_producao = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Custo de Produção",
+        help_text="Materiais + MOD + Custos Indiretos (SEM instalação)"
+    )
+    
+    # ✅ NOVO CAMPO
+    custo_total_projeto = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Custo Total do Projeto",
+        help_text="Custo de Produção + Custo de Instalação"
+    )
+    
+    # =================================================================
+    # FORMAÇÃO DE PREÇO
+    # =================================================================
+    
+    # ✅ NOVO CAMPO
+    margem_lucro = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Margem de Lucro",
+        help_text="30% sobre custo total do projeto"
+    )
+    
+    # ✅ NOVO CAMPO
+    preco_com_margem = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Preço com Margem",
+        help_text="Custo Total + Margem de Lucro"
+    )
+    
+    # ✅ NOVO CAMPO
+    comissao = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Comissão",
+        help_text="3% sobre preço com margem"
+    )
+    
+    # ✅ NOVO CAMPO
+    preco_com_comissao = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Preço com Comissão",
+        help_text="Preço com Margem + Comissão"
+    )
+    
+    # ✅ NOVO CAMPO
+    impostos = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
+        verbose_name="Impostos",
+        help_text="10% sobre preço com comissão"
+    )
+    
+    # =================================================================
+    # PREÇOS FINAIS
+    # =================================================================
+    
+    preco_venda_calculado = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Preço de Venda Calculado",
-        help_text="Preço de venda sugerido pelo sistema, antes da negociação"
+        help_text="Preço sugerido pelo sistema (com todos os componentes)"
     )
-    # preco_sem_impostos = models.DecimalField( # REMOVIDO: Unificado com preco_venda_calculado
-    #     max_digits=12,
-    #     decimal_places=2,
-    #     blank=True,
-    #     null=True,
-    #     verbose_name="Preço sem Impostos"
-    # )
-    preco_negociado = models.DecimalField( # DEPRECATED: Use valor_proposta
-        max_digits=12,
-        decimal_places=2,
-        blank=True,
-        null=True,
-        verbose_name="Preço Negociado" # This field will eventually be removed in favor of valor_proposta
-    )
-    preco_venda_final = models.DecimalField( # DEPRECATED: Use valor_proposta
-        max_digits=12,
-        decimal_places=2,
-        blank=True,
-        null=True,
-        verbose_name="Preço de Venda Final" # This field will eventually be removed in favor of valor_proposta
-    )
+    
     percentual_desconto = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        default=0,
-        verbose_name="Desconto (%)"
+        max_digits=5, decimal_places=2, default=0,
+        verbose_name="Desconto Aplicado (%)",
+        help_text="Percentual de desconto sobre o preço calculado"
     )
 
     # === DADOS DETALHADOS (JSON) ===
@@ -556,7 +593,7 @@ class Proposta(models.Model):
             models.Index(fields=['-criado_em']),
             models.Index(fields=['status']),
             models.Index(fields=['data_validade']),
-            models.Index(fields=['valor_proposta']),  # Índice para o campo principal
+            models.Index(fields=['valor_proposta']),
         ]
     
     def __str__(self):
@@ -596,11 +633,36 @@ class Proposta(models.Model):
             from datetime import date, timedelta
             self.data_validade = date.today() + timedelta(days=30)
 
-        # ✅ NEW LOGIC: If valor_proposta is not set by the user, default it to the calculated price
+        # Se valor_proposta não foi definido pelo usuário, usar o calculado como base
         if self.preco_venda_calculado and self.valor_proposta is None:
             self.valor_proposta = self.preco_venda_calculado
 
         super().save(*args, **kwargs)
+
+    # =================================================================
+    # PROPRIEDADES CALCULADAS
+    # =================================================================
+    
+    @property
+    def lucro_bruto(self):
+        """Lucro bruto: valor proposta - custo total"""
+        if self.valor_proposta and self.custo_total_projeto:
+            return self.valor_proposta - self.custo_total_projeto
+        return Decimal('0')
+    
+    @property
+    def margem_real_percentual(self):
+        """Margem real sobre custo total"""
+        if self.lucro_bruto and self.custo_total_projeto and self.custo_total_projeto > 0:
+            return (self.lucro_bruto / self.custo_total_projeto) * 100
+        return Decimal('0')
+    
+    @property
+    def economia_cliente(self):
+        """Economia do cliente em relação ao preço calculado"""
+        if self.preco_venda_calculado and self.valor_proposta:
+            return self.preco_venda_calculado - self.valor_proposta
+        return Decimal('0')
 
     # === PROPRIEDADES DE STATUS ===
     
@@ -609,6 +671,8 @@ class Proposta(models.Model):
         """Retorna classe CSS para badge de status"""
         badges = {
             'rascunho': 'bg-warning',
+            'simulado': 'bg-info',
+            'pendente': 'bg-info',
             'aprovado': 'bg-success',
             'rejeitado': 'bg-danger',
         }
@@ -617,13 +681,12 @@ class Proposta(models.Model):
     @property
     def pode_editar(self):
         """Verifica se a proposta ainda pode ser editada"""
-        return True
-        #return self.status == 'rascunho'
+        return self.status in ['rascunho', 'simulado', 'pendente']
     
     @property
     def pode_excluir(self):
         """Verifica se a proposta pode ser excluída"""
-        return self.status == 'rascunho'
+        return self.status in ['rascunho', 'simulado', 'pendente']
     
     @property
     def esta_vencida(self):
@@ -744,7 +807,6 @@ class Proposta(models.Model):
     @property
     def tem_precos(self):
         """Verifica se a proposta tem preços calculados"""
-        # Checks if either the calculated price or a manually set proposal value exists.
         return bool(self.formacao_preco or self.preco_venda_calculado or self.valor_proposta)
     
     @property
@@ -821,6 +883,10 @@ class Proposta(models.Model):
         
         return campos_preenchidos and valores_positivos
 
+
+# =============================================================================
+# MODELOS RELACIONADOS (mantém os existentes)
+# =============================================================================
 
 class HistoricoProposta(models.Model):
     """

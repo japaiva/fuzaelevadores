@@ -300,6 +300,11 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'required': True
             }),
         }
+
+
+
+# core/forms/propostas.py - CORREÇÃO DA LINHA 303+
+
 class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     class Meta:
         model = Proposta
@@ -309,7 +314,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'valor_proposta', 
 
             # Validade e Prazos
-            'prazo_entrega_dias', # <--- MOVIDO PARA CÁ
+            'prazo_entrega_dias',
             'data_validade',
             
             # Forma de Pagamento
@@ -322,10 +327,9 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'tipo_parcela',
             'primeira_parcela',
             
-            # Preços (percentual_desconto REMOVIDO)
-            'preco_negociado', # <-- Este campo não será mais utilizado diretamente no form.
-                               #     Seu valor será calculado implicitamente pelo valor_proposta
-                               #     em relação ao valor_calculado na API.
+            # ❌ CAMPO REMOVIDO: 'preco_negociado'
+            # Motivo: Campo não existe no modelo Proposta
+            # O valor negociado será gerenciado através de 'valor_proposta'
         ]
         
         widgets = {
@@ -334,7 +338,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'prazo_entrega_dias': QuantityInput(attrs={ # <--- MANTIDO AQUI PARA O WIDGET
+            'prazo_entrega_dias': QuantityInput(attrs={
                 'min': 1,
                 'max': 365,
                 'placeholder': '45'
@@ -363,7 +367,9 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'preco_negociado': MoneyInput(),
+            
+            # ❌ WIDGET REMOVIDO: 'preco_negociado': MoneyInput()
+            # O valor_proposta já gerencia este aspecto
         }
 
     def __init__(self, *args, **kwargs):

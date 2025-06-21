@@ -1,4 +1,4 @@
-# core/services/calculo_pedido.py - ARQUIVO PRINCIPAL UNIFICADO - VERSÃO ATUALIZADA
+# core/services/calculo_pedido.py - ARQUIVO PRINCIPAL UNIFICADO - VERSÃO COMPLETA CORRIGIDA
 
 import logging
 from decimal import Decimal
@@ -31,14 +31,14 @@ class CalculoPedidoService:
     """
     Serviço principal para cálculos de pedidos de elevadores
     Orquestra os diferentes módulos de cálculo
+    VERSÃO CORRIGIDA: Nova estrutura contábil linear
     """
     
     @staticmethod
     def _calcular_custos_componentes(pedido, dimensionamento) -> Dict[str, Any]:
         """
         Calcula os custos de produção completos usando módulos especializados
-        Método interno que substitui o ComponentesCalculoService
-        REFATORADO para consolidar a nova estrutura de componentes
+        CORRIGIDO: Nova estrutura contábil linear
         """
         # Buscar todos os produtos ativos (MPs - Matéria Prima)
         custos_db = {p.codigo: p for p in Produto.objects.filter(
@@ -53,13 +53,15 @@ class CalculoPedidoService:
         componentes_consolidados = {} 
         custos_por_categoria = {}
         
+        # =================================================================
+        # CÁLCULO DOS COMPONENTES POR CATEGORIA
+        # =================================================================
+        
         # CABINE - Chapas do Corpo, Piso e Parafusos
         logger.info("Calculando custos da cabine...")
         try:
-            # calculo_cabine.py agora retorna {'componentes': {...}, 'total': Decimal}
             custo_cabine = CalculoCabineService.calcular_custo_cabine(pedido, dimensionamento, custos_db)
             componentes_consolidados["CABINE"] = custo_cabine['componentes']
-            # Adiciona o total da categoria ao dicionário de componentes consolidados para fácil acesso no template
             componentes_consolidados["CABINE"]["total_categoria"] = float(custo_cabine['total'])
             custos_por_categoria['CABINE'] = safe_decimal(custo_cabine['total'])
             logger.info(f"Custo cabine: R$ {custo_cabine['total']}")
@@ -71,7 +73,6 @@ class CalculoPedidoService:
         # CARRINHO - Chassi, Plataforma, Travessas, Longarinas, Perfis e Barras
         logger.info("Calculando custos do carrinho...")
         try:
-            # **ASSUMIMOS QUE calculo_carrinho.py SERÁ REFATORADO DE FORMA SIMILAR**
             custo_carrinho = CalculoCarrinhoService.calcular_custo_carrinho(pedido, dimensionamento, custos_db)
             componentes_consolidados["CARRINHO"] = custo_carrinho['componentes']
             componentes_consolidados["CARRINHO"]["total_categoria"] = float(custo_carrinho['total'])
@@ -85,7 +86,6 @@ class CalculoPedidoService:
         # TRAÇÃO - Motor, Cabos, Contrapeso, Guias e Polias
         logger.info("Calculando custos de tração...")
         try:
-            # **ASSUMIMOS QUE calculo_tracao.py SERÁ REFATORADO DE FORMA SIMILAR**
             custo_tracao = CalculoTracaoService.calcular_custo_tracao(pedido, dimensionamento, custos_db)
             componentes_consolidados["TRACAO"] = custo_tracao['componentes']
             componentes_consolidados["TRACAO"]["total_categoria"] = float(custo_tracao['total'])
@@ -99,7 +99,6 @@ class CalculoPedidoService:
         # SISTEMAS COMPLEMENTARES - Iluminação, Ventilação, Comando, Botoeiras e Portas
         logger.info("Calculando custos dos sistemas complementares...")
         try:
-            # **ASSUMIMOS QUE calculo_sistemas.py SERÁ REFATORADO DE FORMA SIMILAR**
             custo_sistemas = CalculoSistemasService.calcular_custo_sistemas(pedido, dimensionamento, custos_db)
             componentes_consolidados["SIST_COMPLEMENTARES"] = custo_sistemas['componentes']
             componentes_consolidados["SIST_COMPLEMENTARES"]["total_categoria"] = float(custo_sistemas['total'])
@@ -110,29 +109,93 @@ class CalculoPedidoService:
             componentes_consolidados["SIST_COMPLEMENTARES"] = {}
             custos_por_categoria['SIST_COMPLEMENTARES'] = Decimal('0')
         
-        # Totais - CONVERSÃO SEGURA PARA DECIMAL
-        custo_materiais = sum(custos_por_categoria.values())  # Agora todos são Decimal
-        custo_mao_obra = custo_materiais * Decimal('0.15')  # 15% dos materiais
-        custo_instalacao = custo_materiais * Decimal('0.10')  # 10% dos materiais
-        custo_total = custo_materiais + custo_mao_obra + custo_instalacao
+        # =================================================================
+        # CUSTOS BASE (materiais dos componentes)
+        # =================================================================
+        custo_materiais = sum(custos_por_categoria.values())  # R$ 10.000
         
-        logger.info(f"RESUMO DOS CUSTOS:")
+        # =================================================================
+        # CUSTOS DE PRODUÇÃO (FÁBRICA)
+        # =================================================================
+        custo_mao_obra_producao = custo_materiais * Decimal('0.15')     # 15% = R$ 1.500
+        custo_indiretos_fabricacao = custo_materiais * Decimal('0.05')  # 5% = R$ 500
+        
+        # CUSTO DE PRODUÇÃO = só fábrica (SEM instalação)
+        custo_producao = custo_materiais + custo_mao_obra_producao + custo_indiretos_fabricacao
+        # R$ 10.000 + R$ 1.500 + R$ 500 = R$ 12.000
+        
+        # =================================================================
+        # CUSTO DE INSTALAÇÃO (SEPARADO)
+        # =================================================================
+        custo_instalacao = custo_materiais * Decimal('0.05')  # 5% = R$ 500
+        
+        # =================================================================
+        # CUSTO TOTAL DO PROJETO
+        # =================================================================
+        custo_total_projeto = custo_producao + custo_instalacao  # R$ 12.500
+        
+        # =================================================================
+        # FORMAÇÃO DE PREÇO LINEAR
+        # =================================================================
+        
+        # 1. Margem de Lucro (30% sobre custo total)
+        margem_lucro = custo_total_projeto * Decimal('0.30')  # R$ 3.750
+        preco_com_margem = custo_total_projeto + margem_lucro  # R$ 16.250
+        
+        # 2. Comissão (3% sobre preço com margem)
+        comissao = preco_com_margem * Decimal('0.03')  # R$ 487,50
+        preco_com_comissao = preco_com_margem + comissao  # R$ 16.737,50
+        
+        # 3. Impostos (10% sobre preço com comissão)
+        impostos = preco_com_comissao * Decimal('0.10')  # R$ 1.673,75
+        preco_final = preco_com_comissao + impostos  # R$ 18.411,25
+        
+        # =================================================================
+        # LOGS DETALHADOS
+        # =================================================================
+        logger.info(f"=== RESUMO DOS CUSTOS ===")
         logger.info(f"  - Cabine: R$ {custos_por_categoria['CABINE']}")
         logger.info(f"  - Carrinho: R$ {custos_por_categoria['CARRINHO']}")
         logger.info(f"  - Tração: R$ {custos_por_categoria['TRACAO']}")
         logger.info(f"  - Sistemas: R$ {custos_por_categoria['SIST_COMPLEMENTARES']}")
-        logger.info(f"  - Total Materiais: R$ {custo_materiais}")
-        logger.info(f"  - Mão de Obra (15%): R$ {custo_mao_obra}")
-        logger.info(f"  - Instalação (10%): R$ {custo_instalacao}")
-        logger.info(f"  - CUSTO TOTAL: R$ {custo_total}")
+        logger.info(f"  - TOTAL MATERIAIS: R$ {custo_materiais}")
+        logger.info(f"")
+        logger.info(f"=== CUSTOS DE PRODUÇÃO ===")
+        logger.info(f"  - MOD Produção (15%): R$ {custo_mao_obra_producao}")
+        logger.info(f"  - Custos Indiretos (5%): R$ {custo_indiretos_fabricacao}")
+        logger.info(f"  - CUSTO DE PRODUÇÃO: R$ {custo_producao}")
+        logger.info(f"")
+        logger.info(f"=== PROJETO COMPLETO ===")
+        logger.info(f"  - Custo Instalação (5%): R$ {custo_instalacao}")
+        logger.info(f"  - CUSTO TOTAL PROJETO: R$ {custo_total_projeto}")
+        logger.info(f"")
+        logger.info(f"=== FORMAÇÃO DE PREÇO ===")
+        logger.info(f"  - Margem Lucro (30%): R$ {margem_lucro}")
+        logger.info(f"  - Preço c/ Margem: R$ {preco_com_margem}")
+        logger.info(f"  - Comissão (3%): R$ {comissao}")
+        logger.info(f"  - Preço c/ Comissão: R$ {preco_com_comissao}")
+        logger.info(f"  - Impostos (10%): R$ {impostos}")
+        logger.info(f"  - PREÇO FINAL: R$ {preco_final}")
         
         return {
-            'componentes': componentes_consolidados, # AGORA ESTE CONTÉM A ESTRUTURA HIERÁRQUICA
+            'componentes': componentes_consolidados,
             'custos_por_categoria': custos_por_categoria,
+            # Custos base
             'custo_materiais': custo_materiais,
-            'custo_mao_obra': custo_mao_obra,
+            'custo_mao_obra_producao': custo_mao_obra_producao,
+            'custo_indiretos_fabricacao': custo_indiretos_fabricacao,
             'custo_instalacao': custo_instalacao,
-            'custo_total': custo_total,
+            # Totais de custo
+            'custo_producao': custo_producao,
+            'custo_total_projeto': custo_total_projeto,
+            # Formação de preço
+            'margem_lucro': margem_lucro,
+            'preco_com_margem': preco_com_margem,
+            'comissao': comissao,
+            'preco_com_comissao': preco_com_comissao,
+            'impostos': impostos,
+            'preco_final': preco_final,
+            # Outros
             'total_componentes': len(componentes_consolidados)
         }
 
@@ -141,6 +204,7 @@ class CalculoPedidoService:
     def calcular_custos_completo(pedido):
         """
         Calcula tudo: dimensionamento + custos + preços e salva no pedido
+        VERSÃO CORRIGIDA: Nova estrutura contábil
         
         Args:
             pedido: Instância do modelo Pedido
@@ -160,17 +224,16 @@ class CalculoPedidoService:
             logger.info(f"Dimensionamento calculado - Cabine: {dimensionamento.get('cab', {}).get('largura', 0)}x{dimensionamento.get('cab', {}).get('compr', 0)}m")
             
             # 3. Calcular custos de produção usando métodos internos
-            # O 'componentes' no resultado agora é a estrutura hierárquica
             custos_resultado = CalculoPedidoService._calcular_custos_componentes(pedido, dimensionamento)
-            logger.info(f"Custos calculados - Total: R$ {custos_resultado['custo_total']}")
+            logger.info(f"Custos calculados - Total: R$ {custos_resultado['custo_total_projeto']}")
             
-            # 4. Calcular formação de preço
-            # PricingService now directly returns the final calculated price to be stored in preco_venda_calculado
+            # 4. Calcular formação de preço (usando PricingService para compatibilidade)
+            # Nota: PricingService agora recebe custo_total_projeto como base
             formacao_preco_result = PricingService.calcular_formacao_preco(
-                custos_resultado['custo_total'], 
+                custos_resultado['custo_total_projeto'], 
                 pedido.faturado_por
             )
-            logger.info(f"Preço calculado - Sugerido: R$ {formacao_preco_result['preco_com_impostos']}")
+            logger.info(f"Preço calculado - Sugerido: R$ {custos_resultado['preco_final']}")
             
             # 5. Montar ficha técnica
             ficha_tecnica = CalculoPedidoService._montar_ficha_tecnica(pedido, dimensionamento, custos_resultado)
@@ -224,15 +287,20 @@ class CalculoPedidoService:
             'resumo_elevador': f"{pedido.get_modelo_elevador_display()} {pedido.capacidade}kg, {pedido.get_acionamento_display()}, {pedido.get_material_cabine_display()} {pedido.get_espessura_cabine_display()}",
             'custos_resumo': {
                 'custo_materiais': float(custos_resultado['custo_materiais']),
-                'custo_mao_obra': float(custos_resultado['custo_mao_obra']),
+                'custo_mao_obra': float(custos_resultado['custo_mao_obra_producao']),
+                'custo_indiretos': float(custos_resultado['custo_indiretos_fabricacao']),
+                'custo_producao': float(custos_resultado['custo_producao']),
                 'custo_instalacao': float(custos_resultado['custo_instalacao']),
-                'custo_total': float(custos_resultado['custo_total'])
+                'custo_total_projeto': float(custos_resultado['custo_total_projeto'])
             }
         }
     
     @staticmethod
     def _salvar_calculos_no_pedido(pedido, dimensionamento, explicacao, custos_resultado, formacao_preco_result, ficha_tecnica):
-        """Salva todos os cálculos no pedido"""
+        """
+        Salva todos os cálculos no pedido
+        VERSÃO CORRIGIDA: Nova estrutura de campos
+        """
         # Dimensões calculadas
         cab = dimensionamento.get('cab', {})
         pedido.largura_cabine_calculada = cab.get('largura')
@@ -240,50 +308,166 @@ class CalculoPedidoService:
         pedido.capacidade_cabine_calculada = cab.get('capacidade')
         pedido.tracao_cabine_calculada = cab.get('tracao')
         
-        # Custos
+        # =================================================================
+        # CUSTOS DETALHADOS
+        # =================================================================
         pedido.custo_materiais = custos_resultado['custo_materiais']
-        pedido.custo_mao_obra = custos_resultado['custo_mao_obra']
+        pedido.custo_mao_obra = custos_resultado['custo_mao_obra_producao']
+        pedido.custo_indiretos_fabricacao = custos_resultado['custo_indiretos_fabricacao']
         pedido.custo_instalacao = custos_resultado['custo_instalacao']
-        pedido.custo_producao = custos_resultado['custo_total']
         
-        # Preços
-        # This is the single calculated price that the system suggests.
-        pedido.preco_venda_calculado = formacao_preco_result['preco_com_impostos'] # Use preco_com_impostos from PricingService
-        # pedido.preco_sem_impostos = formacao_preco['preco_sem_impostos'] # REMOVIDO: Unificado
+        # =================================================================
+        # TOTAIS DE CUSTO
+        # =================================================================
+        pedido.custo_producao = custos_resultado['custo_producao']
+        pedido.custo_total_projeto = custos_resultado['custo_total_projeto']
         
-        # Dados detalhados em JSON
+        # =================================================================
+        # FORMAÇÃO DE PREÇO
+        # =================================================================
+        pedido.margem_lucro = custos_resultado['margem_lucro']
+        pedido.preco_com_margem = custos_resultado['preco_com_margem']
+        pedido.comissao = custos_resultado['comissao']
+        pedido.preco_com_comissao = custos_resultado['preco_com_comissao']
+        pedido.impostos = custos_resultado['impostos']
+        
+        # =================================================================
+        # PREÇO FINAL
+        # =================================================================
+        pedido.preco_venda_calculado = custos_resultado['preco_final']
+        
+        # Se ainda não tem valor negociado, usar o calculado como base
+        if pedido.valor_proposta is None:
+            pedido.valor_proposta = pedido.preco_venda_calculado
+        
+        # Calcular desconto se houver diferença
+        if pedido.preco_venda_calculado and pedido.valor_proposta:
+            if pedido.preco_venda_calculado > pedido.valor_proposta:
+                pedido.percentual_desconto = (
+                    (pedido.preco_venda_calculado - pedido.valor_proposta) / 
+                    pedido.preco_venda_calculado * 100
+                )
+            else:
+                pedido.percentual_desconto = Decimal('0')
+        
+        # =================================================================
+        # DADOS DETALHADOS EM JSON
+        # =================================================================
         pedido.ficha_tecnica = ficha_tecnica
         pedido.dimensionamento_detalhado = dimensionamento
         pedido.explicacao_calculo = explicacao
-        # AQUI É O PONTO CHAVE: salvamos a nova estrutura hierárquica
+        
         pedido.custos_detalhados = {
-            'componentes': custos_resultado['componentes'], # A nova estrutura aninhada
+            'componentes': custos_resultado['componentes'],
             'custos_por_categoria': {k: float(v) for k, v in custos_resultado['custos_por_categoria'].items()},
             'resumo': {
                 'custo_materiais': float(custos_resultado['custo_materiais']),
-                'custo_mao_obra': float(custos_resultado['custo_mao_obra']),
+                'custo_mao_obra_producao': float(custos_resultado['custo_mao_obra_producao']),
+                'custo_indiretos_fabricacao': float(custos_resultado['custo_indiretos_fabricacao']),
                 'custo_instalacao': float(custos_resultado['custo_instalacao']),
-                'custo_total': float(custos_resultado['custo_total'])
+                'custo_producao': float(custos_resultado['custo_producao']),
+                'custo_total_projeto': float(custos_resultado['custo_total_projeto']),
+                'margem_lucro': float(custos_resultado['margem_lucro']),
+                'preco_com_margem': float(custos_resultado['preco_com_margem']),
+                'comissao': float(custos_resultado['comissao']),
+                'preco_com_comissao': float(custos_resultado['preco_com_comissao']),
+                'impostos': float(custos_resultado['impostos']),
+                'preco_final': float(custos_resultado['preco_final'])
             }
         }
-        # Podemos remover 'componentes_calculados' se 'custos_detalhados.componentes' for o único local
-        # Por enquanto, para segurança, vamos manter e garantir que receba a nova estrutura
+        
+        # Manter componentes_calculados para compatibilidade
         pedido.componentes_calculados = custos_resultado['componentes']
         
-        pedido.formacao_preco = formacao_preco_result # Changed to formacao_preco_result
+        pedido.formacao_preco = formacao_preco_result
         
         # Atualizar status se necessário
         if pedido.status == 'rascunho':
-            # Only set valor_proposta if it hasn't been manually set by the user yet.
-            if pedido.valor_proposta is None:
-                pedido.valor_proposta = pedido.preco_venda_calculado # Default to calculated if not set
-            
-            # If a calculated price or a manually set price exists, mark as simulated/pending
-            if pedido.preco_venda_calculado or pedido.valor_proposta:
-                 pedido.status = 'simulado' # More appropriate for calculated but not finalized
-            
+            if pedido.preco_venda_calculado:
+                pedido.status = 'simulado'
+        
         pedido.save()
         logger.info(f"Cálculos salvos no pedido {pedido.numero}")
+
+    @staticmethod
+    def recalcular_proposta_existente(pedido):
+        """
+        Recalcula uma proposta existente mantendo valores negociados
+        Útil para atualizar cálculos após mudanças nos parâmetros
+        """
+        try:
+            logger.info(f"Recalculando proposta existente {pedido.numero}")
+            
+            # Salvar valor negociado atual
+            valor_proposta_atual = pedido.valor_proposta
+            
+            # Executar cálculo completo
+            resultado = CalculoPedidoService.calcular_custos_completo(pedido)
+            
+            # Restaurar valor negociado se existia
+            if valor_proposta_atual:
+                pedido.valor_proposta = valor_proposta_atual
+                
+                # Recalcular desconto
+                if pedido.preco_venda_calculado and pedido.valor_proposta:
+                    if pedido.preco_venda_calculado > pedido.valor_proposta:
+                        pedido.percentual_desconto = (
+                            (pedido.preco_venda_calculado - pedido.valor_proposta) / 
+                            pedido.preco_venda_calculado * 100
+                        )
+                    else:
+                        pedido.percentual_desconto = Decimal('0')
+                
+                pedido.save()
+            
+            logger.info(f"Recálculo finalizado para proposta {pedido.numero}")
+            return resultado
+            
+        except Exception as e:
+            logger.error(f"Erro no recálculo da proposta {pedido.numero}: {str(e)}")
+            raise ValueError(f"Erro no recálculo: {str(e)}")
+
+    @staticmethod
+    def obter_resumo_custos(pedido) -> Dict[str, Any]:
+        """
+        Retorna resumo dos custos de uma proposta
+        Útil para APIs e dashboards
+        """
+        try:
+            if not pedido.custo_total_projeto:
+                return {'erro': 'Proposta não possui cálculos executados'}
+            
+            resumo = {
+                'custos_base': {
+                    'materiais': float(pedido.custo_materiais or 0),
+                    'mao_obra': float(pedido.custo_mao_obra or 0),
+                    'indiretos': float(pedido.custo_indiretos_fabricacao or 0),
+                    'instalacao': float(pedido.custo_instalacao or 0)
+                },
+                'totais_custo': {
+                    'producao': float(pedido.custo_producao or 0),
+                    'total_projeto': float(pedido.custo_total_projeto or 0)
+                },
+                'formacao_preco': {
+                    'margem_lucro': float(pedido.margem_lucro or 0),
+                    'comissao': float(pedido.comissao or 0),
+                    'impostos': float(pedido.impostos or 0),
+                    'preco_calculado': float(pedido.preco_venda_calculado or 0)
+                },
+                'resultado_final': {
+                    'valor_proposta': float(pedido.valor_proposta or 0),
+                    'desconto_percentual': float(pedido.percentual_desconto or 0),
+                    'lucro_bruto': float(pedido.lucro_bruto),
+                    'margem_real': float(pedido.margem_real_percentual),
+                    'economia_cliente': float(pedido.economia_cliente)
+                }
+            }
+            
+            return resumo
+            
+        except Exception as e:
+            logger.error(f"Erro ao obter resumo de custos: {str(e)}")
+            return {'erro': str(e)}
 
 
 class ParametrosService:
@@ -312,4 +496,11 @@ class ParametrosService:
     def get_todos_parametros() -> Dict[str, Any]:
         """Busca todos os parâmetros ativos"""
         # TODO: Implementar quando modelo estiver pronto
-        return {}
+        return {
+            'percentual_mao_obra': 15.0,
+            'percentual_indiretos': 5.0,
+            'percentual_instalacao': 5.0,
+            'percentual_margem': 30.0,
+            'percentual_comissao': 3.0,
+            'percentual_impostos': 10.0
+        }

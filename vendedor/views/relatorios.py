@@ -50,15 +50,14 @@ def relatorios_vendedor(request):
     # Para relatórios pessoais, mantemos o filtro por vendedor
     propostas = Proposta.objects.filter(vendedor=request.user)
     
-    # Estatísticas básicas
     stats = {
         'total': propostas.count(),
         'rascunho': propostas.filter(status='rascunho').count(),
-        'simulado': propostas.filter(status='simulado').count(),
-        'proposta_gerada': propostas.filter(status='proposta_gerada').count(),
+        'pendente': propostas.filter(status='pendente').count(),  # ✅ TROCAR
         'aprovado': propostas.filter(status='aprovado').count(),
-        'em_producao': propostas.filter(status='em_producao').count(),
+        'rejeitado': propostas.filter(status='rejeitado').count(),  # ✅ ADICIONAR
     }
+
     
     # Propostas por mês (últimos 12 meses)
     hoje = date.today()

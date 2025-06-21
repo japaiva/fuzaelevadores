@@ -143,11 +143,7 @@ def proposta_delete(request, pk):
     proposta = get_object_or_404(Proposta, pk=pk)
     
     # Verificar se pode excluir
-    if proposta.status not in ['rascunho', 'simulado']:
-        messages.error(request,
-            f'Apenas propostas em rascunho ou simulado podem ser excluídas. '
-            f'Status atual: {proposta.get_status_display()}'
-        )
+    if proposta.status not in ['rascunho', 'simulado', 'pendente']:
         return redirect('vendedor:pedido_detail', pk=proposta.pk)
     
     if request.method == 'POST':
