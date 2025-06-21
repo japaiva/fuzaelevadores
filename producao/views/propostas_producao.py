@@ -333,37 +333,59 @@ def gerar_lista_materiais(request, pk):
         messages.error(request, f'Erro ao gerar lista de materiais: {str(e)}')
         return redirect('producao:proposta_detail_producao', pk=pk)
 
-
 def processar_item_lista(lista_materiais, item_dados, logger):
     """
-    Helper function para processar um item da lista de materiais
+    Helper function para processar um item da lista de materiais.
+    Consolida itens existentes ou cria novos.
     """
     try:
-        # Buscar produto pelo código
         produto = Produto.objects.get(
             codigo=item_dados['codigo'],
             tipo='MP'  # Apenas matérias-primas
         )
-        
-        # Criar item da lista
-        ItemListaMateriais.objects.create(
+
+        quantidade_nova = item_dados.get('quantidade', 1)
+        valor_unitario_estimado = item_dados.get('valor_unitario', 0)
+        observacoes = item_dados.get('explicacao', '')
+        unidade = item_dados.get('unidade', produto.unidade_medida)
+
+        # Tentar obter o item existente ou criar um novo
+        item_existente, created = ItemListaMateriais.objects.get_or_create(
             lista=lista_materiais,
             produto=produto,
-            quantidade=item_dados.get('quantidade', 1),
-            unidade=item_dados.get('unidade', produto.unidade_medida),
-            valor_unitario_estimado=item_dados.get('valor_unitario', 0),
-            observacoes=item_dados.get('explicacao', ''),
-            item_calculado=True
+            defaults={
+                'quantidade': quantidade_nova,
+                'unidade': unidade,
+                'valor_unitario_estimado': valor_unitario_estimado,
+                'observacoes': observacoes,
+                'item_calculado': True
+            }
         )
+
+        if not created:
+            # Se o item já existia, atualiza a quantidade e outros campos se necessário
+            item_existente.quantidade += quantidade_nova
+            # Se o valor_unitario_estimado existente for nulo, usa o novo valor
+            if not item_existente.valor_unitario_estimado:
+                item_existente.valor_unitario_estimado = valor_unitario_estimado
+            
+            # Adicionar novas observações se não estiverem já presentes
+            if observacoes and observacoes not in item_existente.observacoes:
+                item_existente.observacoes += f"; {observacoes}"
+
+            item_existente.save()
+            logger.info(f"Item {produto.codigo} consolidado. Nova quantidade: {item_existente.quantidade}")
+        else:
+            logger.info(f"Novo item {produto.codigo} criado.")
+            
         return 1
-        
+
     except Produto.DoesNotExist:
-        logger.warning(f"Produto {item_dados['codigo']} não encontrado para lista de materiais")
+        logger.warning(f"Produto {item_dados['codigo']} não encontrado para lista de materiais.")
         return 0
     except Exception as e:
         logger.error(f"Erro ao processar item {item_dados.get('codigo', 'desconhecido')}: {str(e)}")
         return 0
-
 
 @login_required
 def lista_materiais_edit(request, pk):

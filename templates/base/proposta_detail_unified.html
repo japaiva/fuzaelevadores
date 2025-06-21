@@ -93,7 +93,9 @@
             <div class="card-body">
               <div class="row mb-3">
                 <div class="col-md-6">
-                  <p class="mb-0"><strong>Valor Total Estimado:</strong> R$ {{ valor_total|formato_br }}</p>
+
+                  <p class="mb-0"><strong>Valor Total Estimado:</strong> R$ {{ lista_materiais.calcular_valor_total|formato_br }}</p>
+
                   {% if lista_materiais.observacoes %}
                     <p class="text-muted small mt-2">{{ lista_materiais.observacoes }}</p>
                   {% endif %}
@@ -127,8 +129,10 @@
                         <td>{{ item.quantidade|formato_br }}</td>
                         <td>{{ item.unidade }}</td>
                         <td class="text-end">R$ {{ item.valor_unitario_estimado|formato_br }}</td>
+
+
                         <td class="text-end">
-                          <strong>R$ {{ item.valor_total|formato_br }}</strong>
+                          <strong>R$ {{ item.valor_total_estimado|formato_br }}</strong>
                         </td>
                       </tr>
                     {% empty %}
