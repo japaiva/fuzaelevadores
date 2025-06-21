@@ -155,6 +155,7 @@
                             title="Mais ações">
                       <i class="fas fa-ellipsis-v"></i>
                     </button>
+
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_duplicar' pedido.pk %}">
@@ -167,29 +168,28 @@
                           <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
                         </a>
                       </li>
+
+
                       <!-- Alterar Status sempre visível -->
+
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_status' pedido.pk %}">
                           <i class="fas fa-exchange-alt me-2"></i>Alterar Status
                         </a>
                       </li>
+
                       {% if pedido.pode_calcular %}
                       <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:pedido_calcular' pedido.pk %}">
-                          <i class="fas fa-calculator me-2"></i>Executar Cálculos
-                        </a>
+                        <form method="post" action="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="d-inline w-100">
+                          {% csrf_token %}
+                          <button type="submit" class="dropdown-item text-info calcular-btn" 
+                                  data-pedido="{{ pedido.numero }}">
+                            <i class="fas fa-calculator me-2"></i>Executar Cálculos
+                          </button>
+                        </form>
                       </li>
                       {% endif %}
-                      {% if pedido.status == 'rascunho' %}
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <a class="dropdown-item text-danger" 
-                           href="{% url 'vendedor:pedido_delete' pedido.pk %}" 
-                           onclick="return confirm('Tem certeza que deseja excluir este pedido?')">
-                          <i class="fas fa-trash me-2"></i>Excluir Proposta
-                        </a>
-                      </li>
-                      {% endif %}
+
                     </ul>
                   </div>
                 </div>

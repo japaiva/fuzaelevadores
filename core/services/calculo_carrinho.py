@@ -1,4 +1,4 @@
-# core/services/calculos/calculo_carrinho.py - VERSÃO REFATORADA PARA ESTRUTURA HIERÁRQUICA
+# core/services/calculos/calculo_carrinho.py - VERSÃO FINAL CORRIGIDA
 
 import logging
 import math
@@ -20,13 +20,12 @@ def safe_decimal(value):
 class CalculoCarrinhoService:
     """
     Serviço para cálculo completo do carrinho (chassi + plataforma + barra roscada)
-    CORRIGIDO seguindo calculations.py original
-    REFATORADO para retornar estrutura hierárquica de componentes.
+    CORRIGIDO: Acesso correto aos dados e variável qtd_perfis_internos inicializada
     """
     
     @staticmethod
     def calcular_custo_carrinho(pedido, dimensionamento, custos_db) -> Dict[str, Any]:
-        """Calcula custos do carrinho - VERSÃO REFATORADA ESTRUTURADA"""
+        """Calcula custos do carrinho - VERSÃO FINAL CORRIGIDA"""
         
         # Estrutura para armazenar os componentes detalhados por subcategoria
         componentes_carrinho_estruturado = {
@@ -36,25 +35,63 @@ class CalculoCarrinhoService:
         }
         total_carrinho_categoria = Decimal('0')
         
-        # Extrair valores com conversão segura para Decimal
-        capacidade = safe_decimal(dimensionamento.get('cab', {}).get('capacidade', 0))
-        largura_cabine = safe_decimal(dimensionamento.get('cab', {}).get('largura', 0))
-        altura_cabine = safe_decimal(dimensionamento.get('cab', {}).get('altura', 0))
-        comprimento_cabine = safe_decimal(dimensionamento.get('cab', {}).get('compr', 0))
+        # ✅ CORREÇÃO: Extrair valores CORRETOS
+        # Prioridade: dimensionamento calculado > campos calculados do pedido > campos originais
+        cab_dados = dimensionamento.get('cab', {})
+        
+        # Capacidade - usar a calculada quando disponível
+        capacidade = safe_decimal(cab_dados.get('capacidade', 0))
+        if capacidade == 0:
+            capacidade = safe_decimal(getattr(pedido, 'capacidade_cabine_calculada', 0))
+        if capacidade == 0:
+            capacidade = safe_decimal(pedido.capacidade)
+        
+        # Dimensões da cabine - usar as calculadas quando disponível
+        largura_cabine = safe_decimal(cab_dados.get('largura', 0))
+        if largura_cabine == 0:
+            largura_cabine = safe_decimal(getattr(pedido, 'largura_cabine_calculada', 0))
+        
+        altura_cabine = safe_decimal(cab_dados.get('altura', 0))
+        if altura_cabine == 0:
+            altura_cabine = safe_decimal(pedido.altura_cabine)
+        
+        comprimento_cabine = safe_decimal(cab_dados.get('compr', 0))
+        if comprimento_cabine == 0:
+            comprimento_cabine = safe_decimal(getattr(pedido, 'comprimento_cabine_calculado', 0))
+        
+        # ✅ LOG DE DEBUG DETALHADO
+        logger.info(f"=== CÁLCULO CARRINHO - PEDIDO {getattr(pedido, 'numero', 'S/N')} ===")
+        logger.info(f"Valores finais - Capacidade: {capacidade}kg, "
+                   f"Largura: {largura_cabine}m, Altura: {altura_cabine}m, "
+                   f"Comprimento: {comprimento_cabine}m")
+        
+        # Verificar se temos dados mínimos para calcular
+        if not capacidade or not largura_cabine or not comprimento_cabine:
+            logger.warning(f"CARRINHO: Dados insuficientes para cálculo!")
+            logger.warning(f"  - Capacidade: {capacidade} (necessário > 0)")
+            logger.warning(f"  - Largura cabine: {largura_cabine} (necessário > 0)")
+            logger.warning(f"  - Comprimento cabine: {comprimento_cabine} (necessário > 0)")
+            return {
+                'componentes': componentes_carrinho_estruturado,
+                'total': Decimal('0')
+            }
         
         # === CHASSI ===
+        logger.info("=== CALCULANDO CHASSI ===")
         
         # Travessas do chassi
         if capacidade <= 1000:
-            codigo_travessa = "01.03.00001"  # PE01 → 01.03.00001
+            codigo_travessa = "01.03.00001"  # PE01
         elif capacidade <= 1800:
-            codigo_travessa = "01.03.00002"  # PE02 → 01.03.00002
+            codigo_travessa = "01.03.00002"  # PE02
         else:
-            codigo_travessa = "01.03.00003"  # PE03 → 01.03.00003
+            codigo_travessa = "01.03.00003"  # PE03
         
         qtd_travessas = 4
         if capacidade > 2000:
             qtd_travessas += 4
+        
+        logger.info(f"Travessas: código {codigo_travessa}, quantidade {qtd_travessas}")
         
         if codigo_travessa in custos_db:
             produto_travessa = custos_db[codigo_travessa]
@@ -63,6 +100,8 @@ class CalculoCarrinhoService:
             comprimento_travessa = largura_cabine + Decimal('0.17')
             quantidade_total_travessas = safe_decimal(qtd_travessas) * comprimento_travessa
             valor_travessas = quantidade_total_travessas * valor_unitario_travessa
+            
+            logger.info(f"  - Valor total travessas: R$ {valor_travessas}")
             
             componentes_carrinho_estruturado["chassi"]["itens"][codigo_travessa] = {
                 'codigo': codigo_travessa,
@@ -77,14 +116,16 @@ class CalculoCarrinhoService:
             }
             componentes_carrinho_estruturado["chassi"]["total_subcategoria"] += valor_travessas
             total_carrinho_categoria += valor_travessas
+        else:
+            logger.error(f"ERRO: Código travessa {codigo_travessa} NÃO encontrado na base!")
         
         # Longarinas do chassi
         if capacidade <= 1500:
-            codigo_longarina = "01.03.00005"  # PE04 → 01.03.00005
+            codigo_longarina = "01.03.00005"  # PE04
         elif capacidade <= 2000:
-            codigo_longarina = "01.03.00006"  # PE05 → 01.03.00006
+            codigo_longarina = "01.03.00006"  # PE05
         else:
-            codigo_longarina = "01.03.00007"  # PE06 → 01.03.00007
+            codigo_longarina = "01.03.00007"  # PE06
         
         qtd_longarinas = 2
         
@@ -92,9 +133,13 @@ class CalculoCarrinhoService:
             produto_longarina = custos_db[codigo_longarina]
             valor_unitario_longarina = safe_decimal(produto_longarina.custo_medio or produto_longarina.preco_venda or 150)
             
-            comprimento_longarina = altura_cabine + Decimal('0.70')
+            # ✅ CORREÇÃO: Usar altura do poço, não da cabine
+            altura_poco = safe_decimal(pedido.altura_poco)
+            comprimento_longarina = altura_poco + Decimal('0.70')
             quantidade_total_longarinas = safe_decimal(qtd_longarinas) * comprimento_longarina
             valor_longarinas = quantidade_total_longarinas * valor_unitario_longarina
+            
+            logger.info(f"  - Valor total longarinas: R$ {valor_longarinas}")
             
             componentes_carrinho_estruturado["chassi"]["itens"][codigo_longarina] = {
                 'codigo': codigo_longarina,
@@ -109,9 +154,11 @@ class CalculoCarrinhoService:
             }
             componentes_carrinho_estruturado["chassi"]["total_subcategoria"] += valor_longarinas
             total_carrinho_categoria += valor_longarinas
+        else:
+            logger.error(f"ERRO: Código longarina {codigo_longarina} NÃO encontrado na base!")
         
         # Parafusos para chassi
-        codigo_parafuso_chassi = "01.04.00008"  # FE02 → 01.04.00008
+        codigo_parafuso_chassi = "01.04.00008"  # FE02
         if codigo_parafuso_chassi in custos_db:
             produto_parafuso = custos_db[codigo_parafuso_chassi]
             valor_unitario_parafuso = safe_decimal(produto_parafuso.custo_medio or produto_parafuso.preco_venda or 3)
@@ -133,14 +180,18 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_chassi
         
         # === PLATAFORMA ===
+        logger.info("=== CALCULANDO PLATAFORMA ===")
+        
+        # ✅ CORREÇÃO CRÍTICA: Inicializar qtd_perfis_internos ANTES de usar
+        qtd_perfis_internos = 0
         
         # Perfis externos da plataforma (2 de cada direção)
         if capacidade <= 1000:
-            codigo_perfil_externo = "01.03.00008"  # PE07 → 01.03.00008
+            codigo_perfil_externo = "01.03.00008"  # PE07
         elif capacidade <= 1800:
-            codigo_perfil_externo = "01.03.00009"  # PE08 → 01.03.00009
+            codigo_perfil_externo = "01.03.00009"  # PE08
         else:
-            codigo_perfil_externo = "01.03.00010"  # PE09 → 01.03.00010
+            codigo_perfil_externo = "01.03.00010"  # PE09
         
         if codigo_perfil_externo in custos_db:
             produto_perfil_externo = custos_db[codigo_perfil_externo]
@@ -151,6 +202,8 @@ class CalculoCarrinhoService:
             qtd_perfis_comprimento = Decimal('2') * comprimento_cabine
             quantidade_total_externos = qtd_perfis_largura + qtd_perfis_comprimento
             valor_perfis_externos = quantidade_total_externos * valor_unitario_perfil_externo
+            
+            logger.info(f"  - Perfis externos: {quantidade_total_externos}m, valor: R$ {valor_perfis_externos}")
             
             componentes_carrinho_estruturado["plataforma"]["itens"][codigo_perfil_externo] = {
                 'codigo': codigo_perfil_externo,
@@ -168,19 +221,22 @@ class CalculoCarrinhoService:
         
         # Perfis internos da plataforma
         if capacidade <= 1000:
-            codigo_perfil_interno = "01.03.00011"  # PE10 → 01.03.00011
+            codigo_perfil_interno = "01.03.00011"  # PE10
         elif capacidade <= 1800:
-            codigo_perfil_interno = "01.03.00012"  # PE11 → 01.03.00012
+            codigo_perfil_interno = "01.03.00012"  # PE11
         else:
-            codigo_perfil_interno = "01.03.00013"  # PE12 → 01.03.00013
+            codigo_perfil_interno = "01.03.00013"  # PE12
         
         if codigo_perfil_interno in custos_db:
             produto_perfil_interno = custos_db[codigo_perfil_interno]
             valor_unitario_perfil_interno = safe_decimal(produto_perfil_interno.custo_medio or produto_perfil_interno.preco_venda or 70)
             
+            # ✅ AGORA qtd_perfis_internos É DEFINIDA AQUI
             qtd_perfis_internos = round(float(largura_cabine / Decimal('0.35')))  # 35cm = 0.35m
             quantidade_total_internos = safe_decimal(qtd_perfis_internos) * comprimento_cabine
             valor_perfis_internos = quantidade_total_internos * valor_unitario_perfil_interno
+            
+            logger.info(f"  - Perfis internos: {qtd_perfis_internos} x {comprimento_cabine}m = {quantidade_total_internos}m, valor: R$ {valor_perfis_internos}")
             
             componentes_carrinho_estruturado["plataforma"]["itens"][codigo_perfil_interno] = {
                 'codigo': codigo_perfil_interno,
@@ -196,11 +252,13 @@ class CalculoCarrinhoService:
             componentes_carrinho_estruturado["plataforma"]["total_subcategoria"] += valor_perfis_internos
             total_carrinho_categoria += valor_perfis_internos
         
-        # Parafusos para plataforma (reutiliza o mesmo código 01.04.00008 do chassi)
+        # Parafusos para plataforma (reutiliza o mesmo código do chassi)
         if codigo_parafuso_chassi in custos_db:
-            # O produto_parafuso e valor_unitario_parafuso já foram definidos no cálculo do chassi
+            # ✅ AGORA qtd_perfis_internos SEMPRE EXISTE (0 se não foi calculado)
             qtd_parafusos_plataforma = 24 + (4 * qtd_perfis_internos)
             valor_parafusos_plataforma = safe_decimal(qtd_parafusos_plataforma) * valor_unitario_parafuso
+            
+            logger.info(f"  - Parafusos plataforma: 24 + (4 x {qtd_perfis_internos}) = {qtd_parafusos_plataforma}, valor: R$ {valor_parafusos_plataforma}")
             
             componentes_carrinho_estruturado["plataforma"]["itens"][f"{codigo_parafuso_chassi}_plataforma"] = {
                 'codigo': codigo_parafuso_chassi,
@@ -217,18 +275,23 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_plataforma
         
         # === BARRA ROSCADA ===
+        logger.info("=== CALCULANDO BARRA ROSCADA ===")
         
         # Barras roscadas
-        codigo_barra_roscada = "01.03.00004"  # PE25 → 01.03.00004
+        codigo_barra_roscada = "01.03.00004"  # PE25
         if codigo_barra_roscada in custos_db:
             produto_barra = custos_db[codigo_barra_roscada]
             valor_unitario_barra = safe_decimal(produto_barra.custo_medio or produto_barra.preco_venda or 120)
             
+            # ✅ CORREÇÃO: Usar altura do poço
+            altura_poco = safe_decimal(pedido.altura_poco)
             comprimento_barra_unitario = (comprimento_cabine / Decimal('2')) / Decimal('0.60')
             qtd_barras_necessarias = 4
             comprimento_total_barras = comprimento_barra_unitario * safe_decimal(qtd_barras_necessarias)
-            qtd_barras_compradas = math.ceil(float(comprimento_total_barras / Decimal('3')))  # Arredonda para cima
+            qtd_barras_compradas = math.ceil(float(comprimento_total_barras / Decimal('3')))  # Barras de 3m
             valor_barras = safe_decimal(qtd_barras_compradas) * valor_unitario_barra
+            
+            logger.info(f"  - Barras roscadas: {qtd_barras_compradas} barras de 3m, valor: R$ {valor_barras}")
             
             componentes_carrinho_estruturado["barra_roscada"]["itens"][codigo_barra_roscada] = {
                 'codigo': codigo_barra_roscada,
@@ -245,7 +308,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_barras
         
         # Parafusos para barras roscadas (FE01)
-        codigo_parafuso_barra_fe01 = "01.04.00009"  # FE01 → 01.04.00009
+        codigo_parafuso_barra_fe01 = "01.04.00009"  # FE01
         if codigo_parafuso_barra_fe01 in custos_db:
             produto_parafuso_barra = custos_db[codigo_parafuso_barra_fe01]
             valor_unitario_parafuso_barra = safe_decimal(produto_parafuso_barra.custo_medio or produto_parafuso_barra.preco_venda or 2)
@@ -267,7 +330,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_barra_fe01
         
         # Parafusos para barras roscadas (FE02)
-        codigo_parafuso_barra_fe02 = "01.04.00008"  # FE02 → 01.04.00008
+        codigo_parafuso_barra_fe02 = "01.04.00008"  # FE02
         if codigo_parafuso_barra_fe02 in custos_db:
             produto_parafuso_barra_fe02 = custos_db[codigo_parafuso_barra_fe02]
             valor_unitario_parafuso_barra_fe02 = safe_decimal(produto_parafuso_barra_fe02.custo_medio or produto_parafuso_barra_fe02.preco_venda or 3)
@@ -289,7 +352,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_barra_fe02
         
         # Suportes para barras roscadas (PE26)
-        codigo_suporte_barra_pe26 = "01.03.00016"  # PE26 → 01.03.00016
+        codigo_suporte_barra_pe26 = "01.03.00016"  # PE26
         if codigo_suporte_barra_pe26 in custos_db:
             produto_suporte_pe26 = custos_db[codigo_suporte_barra_pe26]
             valor_unitario_suporte_pe26 = safe_decimal(produto_suporte_pe26.custo_medio or produto_suporte_pe26.preco_venda or 25)
@@ -311,7 +374,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_suportes_pe26
         
         # Suportes para barras roscadas (PE27)
-        codigo_suporte_barra_pe27 = "01.03.00017"  # PE27 → 01.03.00017
+        codigo_suporte_barra_pe27 = "01.03.00017"  # PE27
         if codigo_suporte_barra_pe27 in custos_db:
             produto_suporte_pe27 = custos_db[codigo_suporte_barra_pe27]
             valor_unitario_suporte_pe27 = safe_decimal(produto_suporte_pe27.custo_medio or produto_suporte_pe27.preco_venda or 30)
@@ -332,11 +395,19 @@ class CalculoCarrinhoService:
             componentes_carrinho_estruturado["barra_roscada"]["total_subcategoria"] += valor_suportes_pe27
             total_carrinho_categoria += valor_suportes_pe27
         
-        # Converte os totais de subcategorias para float antes de retornar para JSONField
+        # Converte os totais de subcategorias para float antes de retornar
         for sub_cat in componentes_carrinho_estruturado.values():
             sub_cat['total_subcategoria'] = float(sub_cat['total_subcategoria'])
+        
+        # ✅ LOG FINAL
+        logger.info(f"=== RESULTADO FINAL CARRINHO ===")
+        logger.info(f"Chassi: R$ {componentes_carrinho_estruturado['chassi']['total_subcategoria']}")
+        logger.info(f"Plataforma: R$ {componentes_carrinho_estruturado['plataforma']['total_subcategoria']}")
+        logger.info(f"Barra Roscada: R$ {componentes_carrinho_estruturado['barra_roscada']['total_subcategoria']}")
+        logger.info(f"TOTAL CARRINHO: R$ {total_carrinho_categoria}")
+        logger.info(f"===================================")
             
         return {
-            'componentes': componentes_carrinho_estruturado, # Retorna a estrutura aninhada
-            'total': total_carrinho_categoria # Total da categoria principal (Carrinho)
+            'componentes': componentes_carrinho_estruturado,
+            'total': total_carrinho_categoria
         }

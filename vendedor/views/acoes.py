@@ -25,24 +25,28 @@ def proposta_calcular(request, pk):
     # 🎯 REMOVIDO: filtro por vendedor - qualquer um pode calcular
     proposta = get_object_or_404(Proposta, pk=pk)
     
-    if not proposta.pode_calcular:
+    if not proposta.pode_calcular():  # ✅ CORRIGIDO: método correto
         messages.error(request,
             f'Proposta {proposta.numero} não pode ter valores calculados. '
-            f'Status atual: {proposta.get_status_display()}'
+            f'Verifique se todos os dados obrigatórios foram preenchidos.'
         )
         return redirect('vendedor:proposta_detail', pk=proposta.pk)
     
     if request.method == 'POST':
         try:
-            # Importar função de cálculo do workflow
-            from .workflow import _calcular_preco_base
+            # Importar serviço de cálculo
+            from core.services.calculo_pedido import CalculoPedidoService
             
-            resultado = _calcular_preco_base(proposta)
+            # Executar cálculo completo
+            resultado = CalculoPedidoService.calcular_custos_completo(proposta)
             
-            if resultado['success']:
+            # Recarregar proposta para obter valores atualizados
+            proposta.refresh_from_db()
+            
+            if proposta.preco_venda_calculado:
                 messages.success(request,
                     f'Cálculos executados com sucesso! '
-                    f'Valor calculado: R$ {resultado["valor_calculado"]:.2f}'
+                    f'Valor calculado: R$ {proposta.preco_venda_calculado:.2f}'
                 )
                 
                 # Redirecionar para step 3 se ainda em rascunho
@@ -51,7 +55,7 @@ def proposta_calcular(request, pk):
                 else:
                     return redirect('vendedor:proposta_detail', pk=proposta.pk)
             else:
-                messages.error(request, f'Erro ao calcular: {resultado["error"]}')
+                messages.error(request, 'Erro: Cálculo não retornou valor válido.')
                 
         except Exception as e:
             logger.error(f"Erro ao calcular proposta {proposta.numero}: {str(e)}")
@@ -60,7 +64,7 @@ def proposta_calcular(request, pk):
     context = {
         'proposta': proposta,
         'pedido': proposta,  # Compatibilidade
-        'pode_calcular': proposta.pode_calcular_valores(),
+        'pode_calcular': proposta.pode_calcular(),  # ✅ CORRIGIDO: método correto
     }
     
     return render(request, 'vendedor/proposta_calcular.html', context)
@@ -136,11 +140,9 @@ def proposta_duplicar(request, pk):
                 status='rascunho',
                 
                 # === NÃO DUPLICAR: ===
-                # - valor_calculado (será recalculado)
-                # - valor_base (será recalculado) 
+                # - preco_venda_calculado (será recalculado)
                 # - valor_proposta (será definido pelo vendedor)
-                # - data_emissao (será a data atual)
-                # - data_validade (será definida pelo vendedor)
+                # - data_validade (será definida automaticamente)
                 # - forma_pagamento (será definida pelo vendedor)
             )
             
@@ -189,14 +191,14 @@ def proposta_enviar_cliente(request, pk):
         try:
             # Atualizar status
             status_anterior = proposta.status
-            proposta.status = 'pendente'
+            proposta.status = 'aprovado'  # ✅ CORRIGIDO: usar status que existe no modelo
             proposta.save()
             
             # Registrar no histórico
             HistoricoProposta.objects.create(
                 proposta=proposta,
                 status_anterior=status_anterior,
-                status_novo='pendente',
+                status_novo='aprovado',
                 observacao='Proposta enviada para o cliente',
                 usuario=request.user
             )

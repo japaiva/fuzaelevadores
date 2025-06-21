@@ -1,0 +1,194 @@
+{% extends 'vendedor/base_vendedor.html' %}
+{% load static %}
+
+{% block title %}Enviar Proposta {{ proposta.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i class="fas fa-paper-plane text-primary"></i>
+                        Enviar Proposta {{ proposta.numero }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Finalizar e enviar proposta para: {{ proposta.cliente.nome }}
+                    </p>
+                </div>
+                <div>
+                    <span class="badge {{ proposta.status_badge_class }} fs-6">
+                        {{ proposta.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo da Proposta -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-contract"></i>
+                        Resumo da Proposta
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Cliente:</strong> {{ proposta.cliente.nome }}<br>
+                            {% if proposta.cliente.nome_fantasia %}
+                            <strong>Nome Fantasia:</strong> {{ proposta.cliente.nome_fantasia }}<br>
+                            {% endif %}
+                            <strong>Projeto:</strong> {{ proposta.nome_projeto }}<br>
+                            <strong>Modelo:</strong> {{ proposta.get_modelo_elevador_display }}<br>
+                            <strong>Capacidade:</strong> {{ proposta.capacidade }} kg
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Acionamento:</strong> {{ proposta.get_acionamento_display }}<br>
+                            <strong>Pavimentos:</strong> {{ proposta.pavimentos }}<br>
+                            <strong>Material Cabine:</strong> {{ proposta.get_material_cabine_display }}<br>
+                            <strong>Validade:</strong> {{ proposta.data_validade|date:"d/m/Y" }}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <strong class="text-success">Valor da Proposta:</strong>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <span class="h4 text-success mb-0">R$ {{ proposta.valor_proposta|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-tie"></i>
+                        Dados do Cliente
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <strong>Contato:</strong><br>
+                    {% if proposta.cliente.email %}
+                    <i class="fas fa-envelope"></i> {{ proposta.cliente.email }}<br>
+                    {% endif %}
+                    {% if proposta.cliente.telefone %}
+                    <i class="fas fa-phone"></i> {{ proposta.cliente.telefone }}<br>
+                    {% endif %}
+                    
+                    {% if proposta.cliente.endereco %}
+                    <strong class="mt-2 d-block">Endereço:</strong>
+                    {{ proposta.cliente.endereco }}<br>
+                    {% if proposta.cliente.cidade %}
+                    {{ proposta.cliente.cidade }}{% if proposta.cliente.estado %}, {{ proposta.cliente.estado }}{% endif %}<br>
+                    {% endif %}
+                    {% if proposta.cliente.cep %}
+                    CEP: {{ proposta.cliente.cep }}
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forma de Pagamento -->
+    {% if proposta.forma_pagamento %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-credit-card"></i>
+                        Condições de Pagamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Forma de Pagamento:</strong> {{ proposta.get_forma_pagamento_display }}<br>
+                            
+                            {% if proposta.valor_entrada %}
+                            <strong>Entrada:</strong> R$ {{ proposta.valor_entrada|floatformat:2 }}
+                            {% if proposta.data_vencimento_entrada %} (vencimento: {{ proposta.data_vencimento_entrada|date:"d/m/Y" }}){% endif %}<br>
+                            {% endif %}
+                            
+                            {% if proposta.numero_parcelas and proposta.numero_parcelas > 1 %}
+                            <strong>Parcelas:</strong> {{ proposta.numero_parcelas }}x de R$ {{ proposta.valor_parcela|floatformat:2 }}<br>
+                            {% if proposta.primeira_parcela %}
+                            <strong>1ª Parcela:</strong> {{ proposta.primeira_parcela|date:"d/m/Y" }}<br>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if proposta.prazo_entrega_dias %}
+                            <strong>Prazo de Entrega:</strong> {{ proposta.prazo_entrega_dias }} dias<br>
+                            {% endif %}
+                            <strong>Faturado por:</strong> {{ proposta.faturado_por }}<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Verificações Finais -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-check"></i>
+                        Verificações Finais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li>
+                                    <i class="fas fa-{% if proposta.valor_proposta %}check text-success{% else %}times text-danger{% endif %}"></i>
+                                    Valor da proposta definido
+                                </li>
+                                <li>
+                                    <i class="fas fa-{% if proposta.data_validade %}check text-success{% else %}times text-danger{% endif %}"></i>
+                                    Data de validade definida
+                                </li>
+                                <li>
+                                    <i class="fas fa-{% if proposta.cliente.email %}check text-success{% else %}times text-warning{% endif %}"></i>
+                                    E-mail do cliente {% if not proposta.cliente.email %}(opcional){% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li>
+                                    <i class="fas fa-{% if proposta.tem_calculos %}check text-success{% else %}times text-warning{% endif %}"></i>
+                                    Cálculos executados {% if not proposta.tem_calculos %}(recomendado){% endif %}
+                                </li>
+                                <li>
+                                    <i class="fas fa-{% if proposta.forma_pagamento %}check text-success{% else %}times text-warning{% endif %}"></i>
+                                    Forma de pagamento {% if not proposta.forma_pagamento %}(recomendado){% endif %}
+                                </li>
+                                <li>
+                                    <i class="fas fa-{% if proposta.prazo_entrega_dias %}check text-success{% else %}times text-warning{% endif %}"></i>
+                                    Prazo de entrega {% if not proposta.prazo_entrega_dias %}(recomendado){% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div
