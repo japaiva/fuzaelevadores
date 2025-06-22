@@ -57,7 +57,7 @@ class CalculoSistemasService:
         # Ventilação (só para elevador de passageiro)
         if 'Passageiro' in pedido.modelo_elevador:
             qtd_ventiladores = 1
-            codigo_ventilador = "02.05.00003"  # CC02 → 02.05.00003
+            codigo_ventilador = "02.05.00005"  # CC02 → 02.05.00003
             
             if codigo_ventilador in custos_db:
                 produto_ventilador = custos_db[codigo_ventilador]

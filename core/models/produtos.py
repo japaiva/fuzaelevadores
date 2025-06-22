@@ -16,7 +16,6 @@ from .base import (
     STATUS_PRODUTO_CHOICES
 )
 
-
 class GrupoProduto(models.Model):
     """Grupos de produtos com classificação por tipo"""
     
@@ -100,7 +99,6 @@ class SubgrupoProduto(models.Model):
     def codigo_completo(self):
         """Retorna código completo grupo.subgrupo"""
         return f"{self.grupo.codigo}.{self.codigo}"
-
 
 class Produto(models.Model):
     """
@@ -213,6 +211,13 @@ class Produto(models.Model):
         verbose_name="Motivo Indisponibilidade"
     )
     
+    # NOVO CAMPO: Material Utilizado
+    utilizado = models.BooleanField(
+        default=False, 
+        verbose_name="Material Utilizado",
+        help_text="Indica se este material já foi utilizado em algum projeto"
+    )
+    
     # Auditoria
     criado_em = models.DateTimeField(auto_now_add=True)
     criado_por = models.ForeignKey(
@@ -235,10 +240,12 @@ class Produto(models.Model):
             models.Index(fields=['codigo']),
             models.Index(fields=['tipo', 'grupo']),
             models.Index(fields=['disponivel', 'status']),
+            models.Index(fields=['utilizado']),  # Novo índice
         ]
     
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
+    
     
     def gerar_codigo_automatico(self):
         """
@@ -361,45 +368,73 @@ class Produto(models.Model):
             }
             
         return {'disponivel': True, 'motivo': '', 'tipo': 'ok'}
+    
+    @property
+    def status_utilizado_display(self):
+        """Retorna classe CSS para badge do status utilizado"""
+        return 'bg-warning' if self.utilizado else 'bg-success'
 
+    # VERSÕES CORRIGIDAS DAS PROPERTIES PARA COMPATIBILIDADE:
+    
     @property
     def fornecedor_principal_novo(self):
         """Retorna o fornecedor principal baseado na nova estrutura"""
-        fornecedor_principal = self.fornecedores_produto.filter(
-            ativo=True, 
-            prioridade=1
-        ).first()
+        # Se existir um relacionamento futuro com fornecedores_produto, usar:
+        if hasattr(self, 'fornecedores_produto'):
+            fornecedor_principal = self.fornecedores_produto.filter(
+                ativo=True, 
+                prioridade=1
+            ).first()
+            
+            if fornecedor_principal:
+                return fornecedor_principal.fornecedor
         
-        if fornecedor_principal:
-            return fornecedor_principal.fornecedor
-        
-        # Fallback para o campo antigo se existir
+        # Fallback para o campo atual
         return self.fornecedor_principal
     
     @property
     def melhor_preco(self):
-        """Retorna o melhor preço entre os fornecedores ativos"""
-        precos = self.fornecedores_produto.filter(
-            ativo=True,
-            preco_unitario__isnull=False
-        ).values_list('preco_unitario', flat=True)
+        """Retorna o melhor preço entre os fornecedores ativos ou preço atual"""
+        # Se existir relacionamento futuro com fornecedores_produto:
+        if hasattr(self, 'fornecedores_produto'):
+            precos = self.fornecedores_produto.filter(
+                ativo=True,
+                preco_unitario__isnull=False
+            ).values_list('preco_unitario', flat=True)
+            
+            if precos:
+                return min(precos)
         
-        return min(precos) if precos else None
+        # Por enquanto, retornar o custo médio ou preço de venda
+        return self.custo_medio or self.preco_venda
     
     @property
     def menor_prazo_entrega(self):
         """Retorna o menor prazo de entrega"""
-        prazos = self.fornecedores_produto.filter(
-            ativo=True,
-            prazo_entrega__isnull=False
-        ).values_list('prazo_entrega', flat=True)
+        # Se existir relacionamento futuro com fornecedores_produto:
+        if hasattr(self, 'fornecedores_produto'):
+            prazos = self.fornecedores_produto.filter(
+                ativo=True,
+                prazo_entrega__isnull=False
+            ).values_list('prazo_entrega', flat=True)
+            
+            if prazos:
+                return min(prazos)
         
-        return min(prazos) if prazos else self.prazo_entrega_padrao
+        # Fallback para o campo atual
+        return self.prazo_entrega_padrao
     
     def fornecedores_ordenados(self):
         """Retorna fornecedores ordenados por prioridade"""
-        return self.fornecedores_produto.filter(ativo=True).order_by('prioridade')
-
+        # Se existir relacionamento futuro com fornecedores_produto:
+        if hasattr(self, 'fornecedores_produto'):
+            return self.fornecedores_produto.filter(ativo=True).order_by('prioridade')
+        
+        # Por enquanto, retornar lista com o fornecedor principal se existir
+        if self.fornecedor_principal:
+            return [self.fornecedor_principal]
+        
+        return []
 
 class EstruturaProduto(models.Model):
     """

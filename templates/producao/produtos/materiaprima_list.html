@@ -57,6 +57,14 @@
               <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
             </select>
           </div>
+          <!-- NOVO FILTRO UTILIZADO -->
+          <div class="col-auto">
+            <select name="utilizado" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todas</option>
+              <option value="utilizado" {% if utilizado_filtro == 'utilizado' %}selected{% endif %}>Utilizadas</option>
+              <option value="nao_utilizado" {% if utilizado_filtro == 'nao_utilizado' %}selected{% endif %}>Não Utilizadas</option>
+            </select>
+          </div>
         </form>
       </div>
       <div class="col-md-4">
@@ -64,6 +72,7 @@
           <input type="hidden" name="grupo" value="{{ grupo_filtro }}">
           <input type="hidden" name="subgrupo" value="{{ subgrupo_filtro }}">
           <input type="hidden" name="status" value="{{ status_filtro }}">
+          <input type="hidden" name="utilizado" value="{{ utilizado_filtro }}">
           <input type="text" name="q" class="form-control form-control-sm me-2" 
                  placeholder="Buscar código, nome ou descrição" value="{{ query|default:'' }}">
           <button type="submit" class="btn btn-sm btn-primary">
@@ -84,7 +93,10 @@
             <th style="width: 150px;">Grupo</th>
             <th style="width: 150px;">Subgrupo</th>
             <th style="width: 100px;">Unidade</th>
-            <th style="width: 100px;">Estoque</th>
+            <!-- COLUNA ALTERADA: Preço no lugar de Estoque -->
+            <th style="width: 100px;">Preço</th>
+            <!-- NOVA COLUNA: Utilizado -->
+            <th class="text-center" style="width: 80px;">Utilizado</th>
             <th class="text-center" style="width: 80px;">Status</th>
             <th class="text-center" style="min-width: 180px;">Ações</th>
           </tr>
@@ -111,19 +123,30 @@
                 {% endif %}
               </td>
               <td>{{ produto.get_unidade_medida_display }}</td>
+              <!-- PREÇO NO LUGAR DE ESTOQUE -->
               <td>
-                {% if produto.controla_estoque %}
-                  {% if produto.estoque_atual <= produto.estoque_minimo %}
-                    <span class="text-danger fw-bold">
-                      {{ produto.estoque_atual }}
-                      <i class="fas fa-exclamation-triangle ms-1" title="Estoque baixo"></i>
-                    </span>
-                  {% else %}
-                    <span class="text-success">{{ produto.estoque_atual }}</span>
-
-                  {% endif %}
+                {% if produto.custo_medio %}
+                  <span class="text-success fw-bold">
+                    R$ {{ produto.custo_medio|floatformat:2 }}
+                  </span>
+                {% elif produto.preco_venda %}
+                  <span class="text-primary">
+                    R$ {{ produto.preco_venda|floatformat:2 }}
+                  </span>
                 {% else %}
-                  <span class="text-muted">N/C</span>
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <!-- NOVA COLUNA: UTILIZADO -->
+              <td class="text-center">
+                {% if produto.utilizado %}
+                  <span class="badge bg-warning">
+                    <i class="fas fa-check-circle me-1"></i>Sim
+                  </span>
+                {% else %}
+                  <span class="badge bg-success">
+                    <i class="fas fa-times-circle me-1"></i>Não
+                  </span>
                 {% endif %}
               </td>
               <td class="text-center">
@@ -157,8 +180,8 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center py-4 text-muted">
-                {% if query or grupo_filtro or subgrupo_filtro or status_filtro %}
+              <td colspan="9" class="text-center py-4 text-muted">
+                {% if query or grupo_filtro or subgrupo_filtro or status_filtro or utilizado_filtro %}
                   <i class="fas fa-search fa-2x mb-2 text-muted"></i>
                   <div>Nenhuma matéria-prima encontrada com os filtros aplicados.</div>
                   <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-sm btn-outline-primary mt-2">
@@ -189,12 +212,12 @@
         <ul class="pagination pagination-sm mb-0">
           {% if produtos.has_previous %}
             <li class="page-item">
-              <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+              <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
                 <span aria-hidden="true">&laquo;&laquo;</span>
               </a>
             </li>
             <li class="page-item">
-              <a class="page-link" href="?page={{ produtos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+              <a class="page-link" href="?page={{ produtos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
                 <span aria-hidden="true">&laquo;</span>
               </a>
             </li>
@@ -211,18 +234,18 @@
             {% if produtos.number == i %}
               <li class="page-item active"><span class="page-link">{{ i }}</span></li>
             {% elif i > produtos.number|add:'-3' and i < produtos.number|add:'3' %}
-              <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
             {% endif %}
           {% endfor %}
           
           {% if produtos.has_next %}
             <li class="page-item">
-              <a class="page-link" href="?page={{ produtos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+              <a class="page-link" href="?page={{ produtos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
                 <span aria-hidden="true">&raquo;</span>
               </a>
             </li>
             <li class="page-item">
-              <a class="page-link" href="?page={{ produtos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+              <a class="page-link" href="?page={{ produtos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
                 <span aria-hidden="true">&raquo;&raquo;</span>
               </a>
             </li>
@@ -264,7 +287,13 @@ function updateSubgrupos() {
                         option.textContent = `${subgrupo.codigo} - ${subgrupo.nome}`;
                         subgrupoSelect.appendChild(option);
                     });
-                }
+    } else {
+        // Se não tem grupo selecionado, submeter direto
+        document.getElementById('filtro-form').submit();
+    }
+}
+</script>
+{% endblock %}            }
                 // Submeter formulário após carregar subgrupos
                 document.getElementById('filtro-form').submit();
             })
@@ -273,10 +302,3 @@ function updateSubgrupos() {
                 // Submeter mesmo com erro
                 document.getElementById('filtro-form').submit();
             });
-    } else {
-        // Se não tem grupo selecionado, submeter direto
-        document.getElementById('filtro-form').submit();
-    }
-}
-</script>
-{% endblock %}

@@ -53,6 +53,13 @@ def materiaprima_list(request):
     elif status == 'indisponivel':
         produtos_list = produtos_list.filter(disponivel=False)
 
+    # NOVO FILTRO: UTILIZADO
+    utilizado = request.GET.get('utilizado')
+    if utilizado == 'utilizado':
+        produtos_list = produtos_list.filter(utilizado=True)
+    elif utilizado == 'nao_utilizado':
+        produtos_list = produtos_list.filter(utilizado=False)
+
     query = request.GET.get('q')
     if query:
         produtos_list = produtos_list.filter(
@@ -95,6 +102,7 @@ def materiaprima_list(request):
         'grupo_filtro': grupo_id,
         'subgrupo_filtro': subgrupo_id,
         'status_filtro': status,
+        'utilizado_filtro': utilizado,  # NOVO PARÂMETRO
         'query': query
     })
 
@@ -194,5 +202,24 @@ def materiaprima_toggle_status(request, pk):
     produto.atualizado_por = request.user
     produto.save()
     messages.success(request, f'Matéria-prima "{produto.nome}" {status_text} com sucesso.')
+
+    return redirect('producao:materiaprima_list')
+
+
+@login_required
+def materiaprima_toggle_utilizado(request, pk):
+    """Toggle do campo utilizado para matéria-prima"""
+    produto = get_object_or_404(Produto, pk=pk, tipo='MP')
+
+    if produto.utilizado:
+        produto.utilizado = False
+        utilizado_text = "marcada como não utilizada"
+    else:
+        produto.utilizado = True
+        utilizado_text = "marcada como utilizada"
+
+    produto.atualizado_por = request.user
+    produto.save()
+    messages.success(request, f'Matéria-prima "{produto.nome}" {utilizado_text} com sucesso.')
 
     return redirect('producao:materiaprima_list')

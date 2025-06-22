@@ -81,11 +81,11 @@ class CalculoCarrinhoService:
         
         # Travessas do chassi
         if capacidade <= 1000:
-            codigo_travessa = "01.03.00001"  # PE01
+            codigo_travessa = "05.01.00010"  # PE01
         elif capacidade <= 1800:
-            codigo_travessa = "01.03.00002"  # PE02
+            codigo_travessa = "05.01.00011"  # PE02
         else:
-            codigo_travessa = "01.03.00003"  # PE03
+            codigo_travessa = "05.01.00012"  # PE03
         
         qtd_travessas = 4
         if capacidade > 2000:
@@ -121,11 +121,11 @@ class CalculoCarrinhoService:
         
         # Longarinas do chassi
         if capacidade <= 1500:
-            codigo_longarina = "01.03.00005"  # PE04
+            codigo_longarina = "05.01.00001"  # PE04
         elif capacidade <= 2000:
-            codigo_longarina = "01.03.00006"  # PE05
+            codigo_longarina = "05.01.00002"  # PE05
         else:
-            codigo_longarina = "01.03.00007"  # PE06
+            codigo_longarina = "05.01.00003"  # PE06
         
         qtd_longarinas = 2
         
@@ -187,11 +187,11 @@ class CalculoCarrinhoService:
         
         # Perfis externos da plataforma (2 de cada direção)
         if capacidade <= 1000:
-            codigo_perfil_externo = "01.03.00008"  # PE07
+            codigo_perfil_externo = "05.01.00004"  # PE07
         elif capacidade <= 1800:
-            codigo_perfil_externo = "01.03.00009"  # PE08
+            codigo_perfil_externo = "05.01.00005"  # PE08
         else:
-            codigo_perfil_externo = "01.03.00010"  # PE09
+            codigo_perfil_externo = "05.01.00006"  # PE09
         
         if codigo_perfil_externo in custos_db:
             produto_perfil_externo = custos_db[codigo_perfil_externo]
@@ -221,11 +221,11 @@ class CalculoCarrinhoService:
         
         # Perfis internos da plataforma
         if capacidade <= 1000:
-            codigo_perfil_interno = "01.03.00011"  # PE10
+            codigo_perfil_interno = "05.01.00007"  # PE10
         elif capacidade <= 1800:
-            codigo_perfil_interno = "01.03.00012"  # PE11
+            codigo_perfil_interno = "05.01.00008"  # PE11
         else:
-            codigo_perfil_interno = "01.03.00013"  # PE12
+            codigo_perfil_interno = "05.01.00009"  # PE12
         
         if codigo_perfil_interno in custos_db:
             produto_perfil_interno = custos_db[codigo_perfil_interno]
@@ -352,7 +352,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_parafusos_barra_fe02
         
         # Suportes para barras roscadas (PE26)
-        codigo_suporte_barra_pe26 = "01.03.00016"  # PE26
+        codigo_suporte_barra_pe26 = "03.04.00016"  # PE26
         if codigo_suporte_barra_pe26 in custos_db:
             produto_suporte_pe26 = custos_db[codigo_suporte_barra_pe26]
             valor_unitario_suporte_pe26 = safe_decimal(produto_suporte_pe26.custo_medio or produto_suporte_pe26.preco_venda or 25)
@@ -374,7 +374,7 @@ class CalculoCarrinhoService:
             total_carrinho_categoria += valor_suportes_pe26
         
         # Suportes para barras roscadas (PE27)
-        codigo_suporte_barra_pe27 = "01.03.00017"  # PE27
+        codigo_suporte_barra_pe27 = "03.04.00017"  # PE27
         if codigo_suporte_barra_pe27 in custos_db:
             produto_suporte_pe27 = custos_db[codigo_suporte_barra_pe27]
             valor_unitario_suporte_pe27 = safe_decimal(produto_suporte_pe27.custo_medio or produto_suporte_pe27.preco_venda or 30)

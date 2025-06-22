@@ -55,12 +55,27 @@
               </div>
             {% endif %}
 
-            <div class="col-md-{% if form.instance.pk %}9{% else %}9{% endif %}">
+            <div class="col-md-{% if form.instance.pk %}6{% else %}6{% endif %}">
               <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
               {{ form.nome }}
               {% if form.nome.errors %}
                 <div class="text-danger small mt-1">
                   {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- NOVO CAMPO: UTILIZADO -->
+            <div class="col-md-3">
+              <div class="form-check form-switch mt-4">
+                {{ form.utilizado }}
+                <label class="form-check-label" for="{{ form.utilizado.id_for_label }}">
+                  <i class="fas fa-check-circle me-1"></i>Utilizado
+                </label>
+              </div>
+              {% if form.utilizado.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.utilizado.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
@@ -142,7 +157,7 @@
             </div>
 
             <div class="col-md-3">
-              <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo Médio</label>
+              <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Preço Custo</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
                 {{ form.custo_medio }}
@@ -220,15 +235,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
     const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
-    const initialSubgrupoId = '{{ form.subgrupo.value|default:"" }}'; // Get the initially selected subgrupo ID
+    const initialSubgrupoId = '{{ form.subgrupo.value|default:"" }}';
 
     // Function to fetch and populate subgroups
     function fetchAndPopulateSubgrupos(grupoId, selectedSubgrupoId) {
         // Clear current options
         subgrupoSelect.innerHTML = '<option value="">---------</option>';
 
-        if (grupoId) { // Only fetch if a group is actually selected
-            fetch(`/producao/api/subgrupos/?grupo_id=${grupoId}`) // Corrected URL
+        if (grupoId) {
+            fetch(`/producao/api/subgrupos/?grupo_id=${grupoId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -236,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             const option = document.createElement('option');
                             option.value = subgrupo.id;
                             option.textContent = `${subgrupo.codigo_completo} - ${subgrupo.nome}`;
-                            // If this subgrupo was the one initially selected, make it selected
                             if (subgrupo.id == selectedSubgrupoId) {
                                 option.selected = true;
                             }
@@ -256,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Add event listener for when the group changes
         grupoSelect.addEventListener('change', function() {
-            fetchAndPopulateSubgrupos(this.value, null); // When group changes, no initial subgrupo is selected
+            fetchAndPopulateSubgrupos(this.value, null);
         });
     }
 });

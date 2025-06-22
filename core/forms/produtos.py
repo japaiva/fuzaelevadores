@@ -157,7 +157,8 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'nome', 'descricao', 'grupo', 'subgrupo',
             'unidade_medida', 'peso_unitario',
             'controla_estoque', 'estoque_minimo', 'custo_medio',
-            'fornecedor_principal', 'prazo_entrega_padrao', 'status', 'disponivel'
+            'fornecedor_principal', 'prazo_entrega_padrao', 
+            'status', 'disponivel', 'utilizado'  # CAMPO UTILIZADO ADICIONADO
         ]
         widgets = {
             'nome': forms.TextInput(attrs={
@@ -205,6 +206,9 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'disponivel': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
+            'utilizado': forms.CheckboxInput(attrs={  # NOVO WIDGET
+                'class': 'form-check-input'
+            }),
         }
         labels = {
             'nome': 'Nome do Produto',
@@ -220,6 +224,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'prazo_entrega_padrao': 'Prazo Entrega Padrão (dias)',
             'status': 'Status',
             'disponivel': 'Disponível para Uso',
+            'utilizado': 'Material Utilizado',  # NOVO LABEL
         }
 
     def __init__(self, *args, **kwargs):
@@ -259,6 +264,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         # Informações de ajuda
         self.fields['grupo'].help_text = "Selecione o grupo - o tipo do produto será definido automaticamente"
         self.fields['subgrupo'].help_text = "Selecione o subgrupo - o código será gerado automaticamente"
+        self.fields['utilizado'].help_text = "Marque se este material já foi utilizado em algum projeto"  # NOVO HELP TEXT
         
         # Se for edição, mostrar o código atual
         if self.instance.pk and self.instance.codigo:
@@ -291,9 +297,9 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         
         return cleaned_data
 
-    def save(self, commit=True): # Removed 'user=None' from method signature
+    def save(self, commit=True):
         """Override para garantir que o tipo seja definido corretamente"""
-        produto = super().save(commit=False) # Removed user=user
+        produto = super().save(commit=False)
         
         # Garantir que o tipo coincida com o grupo
         if produto.grupo and produto.grupo.tipo_produto:
@@ -307,8 +313,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
 
 class GrupoProdutoFiltroForm(BaseFiltroForm):
     """Formulário para filtros na listagem de grupos"""
-    
-    # Use the function to get choices
     
     STATUS_CHOICES = [
         ('', 'Todos'),
@@ -328,7 +332,7 @@ class GrupoProdutoFiltroForm(BaseFiltroForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['tipo_produto'].choices = [('', 'Todos os Tipos')] + get_tipo_produto_choices() # Call the function here
+        self.fields['tipo_produto'].choices = [('', 'Todos os Tipos')] + get_tipo_produto_choices()
         self.fields['q'].widget.attrs['placeholder'] = 'Buscar por código ou nome...'
 
 
@@ -369,6 +373,12 @@ class ProdutoFiltroForm(BaseFiltroForm):
         ('indisponivel', 'Indisponíveis'),
     ]
     
+    UTILIZADO_CHOICES = [  # NOVO CAMPO DE FILTRO
+        ('', 'Todos'),
+        ('utilizado', 'Utilizados'),
+        ('nao_utilizado', 'Não Utilizados'),
+    ]
+    
     grupo = forms.ModelChoiceField(
         queryset=GrupoProduto.objects.filter(ativo=True).order_by('codigo'),
         required=False,
@@ -384,10 +394,15 @@ class ProdutoFiltroForm(BaseFiltroForm):
         required=False,
         label='Status'
     )
+    utilizado = forms.ChoiceField(  # NOVO CAMPO
+        choices=UTILIZADO_CHOICES,
+        required=False,
+        label='Utilização'
+    )
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['tipo'].choices = [('', 'Todos os Tipos')] + get_tipo_produto_choices() # Call the function here
+        self.fields['tipo'].choices = [('', 'Todos os Tipos')] + get_tipo_produto_choices()
         self.fields['q'].widget.attrs['placeholder'] = 'Buscar por código, nome ou descrição...'
 
 
@@ -457,3 +472,23 @@ class ProdutoPrecoForm(forms.ModelForm):
         if preco_venda is not None:
             validar_positivo(preco_venda)
         return preco_venda
+
+
+class ProdutoUtilizadoForm(forms.ModelForm):
+    """Formulário simplificado para alterar status de utilização"""
+    
+    class Meta:
+        model = Produto
+        fields = ['utilizado']
+        widgets = {
+            'utilizado': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        }
+        labels = {
+            'utilizado': 'Material Utilizado',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['utilizado'].help_text = "Marque se este material já foi utilizado em algum projeto"
