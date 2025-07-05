@@ -23,6 +23,8 @@ from .workflow import (
     proposta_step1,
     proposta_step2,
     proposta_step3,
+    atualizar_portas_individuais,
+    criar_portas_individuais,
 )
 
 # Ações das propostas
@@ -66,7 +68,10 @@ __all__ = [
     'proposta_step1',
     'proposta_step2', 
     'proposta_step3',
-    
+    'atualizar_portas_individuais',
+    'criar_portas_individuais',
+
+
     # Ações
     'proposta_calcular',
     'proposta_duplicar',

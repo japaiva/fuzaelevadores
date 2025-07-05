@@ -332,6 +332,72 @@
           </div>
         </div>
 
+<!-- ✅ ADICIONAR ESTA SEÇÃO COMPLETA APÓS O BLOCO "Porta do Pavimento" -->
+        
+        <!-- SEÇÃO CLEAN: Portas Diferenciadas -->
+        <div class="card shadow-sm border-info mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="card-title mb-0">Configuração das Portas dos Pavimentos</h6>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" 
+                           id="portas_diferenciadas" name="portas_diferenciadas"
+                           {% if tem_portas_individuais %}checked{% endif %}>
+                    <label class="form-check-label" for="portas_diferenciadas">
+                        <strong>Portas diferenciadas por pavimento</strong>
+                        <small class="text-muted d-block">Marque para configurar cada porta individualmente</small>
+                    </label>
+                </div>
+                
+                <!-- Box de edição individual (aparece apenas se checkbox marcado) -->
+                <div id="box_portas_individuais" style="{% if not tem_portas_individuais %}display: none;{% endif %}">
+                    <hr>
+                    <h6 class="text-primary mb-3">
+                        <i class="fas fa-cogs me-2"></i>Configuração Individual por Pavimento
+                    </h6>
+                    
+                    <div class="row" id="portas_container">
+                        {% for porta in portas_individuais %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-secondary">
+                                <div class="card-header bg-light">
+                                    <small class="fw-bold">{{ porta.nome_andar }}</small>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small">Modelo</label>
+                                            <select name="porta_modelo_{{ porta.andar }}" class="form-select form-select-sm">
+                                                <option value="Automática" {% if porta.modelo == 'Automática' %}selected{% endif %}>Automática</option>
+                                                <option value="Pantográfica" {% if porta.modelo == 'Pantográfica' %}selected{% endif %}>Pantográfica</option>
+                                                <option value="Pivotante" {% if porta.modelo == 'Pivotante' %}selected{% endif %}>Pivotante</option>
+                                                <option value="Guilhotina" {% if porta.modelo == 'Guilhotina' %}selected{% endif %}>Guilhotina</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Material</label>
+                                            <select name="porta_material_{{ porta.andar }}" class="form-select form-select-sm">
+                                                <option value="Inox 430" {% if porta.material == 'Inox 430' %}selected{% endif %}>Inox 430</option>
+                                                <option value="Inox 304" {% if porta.material == 'Inox 304' %}selected{% endif %}>Inox 304</option>
+                                                <option value="Chapa Pintada" {% if porta.material == 'Chapa Pintada' %}selected{% endif %}>Chapa Pintada</option>
+                                                <option value="Alumínio" {% if porta.material == 'Alumínio' %}selected{% endif %}>Alumínio</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Largura, altura e folhas seguem a configuração padrão definida acima
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Botões de ação -->
         <div class="d-flex justify-content-between mt-4 mb-4">
           <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}">
@@ -378,6 +444,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const folhasPavimentoDiv = document.getElementById('folhas-pavimento-div');
     const materialPortaPavimentoSelect = document.getElementById('{{ form.material_porta_pavimento.id_for_label }}');
     const materialOutroPortaPavimentoDiv = document.getElementById('material-outro-porta-pavimento');
+    
+    // ✅ NOVO: Portas Diferenciadas
+    const checkboxPortasDiferenciadas = document.getElementById('portas_diferenciadas');
+    const boxPortasIndividuais = document.getElementById('box_portas_individuais');
     
     // === FUNÇÕES UNITÁRIAS E ESPECÍFICAS ===
     
@@ -461,6 +531,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Material porta pavimento:', materialPortaPavimentoSelect.value, '| Mostrar outro:', isOutro);
     }
     
+    // ✅ NOVA FUNÇÃO: Controlar portas diferenciadas
+    function togglePortasDiferenciadas() {
+        if (!checkboxPortasDiferenciadas || !boxPortasIndividuais) return;
+        
+        if (checkboxPortasDiferenciadas.checked) {
+            boxPortasIndividuais.style.display = 'block';
+            console.log('✅ Portas diferenciadas ativadas');
+        } else {
+            boxPortasIndividuais.style.display = 'none';
+            console.log('❌ Portas diferenciadas desativadas');
+        }
+    }
+    
     // === EVENT LISTENERS ===
     
     // Cabine
@@ -493,6 +576,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (materialPortaPavimentoSelect) {
         materialPortaPavimentoSelect.addEventListener('change', toggleMaterialPortaPavimento);
+    }
+    
+    // ✅ NOVO: Portas diferenciadas
+    if (checkboxPortasDiferenciadas) {
+        checkboxPortasDiferenciadas.addEventListener('change', togglePortasDiferenciadas);
     }
     
     // === VALIDAÇÃO DO FORMULÁRIO ===
@@ -591,6 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
     togglePisoCabine();
     togglePortaCabine();
     togglePortaPavimento();
+    togglePortasDiferenciadas(); // ✅ NOVO
     
     console.log('✅ STEP 2: JavaScript inicializado com sucesso');
 });

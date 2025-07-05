@@ -31,6 +31,8 @@ from .producao import (
     HistoricoOrcamentoCompra
 )
 
+from .portas_pavimento import PortaPavimento
+
 # === LISTA ESSENCIAL ===
 __all__ = [
     # Usuários
@@ -65,6 +67,7 @@ __all__ = [
     'HistoricoProposta',
     'AnexoProposta',
     'ParcelaProposta',
+    'PortaPavimento',
     
     # Produção - Fluxo Completo
     'ListaMateriais',

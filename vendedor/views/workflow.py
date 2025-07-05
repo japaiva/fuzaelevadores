@@ -12,15 +12,17 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 
-from core.models import Proposta, Cliente
+from core.models import Proposta, Cliente, PortaPavimento
 from core.forms.propostas import (
     PropostaClienteElevadorForm,
     PropostaCabinePortasForm,
     PropostaComercialForm
 )
 
-logger = logging.getLogger(__name__)
+# ❌ REMOVIDO: Import que não existe
+# from core.services.porta_pavimento import PortaPavimentoService
 
+logger = logging.getLogger(__name__)
 
 @login_required
 def proposta_step1(request, pk=None):
@@ -35,7 +37,6 @@ def proposta_step1(request, pk=None):
     proposta = None
     
     if editing:
-        # 🎯 REMOVIDO: filtro por vendedor - qualquer um pode editar
         proposta = get_object_or_404(Proposta, pk=pk)
         
         # Verificar se pode editar
@@ -52,13 +53,11 @@ def proposta_step1(request, pk=None):
         if form.is_valid():
             try:
                 proposta = form.save(commit=False)
-                
                 proposta.save()
                 
                 # Log da ação
                 acao = "atualizada" if editing else "criada"
                 logger.info(f"Proposta {proposta.numero} {acao} pelo usuário {request.user.username}")
-                
                 
                 # Redirecionar para próxima etapa
                 return redirect('vendedor:proposta_step2', pk=proposta.pk)
@@ -76,7 +75,7 @@ def proposta_step1(request, pk=None):
     context = {
         'form': form,
         'proposta': proposta,
-        'pedido': proposta,  # ✅ Compatibilidade com templates atuais
+        'pedido': proposta,  # Compatibilidade com templates atuais
         'editing': editing,
     }
     
@@ -86,17 +85,12 @@ def proposta_step1(request, pk=None):
 @login_required
 def proposta_step2(request, pk):
     """
-    Etapa 2: Cabine + Portas
+    Etapa 2: Cabine + Portas + Portas Diferenciadas
     """
-    # 🎯 REMOVIDO: filtro por vendedor - qualquer um pode editar
     proposta = get_object_or_404(Proposta, pk=pk)
     
-    # Verificar se pode editar
     if not proposta.pode_editar:
-        messages.error(request, 
-            f'Proposta {proposta.numero} não pode ser editada. '
-            f'Status atual: {proposta.get_status_display()}'
-        )
+        messages.error(request, f'Proposta {proposta.numero} não pode ser editada.')
         return redirect('vendedor:proposta_detail', pk=proposta.pk)
     
     if request.method == 'POST':
@@ -106,28 +100,44 @@ def proposta_step2(request, pk):
             try:
                 proposta = form.save()
                 
-                # Log da ação
+                # === LÓGICA CLEAN: Gerenciar portas diferenciadas ===
+                portas_diferenciadas = request.POST.get('portas_diferenciadas') == 'on'
+                tem_portas_individuais = PortaPavimento.objects.filter(proposta=proposta).exists()
+                
+                if portas_diferenciadas and not tem_portas_individuais:
+                    # CRIAR registros individuais
+                    criar_portas_individuais(proposta)
+                
+                elif not portas_diferenciadas and tem_portas_individuais:
+                    # APAGAR registros individuais
+                    PortaPavimento.objects.filter(proposta=proposta).delete()
+                
+                elif portas_diferenciadas and tem_portas_individuais:
+                    # ATUALIZAR registros existentes
+                    atualizar_portas_individuais(proposta, request.POST)
+                
                 logger.info(f"Etapa 2 da proposta {proposta.numero} salva pelo usuário {request.user.username}")
-                
-                
-                # Redirecionar para próxima etapa
                 return redirect('vendedor:proposta_step3', pk=proposta.pk)
                 
             except Exception as e:
                 logger.error(f"Erro ao salvar etapa 2 da proposta {proposta.numero}: {str(e)}")
                 messages.error(request, f'Erro ao salvar dados: {str(e)}')
         else:
-            messages.error(request, 
-                'Erro no formulário. Verifique os campos destacados.'
-            )
+            messages.error(request, 'Erro no formulário. Verifique os campos destacados.')
     else:
         form = PropostaCabinePortasForm(instance=proposta)
+    
+    # Dados para o template
+    tem_portas_individuais = PortaPavimento.objects.filter(proposta=proposta).exists()
+    portas_individuais = PortaPavimento.objects.filter(proposta=proposta).order_by('andar') if tem_portas_individuais else []
     
     context = {
         'form': form,
         'proposta': proposta,
-        'pedido': proposta,  # ✅ Compatibilidade
-        'editing': True,  # Step 2 sempre é edição
+        'pedido': proposta,  # Compatibilidade
+        'editing': True,
+        'tem_portas_individuais': tem_portas_individuais,
+        'portas_individuais': portas_individuais,
     }
     
     return render(request, 'vendedor/pedido_step2.html', context)
@@ -135,9 +145,11 @@ def proposta_step2(request, pk):
 
 @login_required
 def proposta_step3(request, pk):
+    """
+    Etapa 3: Dados Comerciais
+    """
     proposta = get_object_or_404(Proposta, pk=pk)
 
-    # Verificar se pode editar
     if not proposta.pode_editar:
         messages.error(request, 
             f'Proposta {proposta.numero} não pode ser editada. '
@@ -151,7 +163,6 @@ def proposta_step3(request, pk):
         if form.is_valid():
             try:
                 proposta = form.save(commit=False)
-                # ... (sua lógica de salvamento) ...
                 proposta.save() 
                 logger.info(
                     f"Etapa 3 da proposta {proposta.numero} salva pelo usuário {request.user.username}. "
@@ -162,11 +173,7 @@ def proposta_step3(request, pk):
                 logger.error(f"Erro ao finalizar proposta {proposta.numero}: {str(e)}")
                 messages.error(request, f'Erro ao finalizar proposta: {str(e)}')
         else:
-            # --- Ponto de depuração: Adicione estas linhas ---
             logger.error(f"Erro de validação no formulário da Etapa 3 da proposta {proposta.numero}. Erros: {form.errors}")
-            # Se quiser depurar interativamente (o servidor vai pausar aqui):
-            # import pdb; pdb.set_trace() 
-            # --------------------------------------------------
             messages.error(request, 
                 'Erro no formulário. Verifique os campos destacados.'
             )
@@ -181,3 +188,49 @@ def proposta_step3(request, pk):
     }
 
     return render(request, 'vendedor/pedido_step3.html', context)
+
+
+# === FUNÇÕES AUXILIARES ===
+
+def criar_portas_individuais(proposta):
+    """
+    Criar registros individuais baseados na proposta
+    ✅ CORRIGIDO: Só modelo e material
+    """
+    for andar in range(proposta.pavimentos):
+        PortaPavimento.objects.create(
+            proposta=proposta,
+            andar=andar,
+            modelo=proposta.modelo_porta_pavimento,
+            material=proposta.material_porta_pavimento,
+            # ✅ REMOVIDO: largura e altura (não existem mais no modelo)
+        )
+
+def atualizar_portas_individuais(proposta, post_data):
+    """
+    Atualizar registros individuais com dados do POST
+    ✅ CORRIGIDO: Só modelo e material
+    """
+    portas = PortaPavimento.objects.filter(proposta=proposta)
+    
+    for porta in portas:
+        porta.modelo = post_data.get(f'porta_modelo_{porta.andar}', porta.modelo)
+        porta.material = post_data.get(f'porta_material_{porta.andar}', porta.material)
+        porta.save()
+
+# === FUNÇÕES LEGADAS (não usadas mais, podem ser removidas) ===
+
+def criar_portas_padrao_para_todos_pavimentos(proposta):
+    """
+    ❌ FUNÇÃO LEGADA - não é mais usada
+    Pode ser removida
+    """
+    PortaPavimento.objects.filter(proposta=proposta).delete()
+    
+    for andar in range(proposta.pavimentos):
+        PortaPavimento.objects.create(
+            proposta=proposta,
+            andar=andar,
+            modelo=proposta.modelo_porta_pavimento,
+            material=proposta.material_porta_pavimento,
+        )

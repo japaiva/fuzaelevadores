@@ -60,6 +60,7 @@ class Proposta(models.Model):
         on_delete=models.PROTECT, 
         related_name='propostas_vendedor',
         verbose_name="Vendedor",
+        null=True, blank=True,  # ← ADICIONAR ESTA LINHA
         limit_choices_to={'nivel': 'vendedor'}
     )
     atualizado_por = models.ForeignKey(
@@ -197,13 +198,13 @@ class Proposta(models.Model):
     tracao = models.CharField(
         max_length=10,
         choices=[('1x1', '1x1'), ('2x1', '2x1')],
-        blank=True,
+        blank=True, null=True,
         verbose_name="Tração"
     )
     contrapeso = models.CharField(
         max_length=20,
         choices=[('Traseiro', 'Traseiro'), ('Lateral', 'Lateral')],
-        blank=True,
+        blank=True, null=True,
         verbose_name="Contrapeso"
     )
     
