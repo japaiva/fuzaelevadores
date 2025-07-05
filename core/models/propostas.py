@@ -1,4 +1,4 @@
-# core/models/propostas.py - MODELO COMPLETO CORRIGIDO
+# core/models/propostas.py
 
 """
 Modelo de Propostas com estrutura de custos contabilmente correta
@@ -9,6 +9,9 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from decimal import Decimal
 import uuid
+
+import logging
+logger = logging.getLogger(__name__)
 
 class Proposta(models.Model):
     """
@@ -107,6 +110,18 @@ class Proposta(models.Model):
         ],
         default='Elevadores',
         verbose_name="Faturado por"
+    )
+
+    # ✅ NOVO CAMPO - Normas ABNT
+    normas_abnt = models.CharField(
+        max_length=20,
+        choices=[
+            ('NBR 16858', 'NBR 16858 - 2024'),
+            ('NBR 16042', 'NBR 16042 - 2020'),
+        ],
+        default='NBR 16858',
+        verbose_name="Normas ABNT",
+        help_text="Norma técnica aplicável ao elevador"
     )
     
     # Forma de Pagamento
@@ -242,10 +257,12 @@ class Proposta(models.Model):
         null=True, blank=True,
         verbose_name="Modelo Porta Cabine"
     )
+
     material_porta_cabine = models.CharField(
         max_length=50,
         choices=[
-            ('Inox', 'Inox'),
+            ('Inox 430', 'Inox 430'),      # ✅ ESPECÍFICO
+            ('Inox 304', 'Inox 304'),      # ✅ ESPECÍFICO
             ('Chapa Pintada', 'Chapa Pintada'),
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
@@ -253,6 +270,8 @@ class Proposta(models.Model):
         null=True, blank=True,
         verbose_name="Material Porta Cabine"
     )
+
+
     material_porta_cabine_outro = models.CharField(
         max_length=100, 
         blank=True, 
@@ -299,10 +318,12 @@ class Proposta(models.Model):
         null=True, blank=True,
         verbose_name="Modelo Porta Pavimento"
     )
+
     material_porta_pavimento = models.CharField(
         max_length=50,
         choices=[
-            ('Inox', 'Inox'),
+            ('Inox 430', 'Inox 430'),      # ✅ ESPECÍFICO
+            ('Inox 304', 'Inox 304'),      # ✅ ESPECÍFICO
             ('Chapa Pintada', 'Chapa Pintada'),
             ('Alumínio', 'Alumínio'),
             ('Outro', 'Outro'),
@@ -310,6 +331,8 @@ class Proposta(models.Model):
         null=True, blank=True,
         verbose_name="Material Porta Pavimento"
     )
+
+
     material_porta_pavimento_outro = models.CharField(
         max_length=100, 
         blank=True, 
@@ -639,6 +662,108 @@ class Proposta(models.Model):
             self.valor_proposta = self.preco_venda_calculado
 
         super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """
+        Override do método delete para garantir limpeza completa
+        """
+        try:
+            # Log detalhado antes da exclusão
+            logger.info(f"Iniciando exclusão da proposta {self.numero}")
+            
+            # Contar relacionamentos que serão excluídos
+            from core.models import PortaPavimento, HistoricoProposta, AnexoProposta
+            
+            portas_count = PortaPavimento.objects.filter(proposta=self).count()
+            historico_count = HistoricoProposta.objects.filter(proposta=self).count()
+            anexos_count = AnexoProposta.objects.filter(proposta=self).count()
+            
+            # Log dos relacionamentos
+            if portas_count > 0:
+                logger.info(f"Serão excluídas {portas_count} portas individuais")
+            if historico_count > 0:
+                logger.info(f"Serão excluídos {historico_count} registros de histórico")
+            if anexos_count > 0:
+                logger.info(f"Serão excluídos {anexos_count} anexos")
+            
+            # ✅ EXCLUSÃO MANUAL DAS PORTAS (garantir que aconteça)
+            PortaPavimento.objects.filter(proposta=self).delete()
+            
+            # Chamar delete padrão (que já cuida do cascata automático)
+            super().delete(*args, **kwargs)
+            
+            logger.info(f"Proposta {self.numero} excluída com sucesso")
+            
+        except Exception as e:
+            logger.error(f"Erro na exclusão da proposta {self.numero}: {str(e)}")
+            raise  # Re-raise para que o erro seja tratado pela view
+    
+
+    def calcular_impostos_dinamicos(self, base_calculo=None):
+        """
+        Calcula impostos baseado no campo 'faturado_por' e parâmetros do sistema
+        """
+        from core.models import ParametrosGerais
+        
+        if not self.preco_com_comissao:
+            return None
+        
+        try:
+            parametros = ParametrosGerais.objects.first()
+            if not parametros:
+                # Fallback para 10% se não houver parâmetros
+                return self.preco_com_comissao * Decimal('0.10')
+            
+            # Mapear faturado_por para o campo correto nos parâmetros
+            percentual_impostos = None
+            
+            if self.faturado_por == 'Elevadores':
+                percentual_impostos = parametros.faturamento_elevadores
+            elif self.faturado_por == 'Fuza':
+                percentual_impostos = parametros.faturamento_fuza
+            elif self.faturado_por == 'Manutenção':
+                percentual_impostos = parametros.faturamento_manutencao
+            
+            if percentual_impostos and percentual_impostos > 0:
+                # Converter percentual para decimal (ex: 10.5 -> 0.105)
+                percentual_decimal = percentual_impostos / Decimal('100')
+                return self.preco_com_comissao * percentual_decimal
+            else:
+                # Fallback para 10% se não houver percentual configurado
+                return self.preco_com_comissao * Decimal('0.10')
+                
+        except Exception:
+            # Fallback para 10% em caso de erro
+            return self.preco_com_comissao * Decimal('0.10')
+
+    def calcular_precos_completo(self):
+        """
+        Recalcula toda a formação de preço com impostos dinâmicos
+        MÉTODO PRINCIPAL PARA USAR NAS VIEWS
+        """
+        if not self.custo_total_projeto:
+            return False
+        
+        # 1. Margem de Lucro (30%)
+        self.margem_lucro = self.custo_total_projeto * Decimal('0.30')
+        self.preco_com_margem = self.custo_total_projeto + self.margem_lucro
+        
+        # 2. Comissão (3%)
+        self.comissao = self.preco_com_margem * Decimal('0.03')
+        self.preco_com_comissao = self.preco_com_margem + self.comissao
+        
+        # 3. Impostos (DINÂMICO baseado em faturado_por)
+        self.impostos = self.calcular_impostos_dinamicos()
+        self.preco_venda_calculado = self.preco_com_comissao + self.impostos
+        
+        # 4. Se não há valor negociado, usar o calculado
+        if not self.valor_proposta:
+            self.valor_proposta = self.preco_venda_calculado
+        
+        return True
+
+
+
 
     # =================================================================
     # PROPRIEDADES CALCULADAS

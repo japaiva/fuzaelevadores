@@ -19,6 +19,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             # Dados do Cliente
             'cliente',
             'nome_projeto', 
+            'normas_abnt', 
             'observacoes',
             'faturado_por',
                     
@@ -47,6 +48,12 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
                 'class': 'form-control',
                 'required': True
             }),
+            # ✅ NOVO WIDGET
+            'normas_abnt': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3

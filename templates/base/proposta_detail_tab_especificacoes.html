@@ -1,4 +1,4 @@
-<!-- TAB ESPECIFICAÇÕES -->
+<!-- TAB ESPECIFICAÇÕES - ATUALIZADO COM NORMAS E LAYOUT MELHORADO -->
 {% load formato_br %}
 {% load pedido_filters %}
 
@@ -28,6 +28,14 @@
               <label class="form-label text-muted small">Nome do Projeto</label>
               <div class="form-control-plaintext"><strong>{{ pedido.nome_projeto }}</strong></div>
             </div>
+            <!-- ✅ NOVO CAMPO: Normas ABNT -->
+            {% if pedido.normas_abnt %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Normas</label>
+              <div class="form-control-plaintext">
+              <strong> {{ pedido.get_normas_abnt_display }}</strong></div>
+            </div>
+            {% endif %}
             {% if pedido.observacoes %}
             <div class="mb-3">
               <label class="form-label text-muted small">Observações</label>
@@ -165,7 +173,7 @@
       </div>
     </div>
 
-    <!-- Portas -->
+    <!-- ✅ PORTAS - LAYOUT REFORMULADO -->
     <div class="card shadow-sm border-warning mb-4">
       <div class="card-header bg-warning text-dark">
         <h6 class="card-title mb-0">Portas</h6>
@@ -175,23 +183,23 @@
           <!-- Porta da Cabine -->
           <div class="col-md-6">
             <h6 class="text-muted mb-3">Porta da Cabine</h6>
-            <div class="mb-2">
-              <label class="form-label text-muted small">Modelo</label>
-              <div class="form-control-plaintext">{{ pedido.get_modelo_porta_cabine_display }}</div>
+            
+            <!-- ✅ ESPECIFICAÇÃO EM UMA LINHA -->
+            <div class="mb-3">
+              <label class="form-label text-muted small">Especificação</label>
+              <div class="form-control-plaintext">
+                <strong>
+                  {{ pedido.get_modelo_porta_cabine_display|default:"—" }}, 
+                  {{ pedido.get_material_porta_cabine_display|default:"—" }}{% if pedido.folhas_porta_cabine %}, 
+                  {{ pedido.get_folhas_porta_cabine_display }} folhas{% endif %}
+                </strong>
+                {% if pedido.material_porta_cabine == 'Outro' and pedido.material_porta_cabine_outro %}
+                  <br><small class="text-muted">{{ pedido.material_porta_cabine_outro }} - R$ {{ pedido.valor_porta_cabine_outro|formato_br }}</small>
+                {% endif %}
+              </div>
             </div>
-            <div class="mb-2">
-              <label class="form-label text-muted small">Material</label>
-              <div class="form-control-plaintext">{{ pedido.get_material_porta_cabine_display }}</div>
-              {% if pedido.material_porta_cabine == 'Outro' and pedido.material_porta_cabine_outro %}
-                <small class="text-muted">{{ pedido.material_porta_cabine_outro }} - R$ {{ pedido.valor_porta_cabine_outro|formato_br }}</small>
-              {% endif %}
-            </div>
-            {% if pedido.folhas_porta_cabine %}
-            <div class="mb-2">
-              <label class="form-label text-muted small">Folhas</label>
-              <div class="form-control-plaintext">{{ pedido.get_folhas_porta_cabine_display }}</div>
-            </div>
-            {% endif %}
+            
+            <!-- DIMENSÕES -->
             <div class="mb-2">
               <label class="form-label text-muted small">Dimensões</label>
               <div class="form-control-plaintext"><strong>{{ pedido.largura_porta_cabine }} x {{ pedido.altura_porta_cabine }} m</strong></div>
@@ -201,23 +209,36 @@
           <!-- Porta do Pavimento -->
           <div class="col-md-6">
             <h6 class="text-muted mb-3">Porta do Pavimento</h6>
-            <div class="mb-2">
-              <label class="form-label text-muted small">Modelo</label>
-              <div class="form-control-plaintext">{{ pedido.get_modelo_porta_pavimento_display }}</div>
+            
+            <!-- ✅ ESPECIFICAÇÃO COM VARIAÇÕES POR PAVIMENTO -->
+            <div class="mb-3">
+              <label class="form-label text-muted small">Especificação</label>
+              <div class="form-control-plaintext">
+                {% if pedido.portas_pavimento.all %}
+                  <!-- TEM DADOS NA TABELA: Listar todas as portas -->
+                  {% for porta in pedido.portas_pavimento.all %}
+                    <strong>
+                      • {{ porta.modelo }}, {{ porta.material }}{% if porta.modelo == 'Automática' %}, 2 folhas{% endif %} - {{ porta.nome_andar }}
+                    </strong>
+                    {% if not forloop.last %}<br>{% endif %}
+                  {% endfor %}
+                  <br><small class="text-muted">({{ pedido.portas_pavimento.all|length }} porta{{ pedido.portas_pavimento.all|length|pluralize:"s" }} total)</small>
+                {% else %}
+                  <!-- SEM DADOS NA TABELA: Usar especificação padrão -->
+                  <strong>
+                    {{ pedido.get_modelo_porta_pavimento_display|default:"—" }}, 
+                    {{ pedido.get_material_porta_pavimento_display|default:"—" }}{% if pedido.modelo_porta_pavimento == 'Automática' and pedido.folhas_porta_pavimento %}, 
+                    {{ pedido.get_folhas_porta_pavimento_display }} folhas{% endif %} ({{ pedido.pavimentos }})
+                  </strong>
+                {% endif %}
+                
+                {% if pedido.material_porta_pavimento == 'Outro' and pedido.material_porta_pavimento_outro %}
+                  <br><small class="text-muted">{{ pedido.material_porta_pavimento_outro }} - R$ {{ pedido.valor_porta_pavimento_outro|formato_br }}</small>
+                {% endif %}
+              </div>
             </div>
-            <div class="mb-2">
-              <label class="form-label text-muted small">Material</label>
-              <div class="form-control-plaintext">{{ pedido.get_material_porta_pavimento_display }}</div>
-              {% if pedido.material_porta_pavimento == 'Outro' and pedido.material_porta_pavimento_outro %}
-                <small class="text-muted">{{ pedido.material_porta_pavimento_outro }} - R$ {{ pedido.valor_porta_pavimento_outro|formato_br }}</small>
-              {% endif %}
-            </div>
-            {% if pedido.folhas_porta_pavimento %}
-            <div class="mb-2">
-              <label class="form-label text-muted small">Folhas</label>
-              <div class="form-control-plaintext">{{ pedido.get_folhas_porta_pavimento_display }}</div>
-            </div>
-            {% endif %}
+            
+            <!-- DIMENSÕES -->
             <div class="mb-2">
               <label class="form-label text-muted small">Dimensões</label>
               <div class="form-control-plaintext"><strong>{{ pedido.largura_porta_pavimento }} x {{ pedido.altura_porta_pavimento }} m</strong></div>

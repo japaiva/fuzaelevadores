@@ -15,6 +15,7 @@ from .calculo_tracao import CalculoTracaoService
 from .calculo_sistemas import CalculoSistemasService
 from core.utils.formatters import extrair_especificacoes_do_pedido
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -147,7 +148,7 @@ class CalculoPedidoService:
         preco_com_comissao = preco_com_margem + comissao  # R$ 16.737,50
         
         # 3. Impostos (10% sobre preço com comissão)
-        impostos = preco_com_comissao * Decimal('0.10')  # R$ 1.673,75
+        impostos = pedido.calcular_impostos_dinamicos(preco_com_comissao)
         preco_final = preco_com_comissao + impostos  # R$ 18.411,25
         
         # =================================================================

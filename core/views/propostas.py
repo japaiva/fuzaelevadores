@@ -12,8 +12,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from core.models import Proposta, HistoricoProposta # Removido ParametrosGerais pois não é mais usado aqui
-
+from core.models import Proposta, HistoricoProposta,ParametrosGerais 
 logger = logging.getLogger(__name__)
 
 def safe_json_load(json_field):
@@ -29,16 +28,21 @@ def safe_json_load(json_field):
 # VIEW BASE PRINCIPAL - COMPARTILHADA
 # ===============================================================================
 
+# core/views/propostas.py - ATUALIZAR proposta_detail_base
+
 def proposta_detail_base(request, pk, template_name, extra_context=None):
     """
     View base para detalhe de proposta 
     - Usada por vendedor/views.py e producao/views.py
-    - Evita duplicação de código
+    - ✅ ATUALIZADA: Inclui parâmetros para impostos dinâmicos
     """
     user_level = getattr(request.user, 'nivel', 'vendedor')
     
-    # 🎯 SEM FILTROS - deixa para as views específicas decidirem
     proposta = get_object_or_404(Proposta, pk=pk)
+    
+    # ✅ CARREGAR PARÂMETROS PARA IMPOSTOS DINÂMICOS
+    from core.models import ParametrosGerais
+    parametros = ParametrosGerais.objects.first()
     
     # Preparar dados JSON
     ficha_tecnica = safe_json_load(proposta.ficha_tecnica)
@@ -64,6 +68,7 @@ def proposta_detail_base(request, pk, template_name, extra_context=None):
         'formacao_preco': formacao_preco,
         'user_level': user_level,
         'area_poco': area_poco,
+        'parametros': parametros,  # ✅ ADICIONADO: Para impostos dinâmicos
     }
     
     # Adicionar contexto específico (vendedor/produção)

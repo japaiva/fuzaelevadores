@@ -13,7 +13,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
 
-from core.models import Proposta
+from core.models import Proposta, PortaPavimento
 from core.forms.propostas import PropostaFiltroForm
 from core.views.propostas import proposta_detail_base
 
@@ -138,30 +138,54 @@ def proposta_detail(request, pk):
 
 @login_required
 def proposta_delete(request, pk):
-    """Excluir proposta - SEM filtro por vendedor"""
-    # 🎯 REMOVIDO: vendedor=request.user
+    """
+    Excluir proposta - COM exclusão em cascata das portas individuais
+    ✅ CORRIGIDO: Import correto + Exclusão completa + redirecionamento + mensagens
+    """
     proposta = get_object_or_404(Proposta, pk=pk)
     
     # Verificar se pode excluir
-    if proposta.status not in ['rascunho', 'simulado', 'pendente']:
+    if not proposta.pode_excluir:
+        messages.error(request, 
+            f'Proposta {proposta.numero} não pode ser excluída. '
+            f'Status atual: {proposta.get_status_display()}'
+        )
         return redirect('vendedor:pedido_detail', pk=proposta.pk)
     
     if request.method == 'POST':
         try:
+            # Capturar dados antes da exclusão
             numero = proposta.numero
             nome_projeto = proposta.nome_projeto
             
-            # Log da exclusão
+            # ✅ CORRIGIDO: PortaPavimento já importado no topo
+            portas_individuais = PortaPavimento.objects.filter(proposta=proposta)
+            qtd_portas = portas_individuais.count()
+            
+            # ✅ EXCLUSÃO EM CASCATA: Django já faz isso automaticamente
+            # devido ao relacionamento on_delete=models.CASCADE
+            # Mas vamos ser explícitos para garantir
+            if qtd_portas > 0:
+                portas_individuais.delete()
+                logger.info(f"Excluídas {qtd_portas} portas individuais da proposta {numero}")
+            
+            # Log detalhado da exclusão
             logger.info(
-                f"Proposta {numero} ({nome_projeto}) excluída pelo usuário {request.user.username}"
+                f"Proposta {numero} ({nome_projeto}) excluída pelo usuário {request.user.username}. "
+                f"Portas individuais excluídas: {qtd_portas}"
             )
             
-            # Excluir (cascata remove histórico e anexos)
+            # Excluir proposta (cascata automática remove histórico e anexos)
             proposta.delete()
             
-            messages.success(request,
-                f'Proposta {numero} - {nome_projeto} excluída com sucesso.'
-            )
+            # ✅ MENSAGEM DE SUCESSO MAIS INFORMATIVA
+            mensagem_sucesso = f'Proposta {numero} - {nome_projeto} excluída com sucesso.'
+            if qtd_portas > 0:
+                mensagem_sucesso += f' ({qtd_portas} portas individuais também foram excluídas)'
+            
+            messages.success(request, mensagem_sucesso)
+            
+            # ✅ REDIRECIONAMENTO SEMPRE PARA LISTA
             return redirect('vendedor:pedido_list')
             
         except Exception as e:
@@ -169,10 +193,14 @@ def proposta_delete(request, pk):
             messages.error(request, f'Erro ao excluir proposta: {str(e)}')
             return redirect('vendedor:pedido_detail', pk=proposta.pk)
     
+    # ✅ CORRIGIDO: GET request - mostrar formulário de confirmação
+    # PortaPavimento já importado, sem erro
     context = {
         'proposta': proposta,
-        'pedido': proposta,  # ✅ Compatibilidade
-        'pode_excluir': True,
+        'pedido': proposta,  # Compatibilidade
+        'pode_excluir': proposta.pode_excluir,
+        # ✅ CORRIGIDO: Usa PortaPavimento importado
+        'portas_individuais_count': PortaPavimento.objects.filter(proposta=proposta).count(),
     }
     
     return render(request, 'vendedor/pedido_confirm_delete.html', context)

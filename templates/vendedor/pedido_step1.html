@@ -48,11 +48,10 @@
         </div>
       {% endif %}
       
+      <!-- Seção Cliente - Alterar para incluir campo Normas ABNT -->
       <div class="card shadow-sm border-primary mb-4">
         <div class="card-header bg-primary text-white">
-          <h6 class="card-title mb-0">
-            Cliente
-          </h6>
+          <h6 class="card-title mb-0">Cliente</h6>
         </div>
         <div class="card-body">
           <div class="row g-3">
@@ -81,12 +80,23 @@
               {% endif %}
             </div>
             
-            <div class="col-12">
+            <!-- ✅ NOVA LINHA: Nome do Projeto + Normas ABNT -->
+            <div class="col-md-6">
               <label for="{{ form.nome_projeto.id_for_label }}" class="form-label">Nome do Projeto*</label>
               {{ form.nome_projeto }}
               {% if form.nome_projeto.errors %}
                 <div class="text-danger small mt-1">
                   {% for error in form.nome_projeto.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-6">
+              <label for="{{ form.normas_abnt.id_for_label }}" class="form-label">Normas</label>
+              {{ form.normas_abnt }}
+              {% if form.normas_abnt.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.normas_abnt.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
@@ -289,6 +299,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
     const btnNovoCliente = document.getElementById('btnNovoCliente');
     let clienteModal;
+    const normasABNTSelect = document.getElementById('{{ form.normas_abnt.id_for_label }}');
+
     
     // Elementos do elevador
     const modeloSelect = document.getElementById('{{ form.modelo_elevador.id_for_label }}');
@@ -522,6 +534,11 @@ document.addEventListener('DOMContentLoaded', function() {
     pavimentosInput.addEventListener('input', updateCalculos);
     
 
+
+
+
+
+
     // === SUBMIT UNIFICADO: VALIDAÇÃO ===
     form.addEventListener('submit', function(e) {
         console.log('🚀 SUBMIT - Validando formulário...');
@@ -529,6 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Validar cliente e projeto
         const cliente = clienteSelect.value;
         const nomeProjeto = document.getElementById('{{ form.nome_projeto.id_for_label }}').value.trim();
+        const normasABNT = normasABNTSelect.value;  // ✅ NOVO
         const faturadoPor = document.getElementById('{{ form.faturado_por.id_for_label }}').value;
         
         if (!cliente) {
@@ -550,6 +568,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        if (!normasABNT) {
+            e.preventDefault();
+            alert('Por favor, selecione a norma ABNT aplicável.');
+            normasABNTSelect.focus();
+            return;
+        }
+
+
+
         // Validar elevador
         const modelo = modeloSelect.value;
         const pessoas = parseInt(capacidadePessoasInput.value) || 0;

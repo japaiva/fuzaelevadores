@@ -16,6 +16,7 @@ from .base import (
     STATUS_PRODUTO_CHOICES
 )
 
+
 class GrupoProduto(models.Model):
     """Grupos de produtos com classificação por tipo"""
     

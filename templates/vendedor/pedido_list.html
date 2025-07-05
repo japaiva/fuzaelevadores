@@ -132,22 +132,27 @@
                 </div>
               </td>
 
+
+              <!-- BOTOES DE ACAO -->
+
               <td class="text-end">
                 <div class="btn-group" role="group">
                   <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
-                     class="btn btn-sm btn-outline-primary" 
-                     title="Ver Proposta"
-                     data-bs-toggle="tooltip">
+                    class="btn btn-sm btn-outline-primary" 
+                    title="Ver Proposta"
+                    data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
                   </a>
-                  {%if pedido.pode_editar %}
+                  
+                  {% if pedido.pode_editar %}
                   <a href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}" 
-                     class="btn btn-sm btn-outline-warning" 
-                     title="Editar Proposta"
-                     data-bs-toggle="tooltip">
+                    class="btn btn-sm btn-outline-warning" 
+                    title="Editar Proposta"
+                    data-bs-toggle="tooltip">
                     <i class="fas fa-edit"></i>
                   </a>
                   {% endif %}
+                  
                   <div class="btn-group" role="group">
                     <button type="button" 
                             class="btn btn-sm btn-outline-secondary dropdown-toggle" 
@@ -162,6 +167,7 @@
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
                         </a>
                       </li>
+                      
                       <!-- Orçamento sempre visível -->
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:gerar_pdf_orcamento' pedido.pk %}" target="_blank">
@@ -169,9 +175,7 @@
                         </a>
                       </li>
 
-
                       <!-- Alterar Status sempre visível -->
-
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_status' pedido.pk %}">
                           <i class="fas fa-exchange-alt me-2"></i>Alterar Status
@@ -190,10 +194,22 @@
                       </li>
                       {% endif %}
 
+                      <!-- ✅ Exclusão direto para página de confirmação -->
+                      {% if pedido.pode_excluir %}
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <a href="{% url 'vendedor:pedido_delete' pedido.pk %}" 
+                          class="dropdown-item text-danger">
+                          <i class="fas fa-trash me-2"></i>Excluir Proposta
+                        </a>
+                      </li>
+                      {% endif %}
                     </ul>
                   </div>
                 </div>
               </td>
+
+
             </tr>
           {% empty %}
             <tr>
@@ -473,6 +489,7 @@
 </style>
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -495,21 +512,6 @@ document.addEventListener('DOMContentLoaded', function() {
     dropdownToggles.forEach(toggle => {
         toggle.addEventListener('click', function(e) {
             e.stopPropagation();
-        });
-    });
-    
-    // Confirmar exclusões com mais contexto
-    document.querySelectorAll('a[href*="excluir"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            const row = this.closest('tr');
-            const numero = row.querySelector('strong.text-primary').textContent;
-            const projeto = row.querySelector('.text-truncate strong').textContent;
-            
-            const confirmMsg = `Tem certeza que deseja excluir o pedido ${numero}?\n\nProjeto: ${projeto}\n\nEsta ação não pode ser desfeita.`;
-            
-            if (!confirm(confirmMsg)) {
-                e.preventDefault();
-            }
         });
     });
     

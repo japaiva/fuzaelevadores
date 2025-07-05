@@ -2,16 +2,19 @@
 
 """
 Views para ações das propostas: calcular, duplicar, enviar, etc.
+✅ CORRIGIDO: Imports e função unificada com impostos dinâmicos
 """
 
 import logging
 from datetime import date
+from decimal import Decimal  # ✅ IMPORT ADICIONADO
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 
-from core.models import Proposta, AnexoProposta, HistoricoProposta
+from core.models import Proposta, AnexoProposta, HistoricoProposta, ParametrosGerais
 
 logger = logging.getLogger(__name__)
 
@@ -19,52 +22,82 @@ logger = logging.getLogger(__name__)
 @login_required
 def proposta_calcular(request, pk):
     """
-    Executar cálculos da proposta
-    ATUALIZADA: Usar novos campos de valor
+    Executar cálculos completos com impostos dinâmicos baseados em parâmetros
+    ✅ VERSÃO CORRIGIDA: Sem funções não definidas + impostos dinâmicos
     """
-    # 🎯 REMOVIDO: filtro por vendedor - qualquer um pode calcular
     proposta = get_object_or_404(Proposta, pk=pk)
     
-    if not proposta.pode_calcular():  # ✅ CORRIGIDO: método correto
+    if not proposta.pode_calcular():
         messages.error(request,
             f'Proposta {proposta.numero} não pode ter valores calculados. '
             f'Verifique se todos os dados obrigatórios foram preenchidos.'
         )
         return redirect('vendedor:proposta_detail', pk=proposta.pk)
     
+    # ✅ APENAS POST - Executar cálculos
     if request.method == 'POST':
         try:
-            # Importar serviço de cálculo
-            from core.services.calculo_pedido import CalculoPedidoService
+            # === CARREGAR PARÂMETROS DO SISTEMA ===
+            parametros = ParametrosGerais.objects.first()
             
-            # Executar cálculo completo
+            # === EXECUTAR CÁLCULOS TÉCNICOS VIA SERVICE (COM IMPOSTOS DINÂMICOS) ===
+            from core.services.calculo_pedido import CalculoPedidoService
             resultado = CalculoPedidoService.calcular_custos_completo(proposta)
             
-            # Recarregar proposta para obter valores atualizados
-            proposta.refresh_from_db()
+            # === VERIFICAR SE CÁLCULO FOI EXECUTADO COM SUCESSO ===
+            if not proposta.preco_venda_calculado:
+                messages.error(request, 'Erro: Cálculo não retornou valor válido.')
+                return redirect('vendedor:proposta_detail', pk=proposta.pk)
             
+            # === SALVAR PROPOSTA ===
+            proposta.save()
+            
+            # === MENSAGEM DE SUCESSO COM PERCENTUAL USADO ===
             if proposta.preco_venda_calculado:
+                # Determinar percentual usado para a mensagem
+                percentual_usado = "10% (padrão)"
+                if parametros:
+                    if proposta.faturado_por == 'Elevadores' and parametros.faturamento_elevadores is not None:
+                        percentual_usado = f"{parametros.faturamento_elevadores}% (Elevadores)"
+                    elif proposta.faturado_por == 'Fuza' and parametros.faturamento_fuza is not None:
+                        percentual_usado = f"{parametros.faturamento_fuza}% (Fuza)"
+                    elif proposta.faturado_por == 'Manutenção' and parametros.faturamento_manutencao is not None:
+                        percentual_usado = f"{parametros.faturamento_manutencao}% (Manutenção)"
+                
                 messages.success(request,
                     f'Cálculos executados com sucesso! '
-                    f'Valor calculado: R$ {proposta.preco_venda_calculado:.2f}'
+                    f'Valor calculado: R$ {proposta.preco_venda_calculado:,.2f} '
+                    f'| Impostos: {percentual_usado}'
                 )
                 
-                # Redirecionar para step 3 se ainda em rascunho
+                # Log da ação
+                logger.info(
+                    f"Cálculos executados para proposta {proposta.numero} "
+                    f"pelo usuário {request.user.username} - "
+                    f"Valor: R$ {proposta.preco_venda_calculado:,.2f}"
+                )
+                
+                # Redirecionar baseado no status
                 if proposta.status == 'rascunho':
                     return redirect('vendedor:proposta_step3', pk=proposta.pk)
                 else:
                     return redirect('vendedor:proposta_detail', pk=proposta.pk)
             else:
                 messages.error(request, 'Erro: Cálculo não retornou valor válido.')
+                return redirect('vendedor:proposta_detail', pk=proposta.pk)
                 
         except Exception as e:
             logger.error(f"Erro ao calcular proposta {proposta.numero}: {str(e)}")
-            messages.error(request, f'Erro ao calcular proposta: {str(e)}')
+            messages.error(request, f'Erro inesperado nos cálculos: {str(e)}')
+            return redirect('vendedor:proposta_detail', pk=proposta.pk)
     
+    # ✅ GET REQUEST: Mostrar página de confirmação
+    parametros = ParametrosGerais.objects.first()
     context = {
         'proposta': proposta,
         'pedido': proposta,  # Compatibilidade
-        'pode_calcular': proposta.pode_calcular(),  # ✅ CORRIGIDO: método correto
+        'pode_calcular': proposta.pode_calcular(),
+        'parametros': parametros,
     }
     
     return render(request, 'vendedor/proposta_calcular.html', context)
@@ -75,7 +108,6 @@ def proposta_duplicar(request, pk):
     """
     Duplicar proposta existente
     """
-    # 🎯 REMOVIDO: filtro por vendedor - qualquer um pode duplicar
     proposta_original = get_object_or_404(Proposta, pk=pk)
     
     if request.method == 'POST':
@@ -87,6 +119,9 @@ def proposta_duplicar(request, pk):
                 nome_projeto=f"{proposta_original.nome_projeto} (Cópia)",
                 faturado_por=proposta_original.faturado_por,
                 observacoes=proposta_original.observacoes,
+                
+                # ✅ INCLUIR NORMAS ABNT SE EXISTE
+                normas_abnt=proposta_original.normas_abnt if hasattr(proposta_original, 'normas_abnt') else 'NBR 16858',
                 
                 # Vendedor
                 vendedor=request.user,  
@@ -178,7 +213,6 @@ def proposta_enviar_cliente(request, pk):
     """
     Enviar proposta para o cliente
     """
-    # 🎯 REMOVIDO: filtro por vendedor
     proposta = get_object_or_404(Proposta, pk=pk)
     
     if not proposta.valor_proposta:
@@ -191,7 +225,7 @@ def proposta_enviar_cliente(request, pk):
         try:
             # Atualizar status
             status_anterior = proposta.status
-            proposta.status = 'aprovado'  # ✅ CORRIGIDO: usar status que existe no modelo
+            proposta.status = 'aprovado'
             proposta.save()
             
             # Registrar no histórico
@@ -232,7 +266,6 @@ def proposta_gerar_numero_definitivo(request, pk):
     """
     Gerar número definitivo da proposta
     """
-    # 🎯 REMOVIDO: filtro por vendedor
     proposta = get_object_or_404(Proposta, pk=pk)
     
     if proposta.status != 'rascunho':
@@ -270,7 +303,6 @@ def proposta_historico(request, pk):
     """
     Histórico de mudanças da proposta
     """
-    # 🎯 REMOVIDO: filtro por vendedor
     proposta = get_object_or_404(Proposta, pk=pk)
     
     historico = HistoricoProposta.objects.filter(
@@ -291,7 +323,6 @@ def proposta_anexos(request, pk):
     """
     Gerenciar anexos da proposta
     """
-    # 🎯 REMOVIDO: filtro por vendedor
     proposta = get_object_or_404(Proposta, pk=pk)
     
     if request.method == 'POST':
