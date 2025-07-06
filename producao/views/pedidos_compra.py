@@ -39,7 +39,7 @@ def pedido_compra_list(request):
     """Lista de pedidos de compra com filtros"""
     pedidos_list = PedidoCompra.objects.select_related(
         'fornecedor', 'criado_por'
-    ).prefetch_related('itens').order_by('-data_emissao')  # CORRIGIDO: data_emissao
+    ).prefetch_related('itens').order_by('-data_emissao')
 
     # Aplicar filtros
     form_filtros = PedidoCompraFiltroForm(request.GET)
@@ -56,10 +56,10 @@ def pedido_compra_list(request):
             pedidos_list = pedidos_list.filter(prioridade=data['prioridade'])
 
         if data.get('data_inicio'):
-            pedidos_list = pedidos_list.filter(data_emissao__date__gte=data['data_inicio'])  # CORRIGIDO: data_emissao
+            pedidos_list = pedidos_list.filter(data_emissao__date__gte=data['data_inicio'])
 
         if data.get('data_fim'):
-            pedidos_list = pedidos_list.filter(data_emissao__date__lte=data['data_fim'])  # CORRIGIDO: data_emissao
+            pedidos_list = pedidos_list.filter(data_emissao__date__lte=data['data_fim'])
 
         if data.get('q'):
             query = data['q']
@@ -96,47 +96,59 @@ def pedido_compra_create(request):
         form = PedidoCompraForm(request.POST)
         formset = ItemPedidoCompraFormSet(request.POST)
 
-        # Verificar se há pelo menos um item válido
-        itens_validos = 0
-        for form_item in formset:
-            if form_item.is_valid() and not form_item.cleaned_data.get('DELETE', False):
-                # Verificar se os campos obrigatórios estão preenchidos
-                if (form_item.cleaned_data.get('produto') and
-                    form_item.cleaned_data.get('quantidade') and
-                    form_item.cleaned_data.get('valor_unitario')):
-                    itens_validos += 1
+        # --- LOGGING MELHORADO ---
+        logger.debug(f"POST request recebido para criar pedido.")
+        logger.debug(f"Form principal válido: {form.is_valid()}")
+        if not form.is_valid():
+            logger.debug(f"Erros no form principal: {form.errors}")
 
-        if form.is_valid() and formset.is_valid() and itens_validos > 0:
+        logger.debug(f"Formset de itens válido: {formset.is_valid()}")
+        if not formset.is_valid():
+            logger.debug(f"Erros no formset (non_form_errors): {formset.non_form_errors()}")
+            for i, item_form in enumerate(formset):
+                if item_form.errors:
+                    logger.debug(f"Erros no item {i}: {item_form.errors}")
+
+        # --- VERIFICAÇÃO CORRIGIDA DE ITENS VÁLIDOS ---
+        itens_validos_e_nao_deletados = 0
+        for form_item in formset:
+            # Verificar se o form é válido E não está marcado para exclusão E tem dados relevantes
+            if (form_item.is_valid() and 
+                not form_item.cleaned_data.get('DELETE', False) and
+                form_item.cleaned_data.get('produto') is not None and
+                form_item.cleaned_data.get('quantidade') is not None and
+                form_item.cleaned_data.get('valor_unitario') is not None and
+                form_item.cleaned_data.get('quantidade') > 0 and
+                form_item.cleaned_data.get('valor_unitario') > 0):
+                itens_validos_e_nao_deletados += 1
+
+        logger.debug(f"Total de itens válidos e não deletados: {itens_validos_e_nao_deletados}")
+
+        if form.is_valid() and formset.is_valid() and itens_validos_e_nao_deletados > 0:
             try:
                 with transaction.atomic():
                     # Criar pedido
                     pedido = form.save(commit=False)
                     pedido.criado_por = request.user
                     pedido.atualizado_por = request.user
-
-                    # Salvar pedido sem calcular valores ainda
-                    pedido.valor_total = 0
-                    pedido.valor_final = 0
                     pedido.save()
 
-                    # Salvar itens
-                    itens_salvos = 0
-                    for form_item in formset:
-                        if (form_item.is_valid() and
-                            not form_item.cleaned_data.get('DELETE', False) and
-                            form_item.cleaned_data.get('produto')):
+                    # Usar o método save() do formset que é mais confiável
+                    itens_salvos = formset.save(commit=False)
+                    
+                    # Processar itens salvos
+                    for item in itens_salvos:
+                        item.pedido = pedido
+                        if not item.unidade and item.produto:
+                            item.unidade = item.produto.unidade_medida
+                        item.valor_total = item.quantidade * item.valor_unitario
+                        item.save()
+                        logger.debug(f"Novo item salvo: {item.produto.codigo if item.produto else 'N/A'}")
 
-                            item = form_item.save(commit=False)
-                            item.pedido = pedido
-
-                            # Garantir que tem unidade
-                            if not item.unidade:
-                                item.unidade = item.produto.unidade_medida
-
-                            # Calcular valor total do item
-                            item.valor_total = item.quantidade * item.valor_unitario
-                            item.save()
-                            itens_salvos += 1
+                    # Processar itens marcados para exclusão (se houver)
+                    for item_deletado in formset.deleted_objects:
+                        item_deletado.delete()
+                        logger.debug(f"Item excluído: {item_deletado.pk}")
 
                     # Recalcular valores do pedido
                     pedido.recalcular_valores()
@@ -146,20 +158,28 @@ def pedido_compra_create(request):
                         pedido=pedido,
                         usuario=request.user,
                         acao='Pedido criado',
-                        observacao=f'Pedido criado com {itens_salvos} itens'
+                        observacao=f'Pedido criado com {len(itens_salvos)} itens'
                     )
 
                     messages.success(request, f'Pedido {pedido.numero} criado com sucesso!')
                     return redirect('producao:pedido_compra_detail', pk=pedido.pk)
 
             except Exception as e:
-                logger.error(f"Erro ao criar pedido: {str(e)}")
+                logger.error(f"Erro ao criar pedido: {str(e)}", exc_info=True)
                 messages.error(request, f'Erro ao criar pedido: {str(e)}')
         else:
-            if itens_validos == 0:
+            # Mensagens de erro mais específicas
+            if not form.is_valid():
+                messages.error(request, 'Erro nos dados do pedido. Verifique os campos obrigatórios.')
+            elif not formset.is_valid():
+                messages.error(request, 'Erro nos itens do pedido. Verifique os dados informados.')
+            elif itens_validos_e_nao_deletados == 0:
                 messages.error(request, 'Adicione pelo menos um item válido ao pedido.')
-            else:
-                messages.error(request, 'Erro ao criar pedido. Verifique os dados informados.')
+            
+            # Log dos erros específicos do formset para debug
+            for i, item_form in enumerate(formset):
+                if item_form.errors:
+                    logger.debug(f"Erros específicos no form {i}: {item_form.errors}")
     else:
         form = PedidoCompraForm()
         formset = ItemPedidoCompraFormSet()
@@ -204,16 +224,35 @@ def pedido_compra_update(request, pk):
         form = PedidoCompraForm(request.POST, instance=pedido)
         formset = ItemPedidoCompraFormSet(request.POST, instance=pedido)
 
-        # Verificar itens válidos
-        itens_validos = 0
-        for form_item in formset:
-            if form_item.is_valid() and not form_item.cleaned_data.get('DELETE', False):
-                if (form_item.cleaned_data.get('produto') and
-                    form_item.cleaned_data.get('quantidade') and
-                    form_item.cleaned_data.get('valor_unitario')):
-                    itens_validos += 1
+        # --- LOGGING MELHORADO ---
+        logger.debug(f"POST request recebido para atualizar pedido {pk}.")
+        logger.debug(f"Form principal válido: {form.is_valid()}")
+        if not form.is_valid():
+            logger.debug(f"Erros no form principal: {form.errors}")
 
-        if form.is_valid() and formset.is_valid() and itens_validos > 0:
+        logger.debug(f"Formset de itens válido: {formset.is_valid()}")
+        if not formset.is_valid():
+            logger.debug(f"Erros no formset (non_form_errors): {formset.non_form_errors()}")
+            for i, item_form in enumerate(formset):
+                if item_form.errors:
+                    logger.debug(f"Erros no item {i}: {item_form.errors}")
+
+        # --- VERIFICAÇÃO CORRIGIDA DE ITENS VÁLIDOS ---
+        itens_validos_e_nao_deletados = 0
+        for form_item in formset:
+            # Verificar se o form é válido E não está marcado para exclusão E tem dados relevantes
+            if (form_item.is_valid() and 
+                not form_item.cleaned_data.get('DELETE', False) and
+                form_item.cleaned_data.get('produto') is not None and
+                form_item.cleaned_data.get('quantidade') is not None and
+                form_item.cleaned_data.get('valor_unitario') is not None and
+                form_item.cleaned_data.get('quantidade') > 0 and
+                form_item.cleaned_data.get('valor_unitario') > 0):
+                itens_validos_e_nao_deletados += 1
+        
+        logger.debug(f"Total de itens válidos e não deletados: {itens_validos_e_nao_deletados}")
+
+        if form.is_valid() and formset.is_valid() and itens_validos_e_nao_deletados > 0:
             try:
                 with transaction.atomic():
                     # Salvar pedido
@@ -221,8 +260,22 @@ def pedido_compra_update(request, pk):
                     pedido.atualizado_por = request.user
                     pedido.save()
 
-                    # Salvar itens
-                    formset.save()
+                    # Usar o método save() do formset que é mais confiável
+                    itens_salvos = formset.save(commit=False)
+                    
+                    # Processar itens salvos (novos e atualizados)
+                    for item in itens_salvos:
+                        item.pedido = pedido
+                        if not item.unidade and item.produto:
+                            item.unidade = item.produto.unidade_medida
+                        item.valor_total = item.quantidade * item.valor_unitario
+                        item.save()
+                        logger.debug(f"Item salvo/atualizado: {item.produto.codigo if item.produto else 'N/A'}")
+
+                    # Processar itens marcados para exclusão
+                    for item_deletado in formset.deleted_objects:
+                        item_deletado.delete()
+                        logger.debug(f"Item excluído: {item_deletado.pk}")
 
                     # Recalcular valores
                     pedido.recalcular_valores()
@@ -239,13 +292,21 @@ def pedido_compra_update(request, pk):
                     return redirect('producao:pedido_compra_detail', pk=pedido.pk)
 
             except Exception as e:
-                logger.error(f"Erro ao atualizar pedido: {str(e)}")
+                logger.error(f"Erro ao atualizar pedido: {str(e)}", exc_info=True)
                 messages.error(request, f'Erro ao atualizar pedido: {str(e)}')
         else:
-            if itens_validos == 0:
+            # Mensagens de erro mais específicas
+            if not form.is_valid():
+                messages.error(request, 'Erro nos dados do pedido. Verifique os campos obrigatórios.')
+            elif not formset.is_valid():
+                messages.error(request, 'Erro nos itens do pedido. Verifique os dados informados.')
+            elif itens_validos_e_nao_deletados == 0:
                 messages.error(request, 'Adicione pelo menos um item válido ao pedido.')
-            else:
-                messages.error(request, 'Erro ao atualizar pedido. Verifique os dados informados.')
+            
+            # Log dos erros específicos do formset para debug
+            for i, item_form in enumerate(formset):
+                if item_form.errors:
+                    logger.debug(f"Erros específicos no form {i}: {item_form.errors}")
     else:
         form = PedidoCompraForm(instance=pedido)
         formset = ItemPedidoCompraFormSet(instance=pedido)
@@ -294,10 +355,10 @@ def pedido_compra_alterar_status(request, pk):
 
     if request.method == 'POST':
         form = AlterarStatusPedidoForm(request.POST, instance=pedido)
-        form._user = request.user  # Passar usuário para o form
 
         if form.is_valid():
-            form.save()
+            # Salvar com o usuário
+            form.save(user=request.user)
             messages.success(request, f'Status do pedido alterado para "{pedido.get_status_display()}".')
             return redirect('producao:pedido_compra_detail', pk=pk)
     else:

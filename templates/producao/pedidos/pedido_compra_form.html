@@ -30,131 +30,119 @@
         </div>
       {% endif %}
 
-
-          <div class="card shadow mt-4">
-            <div class="card-header bg-light">
-              <h5 class="card-title mb-0">
-                <i class="fas fa-file-alt me-2"></i>
-                Dados do Pedido
-              </h5>
-            </div>
-            <div class="card-body">
-
-
-
-              <div class="row g-3 mb-3">
-                {% if pedido %}
-                  <div class="col-md-3">
-                    <label class="form-label">Número</label>
-                    <div class="form-control-plaintext fw-bold text-primary fs-5">{{ pedido.numero }}</div>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <div class="form-control-plaintext">
-                      <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                {% else %}
-                  <div class="col-md-12">
-                {% endif %}
-
-
-                    <label for="{{ form.fornecedor.id_for_label }}" class="form-label">
-                      Fornecedor <span class="text-danger">*</span>
-                    </label>
-                    <div class="mt-1"> {# ADIÇÃO AQUI: Adiciona uma margem superior ao wrapper do campo #}
-                      {{ form.fornecedor }}
-                    </div>
-                    {% if form.fornecedor.errors %}
-                      <div class="text-danger small mt-1">
-                        <i class="fas fa-exclamation-triangle me-1"></i>
-                        {% for error in form.fornecedor.errors %}{{ error }}{% endfor %}
-                      </div>
-                    {% endif %}
-
-
-                    
-                  </div>
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-file-alt me-2"></i>
+            Dados do Pedido
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 mb-3">
+            {% if pedido %}
+              <div class="col-md-3">
+                <label class="form-label">Número</label>
+                <div class="form-control-plaintext fw-bold text-primary fs-5">{{ pedido.numero }}</div>
               </div>
-              
-              <div class="row g-3">
-                <div class="col-md-3">
-                  <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
-                    Data de Emissão <span class="text-danger">*</span>
-                  </label>
-                  {{ form.data_emissao }}
-                  {% if form.data_emissao.errors %}
-                    <div class="text-danger small mt-1">
-                      <i class="fas fa-exclamation-triangle me-1"></i>
-                      {% for error in form.data_emissao.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
+              <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <div class="form-control-plaintext">
+                  <span class="badge {{ pedido.status_badge_class }} fs-6">{{ pedido.get_status_display }}</span>
                 </div>
-                
-                <div class="col-md-3">
-                  <label for="{{ form.prazo_entrega.id_for_label }}" class="form-label">
-                    Prazo <span class="text-danger">*</span>
-                  </label>
-                  <div class="input-group">
-                    {{ form.prazo_entrega }}
-                    <span class="input-group-text">dias</span>
-                  </div>
-                  {% if form.prazo_entrega.errors %}
-                    <div class="text-danger small mt-1">
-                      <i class="fas fa-exclamation-triangle me-1"></i>
-                      {% for error in form.prazo_entrega.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-                
-                <div class="col-md-3">
-                  <label for="{{ form.data_entrega_prevista.id_for_label }}" class="form-label">
-                    Data Entrega Prevista <span class="text-danger">*</span>
-                  </label>
-                  {{ form.data_entrega_prevista }}
-                  {% if form.data_entrega_prevista.errors %}
-                    <div class="text-danger small mt-1">
-                      <i class="fas fa-exclamation-triangle me-1"></i>
-                      {% for error in form.data_entrega_prevista.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-
-                <div class="col-md-3">
-                  <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
-                  <div class="mt-1"> {# ADIÇÃO AQUI para empurrar o campo ligeiramente para baixo #}
-                    {{ form.prioridade }}
-                  </div>
-                  {% if form.prioridade.errors %}
-                    <div class="text-danger small mt-1">
-                      <i class="fas fa-exclamation-triangle me-1"></i>
-                      {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-
               </div>
-              
-              <div class="row g-3 mt-2">
-                <div class="col-md-12">
-                  <label for="{{ form.condicao_pagamento.id_for_label }}" class="form-label">Condição de Pagamento</label>
-                  <div class="mt-1"> {# ADIÇÃO AQUI: Aplica o mesmo ajuste para Condição de Pagamento #}
-                    {{ form.condicao_pagamento }}
-                  </div>
-                  {% if form.condicao_pagamento.errors %}
-                    <div class="text-danger small mt-1">
-                      <i class="fas fa-exclamation-triangle me-1"></i>
-                      {% for error in form.condicao_pagamento.errors %}{{ error }}{% endfor %}
-                    </div>
-                  {% endif %}
-                </div>
-                
+              <div class="col-md-6">
+            {% else %}
+              <div class="col-md-12">
+            {% endif %}
+              <label for="{{ form.fornecedor.id_for_label }}" class="form-label">
+                Fornecedor <span class="text-danger">*</span>
+              </label>
+              <div class="mt-1">
+                {{ form.fornecedor }}
               </div>
+              {% if form.fornecedor.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.fornecedor.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
             </div>
           </div>
+          
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
+                Data de Emissão <span class="text-danger">*</span>
+              </label>
+              {{ form.data_emissao }}
+              {% if form.data_emissao.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.data_emissao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.prazo_entrega.id_for_label }}" class="form-label">
+                Prazo <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                {{ form.prazo_entrega }}
+                <span class="input-group-text">dias</span>
+              </div>
+              {% if form.prazo_entrega.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.prazo_entrega.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-3">
+              <label for="{{ form.data_entrega_prevista.id_for_label }}" class="form-label">
+                Data Entrega Prevista <span class="text-danger">*</span>
+              </label>
+              {{ form.data_entrega_prevista }}
+              {% if form.data_entrega_prevista.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.data_entrega_prevista.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
 
-      <!-- Bloco de Itens do Pedido -->
+            <div class="col-md-3">
+              <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
+              <div class="mt-1">
+                {{ form.prioridade }}
+              </div>
+              {% if form.prioridade.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="row g-3 mt-2">
+            <div class="col-md-12">
+              <label for="{{ form.condicao_pagamento.id_for_label }}" class="form-label">Condição de Pagamento</label>
+              <div class="mt-1">
+                {{ form.condicao_pagamento }}
+              </div>
+              {% if form.condicao_pagamento.errors %}
+                <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  {% for error in form.condicao_pagamento.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card shadow mt-4">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
           <h5 class="card-title mb-0">
@@ -184,70 +172,114 @@
               </thead>
               <tbody id="itens-tbody">
                 {% for form_item in formset %}
-                  <tr class="item-row" data-form-index="{{ forloop.counter0 }}">
-                    {% for hidden in form_item.hidden_fields %}
-                      {{ hidden }}
-                    {% endfor %}
-                    
-                    <td class="text-center align-middle">
-                      <span class="fw-bold text-muted item-numero">{{ forloop.counter }}</span>
-                    </td>
-                    
-                    <td class="align-middle">
-                      {{ form_item.produto }}
-                      {% if form_item.produto.errors %}
-                        <div class="text-danger small mt-1">
-                          <i class="fas fa-exclamation-triangle me-1"></i>
-                          {{ form_item.produto.errors.0 }}
+                  {% if not form_item.DELETE.value %}
+                    <tr class="item-row {% if form_item.instance.pk %}existing-item{% else %}new-item{% endif %}"
+                        id="{{ form_item.prefix }}-row">
+                      {% for hidden in form_item.hidden_fields %}
+                        {{ hidden }}
+                      {% endfor %}
+                      
+                      <td class="text-center align-middle">
+                        <span class="fw-bold text-muted item-numero">{{ forloop.counter }}</span>
+                      </td>
+                      
+                      <td class="align-middle">
+                        {{ form_item.produto }}
+                        {% if form_item.produto.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.produto.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      
+                      <td class="align-middle">
+                        {{ form_item.quantidade }}
+                        {% if form_item.quantidade.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.quantidade.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      
+                      <td class="align-middle">
+                        <div class="input-group">
+                          <span class="input-group-text">R$</span>
+                          {{ form_item.valor_unitario }}
                         </div>
-                      {% endif %}
-                    </td>
-                    
-                    <td class="align-middle">
-                      {{ form_item.quantidade }}
-                      {% if form_item.quantidade.errors %}
-                        <div class="text-danger small mt-1">
-                          <i class="fas fa-exclamation-triangle me-1"></i>
-                          {{ form_item.quantidade.errors.0 }}
-                        </div>
-                      {% endif %}
-                    </td>
-                    
-                    <td class="align-middle">
-                      <div class="input-group">
-                        <span class="input-group-text">R$</span>
-                        {{ form_item.valor_unitario }}
-                      </div>
-                      {% if form_item.valor_unitario.errors %}
-                        <div class="text-danger small mt-1">
-                          <i class="fas fa-exclamation-triangle me-1"></i>
-                          {{ form_item.valor_unitario.errors.0 }}
-                        </div>
-                      {% endif %}
-                    </td>
-                    
-                    <td class="text-center align-middle">
-                      <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
-                    </td>
-                    
-                    <td class="align-middle">
-                      {{ form_item.observacoes }}
-                      {% if form_item.observacoes.errors %}
-                        <div class="text-danger small mt-1">
-                          <i class="fas fa-exclamation-triangle me-1"></i>
-                          {{ form_item.observacoes.errors.0 }}
-                        </div>
-                      {% endif %}
-                    </td>
-                    
-                    <td class="text-center align-middle">
-                      {{ form_item.DELETE }}
-                      <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
+                        {% if form_item.valor_unitario.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.valor_unitario.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      
+                      <td class="text-center align-middle">
+                        <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
+                      </td>
+                      
+                      <td class="align-middle">
+                        {{ form_item.observacoes }}
+                        {% if form_item.observacoes.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.observacoes.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+                      
+                      <td class="text-center align-middle">
+                        {{ form_item.DELETE }}
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  {% endif %}
                 {% endfor %}
+                
+                <!-- Template row hidden inside tbody for proper cloning -->
+                <tr id="empty-form-template" class="item-row d-none">
+                  {% for hidden in formset.empty_form.hidden_fields %}
+                    {{ hidden }}
+                  {% endfor %}
+                  
+                  <td class="text-center align-middle">
+                    <span class="fw-bold text-muted item-numero"></span>
+                  </td>
+                  
+                  <td class="align-middle">
+                    {{ formset.empty_form.produto }}
+                  </td>
+                  
+                  <td class="align-middle">
+                    {{ formset.empty_form.quantidade }}
+                  </td>
+                  
+                  <td class="align-middle">
+                    <div class="input-group">
+                      <span class="input-group-text">R$</span>
+                      {{ formset.empty_form.valor_unitario }}
+                    </div>
+                  </td>
+                  
+                  <td class="text-center align-middle">
+                    <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
+                  </td>
+                  
+                  <td class="align-middle">
+                    {{ formset.empty_form.observacoes }}
+                  </td>
+                  
+                  <td class="text-center align-middle">
+                    {{ formset.empty_form.DELETE }}
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -260,7 +292,6 @@
         </div>
       </div>
 
-      <!-- Bloco de Resumo Financeiro -->
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
@@ -310,12 +341,9 @@
               </div>
             </div>
           </div>
-          
-
         </div>
       </div>
 
-      <!-- Bloco de Observações -->
       <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
@@ -356,7 +384,6 @@
         </div>
       </div>
 
-      <!-- Botões de ação -->
       <div class="d-flex justify-content-end mt-4">
         <button type="submit" class="btn btn-primary">
           <i class="fas fa-save me-1"></i> 
@@ -367,56 +394,12 @@
   </div>
 </div>
 
-<!-- Template para novos itens -->
-<template id="template-item-row">
-  <tr class="item-row" data-form-index="__prefix__">
-    <td class="text-center align-middle">
-      <span class="fw-bold text-muted item-numero">1</span>
-    </td>
-    <td class="align-middle">
-      <select name="form-__prefix__-produto" id="id_form-__prefix__-produto" class="form-control" required>
-        <option value="">Selecione o produto...</option>
-        {% if form.instance.itens.model.produto.field.queryset %}
-          {% for produto in form.instance.itens.model.produto.field.queryset %}
-            <option value="{{ produto.pk }}">{{ produto.codigo }} - {{ produto.nome }}</option>
-          {% endfor %}
-        {% endif %}
-      </select>
-    </td>
-    <td class="align-middle">
-      <input type="number" name="form-__prefix__-quantidade" id="id_form-__prefix__-quantidade" 
-             class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
-    </td>
-    <td class="align-middle">
-      <div class="input-group">
-        <span class="input-group-text">R$</span>
-        <input type="number" name="form-__prefix__-valor_unitario" id="id_form-__prefix__-valor_unitario" 
-               class="form-control" step="0.01" min="0.01" placeholder="0,00" required>
-      </div>
-    </td>
-    <td class="text-center align-middle">
-      <div class="valor-total fw-bold text-success fs-6">R$ 0,00</div>
-    </td>
-    <td class="align-middle">
-      <input type="text" name="form-__prefix__-observacoes" id="id_form-__prefix__-observacoes" 
-             class="form-control" placeholder="Observações do item...">
-    </td>
-    <td class="text-center align-middle">
-      <input type="hidden" name="form-__prefix__-id" id="id_form-__prefix__-id">
-      <input type="checkbox" name="form-__prefix__-DELETE" id="id_form-__prefix__-DELETE" style="display:none;">
-      <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
-        <i class="fas fa-trash"></i>
-      </button>
-    </td>
-  </tr>
-</template>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Variáveis globais
-let formIndex = {{ formset.total_form_count|default:0 }};
-
 // =============================================================================
 // INICIALIZAÇÃO
 // =============================================================================
@@ -426,6 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar componentes
     inicializarEventListeners();
     configurarCalculoAutomaticoDatas();
+    setupAddAnotherItem(); 
     atualizarNumeracaoItens();
     calcularTotais();
     verificarItensVazios();
@@ -441,7 +425,6 @@ function configurarCalculoAutomaticoDatas() {
     const prazoEntregaInput = document.getElementById('id_prazo_entrega');
     const dataEntregaInput = document.getElementById('id_data_entrega_prevista');
     
-    // Função para calcular data de entrega
     function calcularDataEntrega() {
         const dataEmissao = dataEmissaoInput.value;
         const prazoEntrega = parseInt(prazoEntregaInput.value);
@@ -451,39 +434,26 @@ function configurarCalculoAutomaticoDatas() {
             const dataEntrega = new Date(dataBase);
             dataEntrega.setDate(dataEntrega.getDate() + prazoEntrega);
             
-            // Formatar para YYYY-MM-DD
             const dataFormatada = dataEntrega.toISOString().split('T')[0];
             dataEntregaInput.value = dataFormatada;
         }
     }
     
-    // Event listeners para cálculo automático
     if (dataEmissaoInput && prazoEntregaInput) {
         dataEmissaoInput.addEventListener('change', calcularDataEntrega);
         prazoEntregaInput.addEventListener('change', calcularDataEntrega);
         prazoEntregaInput.addEventListener('input', calcularDataEntrega);
     }
     
-    // Calcular na primeira carga se temos emissão e prazo mas não temos entrega
     if (dataEmissaoInput.value && prazoEntregaInput.value && !dataEntregaInput.value) {
         calcularDataEntrega();
     }
 }
 
 // =============================================================================
-// EVENT LISTENERS
+// EVENT LISTENERS GERAIS
 // =============================================================================
 function inicializarEventListeners() {
-    // Botão adicionar item
-    const btnAdicionar = document.getElementById('btn-adicionar-item');
-    if (btnAdicionar) {
-        btnAdicionar.addEventListener('click', function(e) {
-            e.preventDefault();
-            adicionarItem();
-        });
-    }
-    
-    // Event listeners para cálculos automáticos
     document.addEventListener('input', function(e) {
         if (e.target.name && (
             e.target.name.includes('-quantidade') || 
@@ -495,7 +465,6 @@ function inicializarEventListeners() {
         }
     });
     
-    // Event listener para remover itens
     document.addEventListener('click', function(e) {
         if (e.target.closest('.btn-remover-item')) {
             e.preventDefault();
@@ -505,54 +474,91 @@ function inicializarEventListeners() {
 }
 
 // =============================================================================
-// GERENCIAMENTO DE ITENS
+// GERENCIAMENTO DE ITENS DO FORMSET (CORRIGIDO)
 // =============================================================================
-function adicionarItem() {
-    const tbody = document.getElementById('itens-tbody');
-    const template = document.getElementById('template-item-row');
-    const totalFormsInput = document.getElementById('id_form-TOTAL_FORMS');
-    
-    if (!tbody || !template || !totalFormsInput) {
-        console.error('❌ Elementos necessários não encontrados');
+function setupAddAnotherItem() {
+    const addButton = document.getElementById('btn-adicionar-item');
+    const itemTableBody = document.getElementById('itens-tbody');
+    const emptyFormTemplate = document.getElementById('empty-form-template');
+    const totalFormsInput = document.querySelector('input[name$="TOTAL_FORMS"]');
+
+    if (!addButton || !itemTableBody || !emptyFormTemplate || !totalFormsInput) {
+        console.error('❌ Elementos necessários para gerenciamento do formset não encontrados.');
         return;
     }
-    
-    try {
-        // Clone do template
-        const clone = template.content.cloneNode(true);
+
+    addButton.addEventListener('click', function() {
+        const currentForms = parseInt(totalFormsInput.value);
         
-        // Substituir __prefix__ pelo índice atual
-        let html = clone.querySelector('tr').outerHTML;
-        html = html.replace(/__prefix__/g, formIndex);
+        // Clone the entire template row
+        const newRow = emptyFormTemplate.cloneNode(true);
         
-        // Criar nova linha
-        const novaLinha = document.createElement('tr');
-        novaLinha.innerHTML = html.replace('<tr class="item-row" data-form-index="' + formIndex + '">', '');
-        novaLinha.className = 'item-row';
-        novaLinha.setAttribute('data-form-index', formIndex);
+        // Update the row attributes
+        newRow.id = `form-${currentForms}-row`;
+        newRow.classList.remove('d-none');
+        newRow.classList.add('new-item');
         
-        // Adicionar ao tbody
-        tbody.appendChild(novaLinha);
+        // Replace __prefix__ in all HTML content
+        newRow.innerHTML = newRow.innerHTML.replace(/__prefix__/g, currentForms);
         
-        // Atualizar contador de forms
-        const novoTotal = parseInt(totalFormsInput.value) + 1;
-        totalFormsInput.value = novoTotal;
-        formIndex++;
+        // Insert before the template row
+        itemTableBody.insertBefore(newRow, emptyFormTemplate);
         
+        // Increment TOTAL_FORMS
+        totalFormsInput.value = currentForms + 1;
+
+        // Aplicar máscaras aos novos campos
+        applyMasksToNewRow(newRow);
+
         // Atualizar interface
         atualizarNumeracaoItens();
         verificarItensVazios();
         atualizarContadorItens();
+        calcularTotais();
         
-        // Focar no select de produto
-        const novoProdutoSelect = novaLinha.querySelector('select[name*="-produto"]');
-        if (novoProdutoSelect) {
-            novoProdutoSelect.focus();
+        // Focar no primeiro campo
+        const firstInput = newRow.querySelector('select, input');
+        if (firstInput) {
+            firstInput.focus();
         }
         
-    } catch (error) {
-        console.error('❌ Erro ao adicionar item:', error);
-        alert('Erro ao adicionar item. Tente novamente.');
+        console.log(`✅ Novo item adicionado (form-${currentForms})`);
+    });
+
+    // Aplicar máscaras aos campos existentes
+    document.querySelectorAll('.item-row:not(#empty-form-template)').forEach(row => {
+        applyMasksToNewRow(row);
+    });
+}
+
+function applyMasksToNewRow(row) {
+    if (typeof IMask !== 'undefined') {
+        const quantidadeInput = row.querySelector('[name*="-quantidade"]');
+        const valorUnitarioInput = row.querySelector('[name*="-valor_unitario"]');
+
+        if (quantidadeInput && !quantidadeInput._imask) {
+            IMask(quantidadeInput, {
+                mask: Number,
+                scale: 2,
+                signed: false,
+                thousandsSeparator: '.',
+                padFractionalZeros: true,
+                normalizeZeros: true,
+                radix: ','
+            });
+        }
+        
+        if (valorUnitarioInput && !valorUnitarioInput._imask) {
+            IMask(valorUnitarioInput, {
+                mask: Number,
+                scale: 2,
+                signed: false,
+                thousandsSeparator: '.',
+                padFractionalZeros: true,
+                normalizeZeros: true,
+                radix: ','
+            });
+        }
     }
 }
 
@@ -562,24 +568,18 @@ function removerItem(btn) {
         const deleteCheckbox = row.querySelector('[name$="-DELETE"]');
         
         if (deleteCheckbox) {
-            if (row.querySelector('[name$="-id"]').value) {
-                // Item existente - marcar para deleção
-                deleteCheckbox.checked = true;
-                row.style.display = 'none';
-            } else {
-                // Item novo - remover da DOM
-                row.remove();
-            }
+            deleteCheckbox.checked = true;
+            row.style.display = 'none';
         } else {
-            // Sem checkbox DELETE - item novo
             row.remove();
         }
         
-        // Atualizar interface
         atualizarNumeracaoItens();
         verificarItensVazios();
         atualizarContadorItens();
         calcularTotais();
+        
+        console.log('✅ Item removido com sucesso');
         
     } catch (error) {
         console.error('❌ Erro ao remover item:', error);
@@ -588,7 +588,7 @@ function removerItem(btn) {
 
 function atualizarNumeracaoItens() {
     let contador = 1;
-    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(function(row) {
+    document.querySelectorAll('.item-row:not([style*="display: none"]):not(#empty-form-template)').forEach(function(row) {
         const numeroSpan = row.querySelector('.item-numero');
         if (numeroSpan) {
             numeroSpan.textContent = contador;
@@ -598,7 +598,7 @@ function atualizarNumeracaoItens() {
 }
 
 function atualizarContadorItens() {
-    const contador = document.querySelectorAll('.item-row:not([style*="display: none"])').length;
+    const contador = document.querySelectorAll('.item-row:not([style*="display: none"]):not(#empty-form-template)').length;
     const contadorElement = document.getElementById('contador-itens');
     if (contadorElement) {
         contadorElement.textContent = contador;
@@ -608,7 +608,7 @@ function atualizarContadorItens() {
 function verificarItensVazios() {
     const tbody = document.getElementById('itens-tbody');
     const semItens = document.getElementById('sem-itens');
-    const itensVisiveis = tbody.querySelectorAll('.item-row:not([style*="display: none"])');
+    const itensVisiveis = tbody.querySelectorAll('.item-row:not([style*="display: none"]):not(#empty-form-template)');
     
     if (itensVisiveis.length === 0) {
         if (semItens) semItens.style.display = 'block';
@@ -625,56 +625,41 @@ function verificarItensVazios() {
 function calcularTotais() {
     let subtotal = 0;
     
-    // Calcular total de cada item visível
-    document.querySelectorAll('.item-row:not([style*="display: none"])').forEach(function(row) {
+    document.querySelectorAll('.item-row:not([style*="display: none"]):not(#empty-form-template)').forEach(function(row) {
         const qtdInput = row.querySelector('[name*="-quantidade"]');
         const valorInput = row.querySelector('[name*="-valor_unitario"]');
         const totalDiv = row.querySelector('.valor-total');
+        const deleteCheckbox = row.querySelector('[name$="-DELETE"]');
+
+        if (deleteCheckbox && deleteCheckbox.checked) {
+            if (totalDiv) totalDiv.textContent = formatarMoeda(0);
+            return;
+        }
         
         if (qtdInput && valorInput && totalDiv) {
-            const qtd = parseFloat(qtdInput.value) || 0;
-            const valor = parseFloat(valorInput.value) || 0;
+            const qtd = parseFloat(qtdInput.value.replace(',', '.')) || 0;
+            const valor = parseFloat(valorInput.value.replace(',', '.')) || 0;
             const total = qtd * valor;
             
-            // Atualizar total do item
             totalDiv.textContent = formatarMoeda(total);
             subtotal += total;
         }
     });
     
-    // Obter desconto e frete
-    const descontoPerc = parseFloat(document.getElementById('id_desconto_percentual').value) || 0;
-    const valorFrete = parseFloat(document.getElementById('id_valor_frete').value) || 0;
+    const descontoPercInput = document.getElementById('id_desconto_percentual');
+    const valorFreteInput = document.getElementById('id_valor_frete');
+
+    const descontoPerc = parseFloat(descontoPercInput ? descontoPercInput.value.replace(',', '.') : '0') || 0;
+    const valorFrete = parseFloat(valorFreteInput ? valorFreteInput.value.replace(',', '.') : '0') || 0;
     
-    // Calcular valores
     const desconto = (subtotal * descontoPerc) / 100;
     const totalGeral = subtotal - desconto + valorFrete;
     
-    // Atualizar displays principais
     const subtotalDisplay = document.getElementById('subtotal-display');
     const totalGeralDisplay = document.getElementById('total-geral');
     
     if (subtotalDisplay) subtotalDisplay.textContent = formatarMoeda(subtotal);
     if (totalGeralDisplay) totalGeralDisplay.textContent = formatarMoeda(totalGeral);
-    
-    // Atualizar resumo detalhado
-    atualizarResumoFinanceiro(subtotal, desconto, valorFrete, totalGeral);
-}
-
-function atualizarResumoFinanceiro(subtotal, desconto, frete, total) {
-    const elementos = {
-        'resumo-subtotal': subtotal,
-        'resumo-desconto': desconto,
-        'resumo-frete': frete,
-        'resumo-total': total
-    };
-    
-    Object.entries(elementos).forEach(([id, valor]) => {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            elemento.textContent = formatarMoeda(valor);
-        }
-    });
 }
 
 function formatarMoeda(valor) {
@@ -684,12 +669,26 @@ function formatarMoeda(valor) {
     });
 }
 
-// JavaScript para máscaras, se necessário
+// =============================================================================
+// MÁSCARAS COM IMASK
+// =============================================================================
 if (typeof IMask !== 'undefined') {
-    // Mascaras de moeda nos campos de frete
     const valorFreteInput = document.getElementById('id_valor_frete');
     if (valorFreteInput) {
         IMask(valorFreteInput, {
+            mask: Number,
+            scale: 2,
+            signed: false,
+            thousandsSeparator: '.',
+            padFractionalZeros: true,
+            normalizeZeros: true,
+            radix: ','
+        });
+    }
+
+    const descontoPercentualInput = document.getElementById('id_desconto_percentual');
+    if (descontoPercentualInput) {
+        IMask(descontoPercentualInput, {
             mask: Number,
             scale: 2,
             signed: false,
