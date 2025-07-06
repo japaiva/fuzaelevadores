@@ -92,13 +92,11 @@
             <th>Nome</th>
             <th style="width: 150px;">Grupo</th>
             <th style="width: 150px;">Subgrupo</th>
-            <th style="width: 100px;">Unidade</th>
-            <!-- COLUNA ALTERADA: Preço no lugar de Estoque -->
-            <th style="width: 100px;">Preço</th>
-            <!-- NOVA COLUNA: Utilizado -->
-            <th class="text-center" style="width: 80px;">Utilizado</th>
+            <th style="width: 150px;">Custo</th>
+            <th style="width: 150px;">C.Ind.</th>
+            <th class="text-center" style="width: 80px;">Util</th>
             <th class="text-center" style="width: 80px;">Status</th>
-            <th class="text-center" style="min-width: 180px;">Ações</th>
+            <th class="text-center" style="min-width: 120px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -122,30 +120,35 @@
                   <span class="text-muted">-</span>
                 {% endif %}
               </td>
-              <td>{{ produto.get_unidade_medida_display }}</td>
-              <!-- PREÇO NO LUGAR DE ESTOQUE -->
+
               <td>
                 {% if produto.custo_medio %}
                   <span class="text-success fw-bold">
-                    R$ {{ produto.custo_medio|floatformat:2 }}
-                  </span>
-                {% elif produto.preco_venda %}
-                  <span class="text-primary">
-                    R$ {{ produto.preco_venda|floatformat:2 }}
+                    {{ produto.custo_medio|floatformat:2 }}
                   </span>
                 {% else %}
                   <span class="text-muted">-</span>
                 {% endif %}
               </td>
-              <!-- NOVA COLUNA: UTILIZADO -->
+
+              <td>
+                {% if produto.custo_industrializacao  %}
+                  <span class="text-success fw-bold">
+                    {{ produto.custo_industrializacao |floatformat:2 }}
+                  </span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+
               <td class="text-center">
                 {% if produto.utilizado %}
                   <span class="badge bg-warning">
-                    <i class="fas fa-check-circle me-1"></i>Sim
+                    Sim
                   </span>
                 {% else %}
                   <span class="badge bg-success">
-                    <i class="fas fa-times-circle me-1"></i>Não
+                    Não
                   </span>
                 {% endif %}
               </td>
@@ -293,12 +296,4 @@ function updateSubgrupos() {
     }
 }
 </script>
-{% endblock %}            }
-                // Submeter formulário após carregar subgrupos
-                document.getElementById('filtro-form').submit();
-            })
-            .catch(error => {
-                console.error('Erro ao carregar subgrupos:', error);
-                // Submeter mesmo com erro
-                document.getElementById('filtro-form').submit();
-            });
+{% endblock %}           

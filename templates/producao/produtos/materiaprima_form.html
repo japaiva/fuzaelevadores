@@ -4,242 +4,481 @@
 {% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Matéria-Prima | Sistema FUZA{% endblock %}
 
 {% block content %}
-<div class="card shadow">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
-    <h5 class="card-title mb-0">
-      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
-      {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Matéria-Prima
-    </h5>
-    <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="fas fa-arrow-left me-1"></i> Voltar
-    </a>
-  </div>
+<div class="container-fluid">
+  <div class="card shadow">
+    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+      <div>
+        <h5 class="card-title mb-0">
+          <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+          {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Matéria-Prima
+        </h5>
+        <small class="opacity-75">
+          {% if form.instance.pk %}Atualizando produto {{ form.instance.codigo }}{% else %}Criando nova matéria-prima{% endif %}
+        </small>
+      </div>
+      <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
 
-  <div class="card-body">
-    <form method="post" id="produto-form">
-      {% csrf_token %}
+    <div class="card-body">
+      <form method="post" id="produto-form">
+        {% csrf_token %}
 
-      {% if form.non_field_errors %}
-        <div class="alert alert-danger">
-          {% for error in form.non_field_errors %}
-            <p class="mb-0">{{ error }}</p>
-          {% endfor %}
-        </div>
-      {% endif %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <p class="mb-0"><i class="fas fa-exclamation-triangle me-1"></i>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
 
-      <div class="card shadow mt-4">
-        <div class="card-header bg-light">
-          <h5 class="card-title mb-0">
-            <i class="fas fa-barcode me-2"></i>
-            Identificação
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="row g-3">
-            {% if form.instance.pk %}
-              <div class="col-md-3">
-                <label class="form-label">Código</label>
-                <div class="form-control-plaintext fw-bold text-primary fs-5">{{ form.instance.codigo }}</div>
-              </div>
-            {% else %}
-              <div class="col-md-3">
-                <label class="form-label">Código</label>
-                <div class="form-control-plaintext text-muted">
-                  <i class="fas fa-cog fa-spin me-1"></i>
-                  Será gerado automaticamente
+        <!-- Seção 1: Identificação -->
+        <div class="card border-start border-primary border-4 mb-4">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-tag me-2 text-primary"></i>
+              Identificação
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              {% if form.instance.pk %}
+                <div class="col-md-3">
+                  <label class="form-label text-muted mb-1">Código</label>
+                  <div class="form-control-plaintext fw-bold text-primary fs-5">{{ form.instance.codigo }}</div>
                 </div>
-                <div class="form-text">
-                  <i class="fas fa-info-circle text-muted me-1"></i>
-                  Formato: GG.SS.0000 (Grupo.Subgrupo.Sequência)
+                <div class="col-md-6">
+              {% else %}
+                <div class="col-md-3">
+                  <label class="form-label text-muted mb-1">Código</label>
+                  <div class="form-control-plaintext text-muted">
+                    <i class="fas fa-cog fa-spin me-1"></i>
+                    Será gerado automaticamente
+                  </div>
+                </div>
+                <div class="col-md-6">
+              {% endif %}
+                <label for="{{ form.nome.id_for_label }}" class="form-label">
+                  Nome da Matéria-Prima <span class="text-danger">*</span>
+                </label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-check form-switch mt-4">
+                  {{ form.utilizado }}
+                  <label class="form-check-label fw-semibold" for="{{ form.utilizado.id_for_label }}">
+                    Utilizado no Custo
+                  </label>
+                {% if form.utilizado.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.utilizado.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <label for="{{ form.grupo.id_for_label }}" class="form-label">
+                  Grupo <span class="text-danger">*</span>
+                </label>
+                {{ form.grupo }}
+                {% if form.grupo.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.grupo.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label for="{{ form.subgrupo.id_for_label }}" class="form-label">
+                  Subgrupo <span class="text-danger">*</span>
+                </label>
+                {{ form.subgrupo }}
+                {% if form.subgrupo.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.subgrupo.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            {% if form.instance.pk and form.instance.descricao %}
+              <div class="row g-3 mt-2">
+                <div class="col-12">
+                  <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+                  {{ form.descricao }}
+                  {% if form.descricao.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
                 </div>
               </div>
             {% endif %}
+          </div>
+        </div>
 
-            <div class="col-md-{% if form.instance.pk %}6{% else %}6{% endif %}">
-              <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
-              {{ form.nome }}
-              {% if form.nome.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.nome.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-
-            <!-- NOVO CAMPO: UTILIZADO -->
-            <div class="col-md-3">
-              <div class="form-check form-switch mt-4">
-                {{ form.utilizado }}
-                <label class="form-check-label" for="{{ form.utilizado.id_for_label }}">
-                  <i class="fas fa-check-circle me-1"></i>Utilizado
+        <!-- Seção 2: Características Técnicas -->
+        <div class="card border-start border-info border-4 mb-4">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-cogs me-2 text-info"></i>
+              Características Técnicas
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="{{ form.unidade_medida.id_for_label }}" class="form-label">
+                  Unidade de Medida <span class="text-danger">*</span>
                 </label>
+                {{ form.unidade_medida }}
+                {% if form.unidade_medida.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.unidade_medida.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
               </div>
-              {% if form.utilizado.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.utilizado.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
 
-          <div class="row g-3 mt-3">
-            <div class="col-md-6">
-              <label for="{{ form.grupo.id_for_label }}" class="form-label">Grupo*</label>
-              {{ form.grupo }}
-              {% if form.grupo.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.grupo.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="col-md-6">
-              <label for="{{ form.subgrupo.id_for_label }}" class="form-label">Subgrupo*</label>
-              {{ form.subgrupo }}
-              {% if form.subgrupo.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.subgrupo.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card shadow mt-4">
-        <div class="card-header bg-light">
-          <h5 class="card-title mb-0">
-            <i class="fas fa-cogs me-2"></i>
-            Características Técnicas
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="{{ form.unidade_medida.id_for_label }}" class="form-label">Unidade de Medida*</label>
-              {{ form.unidade_medida }}
-              {% if form.unidade_medida.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.unidade_medida.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="col-md-6">
-              <label for="{{ form.peso_unitario.id_for_label }}" class="form-label">Peso Unitário (kg)</label>
-              {{ form.peso_unitario }}
-              {% if form.peso_unitario.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.peso_unitario.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card shadow mt-4">
-        <div class="card-header bg-light">
-          <h5 class="card-title mb-0">
-            <i class="fas fa-truck me-2"></i>
-            Fornecimento / Estoque
-          </h5>
-        </div>
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">Fornecedor Principal</label>
-              {{ form.fornecedor_principal }}
-              {% if form.fornecedor_principal.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.fornecedor_principal.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="col-md-3">
-              <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Preço Custo</label>
-              <div class="input-group">
-                <span class="input-group-text">R$</span>
-                {{ form.custo_medio }}
+              <div class="col-md-4">
+                <label for="{{ form.peso_unitario.id_for_label }}" class="form-label">Peso Unitário (kg)</label>
+                {{ form.peso_unitario }}
+                {% if form.peso_unitario.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.peso_unitario.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
               </div>
-              {% if form.custo_medio.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
 
-            <div class="col-md-3">
-              <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
-              {{ form.prazo_entrega_padrao }}
-              {% if form.prazo_entrega_padrao.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="row g-3 mt-4">
-            <div class="col-md-3">
-              <div class="form-check form-switch mt-4">
-                {{ form.controla_estoque }}
-                <label class="form-check-label" for="{{ form.controla_estoque.id_for_label }}">Controla Estoque</label>
+              <div class="col-md-4">
+                <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.status.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
               </div>
             </div>
+          </div>
+        </div>
 
-            <div class="col-md-3">
-              <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">Estoque Mínimo</label>
-              {{ form.estoque_minimo }}
-              {% if form.estoque_minimo.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.estoque_minimo.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+        <!-- Seção 3: Códigos e Classificação -->
+        <div class="card border-start border-success border-4 mb-4">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-barcode me-2 text-success"></i>
+              Códigos e Classificação
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="{{ form.codigo_ncm.id_for_label }}" class="form-label">Código NCM</label>
+                {{ form.codigo_ncm }}
+                {% if form.codigo_ncm.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.codigo_ncm.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label for="{{ form.codigo_produto_fornecedor.id_for_label }}" class="form-label">Código no Fornecedor</label>
+                {{ form.codigo_produto_fornecedor }}
+                {% if form.codigo_produto_fornecedor.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.codigo_produto_fornecedor.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4">
+                <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">Fornecedor Principal</label>
+                {{ form.fornecedor_principal }}
+                {% if form.fornecedor_principal.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.fornecedor_principal.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
+          </div>
+        </div>
 
-            <div class="col-md-3">
+        <!-- Seção 4: Custos e Preços -->
+        <div class="card border-start border-warning border-4 mb-4">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-calculator me-2 text-warning"></i>
+              Custos e Preços
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo Matéria Prima</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.custo_medio }}
+                </div>
+                {% if form.custo_medio.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">Custo Industrialização</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.custo_industrializacao }}
+                </div>
+                {% if form.custo_industrializacao.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Custo Total</label>
+                <div id="custo-total-display" class="form-control-plaintext fw-bold text-primary fs-5">
+                  {% if form.instance.pk %}
+                    R$ {{ form.instance.custo_total|floatformat:2 }}
+                  {% else %}
+                    R$ 0,00
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
+                {{ form.prazo_entrega_padrao }}
+                {% if form.prazo_entrega_padrao.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Seção 5: Controle de Estoque -->
+        <div class="card border-start border-secondary border-4 mb-4">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-warehouse me-2 text-secondary"></i>
+              Controle de Estoque
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <div class="form-check form-switch mt-4">
+                  {{ form.controla_estoque }}
+                  <label class="form-check-label fw-semibold" for="{{ form.controla_estoque.id_for_label }}">
+                    Controla Estoque
+                  </label>
+                </div>
+                {% if form.controla_estoque.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.controla_estoque.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">Estoque Mínimo</label>
+                {{ form.estoque_minimo }}
+                {% if form.estoque_minimo.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.estoque_minimo.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
               {% if form.instance.pk %}
-                <label class="form-label">Estoque Atual</label>
-                <div class="form-control-plaintext fw-bold {% if form.instance.estoque_atual <= form.instance.estoque_minimo %}text-danger{% else %}text-success{% endif %}">
-                  {{ form.instance.estoque_atual }} {{ form.instance.get_unidade_medida_display }}
+                <div class="col-md-3">
+                  <label class="form-label">Estoque Atual</label>
+                  <div class="form-control-plaintext fw-bold fs-5 {% if form.instance.estoque_atual <= form.instance.estoque_minimo %}text-danger{% else %}text-success{% endif %}">
+                    {{ form.instance.estoque_atual }} {{ form.instance.get_unidade_medida_display }}
+                  </div>
+                  <div class="form-text">
+                    {% if form.instance.estoque_atual <= form.instance.estoque_minimo %}
+                      <i class="fas fa-exclamation-triangle text-danger me-1"></i>Estoque baixo
+                    {% else %}
+                      <i class="fas fa-check-circle text-success me-1"></i>Estoque OK
+                    {% endif %}
+                  </div>
                 </div>
-              {% endif %}
-            </div>
 
-            <div class="col-md-3">
-              <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-              {{ form.status }}
-              {% if form.status.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.status.errors %}{{ error }}{% endfor %}
+                <div class="col-md-3">
+                  <div class="form-check form-switch mt-4">
+                    {{ form.disponivel }}
+                    <label class="form-check-label fw-semibold" for="{{ form.disponivel.id_for_label }}">
+                      Disponível p/ Uso
+                    </label>
+                  </div>
+                  {% if form.disponivel.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.disponivel.errors %}{{ error }}{% endfor %}
+                    </div>
+                  {% endif %}
                 </div>
               {% endif %}
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="d-flex justify-content-end mt-4">
-        <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save me-1"></i> Salvar Matéria-Prima
-        </button>
-      </div>
-    </form>
+        <!-- Botões de Ação -->
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <div>
+            {% if form.instance.pk %}
+              <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Última atualização: {{ form.instance.atualizado_em|date:"d/m/Y H:i" }}
+                por {{ form.instance.atualizado_por.get_full_name|default:form.instance.atualizado_por.username }}
+              </small>
+            {% endif %}
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-outline-secondary">
+              <i class="fas fa-times me-1"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i> 
+              {% if form.instance.pk %}Atualizar{% else %}Salvar{% endif %} Matéria-Prima
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+}
+
+.border-4 {
+  border-width: 4px !important;
+}
+
+.form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.form-switch .form-check-input {
+  width: 2em;
+  margin-left: -2.5em;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%2855,55,55,.25%29'/%3e%3c/svg%3e");
+}
+
+.form-switch .form-check-input:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.input-group-text {
+  background-color: #f8f9fa;
+  border-color: #ced4da;
+  color: #495057;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .row.g-3 {
+    --bs-gutter-x: 1rem;
+  }
+  
+  .btn {
+    font-size: 0.875rem;
+  }
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Função para calcular custo total em tempo real
+    function calcularCustoTotal() {
+        const custoMedioInput = document.getElementById('{{ form.custo_medio.id_for_label }}');
+        const custoIndustrializacaoInput = document.getElementById('{{ form.custo_industrializacao.id_for_label }}');
+        const custoTotalDisplay = document.getElementById('custo-total-display');
+        
+        if (custoMedioInput && custoIndustrializacaoInput && custoTotalDisplay) {
+            const custoMedio = parseFloat(custoMedioInput.value.replace(',', '.')) || 0;
+            const custoIndustrializacao = parseFloat(custoIndustrializacaoInput.value.replace(',', '.')) || 0;
+            const custoTotal = custoMedio + custoIndustrializacao;
+            
+            custoTotalDisplay.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    }
+    
+    // Event listeners para cálculo em tempo real
+    const custoMedioInput = document.getElementById('{{ form.custo_medio.id_for_label }}');
+    const custoIndustrializacaoInput = document.getElementById('{{ form.custo_industrializacao.id_for_label }}');
+    
+    if (custoMedioInput) {
+        custoMedioInput.addEventListener('input', calcularCustoTotal);
+        custoMedioInput.addEventListener('blur', calcularCustoTotal);
+    }
+    
+    if (custoIndustrializacaoInput) {
+        custoIndustrializacaoInput.addEventListener('input', calcularCustoTotal);
+        custoIndustrializacaoInput.addEventListener('blur', calcularCustoTotal);
+    }
+    
+    calcularCustoTotal();
+
     const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
     const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
     const initialSubgrupoId = '{{ form.subgrupo.value|default:"" }}';
 
-    // Function to fetch and populate subgroups
+    // Função para buscar e popular subgrupos
     function fetchAndPopulateSubgrupos(grupoId, selectedSubgrupoId) {
-        // Clear current options
+        // Limpar opções atuais
         subgrupoSelect.innerHTML = '<option value="">---------</option>';
 
         if (grupoId) {
@@ -263,14 +502,65 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (grupoSelect && subgrupoSelect) {
-        // Call the function on page load if a group is already selected (for edit mode)
+        // Chamar a função no carregamento da página se um grupo já estiver selecionado (modo edição)
         if (grupoSelect.value) {
             fetchAndPopulateSubgrupos(grupoSelect.value, initialSubgrupoId);
         }
 
-        // Add event listener for when the group changes
+        // Adicionar event listener para quando o grupo mudar
         grupoSelect.addEventListener('change', function() {
             fetchAndPopulateSubgrupos(this.value, null);
+        });
+    }
+
+    // Validação de formulário
+    const form = document.getElementById('produto-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const nomeField = document.getElementById('{{ form.nome.id_for_label }}');
+            const grupoField = document.getElementById('{{ form.grupo.id_for_label }}');
+            const subgrupoField = document.getElementById('{{ form.subgrupo.id_for_label }}');
+            const unidadeField = document.getElementById('{{ form.unidade_medida.id_for_label }}');
+
+            let hasErrors = false;
+
+            // Remover classes de erro anteriores
+            [nomeField, grupoField, subgrupoField, unidadeField].forEach(field => {
+                if (field) {
+                    field.classList.remove('is-invalid');
+                }
+            });
+
+            // Validar campos obrigatórios
+            if (!nomeField.value.trim()) {
+                nomeField.classList.add('is-invalid');
+                hasErrors = true;
+            }
+
+            if (!grupoField.value) {
+                grupoField.classList.add('is-invalid');
+                hasErrors = true;
+            }
+
+            if (!subgrupoField.value) {
+                subgrupoField.classList.add('is-invalid');
+                hasErrors = true;
+            }
+
+            if (!unidadeField.value) {
+                unidadeField.classList.add('is-invalid');
+                hasErrors = true;
+            }
+
+            if (hasErrors) {
+                e.preventDefault();
+                // Scroll para o primeiro erro
+                const firstError = form.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }
+            }
         });
     }
 });

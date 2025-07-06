@@ -16,7 +16,6 @@ from .base import (
     STATUS_PRODUTO_CHOICES
 )
 
-
 class GrupoProduto(models.Model):
     """Grupos de produtos com classificação por tipo"""
     
@@ -167,7 +166,8 @@ class Produto(models.Model):
         verbose_name="Estoque Atual"
     )
     
-    # Precificação
+    # Custos e preços
+
     custo_medio = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -175,6 +175,17 @@ class Produto(models.Model):
         null=True, 
         verbose_name="Custo Médio"
     )
+
+
+
+    custo_industrializacao = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Custo Industrialização"
+    )
+
     preco_venda = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -189,8 +200,9 @@ class Produto(models.Model):
         null=True, 
         verbose_name="Margem Padrão (%)"
     )
-    
-    # Fornecimento (mantido para compatibilidade)
+
+    # Fornecimento
+
     fornecedor_principal = models.ForeignKey(
         'Fornecedor', 
         on_delete=models.SET_NULL, 
@@ -204,6 +216,18 @@ class Produto(models.Model):
         verbose_name="Prazo Entrega (dias)"
     )
     
+    codigo_ncm = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Código NCM"
+    )
+
+    codigo_produto_fornecedor = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Código no Fornecedor"
+    )
+
     # Status e controle
     status = models.CharField(max_length=15, choices=STATUS_PRODUTO_CHOICES, default='ATIVO')
     disponivel = models.BooleanField(default=True, verbose_name="Disponível para Uso")
@@ -212,7 +236,6 @@ class Produto(models.Model):
         verbose_name="Motivo Indisponibilidade"
     )
     
-    # NOVO CAMPO: Material Utilizado
     utilizado = models.BooleanField(
         default=False, 
         verbose_name="Material Utilizado",
@@ -392,6 +415,13 @@ class Produto(models.Model):
         
         # Fallback para o campo atual
         return self.fornecedor_principal
+    
+    @property
+    def custo_total(self):
+        """Retorna a soma do custo médio + custo de industrialização"""
+        custo_base = self.custo_medio or 0
+        custo_indust = self.custo_industrializacao or 0
+        return custo_base + custo_indust
     
     @property
     def melhor_preco(self):

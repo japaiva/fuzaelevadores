@@ -8,10 +8,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 from core.models import GrupoProduto, SubgrupoProduto, Produto
-# Import the function to get choices
 from .base import BaseModelForm, BaseFiltroForm, AuditMixin, MoneyInput, QuantityInput, validar_positivo
-from core.choices import get_tipo_produto_choices # Import the function
-from core.models.base import UNIDADE_MEDIDA_CHOICES, STATUS_PRODUTO_CHOICES  # Import choices directly
+
+from core.choices import get_tipo_produto_choices 
+from core.models.base import UNIDADE_MEDIDA_CHOICES, STATUS_PRODUTO_CHOICES 
 
 
 class GrupoProdutoForm(BaseModelForm, AuditMixin):
@@ -147,7 +147,6 @@ class SubgrupoProdutoForm(BaseModelForm, AuditMixin):
         
         return codigo
 
-
 class ProdutoForm(BaseModelForm, AuditMixin):
     """Formulário para produtos com geração automática de códigos"""
     
@@ -156,9 +155,12 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         fields = [
             'nome', 'descricao', 'grupo', 'subgrupo',
             'unidade_medida', 'peso_unitario',
-            'controla_estoque', 'estoque_minimo', 'custo_medio',
+            # NOVOS CAMPOS
+            'codigo_ncm', 'codigo_produto_fornecedor',
+            'controla_estoque', 'estoque_minimo', 
+            'custo_medio', 'custo_industrializacao',  # NOVO CAMPO
             'fornecedor_principal', 'prazo_entrega_padrao', 
-            'status', 'disponivel', 'utilizado'  # CAMPO UTILIZADO ADICIONADO
+            'status', 'disponivel', 'utilizado'
         ]
         widgets = {
             'nome': forms.TextInput(attrs={
@@ -186,6 +188,18 @@ class ProdutoForm(BaseModelForm, AuditMixin):
                 'placeholder': '0.000',
                 'class': 'form-control'
             }),
+            # NOVOS WIDGETS
+            'codigo_ncm': forms.TextInput(attrs={
+                'placeholder': '0000.00.00',
+                'maxlength': '20',
+                'class': 'form-control'
+            }),
+            'codigo_produto_fornecedor': forms.TextInput(attrs={
+                'placeholder': 'Código do fornecedor',
+                'maxlength': '50',
+                'class': 'form-control'
+            }),
+            'custo_industrializacao': MoneyInput(),
             'estoque_minimo': QuantityInput(),
             'custo_medio': MoneyInput(),
             'prazo_entrega_padrao': forms.NumberInput(attrs={
@@ -206,7 +220,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'disponivel': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
-            'utilizado': forms.CheckboxInput(attrs={  # NOVO WIDGET
+            'utilizado': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
         }
@@ -217,6 +231,10 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'subgrupo': 'Subgrupo',
             'unidade_medida': 'Unidade de Medida',
             'peso_unitario': 'Peso Unitário (kg)',
+            # NOVOS LABELS
+            'codigo_ncm': 'Código NCM',
+            'codigo_produto_fornecedor': 'Código no Fornecedor',
+            'custo_industrializacao': 'Custo Industrialização',
             'controla_estoque': 'Controla Estoque',
             'estoque_minimo': 'Estoque Mínimo',
             'custo_medio': 'Custo Médio',
@@ -224,7 +242,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'prazo_entrega_padrao': 'Prazo Entrega Padrão (dias)',
             'status': 'Status',
             'disponivel': 'Disponível para Uso',
-            'utilizado': 'Material Utilizado',  # NOVO LABEL
+            'utilizado': 'Material Utilizado',
         }
 
     def __init__(self, *args, **kwargs):
@@ -270,6 +288,14 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         if self.instance.pk and self.instance.codigo:
             self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
     
+    def clean_custo_industrializacao(self):
+        """Validar custo de industrialização"""
+        custo = self.cleaned_data.get('custo_industrializacao')
+        if custo is not None:
+            validar_positivo(custo)
+        return custo
+
+
     def clean_estoque_minimo(self):
         """Validar estoque mínimo"""
         estoque_minimo = self.cleaned_data.get('estoque_minimo')
