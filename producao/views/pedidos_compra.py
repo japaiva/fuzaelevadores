@@ -93,6 +93,7 @@ def pedido_compra_create(request):
     """Criar novo pedido de compra"""
 
     if request.method == 'POST':
+
         form = PedidoCompraForm(request.POST)
         formset = ItemPedidoCompraFormSet(request.POST)
 

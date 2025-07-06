@@ -27,7 +27,19 @@ class ProdutoSearch {
         // Buscar campo hidden na mesma linha da tabela
         const row = this.input.closest('tr');
         if (row) {
-            this.produtoHiddenInput = row.querySelector('input[name*="-produto"]');
+            // 🔧 CORREÇÃO: Pegar APENAS O PRIMEIRO campo hidden com produto
+            const hiddenInputs = row.querySelectorAll('input[name*="-produto"][type="hidden"]');
+            if (hiddenInputs.length > 0) {
+                this.produtoHiddenInput = hiddenInputs[0]; // Sempre o primeiro
+                
+                // 🔧 IMPORTANTE: Remover campos duplicados se existirem
+                if (hiddenInputs.length > 1) {
+                    console.log(`⚠️ Removendo ${hiddenInputs.length - 1} campos duplicados`);
+                    for (let i = 1; i < hiddenInputs.length; i++) {
+                        hiddenInputs[i].remove();
+                    }
+                }
+            }
         }
         
         if (!this.produtoHiddenInput) {
@@ -330,8 +342,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Função para inicializar busca de produtos
 function initProdutoSearch() {
+    console.log('🔧 Procurando inputs de busca de produtos...');
+    
     document.querySelectorAll('.produto-search-input').forEach(input => {
+        console.log('🎯 Encontrado input:', input);
+        
+        // Verificar se já tem uma instância
         if (!input.produtoSearchInstance) {
+            const row = input.closest('tr');
+            const hiddenInput = row ? row.querySelector('input[name*="-produto"]') : null;
+            
+            // Se é um item existente (tem valor no hidden), marcar como válido
+            if (hiddenInput && hiddenInput.value && input.value) {
+                input.classList.add('is-valid');
+                console.log('✅ Item existente detectado e marcado como válido:', input.value);
+            }
+            
             input.produtoSearchInstance = new ProdutoSearch(input);
         }
     });

@@ -209,7 +209,11 @@ class ItemPedidoCompraForm(BaseModelForm):
             produto = self.instance.produto
             self.fields['produto_search'].initial = f"{produto.codigo} - {produto.nome}"
         
-        # Não é mais necessário definir queryset para produto, pois será hidden
+        # 🔧 CORREÇÃO 1: Definir queryset para aceitar qualquer produto ativo
+        self.fields['produto'].queryset = Produto.objects.filter(
+            status='ATIVO',
+            disponivel=True
+        )
         
         # Campos obrigatórios
         self.fields['produto'].required = True
@@ -236,12 +240,27 @@ class ItemPedidoCompraForm(BaseModelForm):
         if not produto:
             raise ValidationError('Selecione um produto.')
         
+        # 🔧 CORREÇÃO 2: Lidar com UUID string vs objeto Produto
+        if isinstance(produto, str):
+            try:
+                # Se recebeu UUID como string, buscar o produto
+                import uuid
+                produto_uuid = uuid.UUID(produto)  # Validar formato UUID
+                produto_obj = Produto.objects.get(pk=produto_uuid)
+            except (ValueError, Produto.DoesNotExist) as e:
+                # 🔍 DEBUG: Mostrar erro específico
+                print(f"❌ ERRO UUID: {e} - Valor recebido: {produto}")
+                raise ValidationError(f'Produto não encontrado: {produto}')
+        else:
+            # Se já é um objeto Produto
+            produto_obj = produto
+        
         # Verificar se produto está ativo e disponível
-        if produto.status != 'ATIVO' or not produto.disponivel:
+        if produto_obj.status != 'ATIVO' or not produto_obj.disponivel:
             raise ValidationError('Produto selecionado não está disponível.')
         
-        return produto
-
+        # 🔧 CORREÇÃO 3: Retornar o objeto Produto, não a string
+        return produto_obj
 
 
 # FORMSET PARA ITENS DO PEDIDO
