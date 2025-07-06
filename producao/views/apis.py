@@ -6,6 +6,7 @@ Portal de Produção - Sistema Elevadores FUZA
 """
 
 import logging
+from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -198,3 +199,53 @@ def api_fornecedor_produtos(request, fornecedor_id):
         return JsonResponse({'error': 'Fornecedor não encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+# producao/views/apis.py - ADICIONAR ESTA FUNÇÃO
+
+@login_required
+@require_GET
+def api_buscar_produtos(request):
+    """
+    API simples para buscar produtos por texto
+    Retorna produtos que contenham o termo no código, nome ou descrição
+    """
+    termo = request.GET.get('q', '').strip()
+    
+    if not termo or len(termo) < 2:
+        return JsonResponse({'produtos': []})
+    
+    try:
+        # Buscar produtos que contenham o termo
+        produtos = Produto.objects.filter(
+            models.Q(codigo__icontains=termo) |
+            models.Q(nome__icontains=termo) |
+            models.Q(descricao__icontains=termo),
+            status='ATIVO',
+            disponivel=True
+        ).select_related('grupo', 'subgrupo').order_by('codigo')[:20]  # Limitar a 20 resultados
+        
+        produtos_data = []
+        for produto in produtos:
+            produtos_data.append({
+                'id': produto.id,
+                'codigo': produto.codigo,
+                'nome': produto.nome,
+                'descricao': produto.descricao[:100] if produto.descricao else '',
+                'unidade': produto.unidade_medida,
+                'grupo': produto.grupo.nome if produto.grupo else '',
+                'subgrupo': produto.subgrupo.nome if produto.subgrupo else '',
+                'custo_medio': float(produto.custo_medio) if produto.custo_medio else None,
+                'texto_completo': f"{produto.codigo} - {produto.nome}"
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'produtos': produtos_data,
+            'total_encontrados': len(produtos_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=500)

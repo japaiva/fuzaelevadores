@@ -1,0 +1,28 @@
+<div class="produto-search-container" 
+     data-tipo="{{ widget.tipo_produto }}"
+     data-widget-id="{{ widget.widget_id }}">
+    
+    <!-- Campo de busca visível -->
+    <input type="text" 
+           id="{{ widget.search_id }}"
+           class="{{ widget.css_classes }} produto-search-input"
+           placeholder="{{ widget.placeholder }}"
+           value="{{ widget.display_value }}"
+           autocomplete="off"
+           {% if widget.required %}required{% endif %}>
+    
+    <!-- Ícone de busca -->
+    <i class="fas fa-search produto-search-icon"></i>
+    
+    <!-- Campo hidden com o ID real -->
+    <input type="hidden" 
+           id="{{ widget.hidden_id }}"
+           name="{{ widget.name }}"
+           class="produto-id-input"
+           value="{{ widget.value }}">
+    
+    <!-- Dropdown com resultados -->
+    <div id="{{ widget.dropdown_id }}" class="produto-search-dropdown">
+        <!-- Resultados serão inseridos aqui via JavaScript -->
+    </div>
+</div>

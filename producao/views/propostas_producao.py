@@ -1,10 +1,6 @@
 # producao/views/propostas_producao.py
 
-"""
-Views para Propostas e Lista de Materiais no Portal de Produção
-Portal de Produção - Sistema Elevadores FUZA
-✅ ATUALIZADA: Lista idêntica ao portal vendedor + Status simplificados + Correções de valor total
-"""
+
 
 import json
 import logging

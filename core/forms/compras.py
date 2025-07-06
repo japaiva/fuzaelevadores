@@ -162,17 +162,27 @@ class PedidoCompraForm(DateAwareModelForm, AuditMixin):
         return cleaned_data
 
 
+# core/forms/compras.py - ATUALIZAR O ItemPedidoCompraForm
+
 class ItemPedidoCompraForm(BaseModelForm):
-    """Formulário para itens do pedido de compra"""
+    """Formulário para itens do pedido de compra - COM BUSCA DE PRODUTOS"""
+    
+    # Campo adicional para busca de produtos
+    produto_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control produto-search-input',
+            'placeholder': 'Digite código ou nome do produto...',
+            'autocomplete': 'off',
+        }),
+        label='Buscar Produto'
+    )
     
     class Meta:
         model = ItemPedidoCompra
         fields = ['produto', 'quantidade', 'valor_unitario', 'observacoes']
         widgets = {
-            'produto': forms.Select(attrs={
-                'class': 'form-control',
-                'required': True
-            }),
+            'produto': forms.HiddenInput(),  # Campo hidden, será preenchido via JS
             'quantidade': QuantityInput(attrs={
                 'class': 'form-control'
             }),
@@ -185,7 +195,7 @@ class ItemPedidoCompraForm(BaseModelForm):
             }),
         }
         labels = {
-            'produto': 'Produto',
+            'produto': 'Produto Selecionado',
             'quantidade': 'Quantidade',
             'valor_unitario': 'Valor Unitário',
             'observacoes': 'Observações',
@@ -194,28 +204,44 @@ class ItemPedidoCompraForm(BaseModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Filtrar produtos disponíveis
-        self.fields['produto'].queryset = Produto.objects.filter(
-            status='ATIVO',
-            disponivel=True
-        ).select_related('grupo', 'subgrupo').order_by('codigo')
+        # Se já tem produto selecionado, mostrar no campo de busca
+        if self.instance.pk and self.instance.produto:
+            produto = self.instance.produto
+            self.fields['produto_search'].initial = f"{produto.codigo} - {produto.nome}"
+        
+        # Não é mais necessário definir queryset para produto, pois será hidden
         
         # Campos obrigatórios
         self.fields['produto'].required = True
         self.fields['quantidade'].required = True
         self.fields['valor_unitario'].required = True
     
-    def clean_quantidade(self):
-        quantidade = self.cleaned_data.get('quantidade')
-        if quantidade is None or quantidade <= 0:
-            raise ValidationError('Quantidade deve ser maior que zero.')
-        return quantidade
+    def clean_produto_search(self):
+        """Validar que um produto foi selecionado"""
+        produto_search = self.cleaned_data.get('produto_search')
+        produto = self.cleaned_data.get('produto')
+        
+        # Se não tem produto selecionado mas tem texto de busca
+        if produto_search and not produto:
+            raise ValidationError(
+                'Selecione um produto da lista de sugestões.'
+            )
+        
+        return produto_search
     
-    def clean_valor_unitario(self):
-        valor = self.cleaned_data.get('valor_unitario')
-        if valor is None or valor <= 0:
-            raise ValidationError('Valor unitário deve ser maior que zero.')
-        return valor
+    def clean_produto(self):
+        """Validar produto selecionado"""
+        produto = self.cleaned_data.get('produto')
+        
+        if not produto:
+            raise ValidationError('Selecione um produto.')
+        
+        # Verificar se produto está ativo e disponível
+        if produto.status != 'ATIVO' or not produto.disponivel:
+            raise ValidationError('Produto selecionado não está disponível.')
+        
+        return produto
+
 
 
 # FORMSET PARA ITENS DO PEDIDO

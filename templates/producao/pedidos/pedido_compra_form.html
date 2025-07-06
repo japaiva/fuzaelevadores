@@ -3,6 +3,10 @@
 
 {% block title %}{{ title }} | Portal Produção{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/produto-search.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -184,11 +188,31 @@
                       </td>
                       
                       <td class="align-middle">
+                        <!-- Campo de busca visível -->
+                        {{ form_item.produto_search }}
+                        
+                        <!-- Campo hidden do produto -->
                         {{ form_item.produto }}
+                        
+                        <!-- Container para mostrar produto selecionado -->
+                        <div class="produto-selecionado mt-1" style="display: none;">
+                          <small class="text-success">
+                            <i class="fas fa-check-circle me-1"></i>
+                            <span class="produto-texto"></span>
+                          </small>
+                        </div>
+                        
                         {% if form_item.produto.errors %}
                           <div class="text-danger small mt-1">
                             <i class="fas fa-exclamation-triangle me-1"></i>
                             {{ form_item.produto.errors.0 }}
+                          </div>
+                        {% endif %}
+                        
+                        {% if form_item.produto_search.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.produto_search.errors.0 }}
                           </div>
                         {% endif %}
                       </td>
@@ -251,7 +275,14 @@
                   </td>
                   
                   <td class="align-middle">
+                    {{ formset.empty_form.produto_search }}
                     {{ formset.empty_form.produto }}
+                    <div class="produto-selecionado mt-1" style="display: none;">
+                      <small class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <span class="produto-texto"></span>
+                      </small>
+                    </div>
                   </td>
                   
                   <td class="align-middle">
@@ -394,11 +425,10 @@
   </div>
 </div>
 
-</div>
-
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/produto-search.js' %}"></script>
 <script>
 // =============================================================================
 // INICIALIZAÇÃO
@@ -413,6 +443,33 @@ document.addEventListener('DOMContentLoaded', function() {
     atualizarNumeracaoItens();
     calcularTotais();
     verificarItensVazios();
+    
+    // Inicializar busca de produtos
+    initProdutoSearch();
+    
+    // Event listener para quando um produto é selecionado
+    document.addEventListener('produto-selecionado', function(e) {
+        // Recalcular totais quando produto for selecionado
+        calcularTotais();
+        
+        // Mostrar confirmação visual
+        const row = e.target.closest('tr');
+        if (row) {
+            const produtoSelecionado = row.querySelector('.produto-selecionado');
+            const produtoTexto = row.querySelector('.produto-selecionado .produto-texto');
+            const produtoInput = row.querySelector('.produto-search-input');
+            
+            if (produtoSelecionado && produtoTexto && produtoInput) {
+                produtoTexto.textContent = produtoInput.value;
+                produtoSelecionado.style.display = 'block';
+                
+                // Esconder após 3 segundos
+                setTimeout(() => {
+                    produtoSelecionado.style.display = 'none';
+                }, 3000);
+            }
+        }
+    });
     
     console.log('✅ Inicialização completa');
 });
@@ -517,7 +574,7 @@ function setupAddAnotherItem() {
         calcularTotais();
         
         // Focar no primeiro campo
-        const firstInput = newRow.querySelector('select, input');
+        const firstInput = newRow.querySelector('input[type="text"], select');
         if (firstInput) {
             firstInput.focus();
         }
@@ -560,6 +617,9 @@ function applyMasksToNewRow(row) {
             });
         }
     }
+    
+    // Inicializar busca de produtos para nova linha
+    initProdutoSearchInNewRow(row);
 }
 
 function removerItem(btn) {
