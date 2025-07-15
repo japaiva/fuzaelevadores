@@ -1,4 +1,4 @@
-<!-- producao/subgrupo_form.html -->
+<!-- producao/subgrupo_form.html CORRIGIDO -->
 {% extends 'producao/base_producao.html' %}
 
 {% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Subgrupo | Portal Produção{% endblock %}
@@ -113,18 +113,17 @@
                   <div class="d-flex gap-2">
                     {% if form.instance.grupo.tipo_produto == 'MP' %}
                     <a href="{% url 'producao:materiaprima_list' %}?subgrupo={{ form.instance.id }}" class="btn btn-outline-info btn-sm">
-                      <i class="fas fa-boxes me-1"></i> Ver Matérias-Primas ({{ form.instance.produtos.count }})
+                      <i class="fas fa-boxes me-1"></i> Ver Matérias-Primas ({{ form.instance.produtos_do_subgrupo.count }})
                     </a>
                     {% elif form.instance.grupo.tipo_produto == 'PI' %}
-                    <a href="#" class="btn btn-outline-info btn-sm disabled" title="Em desenvolvimento">
-                      <i class="fas fa-cogs me-1"></i> Ver Produtos Intermediários ({{ form.instance.produtos.count }})
+                    <a href="{% url 'producao:produto_intermediario_list' %}?subgrupo={{ form.instance.id }}" class="btn btn-outline-warning btn-sm">
+                      <i class="fas fa-cogs me-1"></i> Ver Produtos Intermediários ({{ form.instance.produtos_do_subgrupo.count }})
                     </a>
                     {% elif form.instance.grupo.tipo_produto == 'PA' %}
-                    <a href="#" class="btn btn-outline-info btn-sm disabled" title="Em desenvolvimento">
-                      <i class="fas fa-check-circle me-1"></i> Ver Produtos Acabados ({{ form.instance.produtos.count }})
+                    <a href="{% url 'producao:produto_acabado_list' %}?subgrupo={{ form.instance.id }}" class="btn btn-outline-success btn-sm">
+                      <i class="fas fa-check-circle me-1"></i> Ver Produtos Acabados ({{ form.instance.produtos_do_subgrupo.count }})
                     </a>
                     {% endif %}
-                    
                   </div>
                 </div>
               </div>
@@ -148,7 +147,7 @@
 
 <script>
 // Script para atualizar subgrupos quando trocar o grupo
-document.getElementById('{{ form.grupo.id_for_label }}').addEventListener('change', function() {
+document.getElementById('{{ form.instance.grupo.id_for_label }}').addEventListener('change', function() {
     // Aqui pode implementar AJAX para validar se o grupo está ativo
     // ou mostrar informações adicionais do grupo selecionado
 });

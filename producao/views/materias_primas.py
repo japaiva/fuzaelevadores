@@ -79,7 +79,7 @@ def materiaprima_list(request):
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
 
-    # Para os filtros
+    # Para os filtros - FILTRAR APENAS GRUPOS DO TIPO MP
     grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='MP').order_by('codigo')
 
     # Subgrupos - se tem grupo selecionado, filtrar por grupo

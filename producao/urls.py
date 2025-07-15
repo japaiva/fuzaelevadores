@@ -1,4 +1,4 @@
-# producao/urls.py - URLS ATUALIZADAS COM REQUISIÇÕES
+# producao/urls.py - URLS ATUALIZADAS COM PRODUTOS INTERMEDIÁRIOS
 
 from django.urls import path
 from . import views
@@ -37,6 +37,7 @@ urlpatterns = [
     path('materias-primas/<uuid:pk>/editar/', views.materiaprima_update, name='materiaprima_update'),
     path('materias-primas/<uuid:pk>/excluir/', views.materiaprima_delete, name='materiaprima_delete'),
     path('materias-primas/<uuid:pk>/toggle-status/', views.materiaprima_toggle_status, name='materiaprima_toggle_status'),
+    path('materias-primas/<uuid:pk>/toggle-utilizado/', views.materiaprima_toggle_utilizado, name='materiaprima_toggle_utilizado'),
     path('materias-primas/<uuid:pk>/', views.materiaprima_detail, name='materiaprima_detail'),
     
     # Produtos Intermediários
@@ -45,6 +46,8 @@ urlpatterns = [
     path('produtos-intermediarios/<uuid:pk>/editar/', views.produto_intermediario_update, name='produto_intermediario_update'),
     path('produtos-intermediarios/<uuid:pk>/excluir/', views.produto_intermediario_delete, name='produto_intermediario_delete'),
     path('produtos-intermediarios/<uuid:pk>/toggle-status/', views.produto_intermediario_toggle_status, name='produto_intermediario_toggle_status'),
+    path('produtos-intermediarios/<uuid:pk>/toggle-utilizado/', views.produto_intermediario_toggle_utilizado, name='produto_intermediario_toggle_utilizado'),
+    path('produtos-intermediarios/<uuid:pk>/', views.produto_intermediario_detail, name='produto_intermediario_detail'),
     
     # Produtos Acabados
     path('produtos-acabados/', views.produto_acabado_list, name='produto_acabado_list'),
@@ -65,7 +68,7 @@ urlpatterns = [
     # API para produtos
     path('api/produto-info/', views.api_produto_info, name='api_produto_info'),
     
-    # REQUISIÇÕES DE COMPRA - NOVO CRUD
+    # REQUISIÇÕES DE COMPRA
     path('requisicoes-compra/', views.requisicao_compra_list, name='requisicao_compra_list'),
     path('requisicoes-compra/nova/', views.requisicao_compra_create, name='requisicao_compra_create'),
     path('requisicoes-compra/<int:pk>/', views.requisicao_compra_detail, name='requisicao_compra_detail'),
@@ -102,7 +105,7 @@ urlpatterns = [
     path('api/produto-info/', views.api_produto_info, name='api_produto_info'),
     path('api/fornecedor/<int:fornecedor_id>/produtos/', views.api_fornecedor_produtos, name='api_fornecedor_produtos'),
 
-    # CRUD DE ITENS DA LISTA DE MATERIAIS - NOVO
+    # CRUD DE ITENS DA LISTA DE MATERIAIS
     path('listas-materiais/<int:lista_id>/itens/', 
         views.item_lista_materiais_list, 
         name='item_lista_materiais_list'),
@@ -123,8 +126,6 @@ urlpatterns = [
     path('api/buscar-produtos/', 
         views.api_buscar_produtos, 
         name='api_buscar_produtos'),
-
-
 
     # Relatórios
     path('relatorios/estoque-baixo/', views.relatorio_estoque_baixo, name='relatorio_estoque_baixo'),

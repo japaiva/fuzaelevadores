@@ -64,13 +64,15 @@ from .grupos import (
 # CRUD Matérias-Primas
 from .materias_primas import (
     materiaprima_list, materiaprima_create, materiaprima_update,
-    materiaprima_detail, materiaprima_delete, materiaprima_toggle_status
+    materiaprima_detail, materiaprima_delete, materiaprima_toggle_status,
+    materiaprima_toggle_utilizado  # ADICIONADO
 )
 
 # CRUD Produtos Intermediários
 from .produtos_intermediarios import (
     produto_intermediario_list, produto_intermediario_create, produto_intermediario_update,
-    produto_intermediario_delete, produto_intermediario_toggle_status
+    produto_intermediario_delete, produto_intermediario_toggle_status,
+    produto_intermediario_detail, produto_intermediario_toggle_utilizado  # ADICIONADO
 )
 
 # CRUD Produtos Acabados
@@ -166,10 +168,12 @@ __all__ = [
     # Matérias-Primas
     'materiaprima_list', 'materiaprima_create', 'materiaprima_update',
     'materiaprima_detail', 'materiaprima_delete', 'materiaprima_toggle_status',
+    'materiaprima_toggle_utilizado',  # ADICIONADO
     
     # Produtos Intermediários
     'produto_intermediario_list', 'produto_intermediario_create', 'produto_intermediario_update',
-    'produto_intermediario_delete', 'produto_intermediario_toggle_status',
+    'produto_intermediario_delete', 'produto_intermediario_toggle_status', 'produto_intermediario_detail',
+    'produto_intermediario_toggle_utilizado',  # ADICIONADO
     
     # Produtos Acabados
     'produto_acabado_list', 'produto_acabado_create', 'produto_acabado_update',

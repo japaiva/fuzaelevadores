@@ -1,0 +1,348 @@
+<!-- producao/produtos/produto_intermediario_detail.html -->
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}{{ produto.nome }} | Sistema FUZA{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-cogs me-2"></i> {{ produto.nome }}
+    </h5>
+    <div>
+      <a href="{% url 'producao:produto_intermediario_update' produto.pk %}" class="btn btn-outline-warning btn-sm me-1">
+        <i class="fas fa-edit me-1"></i> Editar
+      </a>
+      <a href="{% url 'producao:produto_intermediario_toggle_status' produto.pk %}" class="btn btn-sm {% if produto.status == 'ATIVO' %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+        <i class="fas {% if produto.status == 'ATIVO' %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-1"></i>
+        {% if produto.status == 'ATIVO' %}Desativar{% else %}Ativar{% endif %}
+      </a>
+      <a href="{% url 'producao:produto_intermediario_list' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+      <!-- COLUNA 1 - Informações principais -->
+      <div class="col-md-6">
+        <!-- Informações Gerais -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Informações Gerais</h6>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item">
+                <strong>Código:</strong> 
+                <span class="badge bg-warning fs-6">{{ produto.codigo }}</span>
+              </li>
+              <li class="list-group-item"><strong>Nome:</strong> {{ produto.nome }}</li>
+              {% if produto.descricao %}
+              <li class="list-group-item"><strong>Descrição:</strong> {{ produto.descricao }}</li>
+              {% endif %}
+              <li class="list-group-item">
+                <strong>Tipo:</strong>
+                <span class="badge bg-warning">{{ produto.get_tipo_display }}</span>
+              </li>
+              <li class="list-group-item">
+                <strong>Classificação:</strong><br>
+                <small class="text-muted">Grupo:</small> {{ produto.grupo.codigo }} - {{ produto.grupo.nome }}<br>
+                {% if produto.subgrupo %}
+                  <small class="text-muted">Subgrupo:</small> {{ produto.subgrupo.codigo }} - {{ produto.subgrupo.nome }}
+                {% endif %}
+              </li>
+              <li class="list-group-item">
+                <strong>Unidade:</strong> {{ produto.get_unidade_medida_display }}
+              </li>
+              {% if produto.peso_unitario %}
+              <li class="list-group-item">
+                <strong>Peso:</strong> {{ produto.peso_unitario }} kg
+              </li>
+              {% endif %}
+              <li class="list-group-item">
+                <strong>Status:</strong>
+                {% if produto.status == 'ATIVO' and produto.disponivel %}
+                  <span class="badge bg-success">Ativo e Disponível</span>
+                {% elif produto.status == 'ATIVO' %}
+                  <span class="badge bg-warning">Ativo mas Indisponível</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ produto.get_status_display }}</span>
+                {% endif %}
+              </li>
+              <li class="list-group-item">
+                <strong>Utilizado:</strong>
+                {% if produto.utilizado %}
+                  <span class="badge bg-warning">Sim</span>
+                {% else %}
+                  <span class="badge bg-success">Não</span>
+                {% endif %}
+              </li>
+              <li class="list-group-item">
+                <strong>Cadastro:</strong> {{ produto.criado_em|date:"d/m/Y H:i" }} por {{ produto.criado_por.get_full_name|default:produto.criado_por.username }}
+              </li>
+              {% if produto.atualizado_em != produto.criado_em %}
+              <li class="list-group-item">
+                <strong>Última Atualização:</strong> {{ produto.atualizado_em|date:"d/m/Y H:i" }} por {{ produto.atualizado_por.get_full_name|default:produto.atualizado_por.username }}
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Especificações Técnicas -->
+        {% if produto.especificacoes_tecnicas %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Especificações Técnicas</h6>
+          </div>
+          <div class="card-body">
+            <pre class="bg-light p-3 rounded">{{ produto.especificacoes_tecnicas|pprint }}</pre>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Dimensões -->
+        {% if produto.dimensoes %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Dimensões</h6>
+          </div>
+          <div class="card-body">
+            <pre class="bg-light p-3 rounded">{{ produto.dimensoes|pprint }}</pre>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- COLUNA 2 - Status e estatísticas -->
+      <div class="col-md-6">
+        <!-- Status e Disponibilidade -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Status e Controles</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <strong>Disponibilidade:</strong>
+              {% with produto.disponibilidade_info as disponibilidade_info %}
+                {% if disponibilidade_info.disponivel %}
+                  <span class="badge bg-success">Disponível</span>
+                {% else %}
+                  <span class="badge bg-danger">Indisponível</span>
+                  <div class="text-danger small mt-1">{{ disponibilidade_info.motivo }}</div>
+                {% endif %}
+              {% endwith %}
+            </div>
+
+            {% if produto.controla_estoque %}
+            <div class="mb-3">
+              <strong>Estoque Atual:</strong>
+              <div class="h5 {% if produto.estoque_atual <= produto.estoque_minimo %}text-danger{% else %}text-success{% endif %}">
+                {{ produto.estoque_atual }} {{ produto.get_unidade_medida_display }}
+                {% if produto.estoque_atual <= produto.estoque_minimo %}
+                  <i class="fas fa-exclamation-triangle text-danger ms-1" title="Estoque baixo"></i>
+                {% endif %}
+              </div>
+              <small class="text-muted">Mínimo: {{ produto.estoque_minimo }} {{ produto.get_unidade_medida_display }}</small>
+            </div>
+            {% endif %}
+
+            {% if produto.prazo_entrega_padrao %}
+            <div class="mb-3">
+              <strong>Prazo de Entrega:</strong>
+              <div class="h6">{{ produto.prazo_entrega_padrao }} dias</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Precificação -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Precificação</h6>
+          </div>
+          <div class="card-body">
+            {% if produto.custo_medio %}
+            <div class="mb-3">
+              <strong>Custo Médio:</strong>
+              <div class="h5 text-info">R$ {{ produto.custo_medio|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+
+            {% if produto.custo_industrializacao %}
+            <div class="mb-3">
+              <strong>Custo Industrialização:</strong>
+              <div class="h5 text-warning">R$ {{ produto.custo_industrializacao|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+
+            {% if produto.custo_total %}
+            <div class="mb-3">
+              <strong>Custo Total:</strong>
+              <div class="h5 text-primary">R$ {{ produto.custo_total|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+
+            {% if produto.preco_venda %}
+            <div class="mb-3">
+              <strong>Preço de Venda:</strong>
+              <div class="h5 text-primary">R$ {{ produto.preco_venda|floatformat:2 }}</div>
+            </div>
+            {% endif %}
+
+            {% if produto.margem_padrao %}
+            <div class="mb-3">
+              <strong>Margem Padrão:</strong>
+              <div class="h6">{{ produto.margem_padrao }}%</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Fornecedor Principal -->
+        {% if produto.fornecedor_principal %}
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Fornecedor Principal</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-2">
+              <strong>{{ produto.fornecedor_principal.nome_fantasia|default:produto.fornecedor_principal.razao_social }}</strong>
+            </div>
+            {% if produto.fornecedor_principal.telefone %}
+            <div class="mb-1">
+              <small class="text-muted">Telefone:</small> {{ produto.fornecedor_principal.telefone }}
+            </div>
+            {% endif %}
+            {% if produto.fornecedor_principal.email %}
+            <div class="mb-1">
+              <small class="text-muted">Email:</small> {{ produto.fornecedor_principal.email }}
+            </div>
+            {% endif %}
+            {% if produto.fornecedor_principal.contato_principal %}
+            <div class="mb-1">
+              <small class="text-muted">Contato:</small> {{ produto.fornecedor_principal.contato_principal }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Ações Rápidas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">Ações</h6>
+          </div>
+          <div class="card-body">
+            <div class="d-grid gap-2">
+              <a href="{% url 'producao:produto_intermediario_list' %}?grupo={{ produto.grupo.id }}" class="btn btn-outline-info">
+                <i class="fas fa-layer-group me-2"></i>Ver Produtos Intermediários do Grupo
+              </a>
+              {% if produto.subgrupo %}
+              <a href="{% url 'producao:produto_intermediario_list' %}?subgrupo={{ produto.subgrupo.id }}" class="btn btn-outline-secondary">
+                <i class="fas fa-sitemap me-2"></i>Ver Produtos Intermediários do Subgrupo
+              </a>
+              {% endif %}
+              <a href="{% url 'producao:produto_intermediario_update' produto.pk %}" class="btn btn-outline-warning">
+                <i class="fas fa-edit me-2"></i>Editar Produto Intermediário
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estrutura do Produto (Componentes) -->
+{% if produto.componentes.exists %}
+<div class="card mt-4">
+  <div class="card-header bg-light">
+    <h6 class="card-title mb-0">Estrutura do Produto (Componentes)</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>Quantidade</th>
+            <th>Unidade</th>
+            <th>% Perda</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for componente in produto.componentes.all %}
+          <tr>
+            <td>{{ componente.produto_filho.codigo }} - {{ componente.produto_filho.nome }}</td>
+            <td>{{ componente.quantidade }}</td>
+            <td>{{ componente.get_unidade_display }}</td>
+            <td>{{ componente.percentual_perda }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Usado em outros produtos -->
+{% if produto.usado_em.exists %}
+<div class="card mt-4">
+  <div class="card-header bg-light">
+    <h6 class="card-title mb-0">Usado em outros produtos</h6>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Produto Pai</th>
+            <th>Quantidade</th>
+            <th>Unidade</th>
+            <th>% Perda</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for uso in produto.usado_em.all %}
+          <tr>
+            <td>{{ uso.produto_pai.codigo }} - {{ uso.produto_pai.nome }}</td>
+            <td>{{ uso.quantidade }}</td>
+            <td>{{ uso.get_unidade_display }}</td>
+            <td>{{ uso.percentual_perda }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Informações Adicionais do Subgrupo -->
+{% if produto.subgrupo %}
+<div class="card mt-4">
+  <div class="card-header bg-light">
+    <h6 class="card-title mb-0">Informações do Subgrupo</h6>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <p><strong>Subgrupo:</strong> {{ produto.subgrupo.codigo_completo }} - {{ produto.subgrupo.nome }}</p>
+      </div>
+      <div class="col-md-6">
+        <p><strong>Último Número Usado:</strong> 
+          <span class="badge bg-info">{{ produto.subgrupo.ultimo_numero }}</span>
+        </p>
+        <p><strong>Total de Produtos:</strong> 
+          <span class="badge bg-secondary">{{ produto.subgrupo.produtos.count }}</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

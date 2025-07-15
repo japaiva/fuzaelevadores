@@ -12,7 +12,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 
-from core.models import Produto, GrupoProduto
+from core.models import Produto, GrupoProduto, SubgrupoProduto
 from core.forms import ProdutoForm
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,18 @@ def produto_intermediario_list(request):
 
     # Filtros
     grupo_id = request.GET.get('grupo')
-    if grupo_id:
+    # Validar e converter grupo_id
+    if grupo_id and grupo_id.isdigit():
         produtos_list = produtos_list.filter(grupo_id=grupo_id)
+    else:
+        grupo_id = None
+
+    subgrupo_id = request.GET.get('subgrupo')
+    # Validar e converter subgrupo_id
+    if subgrupo_id and subgrupo_id.isdigit():
+        produtos_list = produtos_list.filter(subgrupo_id=subgrupo_id)
+    else:
+        subgrupo_id = None
 
     status = request.GET.get('status')
     if status == 'ativo':
@@ -42,6 +52,13 @@ def produto_intermediario_list(request):
         produtos_list = produtos_list.filter(disponivel=True)
     elif status == 'indisponivel':
         produtos_list = produtos_list.filter(disponivel=False)
+
+    # FILTRO: UTILIZADO
+    utilizado = request.GET.get('utilizado')
+    if utilizado == 'utilizado':
+        produtos_list = produtos_list.filter(utilizado=True)
+    elif utilizado == 'nao_utilizado':
+        produtos_list = produtos_list.filter(utilizado=False)
 
     query = request.GET.get('q')
     if query:
@@ -62,13 +79,30 @@ def produto_intermediario_list(request):
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
 
-    grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
+    # Para os filtros - APENAS GRUPOS DO TIPO PI
+    grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='PI').order_by('codigo')
 
-    return render(request, 'producao/produto_intermediario_list.html', {
+    # Subgrupos - se tem grupo selecionado, filtrar por grupo
+    if grupo_id:
+        subgrupos = SubgrupoProduto.objects.filter(
+            grupo_id=grupo_id,
+            ativo=True
+        ).order_by('codigo')
+    else:
+        # Se não tem grupo selecionado, mostrar apenas subgrupos de grupos PI
+        subgrupos = SubgrupoProduto.objects.filter(
+            grupo__tipo_produto='PI',
+            ativo=True
+        ).select_related('grupo').order_by('grupo__codigo', 'codigo')
+
+    return render(request, 'producao/produtos/produto_intermediario_list.html', {
         'produtos': produtos,
         'grupos': grupos,
+        'subgrupos': subgrupos,
         'grupo_filtro': grupo_id,
+        'subgrupo_filtro': subgrupo_id,
         'status_filtro': status,
+        'utilizado_filtro': utilizado,
         'query': query
     })
 
@@ -93,7 +127,7 @@ def produto_intermediario_create(request):
     else:
         form = ProdutoForm()
 
-    return render(request, 'producao/produto_intermediario_form.html', {'form': form})
+    return render(request, 'producao/produtos/produto_intermediario_form.html', {'form': form})
 
 
 @login_required
@@ -117,10 +151,22 @@ def produto_intermediario_update(request, pk):
     else:
         form = ProdutoForm(instance=produto)
 
-    return render(request, 'producao/produto_intermediario_form.html', {
+    return render(request, 'producao/produtos/produto_intermediario_form.html', {
         'form': form,
         'produto': produto
     })
+
+
+@login_required
+def produto_intermediario_detail(request, pk):
+    """Visualizar detalhes de um produto intermediário"""
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
+
+    context = {
+        'produto': produto,
+    }
+
+    return render(request, 'producao/produtos/produto_intermediario_detail.html', context)
 
 
 @login_required
@@ -138,7 +184,7 @@ def produto_intermediario_delete(request, pk):
 
         return redirect('producao:produto_intermediario_list')
 
-    return render(request, 'producao/produto_intermediario_delete.html', {'produto': produto})
+    return render(request, 'producao/produtos/produto_intermediario_delete.html', {'produto': produto})
 
 
 @login_required
@@ -156,5 +202,24 @@ def produto_intermediario_toggle_status(request, pk):
     produto.atualizado_por = request.user
     produto.save()
     messages.success(request, f'Produto intermediário "{produto.nome}" {status_text} com sucesso.')
+
+    return redirect('producao:produto_intermediario_list')
+
+
+@login_required
+def produto_intermediario_toggle_utilizado(request, pk):
+    """Toggle do campo utilizado para produto intermediário"""
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
+
+    if produto.utilizado:
+        produto.utilizado = False
+        utilizado_text = "marcado como não utilizado"
+    else:
+        produto.utilizado = True
+        utilizado_text = "marcado como utilizado"
+
+    produto.atualizado_por = request.user
+    produto.save()
+    messages.success(request, f'Produto intermediário "{produto.nome}" {utilizado_text} com sucesso.')
 
     return redirect('producao:produto_intermediario_list')
