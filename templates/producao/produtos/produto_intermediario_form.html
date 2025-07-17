@@ -203,6 +203,9 @@
           </div>
         </div>
 
+        <!-- ============================================================================== -->
+        <!-- SEÇÃO DE FORNECIMENTO - PRODUTOS COMPRADOS E MONTADOS EXTERNAMENTE -->
+        <!-- ============================================================================== -->
         <div class="card border-start border-secondary border-4 mb-4" id="secao-fornecimento" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -246,21 +249,13 @@
                   </div>
                 {% endif %}
               </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Última Compra</label>
-                <div class="form-control-plaintext text-muted">
-                  {% if form.instance.pk %}
-                    Não disponível
-                  {% else %}
-                    Produto ainda não foi comprado
-                  {% endif %}
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
+        <!-- ============================================================================== -->
+        <!-- SEÇÃO DE PRESTADOR - SERVIÇOS EXTERNOS -->
+        <!-- ============================================================================== -->
         <div class="card border-start border-dark border-4 mb-4" id="secao-prestador" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -304,117 +299,26 @@
                   </div>
                 {% endif %}
               </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Última Produção</label>
-                <div class="form-control-plaintext text-muted">
-                  {% if form.instance.pk %}
-                    Não disponível
-                  {% else %}
-                    Serviço ainda não foi produzido
-                  {% endif %}
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        <div class="card border-start border-success border-4 mb-4" id="secao-custo-montado" style="display: none;">
+        <!-- ============================================================================== -->
+        <!-- SEÇÃO DE CUSTOS - SEMPRE VISÍVEL E EDITÁVEL -->
+        <!-- ============================================================================== -->
+        <div class="card border-start border-success border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-calculator me-2 text-success"></i>
-              Custo
+              Custos
             </h6>
           </div>
           <div class="card-body p-4">
             <div class="row g-3">
               <div class="col-md-4">
-                <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo MP</label>
-                <div class="input-group">
-                  <span class="input-group-text">R$</span>
-                  {{ form.custo_medio }}
-                </div>
-                {% if form.custo_medio.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-                <small class="text-muted">Custo das matérias-primas</small>
-              </div>
-
-              <div class="col-md-4">
-                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">Custo Serviço</label>
-                <div class="input-group">
-                  <span class="input-group-text">R$</span>
-                  {{ form.custo_industrializacao }}
-                </div>
-                {% if form.custo_industrializacao.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-                <small class="text-muted">Custo de montagem/industrialização</small>
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Custo Total</label>
-                <div id="custo-total-montado" class="form-control-plaintext fw-bold text-success fs-5">
-                  R$ 0,00
-                </div>
-                <small class="text-muted">Custo MP + Serviço</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card border-start border-warning border-4 mb-4" id="secao-custo-servico" style="display: none;">
-          <div class="card-header bg-light">
-            <h6 class="card-title mb-0">
-              <i class="fas fa-calculator me-2 text-warning"></i>
-              Custo
-            </h6>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">
-                  Custo Serviço <span class="text-danger">*</span>
-                </label>
-                <div class="input-group">
-                  <span class="input-group-text">R$</span>
-                  {{ form.custo_industrializacao }}
-                </div>
-                {% if form.custo_industrializacao.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-                <small class="text-muted">Custo do serviço prestado</small>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Custo Total</label>
-                <div id="custo-total-servico" class="form-control-plaintext fw-bold text-warning fs-5">
-                  R$ 0,00
-                </div>
-                <small class="text-muted">Mesmo valor do custo serviço</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card border-start border-primary border-4 mb-4" id="secao-custo-comprado" style="display: none;">
-          <div class="card-header bg-light">
-            <h6 class="card-title mb-0">
-              <i class="fas fa-calculator me-2 text-primary"></i>
-              Custo
-            </h6>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
                 <label for="{{ form.custo_medio.id_for_label }}" class="form-label">
-                  Custo Produto <span class="text-danger">*</span>
+                  Custo Produto
+                  <span class="text-danger custo-required" style="display: none;">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text">R$</span>
@@ -425,20 +329,44 @@
                     {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <small class="text-muted">Custo de aquisição do produto</small>
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
+                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">
+                  Custo Industrialização
+                  <span class="text-danger custo-indust-required" style="display: none;">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.custo_industrializacao }}
+                </div>
+                {% if form.custo_industrializacao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4">
                 <label class="form-label">Custo Total</label>
-                <div id="custo-total-comprado" class="form-control-plaintext fw-bold text-primary fs-5">
+                <div id="custo-total" class="form-control-plaintext fw-bold text-success fs-5">
                   R$ 0,00
                 </div>
-                <small class="text-muted">Mesmo valor do custo produto</small>
               </div>
+            </div>
+
+            <!-- Aviso sobre estrutura para produtos montados -->
+            <div id="aviso-estrutura" class="alert alert-info mt-3" style="display: none;">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Produto Montado:</strong> Os custos podem ser calculados automaticamente pela estrutura de componentes, 
+              mas você pode editá-los manualmente conforme necessário.
             </div>
           </div>
         </div>
 
+        <!-- ============================================================================== -->
+        <!-- SEÇÃO DE ESTOQUE - CONDICIONAL -->
+        <!-- ============================================================================== -->
         <div class="card border-start border-danger border-4 mb-4" id="secao-estoque" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -559,10 +487,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Seções do formulário
     const secaoFornecimento = document.getElementById('secao-fornecimento');
     const secaoPrestador = document.getElementById('secao-prestador');
-    const secaoCustoMontado = document.getElementById('secao-custo-montado');
-    const secaoCustoServico = document.getElementById('secao-custo-servico');
-    const secaoCustoComprado = document.getElementById('secao-custo-comprado');
     const secaoEstoque = document.getElementById('secao-estoque');
+    const avisoEstrutura = document.getElementById('aviso-estrutura');
+    
+    // Elementos de obrigatoriedade
+    const custoRequiredSpans = document.querySelectorAll('.custo-required');
+    const custoIndustRequiredSpans = document.querySelectorAll('.custo-indust-required');
     
     // =========================================================================
     // FUNÇÃO: ATUALIZAR STATUS (ATIVO/INATIVO)
@@ -586,14 +516,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('🔄 Atualizando seções para tipo:', tipoSelecionado);
         
-        // Esconder todas as seções
+        // Esconder todas as seções condicionais
         if (secaoFornecimento) secaoFornecimento.style.display = 'none';
         if (secaoPrestador) secaoPrestador.style.display = 'none';
-        if (secaoCustoMontado) secaoCustoMontado.style.display = 'none';
-        if (secaoCustoServico) secaoCustoServico.style.display = 'none';
-        if (secaoCustoComprado) secaoCustoComprado.style.display = 'none';
+        if (avisoEstrutura) avisoEstrutura.style.display = 'none';
         
-        // Resetar campos obrigatórios
+        // Resetar obrigatoriedade visual
+        custoRequiredSpans.forEach(span => span.style.display = 'none');
+        custoIndustRequiredSpans.forEach(span => span.style.display = 'none');
+        
+        // Resetar campos obrigatórios no formulário
         const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
         if (fornecedorInput) fornecedorInput.required = false;
         if (custoMedioInput) custoMedioInput.required = false;
@@ -602,31 +534,28 @@ document.addEventListener('DOMContentLoaded', function() {
         switch (tipoSelecionado) {
             case 'COMPRADO':
                 if (secaoFornecimento) secaoFornecimento.style.display = 'block';
-                if (secaoCustoComprado) secaoCustoComprado.style.display = 'block';
                 if (fornecedorInput) fornecedorInput.required = true;
-                if (custoMedioInput) custoMedioInput.required = true;
+                custoRequiredSpans.forEach(span => span.style.display = 'inline');
                 break;
                 
             case 'MONTADO_INTERNO':
-                if (secaoCustoMontado) secaoCustoMontado.style.display = 'block';
+                if (avisoEstrutura) avisoEstrutura.style.display = 'block';
                 break;
                 
             case 'MONTADO_EXTERNO':
                 if (secaoFornecimento) secaoFornecimento.style.display = 'block';
-                if (secaoCustoMontado) secaoCustoMontado.style.display = 'block';
+                if (avisoEstrutura) avisoEstrutura.style.display = 'block';
                 if (fornecedorInput) fornecedorInput.required = true;
                 break;
                 
             case 'SERVICO_INTERNO':
-                if (secaoCustoServico) secaoCustoServico.style.display = 'block';
-                if (custoIndustrializacaoInput) custoIndustrializacaoInput.required = true;
+                custoIndustRequiredSpans.forEach(span => span.style.display = 'inline');
                 break;
                 
-                            case 'SERVICO_EXTERNO':
+            case 'SERVICO_EXTERNO':
                 if (secaoPrestador) secaoPrestador.style.display = 'block';
-                if (secaoCustoServico) secaoCustoServico.style.display = 'block';
                 if (fornecedorInput) fornecedorInput.required = true;
-                if (custoIndustrializacaoInput) custoIndustrializacaoInput.required = true;
+                custoIndustRequiredSpans.forEach(span => span.style.display = 'inline');
                 break;
         }
         
@@ -689,32 +618,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // =========================================================================
     
     function calcularCustoTotal() {
-        const tipoSelecionado = tipoPiSelect ? tipoPiSelect.value : '';
         const custoMedio = parseFloat(custoMedioInput?.value?.replace(',', '.')) || 0;
         const custoIndustrializacao = parseFloat(custoIndustrializacaoInput?.value?.replace(',', '.')) || 0;
         
-        let custoTotal = 0;
-        let displayElement = null;
+        const custoTotal = custoMedio + custoIndustrializacao;
         
-        switch (tipoSelecionado) {
-            case 'COMPRADO':
-                custoTotal = custoMedio;
-                displayElement = document.getElementById('custo-total-comprado');
-                break;
-                
-            case 'MONTADO_INTERNO':
-            case 'MONTADO_EXTERNO':
-                custoTotal = custoMedio + custoIndustrializacao;
-                displayElement = document.getElementById('custo-total-montado');
-                break;
-                
-            case 'SERVICO_INTERNO':
-            case 'SERVICO_EXTERNO':
-                custoTotal = custoIndustrializacao;
-                displayElement = document.getElementById('custo-total-servico');
-                break;
-        }
-        
+        const displayElement = document.getElementById('custo-total');
         if (displayElement) {
             displayElement.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
@@ -760,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ativoCheck.addEventListener('change', atualizarStatus);
     }
     
-    // Custos
+    // Custos - SEMPRE EDITÁVEIS
     if (custoMedioInput) {
         custoMedioInput.addEventListener('input', calcularCustoTotal);
         custoMedioInput.addEventListener('blur', calcularCustoTotal);
@@ -772,7 +681,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // =========================================================================
-    // VALIDAÇÃO DE FORMULÁRIO
+    // VALIDAÇÃO DE FORMULÁRIO - SIMPLIFICADA
     // =========================================================================
     
     const form = document.getElementById('produto-form');
@@ -812,22 +721,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (fornecedorInput && !fornecedorInput.value) {
                     fornecedorInput.classList.add('is-invalid');
                     errorFields.push(tipoSelecionado === 'SERVICO_EXTERNO' ? 'Prestador Principal' : 'Fornecedor Principal');
-                    hasErrors = true;
-                }
-            }
-            
-            if (tipoSelecionado === 'COMPRADO') {
-                if (custoMedioInput && !custoMedioInput.value) {
-                    custoMedioInput.classList.add('is-invalid');
-                    errorFields.push('Custo Produto');
-                    hasErrors = true;
-                }
-            }
-            
-            if (tipoSelecionado === 'SERVICO_INTERNO' || tipoSelecionado === 'SERVICO_EXTERNO') {
-                if (custoIndustrializacaoInput && !custoIndustrializacaoInput.value) {
-                    custoIndustrializacaoInput.classList.add('is-invalid');
-                    errorFields.push('Custo Serviço');
                     hasErrors = true;
                 }
             }

@@ -18,16 +18,16 @@ from django.db import transaction
 from django.views.decorators.http import require_http_methods
 
 # IMPORTS PRINCIPAIS
-from core.models import Produto, GrupoProduto, SubgrupoProduto
-from core.forms import ProdutoForm
+from core.models import Produto, GrupoProduto, SubgrupoProduto #
+from core.forms import ProdutoForm #
 
 # IMPORT CONDICIONAL DA ESTRUTURA
 try:
-    from core.models import EstruturaProduto
-    ESTRUTURA_DISPONIVEL = True
+    from core.models import EstruturaProduto #
+    ESTRUTURA_DISPONIVEL = True #
 except ImportError:
-    EstruturaProduto = None
-    ESTRUTURA_DISPONIVEL = False
+    EstruturaProduto = None #
+    ESTRUTURA_DISPONIVEL = False #
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +42,10 @@ def produto_intermediario_list(request):
     # QUERY OTIMIZADA COM PREFETCH PARA ESTRUTURAS
     produtos_query = Produto.objects.select_related(
         'grupo', 'subgrupo', 'fornecedor_principal'
-    ).filter(tipo='PI')
+    ).filter(tipo='PI') #
     
     # Adicionar prefetch de estrutura se disponível
-    if ESTRUTURA_DISPONIVEL:
+    if ESTRUTURA_DISPONIVEL: #
         produtos_query = produtos_query.prefetch_related(
             Prefetch(
                 'componentes',
@@ -53,7 +53,7 @@ def produto_intermediario_list(request):
                     'produto_filho', 'produto_filho__grupo'
                 )
             )
-        )
+        ) #
     
     produtos_list = produtos_query.order_by('codigo')
 
@@ -87,7 +87,7 @@ def produto_intermediario_list(request):
         produtos_list = produtos_list.filter(utilizado=False)
 
     tipo_pi = request.GET.get('tipo_pi')
-    if tipo_pi and tipo_pi in dict(Produto.TIPO_PI_CHOICES):
+    if tipo_pi and tipo_pi in dict(Produto.TIPO_PI_CHOICES): #
         produtos_list = produtos_list.filter(tipo_pi=tipo_pi)
 
     query = request.GET.get('q')
@@ -110,16 +110,16 @@ def produto_intermediario_list(request):
         produtos = paginator.page(paginator.num_pages)
 
     # Para os filtros
-    grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='PI').order_by('codigo')
+    grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='PI').order_by('codigo') #
     
     if grupo_id:
         subgrupos = SubgrupoProduto.objects.filter(
             grupo_id=grupo_id, ativo=True
-        ).order_by('codigo')
+        ).order_by('codigo') #
     else:
         subgrupos = SubgrupoProduto.objects.filter(
             grupo__tipo_produto='PI', ativo=True
-        ).select_related('grupo').order_by('grupo__codigo', 'codigo')
+        ).select_related('grupo').order_by('grupo__codigo', 'codigo') #
 
     return render(request, 'producao/produtos/produto_intermediario_list.html', {
         'produtos': produtos,
@@ -130,9 +130,9 @@ def produto_intermediario_list(request):
         'status_filtro': status,
         'utilizado_filtro': utilizado,
         'tipo_pi_filtro': tipo_pi,
-        'tipo_pi_choices': Produto.TIPO_PI_CHOICES,
+        'tipo_pi_choices': Produto.TIPO_PI_CHOICES, #
         'query': query,
-        'estrutura_disponivel': ESTRUTURA_DISPONIVEL,
+        'estrutura_disponivel': ESTRUTURA_DISPONIVEL, #
     })
 
 
@@ -140,10 +140,10 @@ def produto_intermediario_list(request):
 def produto_intermediario_create(request):
     """Criar novo produto intermediário"""
     if request.method == 'POST':
-        form = ProdutoForm(request.POST)
+        form = ProdutoForm(request.POST) #
         if form.is_valid():
             produto = form.save(commit=False)
-            produto.tipo = 'PI'
+            produto.tipo = 'PI' #
             produto.criado_por = request.user
             produto.atualizado_por = request.user
             produto.save()
@@ -152,19 +152,23 @@ def produto_intermediario_create(request):
         else:
             messages.error(request, 'Erro ao criar produto intermediário. Verifique os dados informados.')
     else:
-        form = ProdutoForm()
-    return render(request, 'producao/produtos/produto_intermediario_form.html', {'form': form})
+        form = ProdutoForm() #
+    
+    # FIX: Filtrar o queryset do campo 'grupo' para mostrar apenas grupos do tipo 'PI'
+    form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='PI', ativo=True).order_by('codigo') #
+
+    return render(request, 'producao/produtos/produto_intermediario_form.html', {'form': form}) #
 
 
 @login_required
 def produto_intermediario_update(request, pk):
     """Editar produto intermediário"""
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
     if request.method == 'POST':
-        form = ProdutoForm(request.POST, instance=produto)
+        form = ProdutoForm(request.POST, instance=produto) #
         if form.is_valid():
             produto = form.save(commit=False)
-            produto.tipo = 'PI'
+            produto.tipo = 'PI' #
             produto.atualizado_por = request.user
             produto.save()
             messages.success(request, f'Produto intermediário "{produto.codigo} - {produto.nome}" atualizado com sucesso.')
@@ -172,20 +176,24 @@ def produto_intermediario_update(request, pk):
         else:
             messages.error(request, 'Erro ao atualizar produto intermediário. Verifique os dados informados.')
     else:
-        form = ProdutoForm(instance=produto)
+        form = ProdutoForm(instance=produto) #
+
+    # FIX: Filtrar o queryset do campo 'grupo' para mostrar apenas grupos do tipo 'PI'
+    form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='PI', ativo=True).order_by('codigo') #
+
     return render(request, 'producao/produtos/produto_intermediario_form.html', {
         'form': form, 'produto': produto
-    })
+    }) #
 
 
 @login_required
 def produto_intermediario_delete(request, pk):
     """Excluir produto intermediário"""
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
     if request.method == 'POST':
         try:
             codigo_nome = f"{produto.codigo} - {produto.nome}"
-            if ESTRUTURA_DISPONIVEL and hasattr(produto, 'usado_em'):
+            if ESTRUTURA_DISPONIVEL and hasattr(produto, 'usado_em'): #
                 if produto.usado_em.exists():
                     estruturas_onde_usado = produto.usado_em.select_related('produto_pai').all()
                     produtos_pai = [e.produto_pai.codigo for e in estruturas_onde_usado]
@@ -198,21 +206,21 @@ def produto_intermediario_delete(request, pk):
             messages.error(request, f'Erro ao excluir produto intermediário: {str(e)}')
         return redirect('producao:produto_intermediario_list')
 
-    context = {'produto': produto, 'estrutura_disponivel': ESTRUTURA_DISPONIVEL}
-    if ESTRUTURA_DISPONIVEL and hasattr(produto, 'usado_em'):
+    context = {'produto': produto, 'estrutura_disponivel': ESTRUTURA_DISPONIVEL} #
+    if ESTRUTURA_DISPONIVEL and hasattr(produto, 'usado_em'): #
         context.update({
             'estruturas_onde_usado': produto.usado_em.select_related('produto_pai').all(),
-            'tem_estrutura_propria': hasattr(produto, 'componentes') and produto.componentes.exists(),
-            'total_componentes': produto.componentes.count() if hasattr(produto, 'componentes') else 0,
+            'tem_estrutura_propria': hasattr(produto, 'componentes') and produto.componentes.exists(), #
+            'total_componentes': produto.componentes.count() if hasattr(produto, 'componentes') else 0, #
         })
-    return render(request, 'producao/produtos/produto_intermediario_delete.html', context)
+    return render(request, 'producao/produtos/produto_intermediario_delete.html', context) #
 
 
 @login_required
 def produto_intermediario_toggle_status(request, pk):
     """Ativar/desativar produto intermediário"""
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
-    produto.status = 'INATIVO' if produto.status == 'ATIVO' else 'ATIVO'
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
+    produto.status = 'INATIVO' if produto.status == 'ATIVO' else 'ATIVO' #
     produto.atualizado_por = request.user
     produto.save()
     status_text = "desativado" if produto.status == 'INATIVO' else "ativado"
@@ -223,8 +231,8 @@ def produto_intermediario_toggle_status(request, pk):
 @login_required
 def produto_intermediario_toggle_utilizado(request, pk):
     """Toggle do campo utilizado para produto intermediário"""
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
-    produto.utilizado = not produto.utilizado
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
+    produto.utilizado = not produto.utilizado #
     produto.atualizado_por = request.user
     produto.save()
     utilizado_text = "marcado como utilizado" if produto.utilizado else "marcado como não utilizado"
@@ -242,13 +250,13 @@ def produto_intermediario_estrutura(request, pk):
     Gerenciar estrutura de componentes de produto intermediário
     CORRIGIDO: Agora carrega componentes existentes do banco de dados
     """
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
     
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         messages.info(request, 'A funcionalidade de estrutura de componentes será implementada em breve.')
         return redirect('producao:produto_intermediario_list')
     
-    if not produto.pode_ter_estrutura:
+    if not produto.pode_ter_estrutura: #
         messages.warning(request, f'O produto "{produto.nome}" do tipo "{produto.get_tipo_pi_display()}" não suporta estrutura de componentes.')
         return redirect('producao:produto_intermediario_list')
     
@@ -256,15 +264,15 @@ def produto_intermediario_estrutura(request, pk):
     try:
         componentes_existentes = produto.componentes.select_related(
             'produto_filho', 'produto_filho__grupo', 'produto_filho__subgrupo'
-        ).order_by('produto_filho__codigo')
+        ).order_by('produto_filho__codigo') #
         
         total_componentes = componentes_existentes.count()
         
         # CALCULAR CUSTO TOTAL DA ESTRUTURA
         custo_calculado = 0
         for componente in componentes_existentes:
-            custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else 0
-            quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
+            custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else 0 #
+            quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
             custo_calculado += custo_unitario * quantidade_com_perda
             
         logger.info(f'Produto {produto.codigo}: {total_componentes} componentes, custo R$ {custo_calculado:.2f}')
@@ -280,28 +288,28 @@ def produto_intermediario_estrutura(request, pk):
         'componentes_existentes': componentes_existentes,
         'total_componentes': total_componentes,
         'custo_calculado': custo_calculado,
-        'estrutura_disponivel': ESTRUTURA_DISPONIVEL,
-        'custo_atual_produto': produto.custo_medio or 0,
+        'estrutura_disponivel': ESTRUTURA_DISPONIVEL, #
+        'custo_atual_produto': produto.custo_medio or 0, #
     }
     
-    return render(request, 'producao/produtos/produto_intermediario_estrutura.html', context)
+    return render(request, 'producao/produtos/produto_intermediario_estrutura.html', context) #
 
 
 @login_required
 def produto_intermediario_calcular_custo(request, pk):
     """Calcular custo de produto intermediário baseado na estrutura"""
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
     
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         messages.info(request, 'Funcionalidade de cálculo de custo será implementada quando a estrutura estiver pronta.')
         return redirect('producao:produto_intermediario_list')
     
-    if not produto.pode_ter_estrutura:
+    if not produto.pode_ter_estrutura: #
         messages.error(request, f'O produto "{produto.nome}" não suporta cálculo automático de custo.')
         return redirect('producao:produto_intermediario_list')
     
     try:
-        if not produto.componentes.exists():
+        if not produto.componentes.exists(): #
             messages.warning(request, f'O produto "{produto.nome}" não possui estrutura de componentes definida.')
             return redirect('producao:produto_intermediario_estrutura', pk=pk)
         
@@ -309,12 +317,12 @@ def produto_intermediario_calcular_custo(request, pk):
         custo_calculado = 0
         componentes_processados = 0
         
-        for componente in produto.componentes.select_related('produto_filho'):
-            produto_filho = componente.produto_filho
-            custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0)
+        for componente in produto.componentes.select_related('produto_filho'): #
+            produto_filho = componente.produto_filho #
+            custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0) #
             
             if custo_unitario > 0:
-                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
+                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
                 custo_componente = custo_unitario * quantidade_com_perda
                 custo_calculado += custo_componente
                 componentes_processados += 1
@@ -327,7 +335,7 @@ def produto_intermediario_calcular_custo(request, pk):
         
         if custo_calculado > 0:
             custo_anterior = produto.custo_medio or 0
-            produto.custo_medio = custo_calculado
+            produto.custo_medio = custo_calculado #
             produto.atualizado_por = request.user
             produto.save(update_fields=['custo_medio', 'atualizado_por', 'atualizado_em'])
             
@@ -352,52 +360,52 @@ def api_tipo_pi_info(request):
     """API para retornar informações sobre tipos de PI via AJAX - ATUALIZADA"""
     tipo_pi = request.GET.get('tipo_pi')
     
-    if not tipo_pi or tipo_pi not in dict(Produto.TIPO_PI_CHOICES):
+    if not tipo_pi or tipo_pi not in dict(Produto.TIPO_PI_CHOICES): #
         return JsonResponse({'success': False, 'error': 'Tipo PI inválido'})
     
     # ATUALIZADA: Incluindo novos tipos de serviço
     tipo_info = {
         'COMPRADO': {
-            'descricao': 'Produto pronto adquirido de fornecedor',
-            'pode_estrutura': False,
-            'custo_manual': True,
-            'campos_obrigatorios': ['fornecedor_principal', 'custo_medio'],
-            'exemplo': 'Porta cabine pronta, Motor de elevador, Botoeira completa'
+            'descricao': 'Produto pronto adquirido de fornecedor', #
+            'pode_estrutura': False, #
+            'custo_manual': True, #
+            'campos_obrigatorios': ['fornecedor_principal', 'custo_medio'], #
+            'exemplo': 'Porta cabine pronta, Motor de elevador, Botoeira completa' #
         },
         'MONTADO_INTERNO': {
-            'descricao': 'Produto montado internamente na fábrica',
-            'pode_estrutura': True,
-            'custo_manual': False,
-            'campos_obrigatorios': [],
-            'exemplo': 'Porta montada com perfis próprios, Quadro de comando customizado'
+            'descricao': 'Produto montado internamente na fábrica', #
+            'pode_estrutura': True, #
+            'custo_manual': False, #
+            'campos_obrigatorios': [], #
+            'exemplo': 'Porta montada com perfis próprios, Quadro de comando customizado' #
         },
         'MONTADO_EXTERNO': {
-            'descricao': 'Produto montado por terceiros (terceirizado)',
-            'pode_estrutura': True,
-            'custo_manual': False,
-            'campos_obrigatorios': ['fornecedor_principal'],
-            'exemplo': 'Painel cortado/dobrado, Porta montada por terceiro'
+            'descricao': 'Produto montado por terceiros (terceirizado)', #
+            'pode_estrutura': True, #
+            'custo_manual': False, #
+            'campos_obrigatorios': ['fornecedor_principal'], #
+            'exemplo': 'Painel cortado/dobrado, Porta montada por terceiro' #
         },
         'SERVICO_INTERNO': {
-            'descricao': 'Serviço prestado internamente pela empresa',
-            'pode_estrutura': False,
-            'custo_manual': True,
-            'campos_obrigatorios': ['custo_industrializacao'],
-            'exemplo': 'Mão de obra montagem, Projeto técnico, Supervisão'
+            'descricao': 'Serviço prestado internamente pela empresa', #
+            'pode_estrutura': False, #
+            'custo_manual': True, #
+            'campos_obrigatorios': ['custo_industrializacao'], #
+            'exemplo': 'Mão de obra montagem, Projeto técnico, Supervisão' #
         },
         'SERVICO_EXTERNO': {
-            'descricao': 'Serviço prestado por terceiros',
-            'pode_estrutura': False,
-            'custo_manual': True,
-            'campos_obrigatorios': ['fornecedor_principal', 'custo_industrializacao'],
-            'exemplo': 'Transporte, Instalação terceirizada, Consultoria externa'
+            'descricao': 'Serviço prestado por terceiros', #
+            'pode_estrutura': False, #
+            'custo_manual': True, #
+            'campos_obrigatorios': ['fornecedor_principal', 'custo_industrializacao'], #
+            'exemplo': 'Transporte, Instalação terceirizada, Consultoria externa' #
         }
     }
     
     return JsonResponse({
         'success': True,
         'tipo_pi': tipo_pi,
-        'estrutura_disponivel': ESTRUTURA_DISPONIVEL,
+        'estrutura_disponivel': ESTRUTURA_DISPONIVEL, #
         'info': tipo_info.get(tipo_pi, {})
     })
 
@@ -410,7 +418,7 @@ def relatorio_produtos_pi_por_tipo(request):
     stats_por_tipo = []
     
     # ATUALIZADA: Usando os novos choices
-    for tipo_codigo, tipo_nome in Produto.TIPO_PI_CHOICES:
+    for tipo_codigo, tipo_nome in Produto.TIPO_PI_CHOICES: #
         produtos = Produto.objects.filter(tipo='PI', tipo_pi=tipo_codigo)
         
         if produtos.exists():
@@ -421,10 +429,10 @@ def relatorio_produtos_pi_por_tipo(request):
                 'produtos_ativos': produtos.filter(status='ATIVO').count(),
                 'produtos_com_custo': produtos.filter(custo_medio__isnull=False).count(),
                 'custo_medio': produtos.filter(custo_medio__isnull=False).aggregate(media=Avg('custo_medio'))['media'] or 0,
-                'pode_estrutura': tipo_codigo in ['MONTADO_INTERNO', 'MONTADO_EXTERNO'],
+                'pode_estrutura': tipo_codigo in ['MONTADO_INTERNO', 'MONTADO_EXTERNO'], #
             }
             
-            if stats['pode_estrutura'] and ESTRUTURA_DISPONIVEL:
+            if stats['pode_estrutura'] and ESTRUTURA_DISPONIVEL: #
                 try:
                     stats['produtos_com_estrutura'] = produtos.filter(componentes__isnull=False).distinct().count()
                 except Exception:
@@ -440,10 +448,10 @@ def relatorio_produtos_pi_por_tipo(request):
         'stats_por_tipo': stats_por_tipo,
         'produtos_sem_tipo': produtos_sem_tipo,
         'total_pi': Produto.objects.filter(tipo='PI').count(),
-        'estrutura_disponivel': ESTRUTURA_DISPONIVEL,
+        'estrutura_disponivel': ESTRUTURA_DISPONIVEL, #
     }
     
-    return render(request, 'producao/relatorios/produtos_pi_por_tipo.html', context)
+    return render(request, 'producao/relatorios/produtos_pi_por_tipo.html', context) #
 
 
 # =============================================================================
@@ -454,15 +462,15 @@ def relatorio_produtos_pi_por_tipo(request):
 @require_http_methods(["GET"])
 def api_listar_componentes_estrutura(request, produto_id):
     """API PRINCIPAL: Listar componentes da estrutura em tempo real"""
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
-        produto = get_object_or_404(Produto, pk=produto_id, tipo='PI')
+        produto = get_object_or_404(Produto, pk=produto_id, tipo='PI') #
         
         logger.info(f'📊 API: Listando componentes para produto {produto.codigo}')
         
-        if not produto.pode_ter_estrutura:
+        if not produto.pode_ter_estrutura: #
             return JsonResponse({
                 'success': True, 
                 'componentes': [],
@@ -479,7 +487,7 @@ def api_listar_componentes_estrutura(request, produto_id):
         # BUSCAR COMPONENTES COM RELACIONAMENTOS OTIMIZADOS
         componentes = produto.componentes.select_related(
             'produto_filho', 'produto_filho__grupo', 'produto_filho__subgrupo'
-        ).order_by('produto_filho__codigo')
+        ).order_by('produto_filho__codigo') #
         
         componentes_data = []
         custo_total_estrutura = 0
@@ -488,13 +496,13 @@ def api_listar_componentes_estrutura(request, produto_id):
             try:
                 # CALCULAR CUSTOS CORRETAMENTE
                 custo_unitario = 0
-                if hasattr(componente.produto_filho, 'custo_total'):
-                    custo_unitario = componente.produto_filho.custo_total or 0
-                elif componente.produto_filho.custo_medio:
-                    custo_unitario = componente.produto_filho.custo_medio
+                if hasattr(componente.produto_filho, 'custo_total'): #
+                    custo_unitario = componente.produto_filho.custo_total or 0 #
+                elif componente.produto_filho.custo_medio: #
+                    custo_unitario = componente.produto_filho.custo_medio #
                 
-                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
-                custo_total_componente = custo_unitario * quantidade_com_perda
+                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
+                custo_total_componente = custo_unitario * quantidade_com_perda #
                 custo_total_estrutura += custo_total_componente
                 
                 componente_data = {
@@ -551,7 +559,7 @@ def api_listar_componentes_estrutura(request, produto_id):
 @require_http_methods(["GET"])
 def api_buscar_produtos_estrutura(request):
     """API para buscar produtos (MP e PI) para adicionar na estrutura"""
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     termo = request.GET.get('q', '').strip()
@@ -564,7 +572,7 @@ def api_buscar_produtos_estrutura(request):
         produtos_query = Produto.objects.filter(
             Q(codigo__icontains=termo) | Q(nome__icontains=termo) | Q(descricao__icontains=termo),
             tipo__in=['MP', 'PI'], status='ATIVO', disponivel=True
-        ).select_related('grupo', 'subgrupo')
+        ).select_related('grupo', 'subgrupo') #
         
         if produto_pai_id:
             produtos_query = produtos_query.exclude(pk=produto_pai_id)
@@ -579,15 +587,15 @@ def api_buscar_produtos_estrutura(request):
                 'nome': produto.nome,
                 'tipo': produto.tipo,
                 'tipo_display': produto.get_tipo_display(),
-                'unidade_medida': produto.unidade_medida,
-                'custo_medio': float(produto.custo_medio) if produto.custo_medio else 0.0,
-                'custo_industrializacao': float(produto.custo_industrializacao) if produto.custo_industrializacao else 0.0,
-                'custo_total': float(produto.custo_total) if hasattr(produto, 'custo_total') else 0.0,
+                'unidade_medida': produto.unidade_medida, #
+                'custo_medio': float(produto.custo_medio) if produto.custo_medio else 0.0, #
+                'custo_industrializacao': float(produto.custo_industrializacao) if produto.custo_industrializacao else 0.0, #
+                'custo_total': float(produto.custo_total) if hasattr(produto, 'custo_total') else 0.0, #
                 'grupo_nome': produto.grupo.nome if produto.grupo else '',
                 'subgrupo_nome': produto.subgrupo.nome if produto.subgrupo else '',
-                'estoque_atual': float(produto.estoque_atual) if produto.estoque_atual else 0.0,
+                'estoque_atual': float(produto.estoque_atual) if produto.estoque_atual else 0.0, #
                 'texto_completo': f"{produto.codigo} - {produto.nome}",
-                'disponibilidade': produto.disponibilidade_info if hasattr(produto, 'disponibilidade_info') else {'disponivel': True}
+                'disponibilidade': produto.disponibilidade_info if hasattr(produto, 'disponibilidade_info') else {'disponivel': True} #
             })
         
         return JsonResponse({
@@ -605,7 +613,7 @@ def api_buscar_produtos_estrutura(request):
 @require_http_methods(["POST"])
 def api_adicionar_componente_estrutura(request):
     """API para adicionar componente à estrutura"""
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
@@ -620,13 +628,13 @@ def api_adicionar_componente_estrutura(request):
         if not all([produto_pai_id, produto_filho_id, quantidade, unidade]):
             return JsonResponse({'success': False, 'error': 'Dados obrigatórios não informados'}, status=400)
         
-        produto_pai = get_object_or_404(Produto, pk=produto_pai_id, tipo='PI')
-        produto_filho = get_object_or_404(Produto, pk=produto_filho_id, tipo__in=['MP', 'PI'])
+        produto_pai = get_object_or_404(Produto, pk=produto_pai_id, tipo='PI') #
+        produto_filho = get_object_or_404(Produto, pk=produto_filho_id, tipo__in=['MP', 'PI']) #
         
-        if not produto_pai.pode_ter_estrutura:
+        if not produto_pai.pode_ter_estrutura: #
             return JsonResponse({'success': False, 'error': f'Produto "{produto_pai.nome}" não suporta estrutura de componentes'}, status=400)
         
-        if EstruturaProduto.objects.filter(produto_pai=produto_pai, produto_filho=produto_filho).exists():
+        if EstruturaProduto.objects.filter(produto_pai=produto_pai, produto_filho=produto_filho).exists(): #
             return JsonResponse({'success': False, 'error': f'Componente "{produto_filho.codigo}" já está na estrutura'}, status=400)
         
         with transaction.atomic():
@@ -637,14 +645,14 @@ def api_adicionar_componente_estrutura(request):
                 unidade=unidade,
                 percentual_perda=float(percentual_perda),
                 criado_por=request.user
-            )
+            ) #
             
             logger.info(f'Componente adicionado: {produto_pai.codigo} → {produto_filho.codigo} (qtd: {quantidade})')
         
         # Calcular custos
-        custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0)
-        quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
-        custo_total = custo_unitario * quantidade_com_perda
+        custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0) #
+        quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
+        custo_total = custo_unitario * quantidade_com_perda #
         
         return JsonResponse({
             'success': True,
@@ -677,12 +685,12 @@ def api_adicionar_componente_estrutura(request):
 @require_http_methods(["POST"])
 def api_editar_componente_estrutura(request, componente_id):
     """API para editar componente da estrutura"""
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
         data = json.loads(request.body)
-        componente = get_object_or_404(EstruturaProduto, pk=componente_id)
+        componente = get_object_or_404(EstruturaProduto, pk=componente_id) #
         
         if 'quantidade' in data:
             componente.quantidade = float(data['quantidade'])
@@ -695,9 +703,9 @@ def api_editar_componente_estrutura(request, componente_id):
         logger.info(f'Componente editado: {componente.id} - nova qtd: {componente.quantidade}')
         
         # Recalcular custos
-        custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else (componente.produto_filho.custo_medio or 0)
-        quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
-        custo_total = custo_unitario * quantidade_com_perda
+        custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else (componente.produto_filho.custo_medio or 0) #
+        quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
+        custo_total = custo_unitario * quantidade_com_perda #
         
         return JsonResponse({
             'success': True,
@@ -723,11 +731,11 @@ def api_editar_componente_estrutura(request, componente_id):
 @require_http_methods(["POST"])
 def api_remover_componente_estrutura(request, componente_id):
     """API para remover componente da estrutura"""
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
-        componente = get_object_or_404(EstruturaProduto, pk=componente_id)
+        componente = get_object_or_404(EstruturaProduto, pk=componente_id) #
         produto_pai_codigo = componente.produto_pai.codigo
         produto_filho_codigo = componente.produto_filho.codigo
         
@@ -748,26 +756,26 @@ def api_remover_componente_estrutura(request, componente_id):
 @require_http_methods(["POST"])
 def api_aplicar_custo_estrutura(request, produto_id):
     """API para aplicar custo calculado da estrutura no produto"""
-    if not ESTRUTURA_DISPONIVEL:
+    if not ESTRUTURA_DISPONIVEL: #
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
-        produto = get_object_or_404(Produto, pk=produto_id, tipo='PI')
+        produto = get_object_or_404(Produto, pk=produto_id, tipo='PI') #
         
-        if not produto.pode_ter_estrutura:
+        if not produto.pode_ter_estrutura: #
             return JsonResponse({'success': False, 'error': f'Produto "{produto.nome}" não suporta cálculo de custo por estrutura'}, status=400)
         
-        if not produto.componentes.exists():
+        if not produto.componentes.exists(): #
             return JsonResponse({'success': False, 'error': 'Produto não possui estrutura de componentes definida'}, status=400)
         
         # Calcular custo baseado na estrutura
-        custo_anterior = produto.custo_medio or 0
+        custo_anterior = produto.custo_medio or 0 #
         custo_calculado = 0
         
-        for componente in produto.componentes.select_related('produto_filho'):
-            custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else (componente.produto_filho.custo_medio or 0)
+        for componente in produto.componentes.select_related('produto_filho'): #
+            custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else (componente.produto_filho.custo_medio or 0) #
             if custo_unitario > 0:
-                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
+                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
                 custo_calculado += custo_unitario * quantidade_com_perda
         
         if custo_calculado <= 0:
@@ -794,93 +802,3 @@ def api_aplicar_custo_estrutura(request, produto_id):
     except Exception as e:
         logger.error(f'Erro ao aplicar custo no produto {produto_id}: {str(e)}')
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
-
-@login_required
-def api_tipo_pi_info(request):
-    """API para retornar informações sobre tipos de PI via AJAX"""
-    tipo_pi = request.GET.get('tipo_pi')
-    
-    if not tipo_pi or tipo_pi not in dict(Produto.TIPO_PI_CHOICES):
-        return JsonResponse({'success': False, 'error': 'Tipo PI inválido'})
-    
-    tipo_info = {
-        'COMPRADO': {
-            'descricao': 'Produto pronto adquirido de fornecedor',
-            'pode_estrutura': False,
-            'custo_manual': True,
-            'campos_obrigatorios': ['fornecedor_principal', 'custo_medio'],
-            'exemplo': 'Porta cabine pronta, Motor de elevador'
-        },
-        'MONTADO_INTERNO': {
-            'descricao': 'Produto montado internamente na fábrica',
-            'pode_estrutura': True,
-            'custo_manual': False,
-            'campos_obrigatorios': [],
-            'exemplo': 'Porta montada com componentes próprios, Quadro de comando customizado'
-        },
-        'MONTADO_EXTERNO': {
-            'descricao': 'Produto montado por terceiros (terceirizado)',
-            'pode_estrutura': True,
-            'custo_manual': False,
-            'campos_obrigatorios': ['fornecedor_principal'],
-            'exemplo': 'Painel cortado/dobrado, Porta montada por terceiro'
-        },
-        'SERVICO': {
-            'descricao': 'Prestação de serviço interno ou externo',
-            'pode_estrutura': False,
-            'custo_manual': True,
-            'campos_obrigatorios': ['custo_medio'],
-            'exemplo': 'Mão de obra montagem, Serviço de pintura'
-        }
-    }
-    
-    return JsonResponse({
-        'success': True,
-        'tipo_pi': tipo_pi,
-        'estrutura_disponivel': ESTRUTURA_DISPONIVEL,
-        'info': tipo_info.get(tipo_pi, {})
-    })
-
-
-@login_required
-def relatorio_produtos_pi_por_tipo(request):
-    """Relatório de produtos intermediários agrupados por tipo"""
-    from django.db.models import Count, Avg
-    
-    stats_por_tipo = []
-    
-    for tipo_codigo, tipo_nome in Produto.TIPO_PI_CHOICES:
-        produtos = Produto.objects.filter(tipo='PI', tipo_pi=tipo_codigo)
-        
-        if produtos.exists():
-            stats = {
-                'tipo_codigo': tipo_codigo,
-                'tipo_nome': tipo_nome,
-                'total_produtos': produtos.count(),
-                'produtos_ativos': produtos.filter(status='ATIVO').count(),
-                'produtos_com_custo': produtos.filter(custo_medio__isnull=False).count(),
-                'custo_medio': produtos.filter(custo_medio__isnull=False).aggregate(media=Avg('custo_medio'))['media'] or 0,
-                'pode_estrutura': tipo_codigo in ['MONTADO_INTERNO', 'MONTADO_EXTERNO'],
-            }
-            
-            if stats['pode_estrutura'] and ESTRUTURA_DISPONIVEL:
-                try:
-                    stats['produtos_com_estrutura'] = produtos.filter(componentes__isnull=False).distinct().count()
-                except Exception:
-                    stats['produtos_com_estrutura'] = 0
-            else:
-                stats['produtos_com_estrutura'] = 0
-            
-            stats_por_tipo.append(stats)
-    
-    produtos_sem_tipo = Produto.objects.filter(tipo='PI', tipo_pi__isnull=True).count()
-    
-    context = {
-        'stats_por_tipo': stats_por_tipo,
-        'produtos_sem_tipo': produtos_sem_tipo,
-        'total_pi': Produto.objects.filter(tipo='PI').count(),
-        'estrutura_disponivel': ESTRUTURA_DISPONIVEL,
-    }
-    
-    return render(request, 'producao/relatorios/produtos_pi_por_tipo.html', context)

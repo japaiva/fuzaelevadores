@@ -30,14 +30,12 @@ def materiaprima_list(request):
 
     # Filtros
     grupo_id = request.GET.get('grupo')
-    # Validar e converter grupo_id
     if grupo_id and grupo_id.isdigit():
         produtos_list = produtos_list.filter(grupo_id=grupo_id)
     else:
         grupo_id = None
 
     subgrupo_id = request.GET.get('subgrupo')
-    # Validar e converter subgrupo_id
     if subgrupo_id and subgrupo_id.isdigit():
         produtos_list = produtos_list.filter(subgrupo_id=subgrupo_id)
     else:
@@ -53,7 +51,6 @@ def materiaprima_list(request):
     elif status == 'indisponivel':
         produtos_list = produtos_list.filter(disponivel=False)
 
-    # NOVO FILTRO: UTILIZADO
     utilizado = request.GET.get('utilizado')
     if utilizado == 'utilizado':
         produtos_list = produtos_list.filter(utilizado=True)
@@ -79,17 +76,14 @@ def materiaprima_list(request):
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
 
-    # Para os filtros - FILTRAR APENAS GRUPOS DO TIPO MP
     grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='MP').order_by('codigo')
 
-    # Subgrupos - se tem grupo selecionado, filtrar por grupo
     if grupo_id:
         subgrupos = SubgrupoProduto.objects.filter(
             grupo_id=grupo_id,
             ativo=True
         ).order_by('codigo')
     else:
-        # Se não tem grupo selecionado, mostrar apenas subgrupos de grupos MP
         subgrupos = SubgrupoProduto.objects.filter(
             grupo__tipo_produto='MP',
             ativo=True
@@ -102,7 +96,7 @@ def materiaprima_list(request):
         'grupo_filtro': grupo_id,
         'subgrupo_filtro': subgrupo_id,
         'status_filtro': status,
-        'utilizado_filtro': utilizado,  # NOVO PARÂMETRO
+        'utilizado_filtro': utilizado,
         'query': query
     })
 
@@ -110,10 +104,8 @@ def materiaprima_list(request):
 def materiaprima_create(request):
     """Criar nova matéria-prima"""
     if request.method == 'POST':
-        # Cria uma cópia mutável dos dados POST
         post_data = request.POST.copy()
         
-        # Define estoque_minimo como None se o valor for uma string vazia
         if 'estoque_minimo' in post_data and not post_data['estoque_minimo']:
             post_data['estoque_minimo'] = None
 
@@ -124,10 +116,7 @@ def materiaprima_create(request):
             produto.tipo = 'MP'
             produto.criado_por = request.user
             produto.atualizado_por = request.user
-            
-            # Limpa o campo tipo_pi para matérias-primas
             produto.tipo_pi = None
-
             produto.save()
 
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" criada com sucesso.')
@@ -137,6 +126,9 @@ def materiaprima_create(request):
     else:
         form = ProdutoForm()
 
+    # FIX: Filtrar o queryset do campo 'grupo' para mostrar apenas grupos do tipo 'MP'
+    form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='MP', ativo=True).order_by('codigo')
+
     return render(request, 'producao/produtos/materiaprima_form.html', {'form': form})
 
 @login_required
@@ -145,10 +137,8 @@ def materiaprima_update(request, pk):
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
 
     if request.method == 'POST':
-        # Cria uma cópia mutável dos dados POST
         post_data = request.POST.copy()
         
-        # Define estoque_minimo como None se o valor for uma string vazia
         if 'estoque_minimo' in post_data and not post_data['estoque_minimo']:
             post_data['estoque_minimo'] = None
             
@@ -158,10 +148,7 @@ def materiaprima_update(request, pk):
             produto = form.save(commit=False)
             produto.tipo = 'MP'
             produto.atualizado_por = request.user
-            
-            # Limpa o campo tipo_pi para matérias-primas
             produto.tipo_pi = None
-            
             produto.save()
 
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" atualizada com sucesso.')
@@ -170,6 +157,9 @@ def materiaprima_update(request, pk):
             messages.error(request, 'Erro ao atualizar matéria-prima. Verifique os dados informados.')
     else:
         form = ProdutoForm(instance=produto)
+
+    # FIX: Filtrar o queryset do campo 'grupo' para mostrar apenas grupos do tipo 'MP'
+    form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='MP', ativo=True).order_by('codigo')
 
     return render(request, 'producao/produtos/materiaprima_form.html', {
         'form': form,
@@ -180,11 +170,7 @@ def materiaprima_update(request, pk):
 def materiaprima_detail(request, pk):
     """Visualizar detalhes de uma matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
-
-    context = {
-        'produto': produto,
-    }
-
+    context = {'produto': produto}
     return render(request, 'producao/produtos/materiaprima_detail.html', context)
 
 

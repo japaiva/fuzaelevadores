@@ -123,6 +123,18 @@ class SubgrupoProdutoForm(BaseModelForm, AuditMixin):
         return codigo
 
 
+# core/forms/produtos.py - CORREÇÃO: Permitir edição de custos em produtos montados
+
+from django import forms
+from django.core.exceptions import ValidationError
+
+from core.models import GrupoProduto, SubgrupoProduto, Produto
+from .base import BaseModelForm, BaseFiltroForm, AuditMixin, MoneyInput, QuantityInput, validar_positivo
+
+from core.choices import get_tipo_produto_choices 
+from core.models.base import UNIDADE_MEDIDA_CHOICES, STATUS_PRODUTO_CHOICES 
+
+
 class ProdutoForm(BaseModelForm, AuditMixin):
     
     class Meta:
@@ -132,7 +144,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'tipo_pi',
             'unidade_medida', 'peso_unitario',
             'codigo_ncm', 'codigo_produto_fornecedor',
-            'controla_estoque', 'estoque_atual', 'estoque_minimo', # <<< campo 'estoque_atual' ADICIONADO AQUI
+            'controla_estoque', 'estoque_atual', 'estoque_minimo',
             'custo_medio', 'custo_industrializacao',
             'fornecedor_principal', 'prazo_entrega_padrao', 
             'status', 'disponivel', 'utilizado'
@@ -178,7 +190,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
                 'class': 'form-control'
             }),
             'custo_industrializacao': MoneyInput(),
-            'estoque_atual': QuantityInput(), # <<< WIDGET ADICIONADO
+            'estoque_atual': QuantityInput(),
             'estoque_minimo': QuantityInput(),
             'custo_medio': MoneyInput(),
             'prazo_entrega_padrao': forms.NumberInput(attrs={
@@ -215,7 +227,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'codigo_produto_fornecedor': 'Código no Fornecedor',
             'custo_industrializacao': 'Custo Industrialização',
             'controla_estoque': 'Controla Estoque',
-            'estoque_atual': 'Estoque Atual', # <<< LABEL ADICIONADO
+            'estoque_atual': 'Estoque Atual',
             'estoque_minimo': 'Estoque Mínimo',
             'custo_medio': 'Custo Médio',
             'fornecedor_principal': 'Fornecedor Principal',
@@ -275,17 +287,11 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         else:
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         
-        self.fields['grupo'].help_text = "Selecione o grupo - o tipo do produto será definido automaticamente"
-        self.fields['subgrupo'].help_text = "Selecione o subgrupo - o código será gerado automaticamente"
-        self.fields['utilizado'].help_text = "Marque se este material já foi utilizado em algum projeto"
+        # ========================================================================================
+        # REMOÇÃO DOS HELP_TEXTS QUE CAUSAVAM CONFUSÃO
+        # ========================================================================================
         
-        self.fields['tipo_pi'].help_text = """
-        <strong>Comprado:</strong> Produto pronto do fornecedor<br>
-        <strong>Montado Interno:</strong> Montagem na fábrica<br>
-        <strong>Montado Externo:</strong> Montagem terceirizada<br>
-        <strong>Serviço:</strong> Prestação de serviço
-        """
-        
+        # Manter apenas help texts realmente necessários
         if self.instance.pk and self.instance.codigo:
             self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
 
@@ -311,7 +317,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         return custo_medio    
 
     def clean(self):
-        """Validações personalizadas"""
+        """Validações personalizadas - CORRIGIDO: Apenas validar obrigatoriedade, não bloquear edição"""
         cleaned_data = super().clean()
         grupo = cleaned_data.get('grupo')
         subgrupo = cleaned_data.get('subgrupo')
@@ -326,13 +332,19 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             if not tipo_pi:
                 self.add_error('tipo_pi', 'Tipo do Produto Intermediário é obrigatório para produtos PI.')
                 
+            # ========================================================================================
+            # VALIDAÇÕES DE OBRIGATORIEDADE BASEADAS NO TIPO (SEM BLOQUEAR EDIÇÃO DE CUSTOS)
+            # ========================================================================================
+            
             if tipo_pi in ['COMPRADO', 'MONTADO_EXTERNO', 'SERVICO_EXTERNO']:
                 if not fornecedor_principal:
                     campo_nome = 'Prestador principal' if tipo_pi == 'SERVICO_EXTERNO' else 'Fornecedor principal'
                     self.add_error('fornecedor_principal', f'{campo_nome} é obrigatório para este tipo.')
+            
+            # NOTA: NÃO validamos mais se custos são obrigatórios baseado no tipo
+            # Isso permite flexibilidade para editar custos mesmo em produtos com estrutura
         
         return cleaned_data
-
 
     def save(self, commit=True):
         """Override para garantir que o tipo seja definido corretamente"""
@@ -345,7 +357,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             produto.save()
         
         return produto
-
 
 
 # <<<< NOVOS FORMULÁRIOS DE FILTRO ATUALIZADOS
