@@ -2,6 +2,7 @@
 
 """
 Models relacionados a produtos, grupos e estruturas
+VERSÃO ATUALIZADA COM TIPOS DE PRODUTOS INTERMEDIÁRIOS
 """
 
 from django.db import models
@@ -104,7 +105,16 @@ class Produto(models.Model):
     """
     Modelo unificado para Matéria Prima, Produto Intermediário e Produto Acabado
     Com geração automática de código baseada em grupo/subgrupo
+    ATUALIZADO COM TIPOS DE PRODUTOS INTERMEDIÁRIOS
     """
+    
+    # NOVO: Tipos de Produtos Intermediários
+    TIPO_PI_CHOICES = [
+        ('COMPRADO', 'Comprado Pronto'),
+        ('MONTADO_INTERNO', 'Montado Internamente'),
+        ('MONTADO_EXTERNO', 'Montado Externamente'),
+        ('SERVICO', 'Serviço'),
+    ]
     
     # Identificação
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -112,6 +122,16 @@ class Produto(models.Model):
     nome = models.CharField(max_length=200, verbose_name="Nome")
     descricao = models.TextField(blank=True, verbose_name="Descrição")
     tipo = models.CharField(max_length=2, choices=TIPO_PRODUTO_CHOICES, verbose_name="Tipo")
+    
+    # NOVO CAMPO: Tipo do Produto Intermediário
+    tipo_pi = models.CharField(
+        max_length=20,
+        choices=TIPO_PI_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Tipo do Produto Intermediário",
+        help_text="Apenas para Produtos Intermediários (PI)"
+    )
     
     # Classificação
     grupo = models.ForeignKey(
@@ -167,7 +187,6 @@ class Produto(models.Model):
     )
     
     # Custos e preços
-
     custo_medio = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -175,8 +194,6 @@ class Produto(models.Model):
         null=True, 
         verbose_name="Custo Médio"
     )
-
-
 
     custo_industrializacao = models.DecimalField(
         max_digits=10,
@@ -202,7 +219,6 @@ class Produto(models.Model):
     )
 
     # Fornecimento
-
     fornecedor_principal = models.ForeignKey(
         'Fornecedor', 
         on_delete=models.SET_NULL, 
@@ -264,12 +280,43 @@ class Produto(models.Model):
             models.Index(fields=['codigo']),
             models.Index(fields=['tipo', 'grupo']),
             models.Index(fields=['disponivel', 'status']),
-            models.Index(fields=['utilizado']),  # Novo índice
+            models.Index(fields=['utilizado']),
+            models.Index(fields=['tipo_pi']),  # NOVO ÍNDICE
         ]
     
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
     
+    def clean(self):
+        """Validações personalizadas do produto"""
+        super().clean()
+        
+        # O tipo do produto deve coincidir com o tipo do grupo
+        if self.grupo and self.grupo.tipo_produto:
+            self.tipo = self.grupo.tipo_produto
+        
+        # NOVA VALIDAÇÃO: tipo_pi apenas para produtos PI
+        if self.tipo == 'PI':
+            if not self.tipo_pi:
+                raise ValidationError({
+                    'tipo_pi': 'Tipo do Produto Intermediário é obrigatório para produtos PI.'
+                })
+        else:
+            # Para MP e PA, tipo_pi deve ser None
+            self.tipo_pi = None
+        
+        # Gerar código automático se não fornecido
+        if not self.codigo and self.subgrupo:
+            self.gerar_codigo_automatico()
+        
+        # Validar unicidade do código
+        if self.codigo:
+            produtos_existentes = Produto.objects.filter(codigo=self.codigo)
+            if self.pk:
+                produtos_existentes = produtos_existentes.exclude(pk=self.pk)
+            
+            if produtos_existentes.exists():
+                raise ValidationError({'codigo': 'Já existe um produto com este código.'})
     
     def gerar_codigo_automatico(self):
         """
@@ -353,26 +400,62 @@ class Produto(models.Model):
         
         super().save(*args, **kwargs)
 
-    def clean(self):
-        """
-        Validações personalizadas do produto
-        """
-        # O tipo do produto deve coincidir com o tipo do grupo
-        if self.grupo and self.grupo.tipo_produto:
-            self.tipo = self.grupo.tipo_produto
-        
-        # Gerar código automático se não fornecido
-        if not self.codigo and self.subgrupo:
-            self.gerar_codigo_automatico()
-        
-        # Validar unicidade do código
-        if self.codigo:
-            produtos_existentes = Produto.objects.filter(codigo=self.codigo)
-            if self.pk:
-                produtos_existentes = produtos_existentes.exclude(pk=self.pk)
+    # =================================================================================
+    # NOVAS PROPERTIES E MÉTODOS PARA TIPOS DE PI
+    # =================================================================================
+    
+    @property
+    def pode_ter_estrutura(self):
+        """Retorna True se o produto pode ter estrutura de componentes"""
+        return (
+            self.tipo == 'PI' and 
+            self.tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']
+        )
+    
+    @property
+    def tipo_pi_display_badge(self):
+        """Retorna classe CSS para badge do tipo PI"""
+        badges = {
+            'COMPRADO': 'bg-info',
+            'MONTADO_INTERNO': 'bg-success',
+            'MONTADO_EXTERNO': 'bg-warning',
+            'SERVICO': 'bg-secondary',
+        }
+        return badges.get(self.tipo_pi, 'bg-primary')
+    
+    def calcular_custo_estrutura(self):
+        """Calcula custo baseado na estrutura de componentes"""
+        if not self.pode_ter_estrutura:
+            return None
             
-            if produtos_existentes.exists():
-                raise ValidationError({'codigo': 'Já existe um produto com este código.'})
+        custo_total = 0
+        
+        for componente in self.componentes.all():
+            produto_filho = componente.produto_filho
+            quantidade = componente.quantidade
+            
+            # Pegar custo do componente
+            if produto_filho.tipo == 'MP':
+                custo_unitario = produto_filho.custo_total or 0
+            elif produto_filho.tipo == 'PI':
+                if produto_filho.tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']:
+                    # Recursivo - calcular custo do componente primeiro
+                    custo_unitario = produto_filho.calcular_custo_estrutura() or produto_filho.custo_total or 0
+                else:
+                    custo_unitario = produto_filho.custo_total or 0
+            else:
+                custo_unitario = produto_filho.custo_total or 0
+            
+            # Aplicar quantidade e perda
+            quantidade_com_perda = quantidade * (1 + (componente.percentual_perda / 100))
+            custo_componente = custo_unitario * quantidade_com_perda
+            custo_total += custo_componente
+        
+        return custo_total
+
+    # =================================================================================
+    # PROPERTIES EXISTENTES (MANTIDAS)
+    # =================================================================================
 
     @property
     def disponibilidade_info(self):
@@ -397,8 +480,6 @@ class Produto(models.Model):
     def status_utilizado_display(self):
         """Retorna classe CSS para badge do status utilizado"""
         return 'bg-warning' if self.utilizado else 'bg-success'
-
-    # VERSÕES CORRIGIDAS DAS PROPERTIES PARA COMPATIBILIDADE:
     
     @property
     def fornecedor_principal_novo(self):
@@ -467,9 +548,11 @@ class Produto(models.Model):
         
         return []
 
+
 class EstruturaProduto(models.Model):
     """
     Define a estrutura/composição de produtos intermediários e acabados
+    ATUALIZADA PARA SUPORTAR TIPOS DE PI
     """
     produto_pai = models.ForeignKey(
         Produto, 
@@ -485,7 +568,7 @@ class EstruturaProduto(models.Model):
     quantidade = models.DecimalField(max_digits=10, decimal_places=4, verbose_name="Quantidade")
     unidade = models.CharField(max_length=3, choices=UNIDADE_MEDIDA_CHOICES)
     
-    # Para cálculos dinâmicos
+    # Para cálculos dinâmicos (futuro)
     formula_quantidade = models.TextField(
         blank=True,
         help_text="Fórmula para cálculo dinâmico da quantidade (ex: 'altura * 2 + 0.5')"
@@ -510,3 +593,28 @@ class EstruturaProduto(models.Model):
     
     def __str__(self):
         return f"{self.produto_pai.codigo} → {self.produto_filho.codigo}"
+    
+    def clean(self):
+        """Validações da estrutura"""
+        super().clean()
+        
+        # Verificar se produto pai pode ter estrutura
+        if self.produto_pai and not self.produto_pai.pode_ter_estrutura:
+            raise ValidationError(
+                f'O produto "{self.produto_pai}" não suporta estrutura de componentes.'
+            )
+        
+        # Evitar referência circular
+        if self.produto_pai == self.produto_filho:
+            raise ValidationError('Um produto não pode ser componente de si mesmo.')
+    
+    @property
+    def quantidade_com_perda(self):
+        """Retorna quantidade considerando a perda"""
+        return self.quantidade * (1 + (self.percentual_perda / 100))
+    
+    @property
+    def custo_total_componente(self):
+        """Retorna custo total do componente (quantidade * preço * perda)"""
+        custo_unitario = self.produto_filho.custo_total or 0
+        return custo_unitario * self.quantidade_com_perda

@@ -11,7 +11,7 @@
       <i class="fas fa-cogs me-2"></i> Produtos Intermediários
     </h5>
     <div>
-      <a href="{% url 'producao:produto_intermediario_create' %}" class="btn btn-primary btn-sm">
+      <a href="{% url 'producao:produto_intermediario_create' %}" class="btn btn-warning btn-sm">
         <i class="fas fa-plus me-1"></i> Novo Produto Intermediário
       </a>
       <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm me-2">
@@ -20,9 +20,10 @@
     </div>
   </div>
   
+  <!-- <<<< FILTROS ATUALIZADOS COM TIPO_PI -->
   <div class="card-header bg-white">
     <div class="row">
-      <div class="col-md-8">
+      <div class="col-md-10">
         <form method="get" class="row g-2 align-items-center" id="filtro-form">
           <div class="col-auto">
             <select name="grupo" class="form-select form-select-sm" id="filtro-grupo" onchange="updateSubgrupos()">
@@ -44,6 +45,17 @@
               {% endfor %}
             </select>
           </div>
+          <!-- <<<< NOVO FILTRO: TIPO_PI -->
+          <div class="col-auto">
+            <select name="tipo_pi" class="form-select form-select-sm" onchange="this.form.submit()" title="Tipo do Produto Intermediário">
+              <option value="">Todos os Tipos</option>
+              {% for value, label in tipo_pi_choices %}
+                <option value="{{ value }}" {% if tipo_pi_filtro == value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
           <div class="col-auto">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
               <option value="">Todos os Status</option>
@@ -60,14 +72,15 @@
           </div>
         </form>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-2">
         <form method="get" class="d-flex">
           <input type="hidden" name="grupo" value="{{ grupo_filtro }}">
           <input type="hidden" name="subgrupo" value="{{ subgrupo_filtro }}">
+          <input type="hidden" name="tipo_pi" value="{{ tipo_pi_filtro }}">
           <input type="hidden" name="status" value="{{ status_filtro }}">
           <input type="hidden" name="utilizado" value="{{ utilizado_filtro }}">
           <input type="text" name="q" class="form-control form-control-sm me-2" 
-                 placeholder="Buscar código, nome ou descrição" value="{{ query|default:'' }}">
+                 placeholder="Buscar..." value="{{ query|default:'' }}">
           <button type="submit" class="btn btn-sm btn-primary">
             <i class="fas fa-search"></i>
           </button>
@@ -83,12 +96,14 @@
           <tr>
             <th style="width: 120px;">Código</th>
             <th>Nome</th>
-            <th style="width: 200px;">Grupo / Subgrupo</th>
-            <th style="width: 120px;">Custo</th>
-            <th style="width: 120px;">C.Ind.</th>
-            <th class="text-center" style="width: 80px;">Util</th>
-            <th class="text-center" style="width: 80px;">Status</th>
-            <th class="text-center" style="min-width: 120px;">Ações</th>
+
+            <th style="width: 180px;">Grupo / Subgrupo</th>
+            <th style="width: 100px;">Custo</th>
+            <th style="width: 100px;">C.Ind.</th>
+            <th style="width: 130px;">Tipo</th> <!-- <<<< NOVA COLUNA -->
+            <th class="text-center" style="width: 60px;">Util</th>
+            <th class="text-center" style="width: 60px;">Status</th>
+            <th class="text-center" style="min-width: 160px;">Ações</th> <!-- <<<< COLUNA AMPLIADA -->
           </tr>
         </thead>
         <tbody>
@@ -97,7 +112,19 @@
               <td><strong><code>{{ produto.codigo }}</code></strong></td>
               <td>
                 <strong>{{ produto.nome }}</strong>
+                {% if produto.pode_ter_estrutura %}
+                  <div class="text-muted small">
+                    <i class="fas fa-sitemap me-1" title="Pode ter estrutura"></i>
+                    {% if produto.componentes.exists %}
+                      {{ produto.componentes.count }} componente(s)
+                    {% else %}
+                      <span class="text-warning">Sem estrutura</span>
+                    {% endif %}
+                  </div>
+                {% endif %}
               </td>
+
+
               <td>
                 {% if produto.grupo %}
                   <div class="fw-semibold text-warning small">{{ produto.grupo.codigo }} - {{ produto.grupo.nome }}</div>
@@ -129,6 +156,21 @@
                 {% endif %}
               </td>
 
+              
+              <td>
+                {% if produto.tipo_pi %}
+                  <span class="badge {{ produto.tipo_pi_display_badge }} px-2 py-1">
+                    {{ produto.get_tipo_pi_display }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary">
+                    <i class="fas fa-question me-1"></i>
+                    Indefinido
+                  </span>
+                {% endif %}
+              </td>
+
+
               <td class="text-center">
                 {% if produto.utilizado %}
                   <span class="badge bg-warning">
@@ -140,6 +182,7 @@
                   </span>
                 {% endif %}
               </td>
+              
               <td class="text-center">
                 {% if produto.status == 'ATIVO' %}
                   <span class="badge bg-success">Ativo</span>
@@ -147,18 +190,46 @@
                   <span class="badge bg-secondary">Inativo</span>
                 {% endif %}
               </td>
+              
+              <!-- <<<< COLUNA DE AÇÕES AMPLIADA -->
               <td class="text-center">
                 <div class="btn-group" role="group" aria-label="Ações do produto intermediário">
+                  
+                  
+                  <!-- Botão Editar -->
                   <a href="{% url 'producao:produto_intermediario_update' produto.pk %}" 
                      class="btn btn-outline-primary btn-sm" 
                      title="Editar">
                     <i class="fas fa-edit"></i>
                   </a>
+                  
+                  <!-- <<<< NOVO: Botão Calcular Custo (apenas para montados) -->
+                  {% if produto.pode_ter_estrutura %}
+                    <a href="{% url 'producao:produto_intermediario_calcular_custo' produto.pk %}" 
+                       class="btn btn-outline-success btn-sm" 
+                       title="Calcular Custo"
+                       onclick="return confirm('Recalcular custo baseado na estrutura de componentes?')">
+                      <i class="fas fa-calculator"></i>
+                    </a>
+                  {% endif %}
+                  
+                  <!-- <<<< NOVO: Botão Estrutura (apenas para montados) -->
+                  {% if produto.pode_ter_estrutura %}
+                    <a href="{% url 'producao:produto_intermediario_estrutura' produto.pk %}" 
+                       class="btn btn-outline-warning btn-sm" 
+                       title="Estrutura de Componentes">
+                      <i class="fas fa-sitemap"></i>
+                    </a>
+                  {% endif %}
+                  
+                  <!-- Botão Toggle Status -->
                   <a href="{% url 'producao:produto_intermediario_toggle_status' produto.pk %}" 
                      class="btn btn-sm {% if produto.status == 'ATIVO' %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
                      title="{% if produto.status == 'ATIVO' %}Desativar{% else %}Ativar{% endif %}">
                     <i class="fas {% if produto.status == 'ATIVO' %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
                   </a>
+                  
+                  <!-- Botão Excluir -->
                   <a href="{% url 'producao:produto_intermediario_delete' produto.pk %}" 
                      class="btn btn-outline-danger btn-sm" 
                      title="Excluir"
@@ -170,17 +241,26 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="text-center py-4 text-muted">
-                {% if query or grupo_filtro or subgrupo_filtro or status_filtro or utilizado_filtro %}
+              <td colspan="9" class="text-center py-4 text-muted">
+                {% if query or grupo_filtro or subgrupo_filtro or status_filtro or utilizado_filtro or tipo_pi_filtro %}
                   <i class="fas fa-search fa-2x mb-2 text-muted"></i>
                   <div>Nenhum produto intermediário encontrado com os filtros aplicados.</div>
+                  <div class="mt-2">
+                    <strong>Filtros ativos:</strong>
+                    {% if grupo_filtro %}Grupo, {% endif %}
+                    {% if subgrupo_filtro %}Subgrupo, {% endif %}
+                    {% if tipo_pi_filtro %}Tipo "{{ tipo_pi_filtro }}", {% endif %}
+                    {% if status_filtro %}Status, {% endif %}
+                    {% if utilizado_filtro %}Utilização, {% endif %}
+                    {% if query %}Busca{% endif %}
+                  </div>
                   <a href="{% url 'producao:produto_intermediario_list' %}" class="btn btn-sm btn-outline-primary mt-2">
                     <i class="fas fa-times me-1"></i> Limpar Filtros
                   </a>
                 {% else %}
                   <i class="fas fa-cogs fa-2x mb-2 text-muted"></i>
                   <div>Nenhum produto intermediário cadastrado.</div>
-                  <a href="{% url 'producao:produto_intermediario_create' %}" class="btn btn-sm btn-primary mt-2">
+                  <a href="{% url 'producao:produto_intermediario_create' %}" class="btn btn-sm btn-warning mt-2">
                     <i class="fas fa-plus me-1"></i> Cadastrar Primeiro Produto Intermediário
                   </a>
                 {% endif %}
@@ -192,6 +272,8 @@
     </div>
   </div>
   
+  
+  <!-- PAGINAÇÃO -->
   {% if produtos.paginator.num_pages > 1 %}
   <div class="card-footer bg-white">
     <div class="d-flex justify-content-between align-items-center">
@@ -202,12 +284,12 @@
         <ul class="pagination pagination-sm mb-0">
           {% if produtos.has_previous %}
             <li class="page-item">
-              <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
+              <a class="page-link" href="?page=1{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if tipo_pi_filtro %}&tipo_pi={{ tipo_pi_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Primeiro">
                 <span aria-hidden="true">&laquo;&laquo;</span>
               </a>
             </li>
             <li class="page-item">
-              <a class="page-link" href="?page={{ produtos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
+              <a class="page-link" href="?page={{ produtos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if tipo_pi_filtro %}&tipo_pi={{ tipo_pi_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Anterior">
                 <span aria-hidden="true">&laquo;</span>
               </a>
             </li>
@@ -224,18 +306,18 @@
             {% if produtos.number == i %}
               <li class="page-item active"><span class="page-link">{{ i }}</span></li>
             {% elif i > produtos.number|add:'-3' and i < produtos.number|add:'3' %}
-              <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if tipo_pi_filtro %}&tipo_pi={{ tipo_pi_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
             {% endif %}
           {% endfor %}
           
           {% if produtos.has_next %}
             <li class="page-item">
-              <a class="page-link" href="?page={{ produtos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
+              <a class="page-link" href="?page={{ produtos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if tipo_pi_filtro %}&tipo_pi={{ tipo_pi_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Próximo">
                 <span aria-hidden="true">&raquo;</span>
               </a>
             </li>
             <li class="page-item">
-              <a class="page-link" href="?page={{ produtos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
+              <a class="page-link" href="?page={{ produtos.paginator.num_pages }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if tipo_pi_filtro %}&tipo_pi={{ tipo_pi_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Último">
                 <span aria-hidden="true">&raquo;&raquo;</span>
               </a>
             </li>
@@ -253,10 +335,104 @@
   </div>
   {% endif %}
 </div>
+
+<!-- <<<< MODAL PARA AÇÕES EM LOTE (FUTURO) -->
+<div class="modal fade" id="acaoLoteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Ações em Lote</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Funcionalidade em desenvolvimento:</p>
+        <ul>
+          <li>Recalcular custos de múltiplos produtos</li>
+          <li>Atualizar status em lote</li>
+          <li>Exportar selecionados</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge {
+  font-size: 0.75em;
+}
+
+.btn-group .btn {
+  margin-right: 2px;
+}
+
+.btn-group .btn:last-child {
+  margin-right: 0;
+}
+
+.table th {
+  font-weight: 600;
+  color: #495057;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 0.75rem 0.5rem;
+}
+
+.form-select-sm {
+  font-size: 0.875rem;
+}
+
+.card-footer {
+  border-top: 1px solid rgba(0,0,0,.125);
+}
+
+.text-warning {
+  color: #fd7e14 !important;
+}
+
+/* Responsividade para botões */
+@media (max-width: 768px) {
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    margin-bottom: 2px;
+    margin-right: 0;
+  }
+  
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+}
+
+/* Animações sutis */
+.table tbody tr:hover {
+  background-color: rgba(0,0,0,.02);
+  transition: background-color 0.15s ease-in-out;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  transition: transform 0.15s ease-in-out;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// =========================================================================
+// JAVASCRIPT PARA FILTROS DINÂMICOS
+// =========================================================================
+
 function updateSubgrupos() {
     const grupoSelect = document.getElementById('filtro-grupo');
     const subgrupoSelect = document.getElementById('filtro-subgrupo');
@@ -285,5 +461,72 @@ function updateSubgrupos() {
         document.getElementById('filtro-form').submit();
     }
 }
+
+// =========================================================================
+// TOOLTIPS E CONFIRMAÇÕES
+// =========================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips do Bootstrap se disponível
+    if (typeof bootstrap !== 'undefined') {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+    
+    // Confirmações personalizadas para ações críticas
+    const calcularLinks = document.querySelectorAll('a[onclick*="Recalcular custo"]');
+    calcularLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (confirm('Recalcular custo baseado na estrutura de componentes?\n\nIsso irá substituir o custo atual pelo valor calculado.')) {
+                window.location.href = this.href;
+            }
+        });
+    });
+    
+    // Efeito visual para badges
+    const badges = document.querySelectorAll('.badge');
+    badges.forEach(badge => {
+        badge.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+            this.style.transition = 'transform 0.15s ease-in-out';
+        });
+        
+        badge.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    });
+});
+
+// =========================================================================
+// FUNÇÕES UTILITÁRIAS
+// =========================================================================
+
+function limparFiltros() {
+    window.location.href = '{% url "producao:produto_intermediario_list" %}';
+}
+
+function exportarLista() {
+    // TODO: Implementar exportação
+    alert('Funcionalidade de exportação será implementada em breve.');
+}
+
+// Atalhos de teclado
+document.addEventListener('keydown', function(e) {
+    // Ctrl + N = Novo produto
+    if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = '{% url "producao:produto_intermediario_create" %}';
+    }
+    
+    // Ctrl + F = Focar na busca
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.querySelector('input[name="q"]').focus();
+    }
+});
 </script>
 {% endblock %}

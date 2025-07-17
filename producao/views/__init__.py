@@ -1,20 +1,9 @@
-# producao/views/__init__.py
+# producao/views/__init__.py - CORRIGIDO
 
 """
 Portal de Produção - Views
 Sistema Elevadores FUZA
-
-Estrutura modular das views do portal de produção:
-- dashboard: Páginas principais e estatísticas
-- fornecedores: CRUD de fornecedores
-- grupos: CRUD de grupos e subgrupos de produtos
-- materias_primas: CRUD de matérias-primas (MP)
-- produtos_intermediarios: CRUD de produtos intermediários (PI)
-- produtos_acabados: CRUD de produtos acabados (PA)
-- pedidos_compra: Sistema completo de pedidos de compra
-- lista_materiais_itens: CRUD de itens da lista de materiais
-- apis: Endpoints AJAX e APIs
-- relatorios: Relatórios específicos da produção
+CORRIGIDO: Import condicional para evitar erro de EstruturaProduto
 """
 
 # =============================================================================
@@ -65,14 +54,33 @@ from .grupos import (
 from .materias_primas import (
     materiaprima_list, materiaprima_create, materiaprima_update,
     materiaprima_detail, materiaprima_delete, materiaprima_toggle_status,
-    materiaprima_toggle_utilizado  # ADICIONADO
+    materiaprima_toggle_utilizado
 )
 
-# CRUD Produtos Intermediários
+# <<<< PRODUTOS INTERMEDIÁRIOS COM IMPORT CORRIGIDO
 from .produtos_intermediarios import (
+    # Views básicas CRUD
     produto_intermediario_list, produto_intermediario_create, produto_intermediario_update,
     produto_intermediario_delete, produto_intermediario_toggle_status,
-    produto_intermediario_detail, produto_intermediario_toggle_utilizado  # ADICIONADO
+    produto_intermediario_toggle_utilizado,
+    
+    # PRINCIPAIS: ESTRUTURA E CUSTO (já com verificações condicionais)
+    produto_intermediario_estrutura,       # FUNCIONALIDADE PRINCIPAL
+    produto_intermediario_calcular_custo,  # CALCULAR CUSTO AUTOMÁTICO
+    
+    # APIs PARA ESTRUTURA DE COMPONENTES (placeholders preparados)
+    api_buscar_produtos_estrutura,         # Buscar produtos para estrutura
+    api_adicionar_componente_estrutura,    # Adicionar componente AJAX
+    api_remover_componente_estrutura,      # Remover componente AJAX
+    api_editar_componente_estrutura,       # Editar componente AJAX
+    api_aplicar_custo_estrutura,           # Aplicar custo calculado AJAX
+    api_listar_componentes_estrutura,      #  Listar componentes da estrutura
+    
+    # API DE INFORMAÇÕES
+    api_tipo_pi_info,                      # API info sobre tipos PI
+    
+    # RELATÓRIO
+    relatorio_produtos_pi_por_tipo,        # Relatório por tipo PI
 )
 
 # CRUD Produtos Acabados
@@ -120,7 +128,7 @@ from .relatorios import (
 )
 
 # =============================================================================
-# LISTA DE TODAS AS VIEWS EXPORTADAS
+# LISTA DE TODAS AS VIEWS EXPORTADAS - ATUALIZADA
 # =============================================================================
 
 __all__ = [
@@ -168,12 +176,30 @@ __all__ = [
     # Matérias-Primas
     'materiaprima_list', 'materiaprima_create', 'materiaprima_update',
     'materiaprima_detail', 'materiaprima_delete', 'materiaprima_toggle_status',
-    'materiaprima_toggle_utilizado',  # ADICIONADO
+    'materiaprima_toggle_utilizado',
     
-    # Produtos Intermediários
+    # <<<< Produtos Intermediários - COM ESTRUTURA CORRIGIDA
     'produto_intermediario_list', 'produto_intermediario_create', 'produto_intermediario_update',
-    'produto_intermediario_delete', 'produto_intermediario_toggle_status', 'produto_intermediario_detail',
-    'produto_intermediario_toggle_utilizado',  # ADICIONADO
+    'produto_intermediario_delete', 'produto_intermediario_toggle_status',
+    'produto_intermediario_toggle_utilizado',
+    
+    # PRINCIPAIS: FUNCIONALIDADES DE ESTRUTURA (com verificações condicionais)
+    'produto_intermediario_estrutura',       # FUNCIONALIDADE PRINCIPAL
+    'produto_intermediario_calcular_custo',  # CALCULAR CUSTO AUTOMÁTICO
+    
+    # APIs PARA ESTRUTURA DE COMPONENTES (placeholders preparados)
+    'api_buscar_produtos_estrutura',         # Buscar produtos para estrutura
+    'api_adicionar_componente_estrutura',    # Adicionar componente AJAX
+    'api_remover_componente_estrutura',      # Remover componente AJAX
+    'api_editar_componente_estrutura',       # Editar componente AJAX
+    'api_aplicar_custo_estrutura',           # Aplicar custo calculado AJAX
+    'api_listar_componentes_estrutura',      # Listar componentes da estrutura
+    
+    # API DE INFORMAÇÕES
+    'api_tipo_pi_info',                      # API info sobre tipos PI
+    
+    # RELATÓRIO
+    'relatorio_produtos_pi_por_tipo',        # Relatório por tipo PI
     
     # Produtos Acabados
     'produto_acabado_list', 'produto_acabado_create', 'produto_acabado_update',
@@ -188,8 +214,10 @@ __all__ = [
     # APIs
     'get_subgrupos_by_grupo', 'get_info_produto_codigo',
     'api_produto_info', 'api_fornecedor_produtos',
+    'api_tipo_pi_info',  # API PARA TIPOS PI
     
     # Relatórios
     'relatorio_estoque_baixo', 'relatorio_produtos_sem_fornecedor',
     'relatorio_producao',
+    'relatorio_produtos_pi_por_tipo',  # NOVO RELATÓRIO PI
 ]

@@ -9,7 +9,7 @@ from .usuarios import Usuario, PerfilUsuario
 from .clientes import Cliente
 from .fornecedores import Fornecedor, FornecedorProduto
 from .parametros import ParametrosGerais
-from .produtos import GrupoProduto, SubgrupoProduto, Produto
+from .produtos import GrupoProduto, SubgrupoProduto, Produto, EstruturaProduto
 from .compras import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
 from .elevadores import (
     EspecificacaoElevador, 
