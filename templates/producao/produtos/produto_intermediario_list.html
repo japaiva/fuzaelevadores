@@ -1,4 +1,3 @@
-<!-- templates/producao/produtos/produto_intermediario_list.html -->
 {% extends 'producao/base_producao.html' %}
 {% load formato_br %}
 
@@ -20,7 +19,6 @@
     </div>
   </div>
   
-  <!-- <<<< FILTROS ATUALIZADOS COM TIPO_PI -->
   <div class="card-header bg-white">
     <div class="row">
       <div class="col-md-10">
@@ -45,7 +43,6 @@
               {% endfor %}
             </select>
           </div>
-          <!-- <<<< NOVO FILTRO: TIPO_PI -->
           <div class="col-auto">
             <select name="tipo_pi" class="form-select form-select-sm" onchange="this.form.submit()" title="Tipo do Produto Intermediário">
               <option value="">Todos os Tipos</option>
@@ -98,12 +95,10 @@
             <th>Nome</th>
 
             <th style="width: 180px;">Grupo / Subgrupo</th>
-            <th style="width: 100px;">Custo</th>
-            <th style="width: 100px;">C.Ind.</th>
-            <th style="width: 130px;">Tipo</th> <!-- <<<< NOVA COLUNA -->
+            <th style="width: 100px;">Custo</th> <th style="width: 100px;">Tipo</th>
             <th class="text-center" style="width: 60px;">Util</th>
             <th class="text-center" style="width: 60px;">Status</th>
-            <th class="text-center" style="min-width: 160px;">Ações</th> <!-- <<<< COLUNA AMPLIADA -->
+            <th class="text-center" style="min-width: 120px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -137,19 +132,9 @@
               </td>
 
               <td>
-                {% if produto.custo_medio %}
+                {% if produto.custo_total %}
                   <span class="text-success fw-bold">
-                    {{ produto.custo_medio|formato_moeda }}
-                  </span>
-                {% else %}
-                  <span class="text-muted">-</span>
-                {% endif %}
-              </td>
-
-              <td>
-                {% if produto.custo_industrializacao %}
-                  <span class="text-success fw-bold">
-                    {{ produto.custo_industrializacao|formato_moeda }}
+                    {{ produto.custo_total|formato_moeda }}
                   </span>
                 {% else %}
                   <span class="text-muted">-</span>
@@ -160,8 +145,7 @@
               <td>
                 {% if produto.tipo_pi %}
                   <span class="badge {{ produto.tipo_pi_display_badge }} px-2 py-1">
-                    {{ produto.get_tipo_pi_display }}
-                  </span>
+                    {{ produto.get_tipo_pi_display|truncatechars:8 }} </span>
                 {% else %}
                   <span class="badge bg-secondary">
                     <i class="fas fa-question me-1"></i>
@@ -191,29 +175,16 @@
                 {% endif %}
               </td>
               
-              <!-- <<<< COLUNA DE AÇÕES AMPLIADA -->
               <td class="text-center">
                 <div class="btn-group" role="group" aria-label="Ações do produto intermediário">
                   
                   
-                  <!-- Botão Editar -->
                   <a href="{% url 'producao:produto_intermediario_update' produto.pk %}" 
                      class="btn btn-outline-primary btn-sm" 
                      title="Editar">
                     <i class="fas fa-edit"></i>
                   </a>
                   
-                  <!-- <<<< NOVO: Botão Calcular Custo (apenas para montados) -->
-                  {% if produto.pode_ter_estrutura %}
-                    <a href="{% url 'producao:produto_intermediario_calcular_custo' produto.pk %}" 
-                       class="btn btn-outline-success btn-sm" 
-                       title="Calcular Custo"
-                       onclick="return confirm('Recalcular custo baseado na estrutura de componentes?')">
-                      <i class="fas fa-calculator"></i>
-                    </a>
-                  {% endif %}
-                  
-                  <!-- <<<< NOVO: Botão Estrutura (apenas para montados) -->
                   {% if produto.pode_ter_estrutura %}
                     <a href="{% url 'producao:produto_intermediario_estrutura' produto.pk %}" 
                        class="btn btn-outline-warning btn-sm" 
@@ -222,14 +193,12 @@
                     </a>
                   {% endif %}
                   
-                  <!-- Botão Toggle Status -->
                   <a href="{% url 'producao:produto_intermediario_toggle_status' produto.pk %}" 
                      class="btn btn-sm {% if produto.status == 'ATIVO' %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
                      title="{% if produto.status == 'ATIVO' %}Desativar{% else %}Ativar{% endif %}">
                     <i class="fas {% if produto.status == 'ATIVO' %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
                   </a>
                   
-                  <!-- Botão Excluir -->
                   <a href="{% url 'producao:produto_intermediario_delete' produto.pk %}" 
                      class="btn btn-outline-danger btn-sm" 
                      title="Excluir"
@@ -241,7 +210,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="9" class="text-center py-4 text-muted">
+              <td colspan="8" class="text-center py-4 text-muted">
                 {% if query or grupo_filtro or subgrupo_filtro or status_filtro or utilizado_filtro or tipo_pi_filtro %}
                   <i class="fas fa-search fa-2x mb-2 text-muted"></i>
                   <div>Nenhum produto intermediário encontrado com os filtros aplicados.</div>
@@ -273,7 +242,6 @@
   </div>
   
   
-  <!-- PAGINAÇÃO -->
   {% if produtos.paginator.num_pages > 1 %}
   <div class="card-footer bg-white">
     <div class="d-flex justify-content-between align-items-center">
@@ -336,7 +304,6 @@
   {% endif %}
 </div>
 
-<!-- <<<< MODAL PARA AÇÕES EM LOTE (FUTURO) -->
 <div class="modal fade" id="acaoLoteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
