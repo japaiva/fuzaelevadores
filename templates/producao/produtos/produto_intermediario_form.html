@@ -38,6 +38,7 @@
           </div>
         {% endif %}
 
+        <!-- IDENTIFICAÇÃO -->
         <div class="card border-start border-warning border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -108,14 +109,7 @@
                 <label for="{{ form.tipo_pi.id_for_label }}" class="form-label">
                   Tipo do Produto Intermediário <span class="text-danger">*</span>
                 </label>
-                <select class="form-select" id="{{ form.tipo_pi.id_for_label }}" name="{{ form.tipo_pi.name }}" required>
-                  <option value="">Selecione o tipo</option>
-                  <option value="COMPRADO" {% if form.instance.tipo_pi == 'COMPRADO' %}selected{% endif %}>Comprado Pronto</option>
-                  <option value="MONTADO_INTERNO" {% if form.instance.tipo_pi == 'MONTADO_INTERNO' %}selected{% endif %}>Montado Internamente</option>
-                  <option value="MONTADO_EXTERNO" {% if form.instance.tipo_pi == 'MONTADO_EXTERNO' %}selected{% endif %}>Montado Externamente</option>
-                  <option value="SERVICO_INTERNO" {% if form.instance.tipo_pi == 'SERVICO_INTERNO' %}selected{% endif %}>Serviço Interno</option>
-                  <option value="SERVICO_EXTERNO" {% if form.instance.tipo_pi == 'SERVICO_EXTERNO' %}selected{% endif %}>Serviço Externo</option>
-                </select>
+                {{ form.tipo_pi }}
                 {% if form.tipo_pi.errors %}
                   <div class="text-danger small mt-1">
                     <i class="fas fa-exclamation-triangle me-1"></i>
@@ -167,6 +161,7 @@
           </div>
         </div>
 
+        <!-- CARACTERÍSTICAS -->
         <div class="card border-start border-info border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -200,24 +195,34 @@
                 {% endif %}
               </div>
             </div>
+
+            <div class="row g-3 mt-2">
+              <div class="col-md-12">
+                <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+                {{ form.descricao }}
+                {% if form.descricao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- ============================================================================== -->
-        <!-- SEÇÃO DE FORNECIMENTO - PRODUTOS COMPRADOS E MONTADOS EXTERNAMENTE -->
-        <!-- ============================================================================== -->
-        <div class="card border-start border-secondary border-4 mb-4" id="secao-fornecimento" style="display: none;">
+        <!-- FORNECIMENTO/PRESTADOR - ÚNICA SEÇÃO UNIFICADA -->
+        <div class="card border-start border-secondary border-4 mb-4" id="secao-fornecimento-geral" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-truck me-2 text-secondary"></i>
-              Fornecimento
+              <span id="titulo-fornecimento">Fornecimento</span>
             </h6>
           </div>
           <div class="card-body p-4">
             <div class="row g-3">
               <div class="col-md-6">
                 <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">
-                  Fornecedor Principal <span class="text-danger" id="fornecedor-required">*</span>
+                  <span id="label-fornecedor">Fornecedor Principal</span> <span class="text-danger" id="fornecedor-required" style="display: none;">*</span>
                 </label>
                 {{ form.fornecedor_principal }}
                 {% if form.fornecedor_principal.errors %}
@@ -229,57 +234,9 @@
               </div>
 
               <div class="col-md-6">
-                <label for="{{ form.codigo_produto_fornecedor.id_for_label }}" class="form-label">Código do Produto no Fornecedor</label>
-                {{ form.codigo_produto_fornecedor }}
-                {% if form.codigo_produto_fornecedor.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.codigo_produto_fornecedor.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-
-            <div class="row g-3 mt-2">
-              <div class="col-md-6">
-                <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
-                {{ form.prazo_entrega_padrao }}
-                {% if form.prazo_entrega_padrao.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ============================================================================== -->
-        <!-- SEÇÃO DE PRESTADOR - SERVIÇOS EXTERNOS -->
-        <!-- ============================================================================== -->
-        <div class="card border-start border-dark border-4 mb-4" id="secao-prestador" style="display: none;">
-          <div class="card-header bg-light">
-            <h6 class="card-title mb-0">
-              <i class="fas fa-handshake me-2 text-dark"></i>
-              Prestador
-            </h6>
-          </div>
-          <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">
-                  Prestador Principal <span class="text-danger" id="prestador-required">*</span>
+                <label for="{{ form.codigo_produto_fornecedor.id_for_label }}" class="form-label">
+                  <span id="label-codigo-fornecedor">Código do Produto no Fornecedor</span>
                 </label>
-                {{ form.fornecedor_principal }}
-                {% if form.fornecedor_principal.errors %}
-                  <div class="text-danger small mt-1">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
-                    {% for error in form.fornecedor_principal.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-
-              <div class="col-md-6">
-                <label for="{{ form.codigo_produto_fornecedor.id_for_label }}" class="form-label">Código do Serviço no Prestador</label>
                 {{ form.codigo_produto_fornecedor }}
                 {% if form.codigo_produto_fornecedor.errors %}
                   <div class="text-danger small mt-1">
@@ -291,7 +248,9 @@
 
             <div class="row g-3 mt-2">
               <div class="col-md-6">
-                <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Produção (dias)</label>
+                <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">
+                  <span id="label-prazo">Prazo Entrega (dias)</span>
+                </label>
                 {{ form.prazo_entrega_padrao }}
                 {% if form.prazo_entrega_padrao.errors %}
                   <div class="text-danger small mt-1">
@@ -303,9 +262,7 @@
           </div>
         </div>
 
-        <!-- ============================================================================== -->
-        <!-- SEÇÃO DE CUSTOS - SEMPRE VISÍVEL E EDITÁVEL -->
-        <!-- ============================================================================== -->
+        <!-- CUSTOS -->
         <div class="card border-start border-success border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -318,7 +275,7 @@
               <div class="col-md-4">
                 <label for="{{ form.custo_medio.id_for_label }}" class="form-label">
                   Custo Produto
-                  <span class="text-danger custo-required" style="display: none;">*</span>
+                  <span class="text-danger" id="custo-required" style="display: none;">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text">R$</span>
@@ -334,7 +291,7 @@
               <div class="col-md-4">
                 <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">
                   Custo Industrialização
-                  <span class="text-danger custo-indust-required" style="display: none;">*</span>
+                  <span class="text-danger" id="custo-indust-required" style="display: none;">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text">R$</span>
@@ -355,7 +312,7 @@
               </div>
             </div>
 
-            <!-- Aviso sobre estrutura para produtos montados -->
+            <!-- Aviso sobre estrutura -->
             <div id="aviso-estrutura" class="alert alert-info mt-3" style="display: none;">
               <i class="fas fa-info-circle me-2"></i>
               <strong>Produto Montado:</strong> Os custos podem ser calculados automaticamente pela estrutura de componentes, 
@@ -364,9 +321,7 @@
           </div>
         </div>
 
-        <!-- ============================================================================== -->
-        <!-- SEÇÃO DE ESTOQUE - CONDICIONAL -->
-        <!-- ============================================================================== -->
+        <!-- ESTOQUE -->
         <div class="card border-start border-danger border-4 mb-4" id="secao-estoque" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -460,6 +415,10 @@
 .text-danger { 
   animation: fadeIn 0.3s ease-in-out; 
 }
+.is-invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
 </style>
 {% endblock %}
 
@@ -485,26 +444,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const custoIndustrializacaoInput = document.getElementById('{{ form.custo_industrializacao.id_for_label }}');
     
     // Seções do formulário
-    const secaoFornecimento = document.getElementById('secao-fornecimento');
-    const secaoPrestador = document.getElementById('secao-prestador');
+    const secaoFornecimentoGeral = document.getElementById('secao-fornecimento-geral');
     const secaoEstoque = document.getElementById('secao-estoque');
     const avisoEstrutura = document.getElementById('aviso-estrutura');
     
+    // Elementos dinâmicos de labels
+    const tituloFornecimento = document.getElementById('titulo-fornecimento');
+    const labelFornecedor = document.getElementById('label-fornecedor');
+    const labelCodigoFornecedor = document.getElementById('label-codigo-fornecedor');
+    const labelPrazo = document.getElementById('label-prazo');
+    
     // Elementos de obrigatoriedade
-    const custoRequiredSpans = document.querySelectorAll('.custo-required');
-    const custoIndustRequiredSpans = document.querySelectorAll('.custo-indust-required');
+    const fornecedorRequired = document.getElementById('fornecedor-required');
+    const custoRequired = document.getElementById('custo-required');
+    const custoIndustRequired = document.getElementById('custo-indust-required');
+    
+    // Campo fornecedor
+    const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
     
     // =========================================================================
-    // FUNÇÃO: ATUALIZAR STATUS (ATIVO/INATIVO)
+    // FUNÇÃO: ATUALIZAR STATUS
     // =========================================================================
     
     function atualizarStatus() {
-        if (ativoCheck?.checked) {
-            statusHiddenInput.value = 'ATIVO';
-        } else {
-            statusHiddenInput.value = 'INATIVO';
+        if (ativoCheck && statusHiddenInput) {
+            statusHiddenInput.value = ativoCheck.checked ? 'ATIVO' : 'INATIVO';
+            console.log('📝 Status atualizado para:', statusHiddenInput.value);
         }
-        console.log('📝 Status atualizado para:', statusHiddenInput.value);
     }
 
     // =========================================================================
@@ -516,26 +482,27 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('🔄 Atualizando seções para tipo:', tipoSelecionado);
         
-        // Esconder todas as seções condicionais
-        if (secaoFornecimento) secaoFornecimento.style.display = 'none';
-        if (secaoPrestador) secaoPrestador.style.display = 'none';
+        // Resetar tudo
+        if (secaoFornecimentoGeral) secaoFornecimentoGeral.style.display = 'none';
         if (avisoEstrutura) avisoEstrutura.style.display = 'none';
         
-        // Resetar obrigatoriedade visual
-        custoRequiredSpans.forEach(span => span.style.display = 'none');
-        custoIndustRequiredSpans.forEach(span => span.style.display = 'none');
+        // Resetar obrigatoriedade
+        if (fornecedorRequired) fornecedorRequired.style.display = 'none';
+        if (custoRequired) custoRequired.style.display = 'none';
+        if (custoIndustRequired) custoIndustRequired.style.display = 'none';
         
-        // Resetar campos obrigatórios no formulário
-        const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
-        if (fornecedorInput) fornecedorInput.required = false;
-        if (custoMedioInput) custoMedioInput.required = false;
-        if (custoIndustrializacaoInput) custoIndustrializacaoInput.required = false;
+        // Resetar required nos campos
+        if (fornecedorInput) fornecedorInput.removeAttribute('required');
+        if (custoMedioInput) custoMedioInput.removeAttribute('required');
+        if (custoIndustrializacaoInput) custoIndustrializacaoInput.removeAttribute('required');
         
+        // Configurar baseado no tipo
         switch (tipoSelecionado) {
             case 'COMPRADO':
-                if (secaoFornecimento) secaoFornecimento.style.display = 'block';
-                if (fornecedorInput) fornecedorInput.required = true;
-                custoRequiredSpans.forEach(span => span.style.display = 'inline');
+                mostrarSecaoFornecimento('Fornecimento', 'Fornecedor Principal', 'Código do Produto no Fornecedor', 'Prazo Entrega (dias)');
+                if (fornecedorRequired) fornecedorRequired.style.display = 'inline';
+                if (custoRequired) custoRequired.style.display = 'inline';
+                if (fornecedorInput) fornecedorInput.setAttribute('required', 'required');
                 break;
                 
             case 'MONTADO_INTERNO':
@@ -543,27 +510,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
                 
             case 'MONTADO_EXTERNO':
-                if (secaoFornecimento) secaoFornecimento.style.display = 'block';
+                mostrarSecaoFornecimento('Fornecimento', 'Fornecedor Principal', 'Código do Produto no Fornecedor', 'Prazo Entrega (dias)');
                 if (avisoEstrutura) avisoEstrutura.style.display = 'block';
-                if (fornecedorInput) fornecedorInput.required = true;
+                if (fornecedorRequired) fornecedorRequired.style.display = 'inline';
+                if (fornecedorInput) fornecedorInput.setAttribute('required', 'required');
                 break;
                 
             case 'SERVICO_INTERNO':
-                custoIndustRequiredSpans.forEach(span => span.style.display = 'inline');
+                if (custoIndustRequired) custoIndustRequired.style.display = 'inline';
                 break;
                 
             case 'SERVICO_EXTERNO':
-                if (secaoPrestador) secaoPrestador.style.display = 'block';
-                if (fornecedorInput) fornecedorInput.required = true;
-                custoIndustRequiredSpans.forEach(span => span.style.display = 'inline');
+                mostrarSecaoFornecimento('Prestador', 'Prestador Principal', 'Código do Serviço no Prestador', 'Prazo Produção (dias)');
+                if (fornecedorRequired) fornecedorRequired.style.display = 'inline';
+                if (custoIndustRequired) custoIndustRequired.style.display = 'inline';
+                if (fornecedorInput) fornecedorInput.setAttribute('required', 'required');
                 break;
         }
         
-        // Atualizar estoque
         atualizarSecaoEstoque();
-        
-        // Recalcular custos
         calcularCustoTotal();
+    }
+    
+    function mostrarSecaoFornecimento(titulo, labelForn, labelCodigo, labelPrazoTexto) {
+        if (secaoFornecimentoGeral) secaoFornecimentoGeral.style.display = 'block';
+        if (tituloFornecimento) tituloFornecimento.textContent = titulo;
+        if (labelFornecedor) labelFornecedor.textContent = labelForn;
+        if (labelCodigoFornecedor) labelCodigoFornecedor.textContent = labelCodigo;
+        if (labelPrazo) labelPrazo.textContent = labelPrazoTexto;
     }
     
     // =========================================================================
@@ -586,6 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔄 Atualizando subgrupos para grupo:', grupoId);
         
         if (subgrupoSelect) {
+            // Limpar opções existentes
             subgrupoSelect.innerHTML = '<option value="">Selecione um subgrupo</option>';
         }
         
@@ -669,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ativoCheck.addEventListener('change', atualizarStatus);
     }
     
-    // Custos - SEMPRE EDITÁVEIS
+    // Custos
     if (custoMedioInput) {
         custoMedioInput.addEventListener('input', calcularCustoTotal);
         custoMedioInput.addEventListener('blur', calcularCustoTotal);
@@ -681,66 +656,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // =========================================================================
-    // VALIDAÇÃO DE FORMULÁRIO - SIMPLIFICADA
+    // VALIDAÇÃO SIMPLIFICADA - SEM INTERFERIR NO SUBMIT
     // =========================================================================
     
     const form = document.getElementById('produto-form');
     if (form) {
         form.addEventListener('submit', function(e) {
-            console.log('📝 Validando formulário...');
+            console.log('📝 Submetendo formulário...');
             
-            let hasErrors = false;
-            const errorFields = [];
-            
-            // Remover classes de erro anteriores
-            const allFields = form.querySelectorAll('.form-control, .form-select');
-            allFields.forEach(field => field.classList.remove('is-invalid'));
-            
-            // Validar campos obrigatórios básicos
-            const requiredFields = [
-                { field: document.getElementById('{{ form.nome.id_for_label }}'), name: 'Nome' },
-                { field: grupoSelect, name: 'Grupo' },
-                { field: subgrupoSelect, name: 'Subgrupo' },
-                { field: document.getElementById('{{ form.unidade_medida.id_for_label }}'), name: 'Unidade' },
-                { field: tipoPiSelect, name: 'Tipo do PI' }
-            ];
-            
-            requiredFields.forEach(({field, name}) => {
-                if (field && (!field.value || !field.value.trim())) {
-                    field.classList.add('is-invalid');
-                    errorFields.push(name);
-                    hasErrors = true;
-                }
-            });
-            
-            // Validações condicionais baseadas no tipo_pi
-            const tipoSelecionado = tipoPiSelect ? tipoPiSelect.value : '';
-            const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
-            
-            if (tipoSelecionado === 'COMPRADO' || tipoSelecionado === 'MONTADO_EXTERNO' || tipoSelecionado === 'SERVICO_EXTERNO') {
-                if (fornecedorInput && !fornecedorInput.value) {
-                    fornecedorInput.classList.add('is-invalid');
-                    errorFields.push(tipoSelecionado === 'SERVICO_EXTERNO' ? 'Prestador Principal' : 'Fornecedor Principal');
-                    hasErrors = true;
-                }
-            }
-            
-            if (hasErrors) {
-                e.preventDefault();
-                
-                alert(`Por favor, corrija os seguintes campos obrigatórios:\n\n• ${errorFields.join('\n• ')}`);
-                
-                const firstError = form.querySelector('.is-invalid');
-                if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    firstError.focus();
-                }
-            } else {
-                const submitBtn = document.getElementById('submit-btn');
-                if (submitBtn) {
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
-                    submitBtn.disabled = true;
-                }
+            // Apenas feedback visual básico
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
+                submitBtn.disabled = true;
             }
         });
     }

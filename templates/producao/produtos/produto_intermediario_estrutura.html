@@ -343,17 +343,15 @@
 
 {% block extra_js %}
 <script>
-
 // =========================================================================
-// JAVASCRIPT CORRIGIDO PARA RECUPERAR ESTRUTURAS SALVAS
-// produto_intermediario_estrutura.html - Sistema FUZA
+// JAVASCRIPT LIMPO - ESTRUTURA DE PRODUTOS FUZA
+// Versão otimizada sem debug e mensagens intermediárias
 // =========================================================================
 
 // Variáveis globais
 let componentesEstrutura = [];
 let produtoSelecionado = null;
 let timeoutBusca = null;
-let debugMode = true;
 let produtosBuscados = [];
 
 const PRODUTO_ATUAL = {
@@ -363,28 +361,20 @@ const PRODUTO_ATUAL = {
 };
 
 // =========================================================================
-// INICIALIZAÇÃO COM CARREGAMENTO DE ESTRUTURA EXISTENTE
+// INICIALIZAÇÃO
 // =========================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Carregando estrutura para produto:', PRODUTO_ATUAL.codigo);
-    
     inicializarEventos();
-    carregarEstruturaExistente(); // <<<< PRINCIPAL: Carregar do banco
+    carregarEstruturaExistente();
     atualizarInterface();
-    
-    if (debugMode) criarBotaoDebug();
-    console.log('✅ Sistema iniciado com sucesso!');
 });
 
 // =========================================================================
-// <<<< FUNÇÃO PRINCIPAL: CARREGAR ESTRUTURA EXISTENTE DO BANCO
+// CARREGAMENTO DE ESTRUTURA EXISTENTE
 // =========================================================================
 
 function carregarEstruturaExistente() {
-    console.log('📊 Carregando estrutura existente do banco de dados...');
-    
-    // <<<< USAR A API REAL PARA BUSCAR COMPONENTES SALVOS
     fetch(`/producao/api/estrutura/produto/${PRODUTO_ATUAL.id}/componentes/`)
         .then(response => {
             if (!response.ok) {
@@ -393,50 +383,29 @@ function carregarEstruturaExistente() {
             return response.json();
         })
         .then(data => {
-            console.log('📊 Resposta da API de componentes:', data);
-            
             if (data.success) {
-                // <<<< ARMAZENAR COMPONENTES CARREGADOS
                 componentesEstrutura = data.componentes || [];
-                
-                console.log(`✅ Carregados ${componentesEstrutura.length} componentes do banco:`);
-                componentesEstrutura.forEach((comp, i) => {
-                    console.log(`  ${i+1}. ${comp.produto_filho.codigo} - Qtd: ${comp.quantidade} - Custo: R$ ${comp.custo_total.toFixed(2)}`);
-                });
-                
-                // Atualizar interface com dados carregados
                 atualizarInterface();
                 
-                // Mostrar mensagem de sucesso se há componentes
                 if (componentesEstrutura.length > 0) {
-                    showToast(`✅ ${componentesEstrutura.length} componente(s) carregado(s) com sucesso!`, 'success');
-                    
-                    // Calcular custo total
-                    const custoTotal = componentesEstrutura.reduce((total, comp) => total + comp.custo_total, 0);
-                    console.log(`💰 Custo total da estrutura: R$ ${custoTotal.toFixed(2)}`);
-                } else {
-                    console.log('ℹ️ Nenhum componente encontrado - estrutura vazia');
+                    showToast(`${componentesEstrutura.length} componente(s) carregado(s)`, 'success');
                 }
-                
             } else {
-                console.warn('⚠️ API retornou sucesso = false:', data.error);
                 componentesEstrutura = [];
                 showToast(data.error || 'Erro ao carregar componentes', 'warning');
             }
         })
         .catch(error => {
-            console.error('❌ Erro ao carregar estrutura existente:', error);
             componentesEstrutura = [];
-            showToast('Erro ao carregar componentes salvos: ' + error.message, 'error');
+            showToast('Erro ao carregar componentes: ' + error.message, 'error');
         })
         .finally(() => {
-            // Sempre atualizar interface, mesmo em caso de erro
             atualizarInterface();
         });
 }
 
 // =========================================================================
-// INTERFACE ATUALIZADA PARA EXIBIR COMPONENTES CARREGADOS
+// ATUALIZAÇÃO DE INTERFACE
 // =========================================================================
 
 function atualizarInterface() {
@@ -459,12 +428,8 @@ function atualizarListaComponentes() {
     
     if (emptyState) emptyState.style.display = 'none';
     
-    if (!lista) {
-        console.error('❌ lista-componentes não encontrada');
-        return;
-    }
+    if (!lista) return;
     
-    // <<<< TEMPLATE ATUALIZADO PARA EXIBIR DADOS REAIS
     const html = `
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -541,7 +506,6 @@ function atualizarListaComponentes() {
     `;
     
     lista.innerHTML = html;
-    console.log('✅ Lista de componentes atualizada com dados reais');
 }
 
 function atualizarResumo() {
@@ -554,7 +518,6 @@ function atualizarResumo() {
     if (totalEl) totalEl.textContent = totalComponentes;
     if (custoEl) custoEl.textContent = `R$ ${custoTotal.toFixed(2)}`;
     
-    // <<<< DESTACAR RESUMO SE HÁ COMPONENTES
     const resumoDiv = document.getElementById('resumo-custos');
     if (resumoDiv) {
         if (totalComponentes > 0) {
@@ -566,7 +529,7 @@ function atualizarResumo() {
 }
 
 // =========================================================================
-// FUNÇÕES DE GESTÃO DE COMPONENTES (MANTIDAS)
+// GESTÃO DE COMPONENTES
 // =========================================================================
 
 function adicionarComponente() {
@@ -590,8 +553,6 @@ function adicionarComponente() {
         document.getElementById('unidade').focus();
         return;
     }
-    
-    console.log('➕ Adicionando componente:', produtoSelecionado.codigo);
     
     const submitBtn = document.querySelector('#adicionar-componente-form button[type="submit"]');
     if (submitBtn) {
@@ -618,21 +579,17 @@ function adicionarComponente() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // <<<< ADICIONAR À LISTA LOCAL E RECARREGAR
             componentesEstrutura.push(data.componente);
             atualizarInterface();
             cancelarAdicao();
-            showToast(data.message || 'Componente adicionado com sucesso!', 'success');
-            
-            // <<<< RECARREGAR ESTRUTURA PARA GARANTIR SINCRONIZAÇÃO
+            showToast('Componente adicionado!', 'success');
             setTimeout(() => carregarEstruturaExistente(), 500);
         } else {
             showToast(data.error || 'Erro ao adicionar componente', 'error');
         }
     })
     .catch(error => {
-        console.error('❌ Erro ao adicionar:', error);
-        showToast('Erro de conexão ao adicionar componente', 'error');
+        showToast('Erro de conexão', 'error');
     })
     .finally(() => {
         if (submitBtn) {
@@ -643,9 +600,7 @@ function adicionarComponente() {
 }
 
 function removerComponente(componenteId) {
-    if (!confirm('Confirma a remoção deste componente da estrutura?')) return;
-    
-    console.log('🗑️ Removendo componente:', componenteId);
+    if (!confirm('Confirma a remoção deste componente?')) return;
     
     fetch(`/producao/api/estrutura/componente/${componenteId}/remover/`, {
         method: 'POST',
@@ -654,20 +609,16 @@ function removerComponente(componenteId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // <<<< REMOVER DA LISTA LOCAL E RECARREGAR
             componentesEstrutura = componentesEstrutura.filter(comp => comp.id !== componenteId);
             atualizarInterface();
-            showToast(data.message || 'Componente removido!', 'warning');
-            
-            // <<<< RECARREGAR ESTRUTURA PARA GARANTIR SINCRONIZAÇÃO
+            showToast('Componente removido!', 'warning');
             setTimeout(() => carregarEstruturaExistente(), 500);
         } else {
             showToast(data.error || 'Erro ao remover componente', 'error');
         }
     })
     .catch(error => {
-        console.error('❌ Erro ao remover:', error);
-        showToast('Erro de conexão ao remover componente', 'error');
+        showToast('Erro de conexão', 'error');
     });
 }
 
@@ -682,8 +633,6 @@ function editarComponente(componenteId, campo, novoValor) {
     const dados = {};
     dados[campo] = valorFloat;
     
-    console.log('✏️ Editando componente:', componenteId, campo, valorFloat);
-    
     fetch(`/producao/api/estrutura/componente/${componenteId}/editar/`, {
         method: 'POST',
         headers: {
@@ -695,111 +644,26 @@ function editarComponente(componenteId, campo, novoValor) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // <<<< ATUALIZAR NA LISTA LOCAL
             const componente = componentesEstrutura.find(comp => comp.id === componenteId);
             if (componente) {
                 Object.assign(componente, data.componente);
             }
-            
             atualizarInterface();
-            showToast('Componente atualizado!', 'info');
-            
-            // <<<< RECARREGAR PARA GARANTIR SINCRONIZAÇÃO
             setTimeout(() => carregarEstruturaExistente(), 300);
         } else {
             showToast(data.error || 'Erro ao editar componente', 'error');
         }
     })
     .catch(error => {
-        console.error('❌ Erro ao editar:', error);
-        showToast('Erro de conexão ao editar componente', 'error');
-    });
-}
-
-function aplicarCustoCalculado() {
-    if (componentesEstrutura.length === 0) {
-        showToast('Adicione componentes antes de aplicar o custo!', 'warning');
-        return;
-    }
-    
-    const custoTotal = componentesEstrutura.reduce((total, comp) => total + comp.custo_total, 0);
-    
-    if (!confirm(`Aplicar o custo calculado no produto?\n\nCusto calculado: R$ ${custoTotal.toFixed(2)}\n\nIsso substituirá o custo atual pelo valor calculado baseado na estrutura.`)) {
-        return;
-    }
-    
-    console.log('💰 Aplicando custo calculado:', custoTotal);
-    
-    fetch(`/producao/api/estrutura/produto/${PRODUTO_ATUAL.id}/aplicar-custo/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`✅ ${data.message}`, 'success');
-            
-            setTimeout(() => {
-                if (confirm('Custo aplicado com sucesso!\n\nDeseja voltar para a lista de produtos?')) {
-                    window.location.href = '{% url "producao:produto_intermediario_list" %}';
-                }
-            }, 2000);
-        } else {
-            showToast(data.error || 'Erro ao aplicar custo', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Erro ao aplicar custo:', error);
-        showToast('Erro de conexão ao aplicar custo', 'error');
+        showToast('Erro de conexão', 'error');
     });
 }
 
 // =========================================================================
-// FUNÇÃO DE DEBUG MELHORADA
-// =========================================================================
-
-function criarBotaoDebug() {
-    const debugBtn = document.createElement('button');
-    debugBtn.innerHTML = '🔧 Debug';
-    debugBtn.className = 'btn btn-sm btn-outline-info position-fixed';
-    debugBtn.style.cssText = 'top: 10px; right: 10px; z-index: 9999;';
-    debugBtn.onclick = () => executarDebugCompleto();
-    document.body.appendChild(debugBtn);
-}
-
-function executarDebugCompleto() {
-    console.log('🔧 === DEBUG COMPLETO ===');
-    console.log('Produto atual:', PRODUTO_ATUAL);
-    console.log('Componentes carregados:', componentesEstrutura.length);
-    console.log('Estrutura disponível:', '{{ estrutura_disponivel }}');
-    
-    if (componentesEstrutura.length > 0) {
-        console.log('💾 Componentes:');
-        componentesEstrutura.forEach((comp, i) => {
-            console.log(`  ${i+1}. ${comp.produto_filho.codigo} - ${comp.produto_filho.nome}`);
-            console.log(`      Qtd: ${comp.quantidade}, Perda: ${comp.percentual_perda}%, Custo: R$ ${comp.custo_total.toFixed(2)}`);
-        });
-        
-        const custoTotal = componentesEstrutura.reduce((total, comp) => total + comp.custo_total, 0);
-        console.log(`💰 Custo total: R$ ${custoTotal.toFixed(2)}`);
-    }
-    
-    // Testar API de listagem
-    console.log('🌐 Testando API de listagem...');
-    fetch(`/producao/api/estrutura/produto/${PRODUTO_ATUAL.id}/componentes/`)
-        .then(r => r.json())
-        .then(d => console.log('📊 API Response:', d))
-        .catch(e => console.error('❌ API Error:', e));
-}
-
-// =========================================================================
-// DEMAIS FUNÇÕES (MANTIDAS - busca, eventos, utilitários, etc.)
+// EVENTOS E BUSCA
 // =========================================================================
 
 function inicializarEventos() {
-    console.log('🔧 Inicializando eventos...');
-    
-    // Busca de produtos
     const buscaInput = document.getElementById('busca-produto');
     if (buscaInput) {
         buscaInput.addEventListener('input', function() {
@@ -809,7 +673,6 @@ function inicializarEventos() {
         buscaInput.addEventListener('blur', () => setTimeout(() => esconderSugestoes(), 200));
     }
     
-    // Formulário de adição
     const form = document.getElementById('adicionar-componente-form');
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -818,7 +681,6 @@ function inicializarEventos() {
         });
     }
     
-    // Cálculo de perda
     const quantidadeInput = document.getElementById('quantidade');
     const perdaInput = document.getElementById('percentual-perda');
     
@@ -831,10 +693,6 @@ function inicializarEventos() {
         perdaInput.addEventListener('blur', calcularQuantidadeComPerda);
     }
 }
-
-// =========================================================================
-// FUNÇÕES AUXILIARES NECESSÁRIAS (busca, utilitários, etc.)
-// =========================================================================
 
 function buscarProdutos(termo) {
     if (!termo || termo.length < 2) {
@@ -859,8 +717,7 @@ function buscarProdutos(termo) {
             }
         })
         .catch(error => {
-            console.error('❌ Erro na requisição:', error);
-            mostrarErroSugestoes('Erro de conexão: ' + error.message);
+            mostrarErroSugestoes('Erro de conexão');
             produtosBuscados = [];
         });
 }
@@ -953,8 +810,6 @@ function esconderSugestoes() {
 }
 
 function selecionarProduto(produtoId) {
-    console.log('✅ Produto selecionado ID:', produtoId);
-    
     const produto = produtosBuscados.find(p => p.id === produtoId);
     
     if (produto) {
@@ -983,7 +838,6 @@ function selecionarProduto(produtoId) {
             }, 100);
         }
     } else {
-        console.error('❌ Produto não encontrado no cache');
         showToast('Produto não encontrado. Tente buscar novamente.', 'error');
     }
 }
@@ -1021,8 +875,6 @@ function mostrarProdutoSelecionado(produto) {
 }
 
 function cancelarAdicao() {
-    console.log('❌ Cancelando adição...');
-    
     const form = document.getElementById('adicionar-componente-form');
     if (form) form.style.display = 'none';
     
@@ -1066,9 +918,11 @@ function calcularQuantidadeComPerda() {
     }
 }
 
+// =========================================================================
+// FUNÇÕES AUXILIARES
+// =========================================================================
+
 function salvarEstrutura() {
-    console.log('💾 Salvando estrutura...');
-    
     const btnSalvar = document.getElementById('btn-salvar');
     if (btnSalvar) {
         btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
@@ -1076,7 +930,7 @@ function salvarEstrutura() {
     }
     
     setTimeout(() => {
-        showToast(`✅ Estrutura salva! (${componentesEstrutura.length} componentes)`, 'success');
+        showToast(`Estrutura salva! (${componentesEstrutura.length} componentes)`, 'success');
         
         if (btnSalvar) {
             btnSalvar.innerHTML = '<i class="fas fa-save me-1"></i> Salvar Estrutura';
@@ -1086,8 +940,6 @@ function salvarEstrutura() {
 }
 
 function recalcularCustos() {
-    console.log('🔄 Recalculando custos...');
-    
     componentesEstrutura.forEach(comp => {
         comp.quantidade_com_perda = comp.quantidade * (1 + (comp.percentual_perda / 100));
         comp.custo_total = comp.quantidade_com_perda * comp.produto_filho.custo_total;
@@ -1103,11 +955,9 @@ function limparEstrutura() {
         return;
     }
     
-    if (!confirm(`Remover todos os ${componentesEstrutura.length} componentes da estrutura?\n\nEsta ação não pode ser desfeita.`)) {
+    if (!confirm(`Remover todos os ${componentesEstrutura.length} componentes?\n\nEsta ação não pode ser desfeita.`)) {
         return;
     }
-    
-    console.log('🧹 Limpando estrutura...');
     
     const promises = componentesEstrutura.map(comp => 
         fetch(`/producao/api/estrutura/componente/${comp.id}/remover/`, {
@@ -1120,10 +970,9 @@ function limparEstrutura() {
         .then(() => {
             componentesEstrutura = [];
             atualizarInterface();
-            showToast('Estrutura limpa com sucesso!', 'warning');
+            showToast('Estrutura limpa!', 'warning');
         })
         .catch(error => {
-            console.error('❌ Erro ao limpar estrutura:', error);
             showToast('Erro ao limpar estrutura', 'error');
         });
 }
@@ -1220,20 +1069,6 @@ document.addEventListener('keydown', function(e) {
         const buscaInput = document.getElementById('busca-produto');
         if (buscaInput) buscaInput.focus();
     }
-    
-    if (e.key === 'F1' && debugMode) {
-        e.preventDefault();
-        executarDebugCompleto();
-    }
 });
-
-// Funções globais para debug
-window.debugBusca = (termo = 'test') => buscarProdutos(termo);
-window.debugCompleto = executarDebugCompleto;
-window.recarregarEstrutura = carregarEstruturaExistente;
-
-console.log('🚀 Sistema de estrutura carregado - versão com recuperação de dados!');
-
-
 </script>
 {% endblock %}

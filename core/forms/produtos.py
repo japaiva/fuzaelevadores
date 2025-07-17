@@ -135,7 +135,11 @@ from core.choices import get_tipo_produto_choices
 from core.models.base import UNIDADE_MEDIDA_CHOICES, STATUS_PRODUTO_CHOICES 
 
 
+# SUBSTITUA APENAS esta classe ProdutoForm no seu arquivo core/forms/produtos.py
+# MANTENHA todas as outras classes (GrupoProdutoForm, SubgrupoProdutoForm, etc.) como estão
+
 class ProdutoForm(BaseModelForm, AuditMixin):
+    """Formulário para produtos - CORRIGIDO PARA RESOLVER PROBLEMA DO FORNECEDOR"""
     
     class Meta:
         model = Produto
@@ -160,15 +164,13 @@ class ProdutoForm(BaseModelForm, AuditMixin):
                 'class': 'form-control'
             }),
             'grupo': forms.Select(attrs={
-                'onchange': 'updateSubgruposAndTipo(this.value)',
                 'class': 'form-select'
             }),
             'subgrupo': forms.Select(attrs={
                 'class': 'form-select'
             }),
             'tipo_pi': forms.Select(attrs={
-                'class': 'form-select',
-                'onchange': 'toggleEstruturaFields()'
+                'class': 'form-select'
             }),
             'unidade_medida': forms.Select(attrs={
                 'class': 'form-select'
@@ -245,8 +247,9 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         self.fields['status'].choices = STATUS_PRODUTO_CHOICES
         
         self.fields['tipo_pi'].choices = [('', 'Selecione o tipo')] + Produto.TIPO_PI_CHOICES
+        self.fields['tipo_pi'].required = False  # Será validado no clean()
 
-        # Campos obrigatórios
+        # Campos obrigatórios básicos
         self.fields['grupo'].required = True
         self.fields['subgrupo'].required = True
         self.fields['nome'].required = True
@@ -255,43 +258,22 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         # Filtrar apenas grupos ativos
         self.fields['grupo'].queryset = GrupoProduto.objects.filter(ativo=True).order_by('codigo')
         
-        if self.instance.pk:
-            if self.instance.tipo != 'PI':
-                self.fields['tipo_pi'].widget = forms.HiddenInput()
-                self.fields['tipo_pi'].required = False
-            else:
-                self.fields['tipo_pi'].required = True
-        else:
-            self.fields['tipo_pi'].required = False
-        
+        # CONFIGURAÇÃO DINÂMICA DE SUBGRUPOS
         if 'grupo' in self.data:
             try:
                 grupo_id = int(self.data.get('grupo'))
-                grupo = GrupoProduto.objects.get(id=grupo_id)
-                
-                if grupo.tipo_produto == 'PI':
-                    self.fields['tipo_pi'].required = True
-                    self.fields['tipo_pi'].widget.attrs['style'] = 'display: block;'
-                else:
-                    self.fields['tipo_pi'].widget = forms.HiddenInput()
-                    self.fields['tipo_pi'].required = False
-                
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.filter(
                     grupo_id=grupo_id, 
                     ativo=True
                 ).order_by('codigo')
-            except (ValueError, TypeError, GrupoProduto.DoesNotExist):
+            except (ValueError, TypeError):
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         elif self.instance.pk and hasattr(self.instance, 'grupo') and self.instance.grupo:
             self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True).order_by('codigo')
         else:
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         
-        # ========================================================================================
-        # REMOÇÃO DOS HELP_TEXTS QUE CAUSAVAM CONFUSÃO
-        # ========================================================================================
-        
-        # Manter apenas help texts realmente necessários
+        # Help text apenas para modo edição
         if self.instance.pk and self.instance.codigo:
             self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
 
@@ -317,32 +299,28 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         return custo_medio    
 
     def clean(self):
-        """Validações personalizadas - CORRIGIDO: Apenas validar obrigatoriedade, não bloquear edição"""
+        """Validações personalizadas - SIMPLIFICADAS PARA EVITAR CONFLITOS"""
         cleaned_data = super().clean()
         grupo = cleaned_data.get('grupo')
         subgrupo = cleaned_data.get('subgrupo')
         tipo_pi = cleaned_data.get('tipo_pi')
         fornecedor_principal = cleaned_data.get('fornecedor_principal')
         
+        # Validar relacionamento grupo/subgrupo
         if grupo and subgrupo:
             if subgrupo.grupo != grupo:
                 self.add_error('subgrupo', 'O subgrupo selecionado não pertence ao grupo escolhido.')
         
+        # Validações específicas para PI
         if grupo and grupo.tipo_produto == 'PI':
             if not tipo_pi:
                 self.add_error('tipo_pi', 'Tipo do Produto Intermediário é obrigatório para produtos PI.')
-                
-            # ========================================================================================
-            # VALIDAÇÕES DE OBRIGATORIEDADE BASEADAS NO TIPO (SEM BLOQUEAR EDIÇÃO DE CUSTOS)
-            # ========================================================================================
-            
-            if tipo_pi in ['COMPRADO', 'MONTADO_EXTERNO', 'SERVICO_EXTERNO']:
-                if not fornecedor_principal:
-                    campo_nome = 'Prestador principal' if tipo_pi == 'SERVICO_EXTERNO' else 'Fornecedor principal'
-                    self.add_error('fornecedor_principal', f'{campo_nome} é obrigatório para este tipo.')
-            
-            # NOTA: NÃO validamos mais se custos são obrigatórios baseado no tipo
-            # Isso permite flexibilidade para editar custos mesmo em produtos com estrutura
+            else:
+                # APENAS VALIDAR OBRIGATORIEDADE DO FORNECEDOR - SEM INTERFERIR NOS CUSTOS
+                if tipo_pi in ['COMPRADO', 'MONTADO_EXTERNO', 'SERVICO_EXTERNO']:
+                    if not fornecedor_principal:
+                        campo_nome = 'Prestador principal' if tipo_pi == 'SERVICO_EXTERNO' else 'Fornecedor principal'
+                        self.add_error('fornecedor_principal', f'{campo_nome} é obrigatório para este tipo.')
         
         return cleaned_data
 
@@ -350,8 +328,13 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         """Override para garantir que o tipo seja definido corretamente"""
         produto = super().save(commit=False)
         
+        # Definir tipo baseado no grupo
         if produto.grupo and produto.grupo.tipo_produto:
             produto.tipo = produto.grupo.tipo_produto
+        
+        # Limpar tipo_pi se não for PI
+        if produto.tipo != 'PI':
+            produto.tipo_pi = None
         
         if commit:
             produto.save()
