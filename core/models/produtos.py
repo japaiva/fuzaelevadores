@@ -1,9 +1,5 @@
 # core/models/produtos.py
 
-"""
-Models relacionados a produtos, grupos e estruturas
-VERSÃO ATUALIZADA COM TIPOS DE PRODUTOS INTERMEDIÁRIOS
-"""
 
 from django.db import models
 from django.conf import settings
@@ -102,18 +98,13 @@ class SubgrupoProduto(models.Model):
         return f"{self.grupo.codigo}.{self.codigo}"
 
 class Produto(models.Model):
-    """
-    Modelo unificado para Matéria Prima, Produto Intermediário e Produto Acabado
-    Com geração automática de código baseada em grupo/subgrupo
-    ATUALIZADO COM TIPOS DE PRODUTOS INTERMEDIÁRIOS
-    """
     
-    # NOVO: Tipos de Produtos Intermediários
     TIPO_PI_CHOICES = [
         ('COMPRADO', 'Comprado Pronto'),
         ('MONTADO_INTERNO', 'Montado Internamente'),
         ('MONTADO_EXTERNO', 'Montado Externamente'),
-        ('SERVICO', 'Serviço'),
+        ('SERVICO_INTERNO', 'Serviço Interno'),     # <<<< NOVO
+        ('SERVICO_EXTERNO', 'Serviço Externo'),     # <<<< NOVO
     ]
     
     # Identificação
@@ -171,12 +162,14 @@ class Produto(models.Model):
         help_text="Dimensões: altura, largura, profundidade, diâmetro, etc."
     )
     
+
     # Controle de estoque
     controla_estoque = models.BooleanField(default=True, verbose_name="Controla Estoque")
     estoque_minimo = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        default=0, 
+        null=True,  # <<<< ADICIONAR
+        blank=True, # <<<< ADICIONAR
         verbose_name="Estoque Mínimo"
     )
     estoque_atual = models.DecimalField(
@@ -185,7 +178,7 @@ class Produto(models.Model):
         default=0, 
         verbose_name="Estoque Atual"
     )
-    
+
     # Custos e preços
     custo_medio = models.DecimalField(
         max_digits=10, 
@@ -287,6 +280,8 @@ class Produto(models.Model):
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
     
+
+
     def clean(self):
         """Validações personalizadas do produto"""
         super().clean()
@@ -295,28 +290,34 @@ class Produto(models.Model):
         if self.grupo and self.grupo.tipo_produto:
             self.tipo = self.grupo.tipo_produto
         
-        # NOVA VALIDAÇÃO: tipo_pi apenas para produtos PI
+        # ATUALIZADA: Validação tipo_pi para produtos PI
         if self.tipo == 'PI':
             if not self.tipo_pi:
                 raise ValidationError({
                     'tipo_pi': 'Tipo do Produto Intermediário é obrigatório para produtos PI.'
                 })
+            
+            # NOVA: Validação específica para serviços externos (requer fornecedor)
+            if self.tipo_pi == 'SERVICO_EXTERNO' and not self.fornecedor_principal:
+                raise ValidationError({
+                    'fornecedor_principal': 'Prestador principal é obrigatório para serviços externos.'
+                })
+                
+            # NOVA: Validação específica para produtos comprados (requer fornecedor)
+            if self.tipo_pi == 'COMPRADO' and not self.fornecedor_principal:
+                raise ValidationError({
+                    'fornecedor_principal': 'Fornecedor principal é obrigatório para produtos comprados.'
+                })
+                
+            # NOVA: Validação específica para montados externos (requer fornecedor)
+            if self.tipo_pi == 'MONTADO_EXTERNO' and not self.fornecedor_principal:
+                raise ValidationError({
+                    'fornecedor_principal': 'Fornecedor principal é obrigatório para produtos montados externamente.'
+                })
         else:
             # Para MP e PA, tipo_pi deve ser None
             self.tipo_pi = None
-        
-        # Gerar código automático se não fornecido
-        if not self.codigo and self.subgrupo:
-            self.gerar_codigo_automatico()
-        
-        # Validar unicidade do código
-        if self.codigo:
-            produtos_existentes = Produto.objects.filter(codigo=self.codigo)
-            if self.pk:
-                produtos_existentes = produtos_existentes.exclude(pk=self.pk)
-            
-            if produtos_existentes.exists():
-                raise ValidationError({'codigo': 'Já existe um produto com este código.'})
+
     
     def gerar_codigo_automatico(self):
         """
@@ -419,9 +420,11 @@ class Produto(models.Model):
             'COMPRADO': 'bg-info',
             'MONTADO_INTERNO': 'bg-success',
             'MONTADO_EXTERNO': 'bg-warning',
-            'SERVICO': 'bg-secondary',
+            'SERVICO_INTERNO': 'bg-secondary',      # <<<< NOVO
+            'SERVICO_EXTERNO': 'bg-dark',           # <<<< NOVO
         }
         return badges.get(self.tipo_pi, 'bg-primary')
+    
     
     def calcular_custo_estrutura(self):
         """Calcula custo baseado na estrutura de componentes"""

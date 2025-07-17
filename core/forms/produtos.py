@@ -124,19 +124,15 @@ class SubgrupoProdutoForm(BaseModelForm, AuditMixin):
 
 
 class ProdutoForm(BaseModelForm, AuditMixin):
-    """
-    Formulário para produtos com geração automática de códigos
-    ATUALIZADO COM TIPOS DE PRODUTOS INTERMEDIÁRIOS
-    """
     
     class Meta:
         model = Produto
         fields = [
             'nome', 'descricao', 'grupo', 'subgrupo',
-            'tipo_pi',  # <<<< NOVO CAMPO ADICIONADO
+            'tipo_pi',
             'unidade_medida', 'peso_unitario',
             'codigo_ncm', 'codigo_produto_fornecedor',
-            'controla_estoque', 'estoque_minimo', 
+            'controla_estoque', 'estoque_atual', 'estoque_minimo', # <<< campo 'estoque_atual' ADICIONADO AQUI
             'custo_medio', 'custo_industrializacao',
             'fornecedor_principal', 'prazo_entrega_padrao', 
             'status', 'disponivel', 'utilizado'
@@ -158,7 +154,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'subgrupo': forms.Select(attrs={
                 'class': 'form-select'
             }),
-            # <<<< NOVO WIDGET PARA TIPO_PI
             'tipo_pi': forms.Select(attrs={
                 'class': 'form-select',
                 'onchange': 'toggleEstruturaFields()'
@@ -183,6 +178,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
                 'class': 'form-control'
             }),
             'custo_industrializacao': MoneyInput(),
+            'estoque_atual': QuantityInput(), # <<< WIDGET ADICIONADO
             'estoque_minimo': QuantityInput(),
             'custo_medio': MoneyInput(),
             'prazo_entrega_padrao': forms.NumberInput(attrs={
@@ -212,13 +208,14 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'descricao': 'Descrição',
             'grupo': 'Grupo',
             'subgrupo': 'Subgrupo',
-            'tipo_pi': 'Tipo do Produto Intermediário',  # <<<< NOVO LABEL
+            'tipo_pi': 'Tipo do Produto Intermediário',
             'unidade_medida': 'Unidade de Medida',
             'peso_unitario': 'Peso Unitário (kg)',
             'codigo_ncm': 'Código NCM',
             'codigo_produto_fornecedor': 'Código no Fornecedor',
             'custo_industrializacao': 'Custo Industrialização',
             'controla_estoque': 'Controla Estoque',
+            'estoque_atual': 'Estoque Atual', # <<< LABEL ADICIONADO
             'estoque_minimo': 'Estoque Mínimo',
             'custo_medio': 'Custo Médio',
             'fornecedor_principal': 'Fornecedor Principal',
@@ -235,7 +232,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         self.fields['unidade_medida'].choices = UNIDADE_MEDIDA_CHOICES
         self.fields['status'].choices = STATUS_PRODUTO_CHOICES
         
-        # <<<< CONFIGURAR CHOICES DO TIPO_PI
         self.fields['tipo_pi'].choices = [('', 'Selecione o tipo')] + Produto.TIPO_PI_CHOICES
 
         # Campos obrigatórios
@@ -247,8 +243,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         # Filtrar apenas grupos ativos
         self.fields['grupo'].queryset = GrupoProduto.objects.filter(ativo=True).order_by('codigo')
         
-        # <<<< LÓGICA PARA MOSTRAR/ESCONDER TIPO_PI
-        # Se não for PI ou for produto novo sem grupo definido, esconder tipo_pi
         if self.instance.pk:
             if self.instance.tipo != 'PI':
                 self.fields['tipo_pi'].widget = forms.HiddenInput()
@@ -256,16 +250,13 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             else:
                 self.fields['tipo_pi'].required = True
         else:
-            # Para produtos novos, deixar visível mas não obrigatório ainda
             self.fields['tipo_pi'].required = False
         
-        # Filtrar subgrupos baseado no grupo selecionado
         if 'grupo' in self.data:
             try:
                 grupo_id = int(self.data.get('grupo'))
                 grupo = GrupoProduto.objects.get(id=grupo_id)
                 
-                # <<<< CONFIGURAR TIPO_PI BASEADO NO GRUPO
                 if grupo.tipo_produto == 'PI':
                     self.fields['tipo_pi'].required = True
                     self.fields['tipo_pi'].widget.attrs['style'] = 'display: block;'
@@ -284,12 +275,10 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         else:
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         
-        # Informações de ajuda
         self.fields['grupo'].help_text = "Selecione o grupo - o tipo do produto será definido automaticamente"
         self.fields['subgrupo'].help_text = "Selecione o subgrupo - o código será gerado automaticamente"
         self.fields['utilizado'].help_text = "Marque se este material já foi utilizado em algum projeto"
         
-        # <<<< NOVO HELP TEXT PARA TIPO_PI
         self.fields['tipo_pi'].help_text = """
         <strong>Comprado:</strong> Produto pronto do fornecedor<br>
         <strong>Montado Interno:</strong> Montagem na fábrica<br>
@@ -297,7 +286,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         <strong>Serviço:</strong> Prestação de serviço
         """
         
-        # Se for edição, mostrar o código atual
         if self.instance.pk and self.instance.codigo:
             self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
 
@@ -320,32 +308,36 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         custo_medio = self.cleaned_data.get('custo_medio')
         if custo_medio is not None:
             validar_positivo(custo_medio)
-        return custo_medio
-    
+        return custo_medio    
+
     def clean(self):
         """Validações personalizadas"""
         cleaned_data = super().clean()
         grupo = cleaned_data.get('grupo')
         subgrupo = cleaned_data.get('subgrupo')
         tipo_pi = cleaned_data.get('tipo_pi')
+        fornecedor_principal = cleaned_data.get('fornecedor_principal')
         
-        # Validar se o subgrupo pertence ao grupo selecionado
         if grupo and subgrupo:
             if subgrupo.grupo != grupo:
                 self.add_error('subgrupo', 'O subgrupo selecionado não pertence ao grupo escolhido.')
         
-        # <<<< NOVA VALIDAÇÃO: tipo_pi obrigatório para produtos PI
         if grupo and grupo.tipo_produto == 'PI':
             if not tipo_pi:
                 self.add_error('tipo_pi', 'Tipo do Produto Intermediário é obrigatório para produtos PI.')
+                
+            if tipo_pi in ['COMPRADO', 'MONTADO_EXTERNO', 'SERVICO_EXTERNO']:
+                if not fornecedor_principal:
+                    campo_nome = 'Prestador principal' if tipo_pi == 'SERVICO_EXTERNO' else 'Fornecedor principal'
+                    self.add_error('fornecedor_principal', f'{campo_nome} é obrigatório para este tipo.')
         
         return cleaned_data
+
 
     def save(self, commit=True):
         """Override para garantir que o tipo seja definido corretamente"""
         produto = super().save(commit=False)
         
-        # Garantir que o tipo coincida com o grupo
         if produto.grupo and produto.grupo.tipo_produto:
             produto.tipo = produto.grupo.tipo_produto
         
@@ -353,6 +345,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             produto.save()
         
         return produto
+
 
 
 # <<<< NOVOS FORMULÁRIOS DE FILTRO ATUALIZADOS

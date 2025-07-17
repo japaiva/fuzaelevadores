@@ -1,4 +1,3 @@
-<!-- templates/producao/produtos/produto_intermediario_form.html -->
 {% extends 'producao/base_producao.html' %}
 {% load static %}
 
@@ -6,44 +5,6 @@
 
 {% block content %}
 <div class="container-fluid">
-  
-  <!-- ========================================================================= -->
-  <!-- DEBUG SECTION - REMOVER EM PRODUÇÃO -->
-  <!-- ========================================================================= -->
-  
-  <div class="alert alert-info alert-dismissible">
-    <h6><i class="fas fa-bug me-1"></i> DEBUG - Status do Formulário</h6>
-    <div class="row small">
-      <div class="col-md-3">
-        <strong>Modo:</strong> {% if form.instance.pk %}Edição{% else %}Criação{% endif %}
-      </div>
-      <div class="col-md-3">
-        <strong>Produto ID:</strong> {{ form.instance.pk|default:"Novo" }}
-      </div>
-      <div class="col-md-3">
-        <strong>Tipo:</strong> {{ form.instance.tipo|default:"Será PI" }}
-      </div>
-      <div class="col-md-3">
-        <strong>Grupo:</strong> {{ form.instance.grupo.nome|default:"Não definido" }}
-      </div>
-    </div>
-    <div class="row small mt-1">
-      <div class="col-md-3">
-        <strong>Subgrupo:</strong> {{ form.instance.subgrupo.nome|default:"Não definido" }}
-      </div>
-      <div class="col-md-3">
-        <strong>Tipo PI:</strong> {{ form.instance.get_tipo_pi_display|default:"Não definido" }}
-      </div>
-      <div class="col-md-3">
-        <strong>Código:</strong> {{ form.instance.codigo|default:"Será gerado" }}
-      </div>
-      <div class="col-md-3">
-        <strong>Form Valid:</strong> <span id="form-valid-status">Verificando...</span>
-      </div>
-    </div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-  </div>
-
   <div class="card shadow">
     <div class="card-header bg-gradient-warning text-white d-flex justify-content-between align-items-center">
       <div>
@@ -68,7 +29,6 @@
       <form method="post" id="produto-form" novalidate>
         {% csrf_token %}
 
-        <!-- Erros gerais do formulário -->
         {% if form.non_field_errors %}
           <div class="alert alert-danger">
             <h6><i class="fas fa-exclamation-triangle me-1"></i> Erros no Formulário:</h6>
@@ -78,21 +38,16 @@
           </div>
         {% endif %}
 
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 1: IDENTIFICAÇÃO -->
-        <!-- ===================================================================== -->
-        
         <div class="card border-start border-warning border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-tag me-2 text-warning"></i>
-              1. Identificação
+              Identificação
             </h6>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4">
             <div class="row g-3">
-              <!-- Código (somente leitura se for edição) -->
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label class="form-label">Código do Produto</label>
                 {% if form.instance.pk %}
                   <div class="form-control-plaintext fw-bold text-warning fs-5">
@@ -108,8 +63,7 @@
                 {% endif %}
               </div>
 
-              <!-- Nome do produto -->
-              <div class="col-md-8">
+              <div class="col-md-9">
                 <label for="{{ form.nome.id_for_label }}" class="form-label">
                   Nome do Produto Intermediário <span class="text-danger">*</span>
                 </label>
@@ -120,45 +74,11 @@
                     {% for error in form.nome.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <div class="form-text">
-                  <small>Nome descritivo do produto intermediário</small>
-                </div>
               </div>
             </div>
 
-            <!-- Descrição -->
             <div class="row g-3 mt-2">
-              <div class="col-12">
-                <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
-                {{ form.descricao }}
-                {% if form.descricao.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.descricao.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-                <div class="form-text">
-                  <small>Descrição detalhada do produto (opcional)</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 2: CLASSIFICAÇÃO (GRUPO/SUBGRUPO) -->
-        <!-- ===================================================================== -->
-        
-        <div class="card border-start border-primary border-4 mb-4">
-          <div class="card-header bg-light">
-            <h6 class="card-title mb-0">
-              <i class="fas fa-layer-group me-2 text-primary"></i>
-              2. Classificação
-            </h6>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <!-- Grupo -->
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label for="{{ form.grupo.id_for_label }}" class="form-label">
                   Grupo <span class="text-danger">*</span>
                 </label>
@@ -169,13 +89,9 @@
                     {% for error in form.grupo.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <div class="form-text">
-                  <small id="grupo-help">Apenas grupos do tipo PI são exibidos</small>
-                </div>
               </div>
 
-              <!-- Subgrupo -->
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label for="{{ form.subgrupo.id_for_label }}" class="form-label">
                   Subgrupo <span class="text-danger">*</span>
                 </label>
@@ -186,131 +102,81 @@
                     {% for error in form.subgrupo.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <div class="form-text">
-                  <small id="subgrupo-help">Selecione um grupo primeiro</small>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 3: TIPO DO PRODUTO INTERMEDIÁRIO - SEMPRE VISÍVEL PARA DEBUG -->
-        <!-- ===================================================================== -->
-        
-        <div class="card border-start border-success border-4 mb-4" id="tipo-pi-section">
-          <div class="card-header bg-light">
-            <h6 class="card-title mb-0">
-              <i class="fas fa-cogs me-2 text-success"></i>
-              3. Tipo do Produto Intermediário <span class="text-danger">*</span>
-            </h6>
-          </div>
-          <div class="card-body">
-            
-            <!-- DEBUG: Status da seção -->
-            <div class="alert alert-light border mb-3">
-              <strong>DEBUG:</strong> 
-              <span id="debug-tipo-pi-status">Seção carregada</span>
-              | <strong>Required:</strong> <span id="debug-tipo-pi-required">Verificando...</span>
-              | <strong>Value:</strong> <span id="debug-tipo-pi-value">{{ form.instance.tipo_pi|default:"Vazio" }}</span>
-            </div>
-
-            <div class="row g-3">
-              <!-- Campo Tipo PI -->
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label for="{{ form.tipo_pi.id_for_label }}" class="form-label">
-                  Selecione o Tipo <span class="text-danger">*</span>
+                  Tipo do Produto Intermediário <span class="text-danger">*</span>
                 </label>
-                {{ form.tipo_pi }}
+                <select class="form-select" id="{{ form.tipo_pi.id_for_label }}" name="{{ form.tipo_pi.name }}" required>
+                  <option value="">Selecione o tipo</option>
+                  <option value="COMPRADO" {% if form.instance.tipo_pi == 'COMPRADO' %}selected{% endif %}>Comprado Pronto</option>
+                  <option value="MONTADO_INTERNO" {% if form.instance.tipo_pi == 'MONTADO_INTERNO' %}selected{% endif %}>Montado Internamente</option>
+                  <option value="MONTADO_EXTERNO" {% if form.instance.tipo_pi == 'MONTADO_EXTERNO' %}selected{% endif %}>Montado Externamente</option>
+                  <option value="SERVICO_INTERNO" {% if form.instance.tipo_pi == 'SERVICO_INTERNO' %}selected{% endif %}>Serviço Interno</option>
+                  <option value="SERVICO_EXTERNO" {% if form.instance.tipo_pi == 'SERVICO_EXTERNO' %}selected{% endif %}>Serviço Externo</option>
+                </select>
                 {% if form.tipo_pi.errors %}
                   <div class="text-danger small mt-1">
                     <i class="fas fa-exclamation-triangle me-1"></i>
                     {% for error in form.tipo_pi.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <div class="form-text">
-                  <small>Define como o produto é obtido/produzido</small>
-                </div>
               </div>
-              
-              <!-- Informações do tipo selecionado -->
-              <div class="col-md-6" id="tipo-pi-info">
-                <div class="alert alert-light border-0" id="tipo-info-display" style="display: none;">
-                  <h6 class="alert-heading mb-2">
-                    <i class="fas fa-info-circle me-1"></i> 
-                    <span id="tipo-info-title">Informações do Tipo</span>
-                  </h6>
-                  <p class="mb-1 small" id="tipo-info-description">Selecione um tipo para ver as informações.</p>
-                  <div class="mt-2" id="tipo-info-example" style="display: none;">
-                    <strong>Exemplo:</strong> <span id="tipo-info-example-text"></span>
+            </div>
+
+            <div class="row g-3 mt-2">
+              <div class="col-md-3">
+                <label for="{{ form.codigo_ncm.id_for_label }}" class="form-label">Código NCM</label>
+                {{ form.codigo_ncm }}
+                {% if form.codigo_ncm.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.codigo_ncm.errors %}{{ error }}{% endfor %}
                   </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <div class="form-check form-switch mt-4">
+                  <input class="form-check-input" type="checkbox" id="id_ativo" name="ativo_toggle" {% if form.instance.status == 'ATIVO' or not form.instance.status %}checked{% endif %}>
+                  <label class="form-check-label fw-semibold" for="id_ativo">
+                    Produto Ativo
+                  </label>
+                  <input type="hidden" name="{{ form.status.html_name }}" id="id_status_hidden" value="{{ form.instance.status|default:'ATIVO' }}">
                 </div>
               </div>
-            </div>
 
-            <!-- Alertas condicionais baseados no tipo -->
-            <div class="row g-3 mt-2" id="estrutura-info" style="display: none;">
-              <div class="col-12">
-                <div class="alert alert-success border-success">
-                  <h6 class="alert-heading">
-                    <i class="fas fa-sitemap me-1"></i> Estrutura de Componentes Habilitada
-                  </h6>
-                  <p class="mb-2">
-                    Este tipo permite definir estrutura de componentes (Matérias-Primas ou outros Produtos Intermediários).
-                    O custo será calculado automaticamente baseado nos componentes e suas proporções.
-                  </p>
-                  
-                  {% if form.instance.pk and form.instance.pode_ter_estrutura %}
-                    <div class="d-flex gap-2 mt-3">
-                      <a href="{% url 'producao:produto_intermediario_estrutura' form.instance.pk %}" 
-                         class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-sitemap me-1"></i> Gerenciar Estrutura
-                      </a>
-                      {% if form.instance.componentes.exists %}
-                        <span class="badge bg-info align-self-center">
-                          {{ form.instance.componentes.count }} componente(s)
-                        </span>
-                      {% else %}
-                        <span class="badge bg-warning align-self-center">
-                          Estrutura não definida
-                        </span>
-                      {% endif %}
-                    </div>
-                  {% endif %}
+              <div class="col-md-3">
+                <div class="form-check form-switch mt-4">
+                  {{ form.disponivel }}
+                  <label class="form-check-label fw-semibold" for="{{ form.disponivel.id_for_label }}">
+                    Disponível para Uso
+                  </label>
                 </div>
               </div>
-            </div>
 
-            <div class="row g-3 mt-2" id="custo-manual-info" style="display: none;">
-              <div class="col-12">
-                <div class="alert alert-warning border-warning">
-                  <h6 class="alert-heading">
-                    <i class="fas fa-hand-paper me-1"></i> Custo Manual Requerido
-                  </h6>
-                  <p class="mb-0">
-                    Para este tipo, o custo deve ser informado manualmente nos campos de preço abaixo.
-                    Não é possível calcular automaticamente via estrutura de componentes.
-                  </p>
+              <div class="col-md-3">
+                <div class="form-check form-switch mt-4">
+                  {{ form.controla_estoque }}
+                  <label class="form-check-label fw-semibold" for="{{ form.controla_estoque.id_for_label }}">
+                    Controla Estoque
+                  </label>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 4: CARACTERÍSTICAS TÉCNICAS -->
-        <!-- ===================================================================== -->
-        
         <div class="card border-start border-info border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-wrench me-2 text-info"></i>
-              4. Características Técnicas
+              Características
             </h6>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4">
             <div class="row g-3">
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label for="{{ form.unidade_medida.id_for_label }}" class="form-label">
                   Unidade de Medida <span class="text-danger">*</span>
                 </label>
@@ -323,7 +189,7 @@
                 {% endif %}
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label for="{{ form.peso_unitario.id_for_label }}" class="form-label">Peso Unitário (kg)</label>
                 {{ form.peso_unitario }}
                 {% if form.peso_unitario.errors %}
@@ -333,38 +199,22 @@
                   </div>
                 {% endif %}
               </div>
-
-              <div class="col-md-4">
-                <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-                {{ form.status }}
-                {% if form.status.errors %}
-                  <div class="text-danger small mt-1">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
-                    {% for error in form.status.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
             </div>
           </div>
         </div>
 
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 5: FORNECIMENTO -->
-        <!-- ===================================================================== -->
-        
-        <div class="card border-start border-secondary border-4 mb-4">
+        <div class="card border-start border-secondary border-4 mb-4" id="secao-fornecimento" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-truck me-2 text-secondary"></i>
-              5. Fornecimento
+              Fornecimento
             </h6>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4">
             <div class="row g-3">
               <div class="col-md-6">
                 <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">
-                  Fornecedor Principal
-                  <span id="fornecedor-obrigatorio" class="text-danger" style="display: none;">*</span>
+                  Fornecedor Principal <span class="text-danger" id="fornecedor-required">*</span>
                 </label>
                 {{ form.fornecedor_principal }}
                 {% if form.fornecedor_principal.errors %}
@@ -373,42 +223,198 @@
                     {% for error in form.fornecedor_principal.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <div class="form-text">
-                  <small id="fornecedor-help">Fornecedor preferencial (opcional)</small>
-                </div>
               </div>
 
+              <div class="col-md-6">
+                <label for="{{ form.codigo_produto_fornecedor.id_for_label }}" class="form-label">Código do Produto no Fornecedor</label>
+                {{ form.codigo_produto_fornecedor }}
+                {% if form.codigo_produto_fornecedor.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.codigo_produto_fornecedor.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mt-2">
               <div class="col-md-6">
                 <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Entrega (dias)</label>
                 {{ form.prazo_entrega_padrao }}
                 {% if form.prazo_entrega_padrao.errors %}
                   <div class="text-danger small mt-1">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
                     {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Última Compra</label>
+                <div class="form-control-plaintext text-muted">
+                  {% if form.instance.pk %}
+                    Não disponível
+                  {% else %}
+                    Produto ainda não foi comprado
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 6: CUSTOS -->
-        <!-- ===================================================================== -->
-        
-        <div class="card border-start border-warning border-4 mb-4">
+        <div class="card border-start border-dark border-4 mb-4" id="secao-prestador" style="display: none;">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-handshake me-2 text-dark"></i>
+              Prestador
+            </h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="{{ form.fornecedor_principal.id_for_label }}" class="form-label">
+                  Prestador Principal <span class="text-danger" id="prestador-required">*</span>
+                </label>
+                {{ form.fornecedor_principal }}
+                {% if form.fornecedor_principal.errors %}
+                  <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.fornecedor_principal.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label for="{{ form.codigo_produto_fornecedor.id_for_label }}" class="form-label">Código do Serviço no Prestador</label>
+                {{ form.codigo_produto_fornecedor }}
+                {% if form.codigo_produto_fornecedor.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.codigo_produto_fornecedor.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row g-3 mt-2">
+              <div class="col-md-6">
+                <label for="{{ form.prazo_entrega_padrao.id_for_label }}" class="form-label">Prazo Produção (dias)</label>
+                {{ form.prazo_entrega_padrao }}
+                {% if form.prazo_entrega_padrao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.prazo_entrega_padrao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Última Produção</label>
+                <div class="form-control-plaintext text-muted">
+                  {% if form.instance.pk %}
+                    Não disponível
+                  {% else %}
+                    Serviço ainda não foi produzido
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-start border-success border-4 mb-4" id="secao-custo-montado" style="display: none;">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-calculator me-2 text-success"></i>
+              Custo
+            </h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="{{ form.custo_medio.id_for_label }}" class="form-label">Custo MP</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.custo_medio }}
+                </div>
+                {% if form.custo_medio.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+                <small class="text-muted">Custo das matérias-primas</small>
+              </div>
+
+              <div class="col-md-4">
+                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">Custo Serviço</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.custo_industrializacao }}
+                </div>
+                {% if form.custo_industrializacao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+                <small class="text-muted">Custo de montagem/industrialização</small>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Custo Total</label>
+                <div id="custo-total-montado" class="form-control-plaintext fw-bold text-success fs-5">
+                  R$ 0,00
+                </div>
+                <small class="text-muted">Custo MP + Serviço</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-start border-warning border-4 mb-4" id="secao-custo-servico" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-calculator me-2 text-warning"></i>
-              6. Custos e Preços
+              Custo
             </h6>
           </div>
-          <div class="card-body">
+          <div class="card-body p-4">
             <div class="row g-3">
-              <div class="col-md-4">
+              <div class="col-md-6">
+                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">
+                  Custo Serviço <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.custo_industrializacao }}
+                </div>
+                {% if form.custo_industrializacao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+                <small class="text-muted">Custo do serviço prestado</small>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Custo Total</label>
+                <div id="custo-total-servico" class="form-control-plaintext fw-bold text-warning fs-5">
+                  R$ 0,00
+                </div>
+                <small class="text-muted">Mesmo valor do custo serviço</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-start border-primary border-4 mb-4" id="secao-custo-comprado" style="display: none;">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-calculator me-2 text-primary"></i>
+              Custo
+            </h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
                 <label for="{{ form.custo_medio.id_for_label }}" class="form-label">
-                  Custo Médio
-                  <span id="custo-medio-obrigatorio" class="text-danger" style="display: none;">*</span>
+                  Custo Produto <span class="text-danger">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text">R$</span>
@@ -416,101 +422,59 @@
                 </div>
                 {% if form.custo_medio.errors %}
                   <div class="text-danger small mt-1">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
                     {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-                <div class="form-text">
-                  <small id="custo-medio-help">Custo unitário do produto</small>
-                </div>
+                <small class="text-muted">Custo de aquisição do produto</small>
               </div>
 
-              <div class="col-md-4">
-                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">Custo Industrialização</label>
-                <div class="input-group">
-                  <span class="input-group-text">R$</span>
-                  {{ form.custo_industrializacao }}
+              <div class="col-md-6">
+                <label class="form-label">Custo Total</label>
+                <div id="custo-total-comprado" class="form-control-plaintext fw-bold text-primary fs-5">
+                  R$ 0,00
                 </div>
-                {% if form.custo_industrializacao.errors %}
+                <small class="text-muted">Mesmo valor do custo produto</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card border-start border-danger border-4 mb-4" id="secao-estoque" style="display: none;">
+          <div class="card-header bg-light">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-boxes me-2 text-danger"></i>
+              Estoque
+            </h6>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="{{ form.estoque_atual.id_for_label }}" class="form-label">Estoque Atual</label>
+                {{ form.estoque_atual }}
+                {% if form.estoque_atual.errors %}
                   <div class="text-danger small mt-1">
-                    <i class="fas fa-exclamation-triangle me-1"></i>
-                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
+                    {% for error in form.estoque_atual.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
               </div>
 
-              <div class="col-md-4">
-                <label class="form-label">Custo Total</label>
-                <div id="custo-total-display" class="form-control-plaintext fw-bold text-primary fs-5">
-                  R$ 0,00
-                </div>
-                <div class="form-text">
-                  <small>Custo médio + industrialização</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ===================================================================== -->
-        <!-- SEÇÃO 7: CONTROLES -->
-        <!-- ===================================================================== -->
-        
-        <div class="card border-start border-danger border-4 mb-4">
-          <div class="card-header bg-light">
-            <h6 class="card-title mb-0">
-              <i class="fas fa-sliders-h me-2 text-danger"></i>
-              7. Controles
-            </h6>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <div class="form-check form-switch">
-                  {{ form.controla_estoque }}
-                  <label class="form-check-label fw-semibold" for="{{ form.controla_estoque.id_for_label }}">
-                    Controla Estoque
-                  </label>
-                </div>
-              </div>
-
-              <div class="col-md-3">
-                <div class="form-check form-switch">
-                  {{ form.disponivel }}
-                  <label class="form-check-label fw-semibold" for="{{ form.disponivel.id_for_label }}">
-                    Disponível p/ Uso
-                  </label>
-                </div>
-              </div>
-
-              <div class="col-md-3">
-                <div class="form-check form-switch">
-                  {{ form.utilizado }}
-                  <label class="form-check-label fw-semibold" for="{{ form.utilizado.id_for_label }}">
-                    Utilizado no Custo
-                  </label>
-                </div>
-              </div>
-
-              <div class="col-md-3">
+              <div class="col-md-6">
                 <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">Estoque Mínimo</label>
                 {{ form.estoque_minimo }}
+                {% if form.estoque_minimo.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.estoque_minimo.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ===================================================================== -->
-        <!-- BOTÕES DE AÇÃO -->
-        <!-- ===================================================================== -->
-        
         <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
           <div>
-            <button type="button" class="btn btn-outline-info btn-sm" onclick="debugFormulario()">
-              <i class="fas fa-bug me-1"></i> Debug Form
-            </button>
             {% if form.instance.pk %}
-              <small class="text-muted ms-3">
+              <small class="text-muted">
                 Editando desde: {{ form.instance.atualizado_em|date:"d/m/Y H:i" }}
               </small>
             {% endif %}
@@ -537,13 +501,37 @@
 .bg-gradient-warning {
   background: linear-gradient(135deg, #ffc107, #fd7e14);
 }
-.border-4 { border-width: 4px !important; }
-.form-check-input:checked { background-color: #0d6efd; border-color: #0d6efd; }
-.form-switch .form-check-input { width: 2em; margin-left: -2.5em; }
-.card:hover { transform: translateY(-2px); transition: transform 0.2s ease-in-out; }
-.alert-light { background-color: #f8f9fa; border-color: #dee2e6; }
-.text-danger { animation: fadeIn 0.3s ease-in-out; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.border-4 { 
+  border-width: 4px !important; 
+}
+.form-check-input:checked { 
+  background-color: #0d6efd; 
+  border-color: #0d6efd; 
+}
+.form-switch .form-check-input { 
+  width: 2em; 
+  margin-left: -2.5em; 
+}
+.card:hover { 
+  transform: translateY(-2px); 
+  transition: transform 0.2s ease-in-out; 
+}
+.card-body {
+  padding: 1rem !important;
+}
+.card-body.p-4 {
+  padding: 1.5rem !important;
+}
+.form-control, .form-select {
+  margin-bottom: 0.25rem;
+}
+@keyframes fadeIn { 
+  from { opacity: 0; } 
+  to { opacity: 1; } 
+}
+.text-danger { 
+  animation: fadeIn 0.3s ease-in-out; 
+}
 </style>
 {% endblock %}
 
@@ -551,7 +539,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    console.log('🚀 Inicializando formulário com debug completo...');
+    console.log('🚀 Inicializando formulário produto intermediário...');
     
     // =========================================================================
     // ELEMENTOS DO FORMULÁRIO
@@ -560,174 +548,105 @@ document.addEventListener('DOMContentLoaded', function() {
     const tipoPiSelect = document.getElementById('{{ form.tipo_pi.id_for_label }}');
     const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
     const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
-    const fornecedorSelect = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
+    const controlaEstoqueCheck = document.getElementById('{{ form.controla_estoque.id_for_label }}');
+    const ativoCheck = document.getElementById('id_ativo');
+    const statusHiddenInput = document.getElementById('id_status_hidden');
+    
+    // Campos de custo
     const custoMedioInput = document.getElementById('{{ form.custo_medio.id_for_label }}');
     const custoIndustrializacaoInput = document.getElementById('{{ form.custo_industrializacao.id_for_label }}');
     
-    // Elementos de debug
-    const debugTipoPiStatus = document.getElementById('debug-tipo-pi-status');
-    const debugTipoPiRequired = document.getElementById('debug-tipo-pi-required');
-    const debugTipoPiValue = document.getElementById('debug-tipo-pi-value');
-    const formValidStatus = document.getElementById('form-valid-status');
+    // Seções do formulário
+    const secaoFornecimento = document.getElementById('secao-fornecimento');
+    const secaoPrestador = document.getElementById('secao-prestador');
+    const secaoCustoMontado = document.getElementById('secao-custo-montado');
+    const secaoCustoServico = document.getElementById('secao-custo-servico');
+    const secaoCustoComprado = document.getElementById('secao-custo-comprado');
+    const secaoEstoque = document.getElementById('secao-estoque');
     
     // =========================================================================
-    // FUNÇÃO DE DEBUG GLOBAL
+    // FUNÇÃO: ATUALIZAR STATUS (ATIVO/INATIVO)
     // =========================================================================
     
-    window.debugFormulario = function() {
-        console.log('🔧 DEBUG FORMULÁRIO:');
-        console.log('Grupo selecionado:', grupoSelect ? grupoSelect.value : 'N/A');
-        console.log('Subgrupo selecionado:', subgrupoSelect ? subgrupoSelect.value : 'N/A');
-        console.log('Tipo PI selecionado:', tipoPiSelect ? tipoPiSelect.value : 'N/A');
-        console.log('Tipo PI required:', tipoPiSelect ? tipoPiSelect.required : 'N/A');
-        console.log('Tipo PI display:', tipoPiSelect ? tipoPiSelect.style.display : 'N/A');
-        console.log('Seção tipo-pi-section display:', document.getElementById('tipo-pi-section').style.display);
+    function atualizarStatus() {
+        if (ativoCheck?.checked) {
+            statusHiddenInput.value = 'ATIVO';
+        } else {
+            statusHiddenInput.value = 'INATIVO';
+        }
+        console.log('📝 Status atualizado para:', statusHiddenInput.value);
+    }
+
+    // =========================================================================
+    // FUNÇÃO: ATUALIZAR SEÇÕES BASEADO NO TIPO PI
+    // =========================================================================
+    
+    function atualizarSecoesPorTipo() {
+        const tipoSelecionado = tipoPiSelect ? tipoPiSelect.value : '';
         
-        // Mostrar no alert
-        alert(`DEBUG FORMULÁRIO:
-Grupo: ${grupoSelect ? grupoSelect.value : 'N/A'}
-Subgrupo: ${subgrupoSelect ? subgrupoSelect.value : 'N/A'}
-Tipo PI: ${tipoPiSelect ? tipoPiSelect.value : 'N/A'}
-Tipo PI Required: ${tipoPiSelect ? tipoPiSelect.required : 'N/A'}
-Seção Visível: ${document.getElementById('tipo-pi-section').style.display !== 'none'}`);
-    };
-    
-    // =========================================================================
-    // INFORMAÇÕES DOS TIPOS DE PI
-    // =========================================================================
-    
-    const tiposInfo = {
-        'COMPRADO': {
-            title: 'Comprado Pronto',
-            description: 'Produto pronto adquirido de fornecedor. Custo deve ser informado manualmente.',
-            example: 'Porta cabine pronta, Motor de elevador, Botoeira completa',
-            pode_estrutura: false,
-            custo_manual: true,
-            fornecedor_obrigatorio: true
-        },
-        'MONTADO_INTERNO': {
-            title: 'Montado Internamente',
-            description: 'Produto montado na fábrica com componentes próprios. Custo calculado automaticamente.',
-            example: 'Porta montada com perfis próprios, Quadro de comando customizado',
-            pode_estrutura: true,
-            custo_manual: false,
-            fornecedor_obrigatorio: false
-        },
-        'MONTADO_EXTERNO': {
-            title: 'Montado Externamente',
-            description: 'Produto montado por terceiros. Custo calculado pela estrutura + valor da montagem.',
-            example: 'Painel cortado/dobrado, Porta montada por terceiro',
-            pode_estrutura: true,
-            custo_manual: false,
-            fornecedor_obrigatorio: true
-        },
-        'SERVICO': {
-            title: 'Serviço',
-            description: 'Prestação de serviço interno ou externo. Custo informado manualmente.',
-            example: 'Mão de obra montagem, Serviço de pintura, Transporte',
-            pode_estrutura: false,
-            custo_manual: true,
-            fornecedor_obrigatorio: false
+        console.log('🔄 Atualizando seções para tipo:', tipoSelecionado);
+        
+        // Esconder todas as seções
+        if (secaoFornecimento) secaoFornecimento.style.display = 'none';
+        if (secaoPrestador) secaoPrestador.style.display = 'none';
+        if (secaoCustoMontado) secaoCustoMontado.style.display = 'none';
+        if (secaoCustoServico) secaoCustoServico.style.display = 'none';
+        if (secaoCustoComprado) secaoCustoComprado.style.display = 'none';
+        
+        // Resetar campos obrigatórios
+        const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
+        if (fornecedorInput) fornecedorInput.required = false;
+        if (custoMedioInput) custoMedioInput.required = false;
+        if (custoIndustrializacaoInput) custoIndustrializacaoInput.required = false;
+        
+        switch (tipoSelecionado) {
+            case 'COMPRADO':
+                if (secaoFornecimento) secaoFornecimento.style.display = 'block';
+                if (secaoCustoComprado) secaoCustoComprado.style.display = 'block';
+                if (fornecedorInput) fornecedorInput.required = true;
+                if (custoMedioInput) custoMedioInput.required = true;
+                break;
+                
+            case 'MONTADO_INTERNO':
+                if (secaoCustoMontado) secaoCustoMontado.style.display = 'block';
+                break;
+                
+            case 'MONTADO_EXTERNO':
+                if (secaoFornecimento) secaoFornecimento.style.display = 'block';
+                if (secaoCustoMontado) secaoCustoMontado.style.display = 'block';
+                if (fornecedorInput) fornecedorInput.required = true;
+                break;
+                
+            case 'SERVICO_INTERNO':
+                if (secaoCustoServico) secaoCustoServico.style.display = 'block';
+                if (custoIndustrializacaoInput) custoIndustrializacaoInput.required = true;
+                break;
+                
+                            case 'SERVICO_EXTERNO':
+                if (secaoPrestador) secaoPrestador.style.display = 'block';
+                if (secaoCustoServico) secaoCustoServico.style.display = 'block';
+                if (fornecedorInput) fornecedorInput.required = true;
+                if (custoIndustrializacaoInput) custoIndustrializacaoInput.required = true;
+                break;
         }
-    };
-    
-    // =========================================================================
-    // FUNÇÃO: ATUALIZAR DEBUG
-    // =========================================================================
-    
-    function updateDebugInfo() {
-        if (debugTipoPiStatus) {
-            debugTipoPiStatus.textContent = `Seção ${document.getElementById('tipo-pi-section').style.display !== 'none' ? 'VISÍVEL' : 'OCULTA'}`;
-        }
-        if (debugTipoPiRequired) {
-            debugTipoPiRequired.textContent = tipoPiSelect ? (tipoPiSelect.required ? 'SIM' : 'NÃO') : 'N/A';
-        }
-        if (debugTipoPiValue) {
-            debugTipoPiValue.textContent = tipoPiSelect ? (tipoPiSelect.value || 'Vazio') : 'N/A';
-        }
-        if (formValidStatus) {
-            formValidStatus.textContent = 'Atualizado ' + new Date().toLocaleTimeString();
-        }
+        
+        // Atualizar estoque
+        atualizarSecaoEstoque();
+        
+        // Recalcular custos
+        calcularCustoTotal();
     }
     
     // =========================================================================
-    // FUNÇÃO: ATUALIZAR INFORMAÇÕES DO TIPO PI
+    // FUNÇÃO: ATUALIZAR SEÇÃO ESTOQUE
     // =========================================================================
     
-    function updateTipoPiInfo() {
-        const tipoSelecionado = tipoPiSelect ? tipoPiSelect.value : '';
-        const tipoInfoDisplay = document.getElementById('tipo-info-display');
-        const tipoInfoTitle = document.getElementById('tipo-info-title');
-        const tipoInfoDescription = document.getElementById('tipo-info-description');
-        const tipoInfoExample = document.getElementById('tipo-info-example');
-        const tipoInfoExampleText = document.getElementById('tipo-info-example-text');
-        const estruturaInfo = document.getElementById('estrutura-info');
-        const custoManualInfo = document.getElementById('custo-manual-info');
+    function atualizarSecaoEstoque() {
+        const controlaEstoque = controlaEstoqueCheck ? controlaEstoqueCheck.checked : false;
         
-        console.log('🔄 Atualizando tipo PI:', tipoSelecionado);
-        
-        if (tipoSelecionado && tiposInfo[tipoSelecionado]) {
-            const info = tiposInfo[tipoSelecionado];
-            
-            // Mostrar informações
-            if (tipoInfoDisplay) tipoInfoDisplay.style.display = 'block';
-            if (tipoInfoTitle) tipoInfoTitle.textContent = info.title;
-            if (tipoInfoDescription) tipoInfoDescription.textContent = info.description;
-            if (tipoInfoExampleText) tipoInfoExampleText.textContent = info.example;
-            if (tipoInfoExample) tipoInfoExample.style.display = 'block';
-            
-            // Mostrar/esconder alertas
-            if (info.pode_estrutura) {
-                if (estruturaInfo) estruturaInfo.style.display = 'block';
-                if (custoManualInfo) custoManualInfo.style.display = 'none';
-            } else {
-                if (estruturaInfo) estruturaInfo.style.display = 'none';
-                if (custoManualInfo) custoManualInfo.style.display = 'block';
-            }
-            
-            // Campos obrigatórios condicionais
-            const fornecedorObrigatorio = document.getElementById('fornecedor-obrigatorio');
-            const custoMedioObrigatorio = document.getElementById('custo-medio-obrigatorio');
-            const fornecedorHelp = document.getElementById('fornecedor-help');
-            const custoMedioHelp = document.getElementById('custo-medio-help');
-            
-            if (info.fornecedor_obrigatorio) {
-                if (fornecedorObrigatorio) fornecedorObrigatorio.style.display = 'inline';
-                if (fornecedorSelect) fornecedorSelect.required = true;
-                if (fornecedorHelp) fornecedorHelp.innerHTML = '<small class="text-danger">Obrigatório para este tipo</small>';
-            } else {
-                if (fornecedorObrigatorio) fornecedorObrigatorio.style.display = 'none';
-                if (fornecedorSelect) fornecedorSelect.required = false;
-                if (fornecedorHelp) fornecedorHelp.innerHTML = '<small class="text-muted">Fornecedor preferencial (opcional)</small>';
-            }
-            
-            if (info.custo_manual) {
-                if (custoMedioObrigatorio) custoMedioObrigatorio.style.display = 'inline';
-                if (custoMedioInput) custoMedioInput.required = true;
-                if (custoMedioHelp) custoMedioHelp.innerHTML = '<small class="text-warning">Custo deve ser informado manualmente</small>';
-            } else {
-                if (custoMedioObrigatorio) custoMedioObrigatorio.style.display = 'none';
-                if (custoMedioInput) custoMedioInput.required = false;
-                if (custoMedioHelp) custoMedioHelp.innerHTML = '<small class="text-info">Custo pode ser calculado automaticamente</small>';
-            }
-            
-        } else {
-            // Esconder tudo
-            if (tipoInfoDisplay) tipoInfoDisplay.style.display = 'none';
-            if (estruturaInfo) estruturaInfo.style.display = 'none';
-            if (custoManualInfo) custoManualInfo.style.display = 'none';
-            
-            // Resetar campos obrigatórios
-            const fornecedorObrigatorio = document.getElementById('fornecedor-obrigatorio');
-            const custoMedioObrigatorio = document.getElementById('custo-medio-obrigatorio');
-            
-            if (fornecedorObrigatorio) fornecedorObrigatorio.style.display = 'none';
-            if (custoMedioObrigatorio) custoMedioObrigatorio.style.display = 'none';
-            if (fornecedorSelect) fornecedorSelect.required = false;
-            if (custoMedioInput) custoMedioInput.required = false;
+        if (secaoEstoque) {
+            secaoEstoque.style.display = controlaEstoque ? 'block' : 'none';
         }
-        
-        updateDebugInfo();
     }
     
     // =========================================================================
@@ -737,22 +656,14 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
     function updateSubgrupos(grupoId) {
         console.log('🔄 Atualizando subgrupos para grupo:', grupoId);
         
-        const subgrupoHelp = document.getElementById('subgrupo-help');
-        const grupoHelp = document.getElementById('grupo-help');
-        
-        // Limpar subgrupos
         if (subgrupoSelect) {
-            subgrupoSelect.innerHTML = '<option value="">---------</option>';
-            if (subgrupoHelp) subgrupoHelp.innerHTML = '<small class="text-muted">Carregando...</small>';
+            subgrupoSelect.innerHTML = '<option value="">Selecione um subgrupo</option>';
         }
         
         if (grupoId) {
-            // Buscar subgrupos
             fetch(`/producao/api/subgrupos/?grupo_id=${grupoId}`)
                 .then(response => response.json())
                 .then(data => {
-                    console.log('📊 Subgrupos recebidos:', data);
-                    
                     if (data.success && data.subgrupos && subgrupoSelect) {
                         data.subgrupos.forEach(subgrupo => {
                             const option = document.createElement('option');
@@ -761,48 +672,16 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
                             subgrupoSelect.appendChild(option);
                         });
                         
-                        if (subgrupoHelp) subgrupoHelp.innerHTML = `<small class="text-success">${data.subgrupos.length} subgrupo(s) disponível(is)</small>`;
-                        
                         // Se é edição, tentar selecionar o subgrupo atual
                         {% if form.instance.pk and form.instance.subgrupo %}
                         subgrupoSelect.value = '{{ form.instance.subgrupo.id }}';
-                        console.log('✅ Subgrupo da edição selecionado:', '{{ form.instance.subgrupo.id }}');
                         {% endif %}
-                    } else {
-                        if (subgrupoHelp) subgrupoHelp.innerHTML = '<small class="text-warning">Nenhum subgrupo encontrado</small>';
                     }
                 })
                 .catch(error => {
                     console.error('❌ Erro ao carregar subgrupos:', error);
-                    if (subgrupoHelp) subgrupoHelp.innerHTML = '<small class="text-danger">Erro ao carregar subgrupos</small>';
                 });
-            
-            // Confirmar que é grupo PI
-            if (grupoHelp) grupoHelp.innerHTML = '<small class="text-success">Grupo PI confirmado</small>';
-            
-            // Para produtos intermediários, sempre mostrar tipo_pi (não esconder mais)
-            const tipoPiSection = document.getElementById('tipo-pi-section');
-            if (tipoPiSection) {
-                tipoPiSection.style.display = 'block';
-                if (tipoPiSelect) {
-                    tipoPiSelect.required = true;
-                    console.log('✅ Campo tipo_pi obrigatório ativado');
-                }
-            }
-            
-        } else {
-            if (subgrupoHelp) subgrupoHelp.innerHTML = '<small class="text-muted">Selecione um grupo primeiro</small>';
-            if (grupoHelp) grupoHelp.innerHTML = '<small class="text-muted">Apenas grupos do tipo PI são exibidos</small>';
-            
-            // Manter tipo_pi visível mesmo sem grupo (para debug)
-            const tipoPiSection = document.getElementById('tipo-pi-section');
-            if (tipoPiSection) {
-                tipoPiSection.style.display = 'block';
-                if (tipoPiSelect) tipoPiSelect.required = false;
-            }
         }
-        
-        updateDebugInfo();
     }
     
     // =========================================================================
@@ -810,23 +689,42 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
     // =========================================================================
     
     function calcularCustoTotal() {
-        if (custoMedioInput && custoIndustrializacaoInput) {
-            const custoMedio = parseFloat(custoMedioInput.value.replace(',', '.')) || 0;
-            const custoIndustrializacao = parseFloat(custoIndustrializacaoInput.value.replace(',', '.')) || 0;
-            const custoTotal = custoMedio + custoIndustrializacao;
-            
-            const custoTotalDisplay = document.getElementById('custo-total-display');
-            if (custoTotalDisplay) {
-                custoTotalDisplay.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                });
+        const tipoSelecionado = tipoPiSelect ? tipoPiSelect.value : '';
+        const custoMedio = parseFloat(custoMedioInput?.value?.replace(',', '.')) || 0;
+        const custoIndustrializacao = parseFloat(custoIndustrializacaoInput?.value?.replace(',', '.')) || 0;
+        
+        let custoTotal = 0;
+        let displayElement = null;
+        
+        switch (tipoSelecionado) {
+            case 'COMPRADO':
+                custoTotal = custoMedio;
+                displayElement = document.getElementById('custo-total-comprado');
+                break;
                 
-                if (custoTotal > 0) {
-                    custoTotalDisplay.className = 'form-control-plaintext fw-bold text-success fs-5';
-                } else {
-                    custoTotalDisplay.className = 'form-control-plaintext fw-bold text-muted fs-5';
-                }
+            case 'MONTADO_INTERNO':
+            case 'MONTADO_EXTERNO':
+                custoTotal = custoMedio + custoIndustrializacao;
+                displayElement = document.getElementById('custo-total-montado');
+                break;
+                
+            case 'SERVICO_INTERNO':
+            case 'SERVICO_EXTERNO':
+                custoTotal = custoIndustrializacao;
+                displayElement = document.getElementById('custo-total-servico');
+                break;
+        }
+        
+        if (displayElement) {
+            displayElement.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            if (custoTotal > 0) {
+                displayElement.className = displayElement.className.replace('text-muted', 'text-success');
+            } else {
+                displayElement.className = displayElement.className.replace('text-success', 'text-muted');
             }
         }
     }
@@ -839,16 +737,27 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
     if (tipoPiSelect) {
         tipoPiSelect.addEventListener('change', function() {
             console.log('🔄 Tipo PI alterado para:', this.value);
-            updateTipoPiInfo();
+            atualizarSecoesPorTipo();
         });
     }
     
     // Grupo
     if (grupoSelect) {
         grupoSelect.addEventListener('change', function() {
-            console.log('🔄 Grupo alterado para:', this.value);
             updateSubgrupos(this.value);
         });
+    }
+    
+    // Controla estoque
+    if (controlaEstoqueCheck) {
+        controlaEstoqueCheck.addEventListener('change', function() {
+            atualizarSecaoEstoque();
+        });
+    }
+
+    // Ativo
+    if (ativoCheck) {
+        ativoCheck.addEventListener('change', atualizarStatus);
     }
     
     // Custos
@@ -884,7 +793,7 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
                 { field: grupoSelect, name: 'Grupo' },
                 { field: subgrupoSelect, name: 'Subgrupo' },
                 { field: document.getElementById('{{ form.unidade_medida.id_for_label }}'), name: 'Unidade' },
-                { field: tipoPiSelect, name: 'Tipo do PI' } // SEMPRE OBRIGATÓRIO
+                { field: tipoPiSelect, name: 'Tipo do PI' }
             ];
             
             requiredFields.forEach(({field, name}) => {
@@ -892,56 +801,53 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
                     field.classList.add('is-invalid');
                     errorFields.push(name);
                     hasErrors = true;
-                    console.log('❌ Campo obrigatório vazio:', name);
                 }
             });
             
             // Validações condicionais baseadas no tipo_pi
-            if (tipoPiSelect && tipoPiSelect.value && tiposInfo[tipoPiSelect.value]) {
-                const tipoInfo = tiposInfo[tipoPiSelect.value];
-                
-                // Validar fornecedor se obrigatório
-                if (tipoInfo.fornecedor_obrigatorio && fornecedorSelect && !fornecedorSelect.value) {
-                    fornecedorSelect.classList.add('is-invalid');
-                    errorFields.push('Fornecedor Principal');
+            const tipoSelecionado = tipoPiSelect ? tipoPiSelect.value : '';
+            const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
+            
+            if (tipoSelecionado === 'COMPRADO' || tipoSelecionado === 'MONTADO_EXTERNO' || tipoSelecionado === 'SERVICO_EXTERNO') {
+                if (fornecedorInput && !fornecedorInput.value) {
+                    fornecedorInput.classList.add('is-invalid');
+                    errorFields.push(tipoSelecionado === 'SERVICO_EXTERNO' ? 'Prestador Principal' : 'Fornecedor Principal');
                     hasErrors = true;
-                    console.log('❌ Fornecedor obrigatório para tipo:', tipoPiSelect.value);
                 }
-                
-                // Validar custo médio se obrigatório
-                if (tipoInfo.custo_manual && custoMedioInput && !custoMedioInput.value) {
+            }
+            
+            if (tipoSelecionado === 'COMPRADO') {
+                if (custoMedioInput && !custoMedioInput.value) {
                     custoMedioInput.classList.add('is-invalid');
-                    errorFields.push('Custo Médio');
+                    errorFields.push('Custo Produto');
                     hasErrors = true;
-                    console.log('❌ Custo médio obrigatório para tipo:', tipoPiSelect.value);
+                }
+            }
+            
+            if (tipoSelecionado === 'SERVICO_INTERNO' || tipoSelecionado === 'SERVICO_EXTERNO') {
+                if (custoIndustrializacaoInput && !custoIndustrializacaoInput.value) {
+                    custoIndustrializacaoInput.classList.add('is-invalid');
+                    errorFields.push('Custo Serviço');
+                    hasErrors = true;
                 }
             }
             
             if (hasErrors) {
                 e.preventDefault();
                 
-                console.log('❌ Formulário com erros:', errorFields);
+                alert(`Por favor, corrija os seguintes campos obrigatórios:\n\n• ${errorFields.join('\n• ')}`);
                 
-                // Mostrar alerta com erros
-                alert(`Por favor, corrija os seguintes campos obrigatórios:\n\n• ${errorFields.join('\n• ')}\n\nVerifique se todos os campos marcados com * estão preenchidos.`);
-                
-                // Scroll para o primeiro erro
                 const firstError = form.querySelector('.is-invalid');
                 if (firstError) {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     firstError.focus();
                 }
-                
-                updateDebugInfo();
             } else {
-                // Mostrar loading no botão
                 const submitBtn = document.getElementById('submit-btn');
                 if (submitBtn) {
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
                     submitBtn.disabled = true;
                 }
-                
-                console.log('✅ Formulário válido, enviando...');
             }
         });
     }
@@ -952,66 +858,23 @@ Seção Visível: ${document.getElementById('tipo-pi-section').style.display !==
     
     console.log('🚀 Executando inicialização...');
     
-    // Sempre mostrar seção tipo_pi (removendo lógica de esconder)
-    const tipoPiSection = document.getElementById('tipo-pi-section');
-    if (tipoPiSection) {
-        tipoPiSection.style.display = 'block';
-        console.log('✅ Seção tipo_pi sempre visível');
-    }
-    
-    // Marcar tipo_pi como obrigatório sempre
-    if (tipoPiSelect) {
-        tipoPiSelect.required = true;
-        console.log('✅ Campo tipo_pi marcado como obrigatório');
-    }
-    
     // Executar funções iniciais
+    atualizarSecoesPorTipo();
+    atualizarSecaoEstoque();
     calcularCustoTotal();
-    updateTipoPiInfo();
-    updateDebugInfo();
     
     // Se for edição, configurar campos baseados nos valores existentes
     {% if form.instance.pk %}
         console.log('📝 Modo edição detectado');
         
-        // Carregar subgrupos se tem grupo
         if (grupoSelect && grupoSelect.value) {
-            console.log('🔄 Carregando subgrupos para grupo da edição');
             updateSubgrupos(grupoSelect.value);
         }
         
-        // Configurar tipo_pi se já existe
-        if (tipoPiSelect && tipoPiSelect.value) {
-            console.log('🔄 Configurando tipo PI da edição:', tipoPiSelect.value);
-            updateTipoPiInfo();
-        }
-        
-        // Calcular custo atual
         setTimeout(calcularCustoTotal, 100);
-        
-    {% else %}
-        console.log('✨ Modo criação detectado');
-        
-        // Para criação, manter tipo_pi visível e obrigatório
-        console.log('✅ Tipo PI obrigatório para novo produto');
     {% endif %}
     
-    // =========================================================================
-    // LOG FINAL
-    // =========================================================================
-    
-    setTimeout(() => {
-        console.log('🔧 Status final do formulário:', {
-            modo: '{% if form.instance.pk %}edicao{% else %}criacao{% endif %}',
-            tipo_pi_visivel: tipoPiSection ? tipoPiSection.style.display !== 'none' : 'N/A',
-            tipo_pi_required: tipoPiSelect ? tipoPiSelect.required : 'N/A',
-            tipo_pi_value: tipoPiSelect ? tipoPiSelect.value : 'N/A',
-            grupo_value: grupoSelect ? grupoSelect.value : 'N/A',
-            subgrupo_value: subgrupoSelect ? subgrupoSelect.value : 'N/A'
-        });
-        
-        updateDebugInfo();
-    }, 500);
+    console.log('✅ Formulário inicializado com sucesso!');
 });
 </script>
 {% endblock %}

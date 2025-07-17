@@ -106,18 +106,28 @@ def materiaprima_list(request):
         'query': query
     })
 
-
 @login_required
 def materiaprima_create(request):
     """Criar nova matéria-prima"""
     if request.method == 'POST':
-        form = ProdutoForm(request.POST)
+        # Cria uma cópia mutável dos dados POST
+        post_data = request.POST.copy()
+        
+        # Define estoque_minimo como None se o valor for uma string vazia
+        if 'estoque_minimo' in post_data and not post_data['estoque_minimo']:
+            post_data['estoque_minimo'] = None
+
+        form = ProdutoForm(post_data)
 
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'MP'
             produto.criado_por = request.user
             produto.atualizado_por = request.user
+            
+            # Limpa o campo tipo_pi para matérias-primas
+            produto.tipo_pi = None
+
             produto.save()
 
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" criada com sucesso.')
@@ -129,19 +139,29 @@ def materiaprima_create(request):
 
     return render(request, 'producao/produtos/materiaprima_form.html', {'form': form})
 
-
 @login_required
 def materiaprima_update(request, pk):
     """Editar matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
 
     if request.method == 'POST':
-        form = ProdutoForm(request.POST, instance=produto)
+        # Cria uma cópia mutável dos dados POST
+        post_data = request.POST.copy()
+        
+        # Define estoque_minimo como None se o valor for uma string vazia
+        if 'estoque_minimo' in post_data and not post_data['estoque_minimo']:
+            post_data['estoque_minimo'] = None
+            
+        form = ProdutoForm(post_data, instance=produto)
 
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'MP'
             produto.atualizado_por = request.user
+            
+            # Limpa o campo tipo_pi para matérias-primas
+            produto.tipo_pi = None
+            
             produto.save()
 
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" atualizada com sucesso.')
@@ -155,7 +175,6 @@ def materiaprima_update(request, pk):
         'form': form,
         'produto': produto
     })
-
 
 @login_required
 def materiaprima_detail(request, pk):

@@ -6,9 +6,6 @@
 
 {% block extra_css %}
 <style>
-/* ========================================================================= */
-/* CORREÇÃO DO HEADER BRANCO - CORES MAIS FORTES */
-/* ========================================================================= */
 .bg-gradient-primary {
   background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
   color: white !important;
@@ -37,9 +34,6 @@
   color: white !important;
 }
 
-/* ========================================================================= */
-/* ESTILOS DA ESTRUTURA */
-/* ========================================================================= */
 .componente-card {
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
@@ -156,7 +150,7 @@
 {% block content %}
 <div class="container-fluid">
   
-  <!-- Header com informações do produto - CORES CORRIGIDAS -->
+  <!-- Header com informações do produto -->
   <div class="card shadow mb-4">
     <div class="card-header bg-gradient-primary">
       <div class="row align-items-center">
@@ -382,14 +376,17 @@
 {% block extra_js %}
 <script>
 
+// =========================================================================
+// JAVASCRIPT CORRIGIDO PARA RECUPERAR ESTRUTURAS SALVAS
+// produto_intermediario_estrutura.html - Sistema FUZA
+// =========================================================================
 
-  
 // Variáveis globais
 let componentesEstrutura = [];
 let produtoSelecionado = null;
 let timeoutBusca = null;
-let debugMode = true; // Mudar para false em produção
-let produtosBuscados = []; 
+let debugMode = true;
+let produtosBuscados = [];
 
 const PRODUTO_ATUAL = {
     id: '{{ produto.pk }}',
@@ -398,133 +395,29 @@ const PRODUTO_ATUAL = {
 };
 
 // =========================================================================
-// INICIALIZAÇÃO COMPLETA
+// INICIALIZAÇÃO COM CARREGAMENTO DE ESTRUTURA EXISTENTE
 // =========================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Carregando estrutura para produto:', PRODUTO_ATUAL.codigo);
     
-    if (debugMode) debugElementos();
     inicializarEventos();
-    carregarEstruturaExistente();
+    carregarEstruturaExistente(); // <<<< PRINCIPAL: Carregar do banco
     atualizarInterface();
     
     if (debugMode) criarBotaoDebug();
+    console.log('✅ Sistema iniciado com sucesso!');
 });
 
-function debugElementos() {
-    console.log('🔧 DEBUG: Verificando elementos do DOM...');
-    
-    const elementos = {
-        'busca-produto': document.getElementById('busca-produto'),
-        'produto-suggestions': document.getElementById('produto-suggestions'),
-        'adicionar-componente-form': document.getElementById('adicionar-componente-form'),
-        'produto-selecionado-info': document.getElementById('produto-selecionado-info'),
-        'quantidade': document.getElementById('quantidade'),
-        'unidade': document.getElementById('unidade'),
-        'percentual-perda': document.getElementById('percentual-perda'),
-        'quantidade-com-perda': document.getElementById('quantidade-com-perda'),
-        'lista-componentes': document.getElementById('lista-componentes'),
-        'empty-state': document.getElementById('empty-state'),
-        'contador-componentes': document.getElementById('contador-componentes'),
-        'total-componentes': document.getElementById('total-componentes'),
-        'custo-total-estrutura': document.getElementById('custo-total-estrutura')
-    };
-    
-    Object.entries(elementos).forEach(([nome, elemento]) => {
-        if (elemento) {
-            console.log(`✅ ${nome}: ENCONTRADO`);
-        } else {
-            console.error(`❌ ${nome}: NÃO ENCONTRADO!`);
-        }
-    });
-    
-    return elementos;
-}
-
-function criarBotaoDebug() {
-    const debugBtn = document.createElement('button');
-    debugBtn.innerHTML = '🔧 Debug';
-    debugBtn.className = 'btn btn-sm btn-outline-info position-fixed';
-    debugBtn.style.cssText = 'top: 10px; right: 10px; z-index: 9999;';
-    debugBtn.onclick = () => executarDebugCompleto();
-    document.body.appendChild(debugBtn);
-}
-
-function inicializarEventos() {
-    console.log('🔧 Inicializando eventos...');
-    
-    // Busca de produtos
-    const buscaInput = document.getElementById('busca-produto');
-    if (buscaInput) {
-        console.log('✅ Configurando eventos de busca...');
-        
-        buscaInput.addEventListener('input', function() {
-            if (debugMode) console.log('📝 Input detectado:', this.value);
-            clearTimeout(timeoutBusca);
-            timeoutBusca = setTimeout(() => {
-                buscarProdutos(this.value);
-            }, 300);
-        });
-        
-        buscaInput.addEventListener('blur', function() {
-            if (debugMode) console.log('👋 Campo perdeu foco');
-            setTimeout(() => esconderSugestoes(), 200);
-        });
-        
-        buscaInput.addEventListener('focus', function() {
-            if (debugMode) console.log('👁️ Campo ganhou foco');
-        });
-    } else {
-        console.error('❌ Campo de busca não encontrado!');
-    }
-    
-    // Formulário de adição
-    const form = document.getElementById('adicionar-componente-form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (debugMode) console.log('📋 Formulário submetido');
-            adicionarComponente();
-        });
-    }
-    
-    // Cálculo de perda
-    const quantidadeInput = document.getElementById('quantidade');
-    const perdaInput = document.getElementById('percentual-perda');
-    
-    if (quantidadeInput) {
-        quantidadeInput.addEventListener('input', calcularQuantidadeComPerda);
-        quantidadeInput.addEventListener('blur', calcularQuantidadeComPerda);
-    }
-    if (perdaInput) {
-        perdaInput.addEventListener('input', calcularQuantidadeComPerda);
-        perdaInput.addEventListener('blur', calcularQuantidadeComPerda);
-    }
-}
-
 // =========================================================================
-// BUSCA DE PRODUTOS - CORRIGIDA E OTIMIZADA
+// <<<< FUNÇÃO PRINCIPAL: CARREGAR ESTRUTURA EXISTENTE DO BANCO
 // =========================================================================
 
-function buscarProdutos(termo) {
-    if (debugMode) {
-        console.log('🔍 === INICIANDO BUSCA ===');
-        console.log('Termo:', termo);
-    }
+function carregarEstruturaExistente() {
+    console.log('📊 Carregando estrutura existente do banco de dados...');
     
-    if (!termo || termo.length < 2) {
-        esconderSugestoes();
-        produtosBuscados = []; // ✅ Limpar cache
-        return;
-    }
-    
-    mostrarLoadingSugestoes();
-    
-    const url = `/producao/api/buscar-produtos-estrutura/?q=${encodeURIComponent(termo)}&produto_pai_id=${PRODUTO_ATUAL.id}`;
-    if (debugMode) console.log('🌐 URL:', url);
-    
-    fetch(url)
+    // <<<< USAR A API REAL PARA BUSCAR COMPONENTES SALVOS
+    fetch(`/producao/api/estrutura/produto/${PRODUTO_ATUAL.id}/componentes/`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -532,522 +425,51 @@ function buscarProdutos(termo) {
             return response.json();
         })
         .then(data => {
-            if (debugMode) {
-                console.log('📊 === RESPOSTA DA API ===');
-                console.log('Success:', data.success);
-                console.log('Total:', data.produtos ? data.produtos.length : 'N/A');
-            }
+            console.log('📊 Resposta da API de componentes:', data);
             
-            if (data.success && Array.isArray(data.produtos)) {
-                // ✅ ARMAZENAR PRODUTOS NO CACHE
-                produtosBuscados = data.produtos;
-                if (debugMode) console.log('💾 Cache atualizado com', produtosBuscados.length, 'produtos');
+            if (data.success) {
+                // <<<< ARMAZENAR COMPONENTES CARREGADOS
+                componentesEstrutura = data.componentes || [];
                 
-                mostrarSugestoes(data.produtos);
+                console.log(`✅ Carregados ${componentesEstrutura.length} componentes do banco:`);
+                componentesEstrutura.forEach((comp, i) => {
+                    console.log(`  ${i+1}. ${comp.produto_filho.codigo} - Qtd: ${comp.quantidade} - Custo: R$ ${comp.custo_total.toFixed(2)}`);
+                });
+                
+                // Atualizar interface com dados carregados
+                atualizarInterface();
+                
+                // Mostrar mensagem de sucesso se há componentes
+                if (componentesEstrutura.length > 0) {
+                    showToast(`✅ ${componentesEstrutura.length} componente(s) carregado(s) com sucesso!`, 'success');
+                    
+                    // Calcular custo total
+                    const custoTotal = componentesEstrutura.reduce((total, comp) => total + comp.custo_total, 0);
+                    console.log(`💰 Custo total da estrutura: R$ ${custoTotal.toFixed(2)}`);
+                } else {
+                    console.log('ℹ️ Nenhum componente encontrado - estrutura vazia');
+                }
+                
             } else {
-                console.error('❌ Erro da API:', data.error);
-                mostrarErroSugestoes(data.error || 'Erro desconhecido');
-                produtosBuscados = []; // ✅ Limpar cache em caso de erro
+                console.warn('⚠️ API retornou sucesso = false:', data.error);
+                componentesEstrutura = [];
+                showToast(data.error || 'Erro ao carregar componentes', 'warning');
             }
         })
         .catch(error => {
-            console.error('❌ Erro na requisição:', error);
-            mostrarErroSugestoes('Erro de conexão: ' + error.message);
-            produtosBuscados = []; // ✅ Limpar cache em caso de erro
+            console.error('❌ Erro ao carregar estrutura existente:', error);
+            componentesEstrutura = [];
+            showToast('Erro ao carregar componentes salvos: ' + error.message, 'error');
+        })
+        .finally(() => {
+            // Sempre atualizar interface, mesmo em caso de erro
+            atualizarInterface();
         });
 }
 
-function mostrarLoadingSugestoes() {
-    const suggestionsDiv = document.getElementById('produto-suggestions');
-    if (!suggestionsDiv) {
-        console.error('❌ ERRO: produto-suggestions não encontrado!');
-        return;
-    }
-    
-    suggestionsDiv.innerHTML = `
-        <div class="produto-suggestion text-center py-3">
-            <i class="fas fa-spinner fa-spin me-2 text-primary"></i>
-            <span>Buscando produtos...</span>
-        </div>
-    `;
-    suggestionsDiv.style.display = 'block';
-}
-
-function mostrarSugestoes(produtos) {
-    if (debugMode) {
-        console.log('📋 === EXIBINDO SUGESTÕES ===');
-        console.log('Produtos:', produtos.length);
-        produtos.forEach((p, i) => console.log(`  ${i+1}. ${p.codigo} - ${p.nome} (ID: ${p.id})`));
-    }
-    
-    const suggestionsDiv = document.getElementById('produto-suggestions');
-    if (!suggestionsDiv) {
-        console.error('❌ ERRO CRÍTICO: produto-suggestions não encontrado!');
-        alert('Erro: Elemento de sugestões não encontrado no DOM.');
-        return;
-    }
-    
-    if (produtos.length === 0) {
-        suggestionsDiv.innerHTML = `
-            <div class="produto-suggestion text-center py-3 text-muted">
-                <i class="fas fa-search me-2"></i>
-                <span>Nenhum produto encontrado</span>
-            </div>
-        `;
-    } else {
-        const html = produtos.map((produto, index) => {
-            const custoTotal = produto.custo_total || 0;
-            const estoque = produto.estoque_atual || 0;
-            
-            return `
-                <div class="produto-suggestion" 
-                     onclick="selecionarProduto('${produto.id}')" 
-                     data-produto-id="${produto.id}"
-                     style="cursor: pointer; padding: 0.75rem; border-bottom: 1px solid #f0f0f0; transition: background-color 0.15s;">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="fw-bold text-dark">${produto.codigo} - ${produto.nome}</div>
-                            <div class="text-muted small">
-                                ${produto.grupo_nome || 'Sem grupo'} | ${produto.tipo_display || produto.tipo}
-                                ${custoTotal > 0 ? ` | <span class="text-success">R$ ${custoTotal.toFixed(2)}</span>` : ''}
-                                ${estoque > 0 ? ` | Estoque: ${estoque}` : ''}
-                            </div>
-                        </div>
-                        <span class="badge ${produto.tipo === 'MP' ? 'bg-primary' : 'bg-warning'} ms-2">
-                            ${produto.tipo}
-                        </span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        suggestionsDiv.innerHTML = html;
-        
-        // ✅ ADICIONAR EVENTOS DE HOVER
-        suggestionsDiv.querySelectorAll('.produto-suggestion').forEach(item => {
-            item.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#f8f9fa';
-            });
-            item.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '';
-            });
-            
-            // ✅ DEBUG: Log ao clicar
-            if (debugMode) {
-                item.addEventListener('click', function() {
-                    const produtoId = this.getAttribute('data-produto-id');
-                    console.log('🖱️ Clique detectado no produto ID:', produtoId);
-                });
-            }
-        });
-    }
-    
-    // Garantir exibição
-    suggestionsDiv.style.display = 'block';
-    suggestionsDiv.style.zIndex = '1000';
-    
-    if (debugMode) console.log('✅ Sugestões exibidas com eventos configurados');
-}
-
-
-
-function mostrarErroSugestoes(erro) {
-    console.error('❌ Erro:', erro);
-    const suggestionsDiv = document.getElementById('produto-suggestions');
-    if (suggestionsDiv) {
-        suggestionsDiv.innerHTML = `
-            <div class="produto-suggestion text-center py-3 text-danger">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <span>${erro}</span>
-            </div>
-        `;
-        suggestionsDiv.style.display = 'block';
-    }
-}
-
-function esconderSugestoes() {
-    const suggestionsDiv = document.getElementById('produto-suggestions');
-    if (suggestionsDiv) {
-        suggestionsDiv.style.display = 'none';
-        if (debugMode) console.log('👋 Sugestões escondidas');
-    }
-}
-
-function selecionarProduto(produtoId) {
-    if (debugMode) {
-        console.log('✅ === PRODUTO SELECIONADO ===');
-        console.log('ID:', produtoId);
-        console.log('Cache disponível:', produtosBuscados.length, 'produtos');
-    }
-    
-    // ✅ BUSCAR PRODUTO NO CACHE LOCAL (sem nova requisição)
-    const produto = produtosBuscados.find(p => p.id === produtoId);
-    
-    if (produto) {
-        if (debugMode) console.log('🎯 Produto encontrado no cache:', produto.codigo);
-        
-        // ✅ CONFIGURAR PRODUTO SELECIONADO
-        produtoSelecionado = produto;
-        mostrarProdutoSelecionado(produto);
-        esconderSugestoes();
-        
-        // Preencher campo de busca
-        const buscaInput = document.getElementById('busca-produto');
-        if (buscaInput) {
-            buscaInput.value = `${produto.codigo} - ${produto.nome}`;
-        }
-        
-        // Mostrar formulário
-        const form = document.getElementById('adicionar-componente-form');
-        if (form) {
-            form.style.display = 'block';
-            if (debugMode) console.log('✅ Formulário exibido');
-        }
-        
-        // Pré-selecionar unidade
-        const unidadeSelect = document.getElementById('unidade');
-        if (unidadeSelect && produto.unidade_medida) {
-            unidadeSelect.value = produto.unidade_medida;
-            if (debugMode) console.log('✅ Unidade pré-selecionada:', produto.unidade_medida);
-        }
-        
-        // Focar na quantidade
-        const quantidadeInput = document.getElementById('quantidade');
-        if (quantidadeInput) {
-            setTimeout(() => {
-                quantidadeInput.focus();
-                quantidadeInput.select();
-            }, 100);
-        }
-        
-        if (debugMode) console.log('✅ Produto configurado com sucesso');
-        
-    } else {
-        // ⚠️ FALLBACK: Se não encontrou no cache, tentar nova busca
-        console.warn('⚠️ Produto não encontrado no cache, tentando nova busca...');
-        
-        fetch(`/producao/api/buscar-produtos-estrutura/?q=${produtoId}&produto_pai_id=${PRODUTO_ATUAL.id}`)
-            .then(response => response.json())
-            .then(data => {
-                if (debugMode) console.log('📊 Resposta da busca individual:', data);
-                
-                if (data.success && data.produtos.length > 0) {
-                    // Tentar encontrar por ID exato ou pegar o primeiro
-                    const produtoEncontrado = data.produtos.find(p => p.id === produtoId) || data.produtos[0];
-                    
-                    if (produtoEncontrado) {
-                        console.log('✅ Produto encontrado via nova busca:', produtoEncontrado.codigo);
-                        
-                        // Repetir lógica de seleção
-                        produtoSelecionado = produtoEncontrado;
-                        mostrarProdutoSelecionado(produtoEncontrado);
-                        esconderSugestoes();
-                        
-                        const buscaInput = document.getElementById('busca-produto');
-                        if (buscaInput) {
-                            buscaInput.value = `${produtoEncontrado.codigo} - ${produtoEncontrado.nome}`;
-                        }
-                        
-                        const form = document.getElementById('adicionar-componente-form');
-                        if (form) form.style.display = 'block';
-                        
-                        const unidadeSelect = document.getElementById('unidade');
-                        if (unidadeSelect && produtoEncontrado.unidade_medida) {
-                            unidadeSelect.value = produtoEncontrado.unidade_medida;
-                        }
-                        
-                        const quantidadeInput = document.getElementById('quantidade');
-                        if (quantidadeInput) {
-                            setTimeout(() => quantidadeInput.focus(), 100);
-                        }
-                    } else {
-                        console.error('❌ Produto ainda não encontrado após nova busca');
-                        showToast('Produto não encontrado. Tente buscar novamente.', 'error');
-                    }
-                } else {
-                    console.error('❌ Nova busca não retornou resultados');
-                    showToast('Produto não encontrado. Verifique se ainda está disponível.', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Erro na busca individual:', error);
-                showToast('Erro ao selecionar produto: ' + error.message, 'error');
-            });
-    }
-}
-
-
-function mostrarProdutoSelecionado(produto) {
-    const infoDiv = document.getElementById('produto-selecionado-info');
-    if (!infoDiv) {
-        console.error('❌ produto-selecionado-info não encontrado');
-        return;
-    }
-    
-    const custoTotal = produto.custo_total || 0;
-    
-    const html = `
-        <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-                <div class="fw-bold text-primary">${produto.codigo} - ${produto.nome}</div>
-                <div class="text-muted small mt-1">
-                    <i class="fas fa-layer-group me-1"></i>${produto.grupo_nome || 'Sem grupo'}
-                    ${produto.subgrupo_nome ? ` | ${produto.subgrupo_nome}` : ''}
-                </div>
-                <div class="text-success small mt-1">
-                    <i class="fas fa-dollar-sign me-1"></i>Custo: R$ ${custoTotal.toFixed(2)}
-                </div>
-                ${produto.estoque_atual > 0 ? `
-                <div class="text-info small mt-1">
-                    <i class="fas fa-boxes me-1"></i>Estoque: ${produto.estoque_atual}
-                </div>
-                ` : ''}
-            </div>
-            <span class="badge ${produto.tipo === 'MP' ? 'bg-primary' : 'bg-warning'} fs-6">
-                ${produto.tipo}
-            </span>
-        </div>
-    `;
-    
-    infoDiv.innerHTML = html;
-}
-
-
-function cancelarAdicao() {
-    if (debugMode) console.log('❌ Cancelando adição...');
-    
-    // Esconder formulário
-    const form = document.getElementById('adicionar-componente-form');
-    if (form) form.style.display = 'none';
-    
-    // Limpar campos
-    const buscaInput = document.getElementById('busca-produto');
-    if (buscaInput) buscaInput.value = '';
-    
-    const quantidadeInput = document.getElementById('quantidade');
-    if (quantidadeInput) quantidadeInput.value = '';
-    
-    const unidadeSelect = document.getElementById('unidade');
-    if (unidadeSelect) unidadeSelect.value = '';
-    
-    const perdaInput = document.getElementById('percentual-perda');
-    if (perdaInput) perdaInput.value = '0';
-    
-    // ✅ RESETAR VARIÁVEIS E CACHE
-    produtoSelecionado = null;
-    produtosBuscados = []; // Limpar cache
-    
-    calcularQuantidadeComPerda();
-    esconderSugestoes();
-    
-    // Focar no campo de busca
-    if (buscaInput) {
-        setTimeout(() => buscaInput.focus(), 100);
-    }
-    
-    if (debugMode) console.log('✅ Adição cancelada e cache limpo');
-}
-
 // =========================================================================
-// GESTÃO DE COMPONENTES
+// INTERFACE ATUALIZADA PARA EXIBIR COMPONENTES CARREGADOS
 // =========================================================================
-
-function adicionarComponente() {
-    if (!produtoSelecionado) {
-        showToast('Selecione um produto primeiro!', 'warning');
-        return;
-    }
-    
-    const quantidade = parseFloat(document.getElementById('quantidade').value);
-    const unidade = document.getElementById('unidade').value;
-    const percentualPerda = parseFloat(document.getElementById('percentual-perda').value) || 0;
-    
-    // Validações
-    if (!quantidade || quantidade <= 0) {
-        showToast('Informe uma quantidade válida!', 'warning');
-        document.getElementById('quantidade').focus();
-        return;
-    }
-    
-    if (!unidade) {
-        showToast('Selecione uma unidade!', 'warning');
-        document.getElementById('unidade').focus();
-        return;
-    }
-    
-    if (debugMode) {
-        console.log('➕ Adicionando componente:', {
-            produto: produtoSelecionado.codigo,
-            quantidade: quantidade,
-            unidade: unidade,
-            perda: percentualPerda
-        });
-    }
-    
-    // Mostrar loading no botão
-    const submitBtn = document.querySelector('#adicionar-componente-form button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adicionando...';
-        submitBtn.disabled = true;
-    }
-    
-    // Dados para enviar
-    const dados = {
-        produto_pai_id: PRODUTO_ATUAL.id,
-        produto_filho_id: produtoSelecionado.id,
-        quantidade: quantidade,
-        unidade: unidade,
-        percentual_perda: percentualPerda
-    };
-    
-    // Fazer requisição para adicionar
-    fetch('/producao/api/estrutura/adicionar-componente/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify(dados)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (debugMode) console.log('📊 Resposta adicionar:', data);
-        
-        if (data.success) {
-            // Adicionar à lista local
-            componentesEstrutura.push(data.componente);
-            
-            // Atualizar interface
-            atualizarInterface();
-            cancelarAdicao();
-            
-            showToast(data.message || 'Componente adicionado com sucesso!', 'success');
-        } else {
-            showToast(data.error || 'Erro ao adicionar componente', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Erro ao adicionar:', error);
-        showToast('Erro de conexão ao adicionar componente', 'error');
-    })
-    .finally(() => {
-        // Restaurar botão
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Adicionar Componente';
-            submitBtn.disabled = false;
-        }
-    });
-}
-
-function removerComponente(componenteId) {
-    if (!confirm('Confirma a remoção deste componente da estrutura?')) return;
-    
-    if (debugMode) console.log('🗑️ Removendo componente:', componenteId);
-    
-    fetch(`/producao/api/estrutura/componente/${componenteId}/remover/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Remover da lista local
-            componentesEstrutura = componentesEstrutura.filter(comp => comp.id !== componenteId);
-            
-            // Atualizar interface
-            atualizarInterface();
-            
-            showToast(data.message || 'Componente removido!', 'warning');
-        } else {
-            showToast(data.error || 'Erro ao remover componente', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Erro ao remover:', error);
-        showToast('Erro de conexão ao remover componente', 'error');
-    });
-}
-
-function editarComponente(componenteId, campo, novoValor) {
-    const valorFloat = parseFloat(novoValor) || 0;
-    
-    if (valorFloat < 0) {
-        showToast('Valor não pode ser negativo!', 'warning');
-        return;
-    }
-    
-    const dados = {};
-    dados[campo] = valorFloat;
-    
-    if (debugMode) console.log('✏️ Editando componente:', componenteId, campo, valorFloat);
-    
-    fetch(`/producao/api/estrutura/componente/${componenteId}/editar/`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrftoken')
-        },
-        body: JSON.stringify(dados)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Atualizar na lista local
-            const componente = componentesEstrutura.find(comp => comp.id === componenteId);
-            if (componente) {
-                Object.assign(componente, data.componente);
-            }
-            
-            // Atualizar interface
-            atualizarInterface();
-            
-            showToast('Componente atualizado!', 'info');
-        } else {
-            showToast(data.error || 'Erro ao editar componente', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Erro ao editar:', error);
-        showToast('Erro de conexão ao editar componente', 'error');
-    });
-}
-
-// =========================================================================
-// INTERFACE E CÁLCULOS
-// =========================================================================
-
-function carregarEstruturaExistente() {
-    if (debugMode) console.log('📊 Carregando estrutura existente...');
-    
-    {% if componentes_existentes %}
-        componentesEstrutura = [
-            {% for componente in componentes_existentes %}
-            {
-                id: {{ componente.id }},
-                produto_filho: {
-                    id: '{{ componente.produto_filho.pk }}',
-                    codigo: '{{ componente.produto_filho.codigo }}',
-                    nome: '{{ componente.produto_filho.nome|escapejs }}',
-                    tipo: '{{ componente.produto_filho.tipo }}',
-                    custo_total: {{ componente.produto_filho.custo_total|default:0 }}
-                },
-                quantidade: {{ componente.quantidade }},
-                unidade: '{{ componente.unidade }}',
-                percentual_perda: {{ componente.percentual_perda }},
-                quantidade_com_perda: {{ componente.quantidade_com_perda }},
-                custo_total: {{ componente.custo_total_componente|default:0 }}
-            }{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ];
-        
-        if (debugMode) console.log('✅ Carregados', componentesEstrutura.length, 'componentes');
-    {% else %}
-        componentesEstrutura = [];
-        if (debugMode) console.log('ℹ️ Nenhum componente existente');
-    {% endif %}
-}
 
 function atualizarInterface() {
     atualizarListaComponentes();
@@ -1074,6 +496,7 @@ function atualizarListaComponentes() {
         return;
     }
     
+    // <<<< TEMPLATE ATUALIZADO PARA EXIBIR DADOS REAIS
     const html = `
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -1090,18 +513,23 @@ function atualizarListaComponentes() {
                 </thead>
                 <tbody>
                     ${componentesEstrutura.map(comp => `
-                        <tr>
+                        <tr data-componente-id="${comp.id}">
                             <td>
-                                <div class="fw-bold">${comp.produto_filho.codigo}</div>
+                                <div class="fw-bold text-primary">${comp.produto_filho.codigo}</div>
                                 <div class="text-muted small">${comp.produto_filho.nome}</div>
                                 <span class="badge ${comp.produto_filho.tipo === 'MP' ? 'bg-primary' : 'bg-warning'} badge-sm">
                                     ${comp.produto_filho.tipo}
                                 </span>
+                                ${comp.produto_filho.grupo_nome ? `
+                                <div class="text-muted small mt-1">
+                                    <i class="fas fa-layer-group me-1"></i>${comp.produto_filho.grupo_nome}
+                                </div>
+                                ` : ''}
                             </td>
                             <td>
                                 <input type="number" 
                                        class="form-control form-control-sm" 
-                                       value="${comp.quantidade}" 
+                                       value="${comp.quantidade.toFixed(3)}" 
                                        step="0.001" 
                                        min="0.001"
                                        style="width: 100px;"
@@ -1112,7 +540,7 @@ function atualizarListaComponentes() {
                             <td>
                                 <input type="number" 
                                        class="form-control form-control-sm" 
-                                       value="${comp.percentual_perda}" 
+                                       value="${comp.percentual_perda.toFixed(1)}" 
                                        step="0.1" 
                                        min="0" 
                                        max="100"
@@ -1145,6 +573,7 @@ function atualizarListaComponentes() {
     `;
     
     lista.innerHTML = html;
+    console.log('✅ Lista de componentes atualizada com dados reais');
 }
 
 function atualizarResumo() {
@@ -1156,61 +585,167 @@ function atualizarResumo() {
     
     if (totalEl) totalEl.textContent = totalComponentes;
     if (custoEl) custoEl.textContent = `R$ ${custoTotal.toFixed(2)}`;
-}
-
-function calcularQuantidadeComPerda() {
-    const quantidade = parseFloat(document.getElementById('quantidade')?.value) || 0;
-    const perda = parseFloat(document.getElementById('percentual-perda')?.value) || 0;
-    const quantidadeComPerda = quantidade * (1 + (perda / 100));
     
-    const display = document.getElementById('quantidade-com-perda');
-    if (display) {
-        display.textContent = quantidadeComPerda.toFixed(3);
-        
-        // Destacar se há perda
-        if (perda > 0) {
-            display.className = 'form-control-plaintext fw-bold text-warning';
+    // <<<< DESTACAR RESUMO SE HÁ COMPONENTES
+    const resumoDiv = document.getElementById('resumo-custos');
+    if (resumoDiv) {
+        if (totalComponentes > 0) {
+            resumoDiv.className = 'total-estrutura bg-gradient-success text-white';
         } else {
-            display.className = 'form-control-plaintext fw-bold text-success';
+            resumoDiv.className = 'total-estrutura';
         }
     }
 }
 
-function recalcularCustos() {
-    if (debugMode) console.log('🔄 Recalculando custos...');
+// =========================================================================
+// FUNÇÕES DE GESTÃO DE COMPONENTES (MANTIDAS)
+// =========================================================================
+
+function adicionarComponente() {
+    if (!produtoSelecionado) {
+        showToast('Selecione um produto primeiro!', 'warning');
+        return;
+    }
     
-    // Recalcular custos localmente
-    componentesEstrutura.forEach(comp => {
-        comp.quantidade_com_perda = comp.quantidade * (1 + (comp.percentual_perda / 100));
-        comp.custo_total = comp.quantidade_com_perda * comp.produto_filho.custo_total;
+    const quantidade = parseFloat(document.getElementById('quantidade').value);
+    const unidade = document.getElementById('unidade').value;
+    const percentualPerda = parseFloat(document.getElementById('percentual-perda').value) || 0;
+    
+    if (!quantidade || quantidade <= 0) {
+        showToast('Informe uma quantidade válida!', 'warning');
+        document.getElementById('quantidade').focus();
+        return;
+    }
+    
+    if (!unidade) {
+        showToast('Selecione uma unidade!', 'warning');
+        document.getElementById('unidade').focus();
+        return;
+    }
+    
+    console.log('➕ Adicionando componente:', produtoSelecionado.codigo);
+    
+    const submitBtn = document.querySelector('#adicionar-componente-form button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Adicionando...';
+        submitBtn.disabled = true;
+    }
+    
+    const dados = {
+        produto_pai_id: PRODUTO_ATUAL.id,
+        produto_filho_id: produtoSelecionado.id,
+        quantidade: quantidade,
+        unidade: unidade,
+        percentual_perda: percentualPerda
+    };
+    
+    fetch('/producao/api/estrutura/adicionar-componente/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(dados)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // <<<< ADICIONAR À LISTA LOCAL E RECARREGAR
+            componentesEstrutura.push(data.componente);
+            atualizarInterface();
+            cancelarAdicao();
+            showToast(data.message || 'Componente adicionado com sucesso!', 'success');
+            
+            // <<<< RECARREGAR ESTRUTURA PARA GARANTIR SINCRONIZAÇÃO
+            setTimeout(() => carregarEstruturaExistente(), 500);
+        } else {
+            showToast(data.error || 'Erro ao adicionar componente', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Erro ao adicionar:', error);
+        showToast('Erro de conexão ao adicionar componente', 'error');
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Adicionar Componente';
+            submitBtn.disabled = false;
+        }
     });
-    
-    atualizarInterface();
-    showToast('Custos recalculados!', 'info');
 }
 
-// =========================================================================
-// SALVAMENTO E APLICAÇÃO
-// =========================================================================
-
-function salvarEstrutura() {
-    if (debugMode) console.log('💾 Salvando estrutura...');
+function removerComponente(componenteId) {
+    if (!confirm('Confirma a remoção deste componente da estrutura?')) return;
     
-    const btnSalvar = document.getElementById('btn-salvar');
-    if (btnSalvar) {
-        btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
-        btnSalvar.disabled = true;
+    console.log('🗑️ Removendo componente:', componenteId);
+    
+    fetch(`/producao/api/estrutura/componente/${componenteId}/remover/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // <<<< REMOVER DA LISTA LOCAL E RECARREGAR
+            componentesEstrutura = componentesEstrutura.filter(comp => comp.id !== componenteId);
+            atualizarInterface();
+            showToast(data.message || 'Componente removido!', 'warning');
+            
+            // <<<< RECARREGAR ESTRUTURA PARA GARANTIR SINCRONIZAÇÃO
+            setTimeout(() => carregarEstruturaExistente(), 500);
+        } else {
+            showToast(data.error || 'Erro ao remover componente', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Erro ao remover:', error);
+        showToast('Erro de conexão ao remover componente', 'error');
+    });
+}
+
+function editarComponente(componenteId, campo, novoValor) {
+    const valorFloat = parseFloat(novoValor) || 0;
+    
+    if (valorFloat < 0) {
+        showToast('Valor não pode ser negativo!', 'warning');
+        return;
     }
     
-    // Simular salvamento (individual já foi feito)
-    setTimeout(() => {
-        showToast(`✅ Estrutura salva! (${componentesEstrutura.length} componentes)`, 'success');
-        
-        if (btnSalvar) {
-            btnSalvar.innerHTML = '<i class="fas fa-save me-1"></i> Salvar Estrutura';
-            btnSalvar.disabled = false;
+    const dados = {};
+    dados[campo] = valorFloat;
+    
+    console.log('✏️ Editando componente:', componenteId, campo, valorFloat);
+    
+    fetch(`/producao/api/estrutura/componente/${componenteId}/editar/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(dados)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // <<<< ATUALIZAR NA LISTA LOCAL
+            const componente = componentesEstrutura.find(comp => comp.id === componenteId);
+            if (componente) {
+                Object.assign(componente, data.componente);
+            }
+            
+            atualizarInterface();
+            showToast('Componente atualizado!', 'info');
+            
+            // <<<< RECARREGAR PARA GARANTIR SINCRONIZAÇÃO
+            setTimeout(() => carregarEstruturaExistente(), 300);
+        } else {
+            showToast(data.error || 'Erro ao editar componente', 'error');
         }
-    }, 1000);
+    })
+    .catch(error => {
+        console.error('❌ Erro ao editar:', error);
+        showToast('Erro de conexão ao editar componente', 'error');
+    });
 }
 
 function aplicarCustoCalculado() {
@@ -1219,27 +754,23 @@ function aplicarCustoCalculado() {
         return;
     }
     
-    if (!confirm('Aplicar o custo calculado no produto?\n\nIsso substituirá o custo atual pelo valor calculado baseado na estrutura.')) {
+    const custoTotal = componentesEstrutura.reduce((total, comp) => total + comp.custo_total, 0);
+    
+    if (!confirm(`Aplicar o custo calculado no produto?\n\nCusto calculado: R$ ${custoTotal.toFixed(2)}\n\nIsso substituirá o custo atual pelo valor calculado baseado na estrutura.`)) {
         return;
     }
     
-    if (debugMode) console.log('💰 Aplicando custo calculado...');
+    console.log('💰 Aplicando custo calculado:', custoTotal);
     
     fetch(`/producao/api/estrutura/produto/${PRODUTO_ATUAL.id}/aplicar-custo/`, {
         method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken')
-        }
+        headers: { 'X-CSRFToken': getCookie('csrftoken') }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showToast(
-                `✅ ${data.message}\n\nCusto anterior: R$ ${data.custo_anterior.toFixed(2)}\nNovo custo: R$ ${data.custo_novo.toFixed(2)}`, 
-                'success'
-            );
+            showToast(`✅ ${data.message}`, 'success');
             
-            // Opcional: redirecionar após sucesso
             setTimeout(() => {
                 if (confirm('Custo aplicado com sucesso!\n\nDeseja voltar para a lista de produtos?')) {
                     window.location.href = '{% url "producao:produto_intermediario_list" %}';
@@ -1255,6 +786,349 @@ function aplicarCustoCalculado() {
     });
 }
 
+// =========================================================================
+// FUNÇÃO DE DEBUG MELHORADA
+// =========================================================================
+
+function criarBotaoDebug() {
+    const debugBtn = document.createElement('button');
+    debugBtn.innerHTML = '🔧 Debug';
+    debugBtn.className = 'btn btn-sm btn-outline-info position-fixed';
+    debugBtn.style.cssText = 'top: 10px; right: 10px; z-index: 9999;';
+    debugBtn.onclick = () => executarDebugCompleto();
+    document.body.appendChild(debugBtn);
+}
+
+function executarDebugCompleto() {
+    console.log('🔧 === DEBUG COMPLETO ===');
+    console.log('Produto atual:', PRODUTO_ATUAL);
+    console.log('Componentes carregados:', componentesEstrutura.length);
+    console.log('Estrutura disponível:', '{{ estrutura_disponivel }}');
+    
+    if (componentesEstrutura.length > 0) {
+        console.log('💾 Componentes:');
+        componentesEstrutura.forEach((comp, i) => {
+            console.log(`  ${i+1}. ${comp.produto_filho.codigo} - ${comp.produto_filho.nome}`);
+            console.log(`      Qtd: ${comp.quantidade}, Perda: ${comp.percentual_perda}%, Custo: R$ ${comp.custo_total.toFixed(2)}`);
+        });
+        
+        const custoTotal = componentesEstrutura.reduce((total, comp) => total + comp.custo_total, 0);
+        console.log(`💰 Custo total: R$ ${custoTotal.toFixed(2)}`);
+    }
+    
+    // Testar API de listagem
+    console.log('🌐 Testando API de listagem...');
+    fetch(`/producao/api/estrutura/produto/${PRODUTO_ATUAL.id}/componentes/`)
+        .then(r => r.json())
+        .then(d => console.log('📊 API Response:', d))
+        .catch(e => console.error('❌ API Error:', e));
+}
+
+// =========================================================================
+// DEMAIS FUNÇÕES (MANTIDAS - busca, eventos, utilitários, etc.)
+// =========================================================================
+
+function inicializarEventos() {
+    console.log('🔧 Inicializando eventos...');
+    
+    // Busca de produtos
+    const buscaInput = document.getElementById('busca-produto');
+    if (buscaInput) {
+        buscaInput.addEventListener('input', function() {
+            clearTimeout(timeoutBusca);
+            timeoutBusca = setTimeout(() => buscarProdutos(this.value), 300);
+        });
+        buscaInput.addEventListener('blur', () => setTimeout(() => esconderSugestoes(), 200));
+    }
+    
+    // Formulário de adição
+    const form = document.getElementById('adicionar-componente-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            adicionarComponente();
+        });
+    }
+    
+    // Cálculo de perda
+    const quantidadeInput = document.getElementById('quantidade');
+    const perdaInput = document.getElementById('percentual-perda');
+    
+    if (quantidadeInput) {
+        quantidadeInput.addEventListener('input', calcularQuantidadeComPerda);
+        quantidadeInput.addEventListener('blur', calcularQuantidadeComPerda);
+    }
+    if (perdaInput) {
+        perdaInput.addEventListener('input', calcularQuantidadeComPerda);
+        perdaInput.addEventListener('blur', calcularQuantidadeComPerda);
+    }
+}
+
+// =========================================================================
+// FUNÇÕES AUXILIARES NECESSÁRIAS (busca, utilitários, etc.)
+// =========================================================================
+
+function buscarProdutos(termo) {
+    if (!termo || termo.length < 2) {
+        esconderSugestoes();
+        produtosBuscados = [];
+        return;
+    }
+    
+    mostrarLoadingSugestoes();
+    
+    const url = `/producao/api/buscar-produtos-estrutura/?q=${encodeURIComponent(termo)}&produto_pai_id=${PRODUTO_ATUAL.id}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && Array.isArray(data.produtos)) {
+                produtosBuscados = data.produtos;
+                mostrarSugestoes(data.produtos);
+            } else {
+                mostrarErroSugestoes(data.error || 'Erro desconhecido');
+                produtosBuscados = [];
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro na requisição:', error);
+            mostrarErroSugestoes('Erro de conexão: ' + error.message);
+            produtosBuscados = [];
+        });
+}
+
+function mostrarLoadingSugestoes() {
+    const suggestionsDiv = document.getElementById('produto-suggestions');
+    if (!suggestionsDiv) return;
+    
+    suggestionsDiv.innerHTML = `
+        <div class="produto-suggestion text-center py-3">
+            <i class="fas fa-spinner fa-spin me-2 text-primary"></i>
+            <span>Buscando produtos...</span>
+        </div>
+    `;
+    suggestionsDiv.style.display = 'block';
+}
+
+function mostrarSugestoes(produtos) {
+    const suggestionsDiv = document.getElementById('produto-suggestions');
+    if (!suggestionsDiv) return;
+    
+    if (produtos.length === 0) {
+        suggestionsDiv.innerHTML = `
+            <div class="produto-suggestion text-center py-3 text-muted">
+                <i class="fas fa-search me-2"></i>
+                <span>Nenhum produto encontrado</span>
+            </div>
+        `;
+    } else {
+        const html = produtos.map(produto => {
+            const custoTotal = produto.custo_total || 0;
+            const estoque = produto.estoque_atual || 0;
+            
+            return `
+                <div class="produto-suggestion" 
+                     onclick="selecionarProduto('${produto.id}')" 
+                     data-produto-id="${produto.id}"
+                     style="cursor: pointer; padding: 0.75rem; border-bottom: 1px solid #f0f0f0;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark">${produto.codigo} - ${produto.nome}</div>
+                            <div class="text-muted small">
+                                ${produto.grupo_nome || 'Sem grupo'} | ${produto.tipo_display || produto.tipo}
+                                ${custoTotal > 0 ? ` | <span class="text-success">R$ ${custoTotal.toFixed(2)}</span>` : ''}
+                                ${estoque > 0 ? ` | Estoque: ${estoque}` : ''}
+                            </div>
+                        </div>
+                        <span class="badge ${produto.tipo === 'MP' ? 'bg-primary' : 'bg-warning'} ms-2">
+                            ${produto.tipo}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        suggestionsDiv.innerHTML = html;
+        
+        suggestionsDiv.querySelectorAll('.produto-suggestion').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    }
+    
+    suggestionsDiv.style.display = 'block';
+    suggestionsDiv.style.zIndex = '1000';
+}
+
+function mostrarErroSugestoes(erro) {
+    const suggestionsDiv = document.getElementById('produto-suggestions');
+    if (suggestionsDiv) {
+        suggestionsDiv.innerHTML = `
+            <div class="produto-suggestion text-center py-3 text-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span>${erro}</span>
+            </div>
+        `;
+        suggestionsDiv.style.display = 'block';
+    }
+}
+
+function esconderSugestoes() {
+    const suggestionsDiv = document.getElementById('produto-suggestions');
+    if (suggestionsDiv) {
+        suggestionsDiv.style.display = 'none';
+    }
+}
+
+function selecionarProduto(produtoId) {
+    console.log('✅ Produto selecionado ID:', produtoId);
+    
+    const produto = produtosBuscados.find(p => p.id === produtoId);
+    
+    if (produto) {
+        produtoSelecionado = produto;
+        mostrarProdutoSelecionado(produto);
+        esconderSugestoes();
+        
+        const buscaInput = document.getElementById('busca-produto');
+        if (buscaInput) {
+            buscaInput.value = `${produto.codigo} - ${produto.nome}`;
+        }
+        
+        const form = document.getElementById('adicionar-componente-form');
+        if (form) form.style.display = 'block';
+        
+        const unidadeSelect = document.getElementById('unidade');
+        if (unidadeSelect && produto.unidade_medida) {
+            unidadeSelect.value = produto.unidade_medida;
+        }
+        
+        const quantidadeInput = document.getElementById('quantidade');
+        if (quantidadeInput) {
+            setTimeout(() => {
+                quantidadeInput.focus();
+                quantidadeInput.select();
+            }, 100);
+        }
+    } else {
+        console.error('❌ Produto não encontrado no cache');
+        showToast('Produto não encontrado. Tente buscar novamente.', 'error');
+    }
+}
+
+function mostrarProdutoSelecionado(produto) {
+    const infoDiv = document.getElementById('produto-selecionado-info');
+    if (!infoDiv) return;
+    
+    const custoTotal = produto.custo_total || 0;
+    
+    const html = `
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="fw-bold text-primary">${produto.codigo} - ${produto.nome}</div>
+                <div class="text-muted small mt-1">
+                    <i class="fas fa-layer-group me-1"></i>${produto.grupo_nome || 'Sem grupo'}
+                    ${produto.subgrupo_nome ? ` | ${produto.subgrupo_nome}` : ''}
+                </div>
+                <div class="text-success small mt-1">
+                    <i class="fas fa-dollar-sign me-1"></i>Custo: R$ ${custoTotal.toFixed(2)}
+                </div>
+                ${produto.estoque_atual > 0 ? `
+                <div class="text-info small mt-1">
+                    <i class="fas fa-boxes me-1"></i>Estoque: ${produto.estoque_atual}
+                </div>
+                ` : ''}
+            </div>
+            <span class="badge ${produto.tipo === 'MP' ? 'bg-primary' : 'bg-warning'} fs-6">
+                ${produto.tipo}
+            </span>
+        </div>
+    `;
+    
+    infoDiv.innerHTML = html;
+}
+
+function cancelarAdicao() {
+    console.log('❌ Cancelando adição...');
+    
+    const form = document.getElementById('adicionar-componente-form');
+    if (form) form.style.display = 'none';
+    
+    const buscaInput = document.getElementById('busca-produto');
+    if (buscaInput) buscaInput.value = '';
+    
+    const quantidadeInput = document.getElementById('quantidade');
+    if (quantidadeInput) quantidadeInput.value = '';
+    
+    const unidadeSelect = document.getElementById('unidade');
+    if (unidadeSelect) unidadeSelect.value = '';
+    
+    const perdaInput = document.getElementById('percentual-perda');
+    if (perdaInput) perdaInput.value = '0';
+    
+    produtoSelecionado = null;
+    produtosBuscados = [];
+    
+    calcularQuantidadeComPerda();
+    esconderSugestoes();
+    
+    if (buscaInput) {
+        setTimeout(() => buscaInput.focus(), 100);
+    }
+}
+
+function calcularQuantidadeComPerda() {
+    const quantidade = parseFloat(document.getElementById('quantidade')?.value) || 0;
+    const perda = parseFloat(document.getElementById('percentual-perda')?.value) || 0;
+    const quantidadeComPerda = quantidade * (1 + (perda / 100));
+    
+    const display = document.getElementById('quantidade-com-perda');
+    if (display) {
+        display.textContent = quantidadeComPerda.toFixed(3);
+        
+        if (perda > 0) {
+            display.className = 'form-control-plaintext fw-bold text-warning';
+        } else {
+            display.className = 'form-control-plaintext fw-bold text-success';
+        }
+    }
+}
+
+function salvarEstrutura() {
+    console.log('💾 Salvando estrutura...');
+    
+    const btnSalvar = document.getElementById('btn-salvar');
+    if (btnSalvar) {
+        btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
+        btnSalvar.disabled = true;
+    }
+    
+    setTimeout(() => {
+        showToast(`✅ Estrutura salva! (${componentesEstrutura.length} componentes)`, 'success');
+        
+        if (btnSalvar) {
+            btnSalvar.innerHTML = '<i class="fas fa-save me-1"></i> Salvar Estrutura';
+            btnSalvar.disabled = false;
+        }
+    }, 1000);
+}
+
+function recalcularCustos() {
+    console.log('🔄 Recalculando custos...');
+    
+    componentesEstrutura.forEach(comp => {
+        comp.quantidade_com_perda = comp.quantidade * (1 + (comp.percentual_perda / 100));
+        comp.custo_total = comp.quantidade_com_perda * comp.produto_filho.custo_total;
+    });
+    
+    atualizarInterface();
+    showToast('Custos recalculados!', 'info');
+}
+
 function limparEstrutura() {
     if (componentesEstrutura.length === 0) {
         showToast('Estrutura já está vazia!', 'info');
@@ -1265,9 +1139,8 @@ function limparEstrutura() {
         return;
     }
     
-    if (debugMode) console.log('🧹 Limpando estrutura...');
+    console.log('🧹 Limpando estrutura...');
     
-    // Remover todos os componentes
     const promises = componentesEstrutura.map(comp => 
         fetch(`/producao/api/estrutura/componente/${comp.id}/remover/`, {
             method: 'POST',
@@ -1287,10 +1160,6 @@ function limparEstrutura() {
         });
 }
 
-// =========================================================================
-// UTILITÁRIOS E HELPERS
-// =========================================================================
-
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -1307,7 +1176,6 @@ function getCookie(name) {
 }
 
 function showToast(message, type = 'info') {
-    // Criar container se não existir
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
@@ -1348,7 +1216,6 @@ function showToast(message, type = 'info') {
             this.remove();
         });
     } else {
-        // Fallback se Bootstrap não estiver disponível
         setTimeout(() => {
             if (toastElement) toastElement.remove();
         }, 4000);
@@ -1365,90 +1232,8 @@ function getToastIcon(type) {
     return icons[type] || 'info-circle';
 }
 
-// =========================================================================
-// FUNÇÕES DE DEBUG E TESTE
-// =========================================================================
-
-function executarDebugCompleto() {
-    console.log('🔧 === DEBUG COMPLETO ===');
-    
-    // Estado atual
-    console.log('📊 Estado:');
-    console.log('- Produto atual:', PRODUTO_ATUAL);
-    console.log('- Produto selecionado:', produtoSelecionado);
-    console.log('- Cache produtos:', produtosBuscados.length);
-    console.log('- Componentes:', componentesEstrutura.length);
-    
-    // Verificar elementos
-    debugElementos();
-    
-    // Testar cache
-    if (produtosBuscados.length > 0) {
-        console.log('💾 Produtos no cache:');
-        produtosBuscados.forEach((p, i) => 
-            console.log(`  ${i+1}. ${p.codigo} - ${p.nome} (ID: ${p.id})`)
-        );
-    }
-    
-    // Testar API
-    console.log('🌐 Testando API...');
-    fetch(`/producao/api/buscar-produtos-estrutura/?q=test&produto_pai_id=${PRODUTO_ATUAL.id}`)
-        .then(r => r.json())
-        .then(d => console.log('📊 API Response:', d))
-        .catch(e => console.error('❌ API Error:', e));
-}
-
-
-function testarSugestoes() {
-    console.log('🧪 Testando sugestões...');
-    const suggestionsDiv = document.getElementById('produto-suggestions');
-    if (suggestionsDiv) {
-        const produtosTeste = [
-            {
-                id: 'test1',
-                codigo: 'TEST.01.00001',
-                nome: 'Produto Teste 1',
-                tipo: 'MP',
-                tipo_display: 'Matéria Prima',
-                grupo_nome: 'Grupo Teste',
-                subgrupo_nome: 'Subgrupo Teste',
-                custo_total: 15.50,
-                estoque_atual: 100,
-                unidade_medida: 'UN'
-            },
-            {
-                id: 'test2',
-                codigo: 'TEST.02.00001',
-                nome: 'Produto Teste 2',
-                tipo: 'PI',
-                tipo_display: 'Produto Intermediário',
-                grupo_nome: 'Grupo PI',
-                subgrupo_nome: 'Subgrupo PI',
-                custo_total: 25.00,
-                estoque_atual: 50,
-                unidade_medida: 'PC'
-            }
-        ];
-        
-        mostrarSugestoes(produtosTeste);
-        console.log('✅ Sugestões de teste exibidas');
-    } else {
-        console.error('❌ Elemento sugestões não encontrado');
-    }
-}
-
-// Funções globais para acesso via console
-window.debugBusca = (termo = 'test') => buscarProdutos(termo);
-window.testarSugestoes = testarSugestoes;
-window.debugCompleto = executarDebugCompleto;
-window.limparDebug = () => { debugMode = false; console.log('Debug desabilitado'); };
-
-// =========================================================================
-// ATALHOS DE TECLADO
-// =========================================================================
-
+// Atalhos de teclado
 document.addEventListener('keydown', function(e) {
-    // ESC = Cancelar adição
     if (e.key === 'Escape') {
         const form = document.getElementById('adicionar-componente-form');
         if (form && form.style.display !== 'none') {
@@ -1457,48 +1242,30 @@ document.addEventListener('keydown', function(e) {
         }
     }
     
-    // Ctrl + S = Salvar estrutura
     if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
         salvarEstrutura();
     }
     
-    // Ctrl + F = Focar na busca
     if (e.ctrlKey && e.key === 'f') {
         e.preventDefault();
         const buscaInput = document.getElementById('busca-produto');
         if (buscaInput) buscaInput.focus();
     }
     
-    // F1 = Debug (apenas em modo debug)
     if (e.key === 'F1' && debugMode) {
         e.preventDefault();
         executarDebugCompleto();
     }
 });
 
-// =========================================================================
-// INICIALIZAÇÃO FINAL
-// =========================================================================
+// Funções globais para debug
+window.debugBusca = (termo = 'test') => buscarProdutos(termo);
+window.debugCompleto = executarDebugCompleto;
+window.recarregarEstrutura = carregarEstruturaExistente;
 
-// Log de inicialização
-if (debugMode) {
-    console.log('✅ === SISTEMA INICIADO ===');
-    console.log('Produto:', PRODUTO_ATUAL);
-    console.log('Debug mode:', debugMode);
-    console.log('Atalhos disponíveis:');
-    console.log('- ESC: Cancelar adição');
-    console.log('- Ctrl+S: Salvar estrutura');
-    console.log('- Ctrl+F: Focar busca');
-    console.log('- F1: Debug completo');
-    console.log('');
-    console.log('Funções console:');
-    console.log('- debugBusca("termo")');
-    console.log('- testarSugestoes()');
-    console.log('- debugCompleto()');
-    console.log('- limparDebug()');
-}
+console.log('🚀 Sistema de estrutura carregado - versão com recuperação de dados!');
 
-console.log('🚀 Sistema de estrutura de componentes carregado com sucesso!');
+
 </script>
 {% endblock %}
