@@ -64,5 +64,17 @@
   </ul>
 </li>
 
+<!-- Relatórios -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'compra' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'requisicao' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Relatórios
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'producao:relatorio_produtos_completo' %}">
+        Relatório de Produtos
+    </a></li>
+  </ul>
+</li>
+
 
 {% endblock %}

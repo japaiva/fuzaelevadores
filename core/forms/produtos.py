@@ -130,7 +130,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
     class Meta:
         model = Produto
         fields = [
-            'nome', 'descricao', 'grupo', 'subgrupo',
+            'nome', 'descricao', 'grupo', 'subgrupo', 'descricao',
             'tipo_pi',
             'unidade_medida', 'peso_unitario',
             'codigo_ncm', 'codigo_produto_fornecedor',

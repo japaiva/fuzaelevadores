@@ -1,15 +1,5 @@
 # producao/views/__init__.py - CORRIGIDO
 
-"""
-Portal de Produção - Views
-Sistema Elevadores FUZA
-CORRIGIDO: Import condicional para evitar erro de EstruturaProduto
-"""
-
-# =============================================================================
-# IMPORTS DAS VIEWS MODULARES
-# =============================================================================
-
 # Dashboard e páginas principais
 from .dashboard import home, dashboard, dashboard_analytics
 
@@ -95,6 +85,11 @@ from .pedidos_compra import (
     pedido_compra_update, pedido_compra_delete, pedido_compra_alterar_status,
     pedido_compra_gerar_pdf, pedido_compra_duplicar,
     pedido_compra_recebimento, receber_item_pedido
+)
+
+from .relatorios_produtos import (
+    relatorio_produtos_completo,
+    api_subgrupos_por_grupo_relatorio
 )
 
 # Propostas e Lista de Materiais
