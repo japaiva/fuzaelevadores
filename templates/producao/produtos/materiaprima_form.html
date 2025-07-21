@@ -1,4 +1,3 @@
-<!-- templates/producao/produtos/materiaprima_form.html - ATUALIZADO -->
 {% extends 'producao/base_producao.html' %}
 {% load static %}
 
@@ -39,7 +38,6 @@
           </div>
         {% endif %}
 
-        <!-- SEÇÃO: IDENTIFICAÇÃO -->
         <div class="card border-start border-primary border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -147,7 +145,6 @@
           </div>
         </div>
 
-        <!-- SEÇÃO: CARACTERÍSTICAS -->
         <div class="card border-start border-info border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -184,7 +181,6 @@
           </div>
         </div>
 
-        <!-- SEÇÃO: FORNECIMENTO -->
         <div class="card border-start border-secondary border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -243,7 +239,6 @@
           </div>
         </div>
 
-        <!-- SEÇÃO: CUSTO - ATUALIZADA -->
         <div class="card border-start border-success border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -253,7 +248,6 @@
           </div>
           <div class="card-body p-4">
             <div class="row g-3">
-              <!-- CUSTO MATERIAL - CAMPO PRINCIPAL -->
               <div class="col-md-6">
                 <label for="{{ form.custo_material.id_for_label }}" class="form-label">
                   Custo da Matéria Prima <span class="text-danger">*</span>
@@ -270,10 +264,9 @@
                 {% endif %}
               </div>
 
-              <!-- CUSTO TOTAL - CALCULADO AUTOMATICAMENTE -->
               <div class="col-md-6">
                 <label class="form-label">Custo Total</label>
-                <div class="alert alert-success mb-0 p-3">
+                <div class="alert alert-success mb-0 p-3" id="display-custo-total">
                   <div class="d-flex align-items-center">
                     <div>
                       <div id="custo-total-display" class="fw-bold fs-5 text-success">
@@ -285,19 +278,16 @@
               </div>
             </div>
 
-            <!-- CAMPOS LEGACY OCULTOS (compatibilidade) -->
             {% if form.custo_medio %}
               <input type="hidden" id="id_custo_medio" name="custo_medio" value="{{ form.custo_medio.value|default:'' }}">
             {% endif %}
             
-            <!-- CUSTO SERVIÇO SEMPRE OCULTO PARA MP -->
             {% if form.custo_servico %}
               <input type="hidden" id="id_custo_servico" name="custo_servico" value="">
             {% endif %}
           </div>
         </div>
 
-        <!-- SEÇÃO: ESTOQUE -->
         <div class="card border-start border-danger border-4 mb-4" id="secao-estoque" style="display: none;">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
@@ -330,7 +320,6 @@
           </div>
         </div>
 
-        <!-- BOTÕES DE AÇÃO -->
         <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
           <div>
             {% if form.instance.pk %}
@@ -420,12 +409,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
     const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
     const custoMaterialInput = document.getElementById('{{ form.custo_material.id_for_label }}');
-    const custoMedioHidden = document.getElementById('id_custo_medio'); // Campo legacy
-    const custoServicoHidden = document.getElementById('id_custo_servico'); // Sempre null para MP
+    const custoMedioHidden = document.getElementById('id_custo_medio');
+    const custoServicoHidden = document.getElementById('id_custo_servico');
     const ativoCheck = document.getElementById('id_ativo');
     const controlaEstoqueCheck = document.getElementById('{{ form.controla_estoque.id_for_label }}');
     const statusHiddenInput = document.getElementById('id_status_hidden');
     const secaoEstoque = document.getElementById('secao-estoque');
+    const custoTotalDisplay = document.getElementById('custo-total-display');
+    const displayCustoTotal = document.getElementById('display-custo-total');
     
     // =========================================================================
     // FUNÇÃO: ATUALIZAR SUBGRUPOS
@@ -450,7 +441,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             subgrupoSelect.appendChild(option);
                         });
                         
-                        // Se é edição, tentar selecionar o subgrupo atual
                         {% if form.instance.pk and form.instance.subgrupo %}
                         subgrupoSelect.value = '{{ form.instance.subgrupo.id }}';
                         {% endif %}
@@ -488,69 +478,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // =========================================================================
-    // FUNÇÃO: CALCULAR CUSTO TOTAL (NOVA LÓGICA)
+    // FUNÇÃO: CALCULAR CUSTO TOTAL (CORRIGIDA)
     // =========================================================================
-    
-// =========================================================================
-// FUNÇÃO: CALCULAR CUSTO TOTAL - TOTALMENTE CORRIGIDA
-// =========================================================================
 
     function calcularCustoTotal() {
         console.log('💰 Calculando custo total...');
         
-        // Função auxiliar para converter valores de forma segura
         function converterValor(input) {
             if (!input || !input.value) return 0;
-            
             let valor = input.value.toString().trim();
             if (valor === '' || valor === null || valor === undefined) return 0;
-            
-            // Substituir vírgula por ponto
             valor = valor.replace(',', '.');
-            
-            // Converter para número
             const numero = parseFloat(valor);
             return isNaN(numero) ? 0 : numero;
         }
         
         const custoMaterial = converterValor(custoMaterialInput);
-        const custoServico = converterValor(custoServicoInput);
+        const custoTotal = custoMaterial;
         
-        const custoTotal = custoMaterial + custoServico;
+        console.log(`💰 Valores: Material R$ ${custoMaterial.toFixed(2)} = Total R$ ${custoTotal.toFixed(2)}`);
         
-        console.log(`💰 Valores: Material R$ ${custoMaterial.toFixed(2)} + Serviço R$ ${custoServico.toFixed(2)} = Total R$ ${custoTotal.toFixed(2)}`);
-        
-        // Atualizar display
-        const displayElement = document.getElementById('custo-total-valor');
-        if (displayElement) {
-            displayElement.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
+        if (custoTotalDisplay) {
+            custoTotalDisplay.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
             
-            // Feedback visual
             if (custoTotal > 0) {
-                displayElement.className = 'fw-bold fs-5 text-success';
-                document.getElementById('display-custo-total').className = 'alert alert-success mb-0 p-2';
+                custoTotalDisplay.className = 'fw-bold fs-5 text-success';
+                displayCustoTotal.className = 'alert alert-success mb-0 p-3';
             } else {
-                displayElement.className = 'fw-bold fs-5 text-muted';
-                document.getElementById('display-custo-total').className = 'alert alert-secondary mb-0 p-2';
+                custoTotalDisplay.className = 'fw-bold fs-5 text-muted';
+                displayCustoTotal.className = 'alert alert-secondary mb-0 p-3';
             }
         }
         
-        // ===== SINCRONIZAÇÃO COM CAMPOS LEGACY - CORRIGIDA =====
-        // ATENÇÃO: Sincronizar corretamente sem inverter os valores!
-        
         if (custoMedioHidden) {
-            // custo_medio = custo_material
             custoMedioHidden.value = custoMaterial > 0 ? custoMaterial.toFixed(2) : '';
             console.log(`🔄 Sincronizado custo_medio: ${custoMedioHidden.value}`);
-        }
-        
-        if (custoIndustrializacaoHidden) {
-            // custo_industrializacao = custo_servico  
-            custoIndustrializacaoHidden.value = custoServico > 0 ? custoServico.toFixed(2) : '';
-            console.log(`🔄 Sincronizado custo_industrializacao: ${custoIndustrializacaoHidden.value}`);
         }
     }
     
@@ -558,29 +523,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // EVENT LISTENERS
     // =========================================================================
     
-    // Grupo
     if (grupoSelect) {
         grupoSelect.addEventListener('change', function() {
             updateSubgrupos(this.value);
         });
     }
 
-    // Ativo/Inativo
     if (ativoCheck) {
         ativoCheck.addEventListener('change', atualizarStatus);
     }
     
-    // Controla estoque
     if (controlaEstoqueCheck) {
         controlaEstoqueCheck.addEventListener('change', atualizarSecaoEstoque);
     }
     
-    // Custo Material (NOVO)
     if (custoMaterialInput) {
         custoMaterialInput.addEventListener('input', calcularCustoTotal);
         custoMaterialInput.addEventListener('blur', calcularCustoTotal);
         
-        // Validação especial para custo
         custoMaterialInput.addEventListener('blur', function() {
             const valor = parseFloat(this.value?.replace(',', '.')) || 0;
             if (valor < 0) {
@@ -603,11 +563,9 @@ document.addEventListener('DOMContentLoaded', function() {
             let hasErrors = false;
             const errorFields = [];
             
-            // Remover classes de erro anteriores
             const allFields = form.querySelectorAll('.form-control, .form-select');
             allFields.forEach(field => field.classList.remove('is-invalid'));
             
-            // Validar campos obrigatórios básicos
             const requiredFields = [
                 { field: document.getElementById('{{ form.nome.id_for_label }}'), name: 'Nome' },
                 { field: grupoSelect, name: 'Grupo' },
@@ -624,16 +582,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Validação específica para custo
-            if (custoMaterialInput) {
-                const custoValor = parseFloat(custoMaterialInput.value?.replace(',', '.')) || 0;
-                if (custoValor <= 0) {
-                    custoMaterialInput.classList.add('is-invalid');
-                    errorFields.push('Custo deve ser maior que zero');
-                    hasErrors = true;
-                }
-            }
-            
             if (hasErrors) {
                 e.preventDefault();
                 
@@ -645,7 +593,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     firstError.focus();
                 }
             } else {
-                // Garantir sincronização antes de enviar
                 calcularCustoTotal();
                 
                 const submitBtn = document.getElementById('submit-btn');
@@ -663,11 +610,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('🚀 Executando inicialização...');
     
-    // Executar funções iniciais
     atualizarSecaoEstoque();
     calcularCustoTotal();
     
-    // Se for edição, configurar campos baseados nos valores existentes
     {% if form.instance.pk %}
         console.log('📝 Modo edição detectado');
         
@@ -675,7 +620,6 @@ document.addEventListener('DOMContentLoaded', function() {
             updateSubgrupos(grupoSelect.value);
         }
         
-        // Se tem custo_medio mas não tem custo_material, migrar
         {% if form.instance.custo_medio and not form.instance.custo_material %}
         if (custoMaterialInput && !custoMaterialInput.value) {
             custoMaterialInput.value = '{{ form.instance.custo_medio }}';
