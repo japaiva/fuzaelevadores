@@ -115,13 +115,13 @@
               </td>
 
               <td>
-                {% if produto.custo_medio %}
-                  <span class="text-success fw-bold">
-                    {{ produto.custo_medio|formato_moeda }}
-                  </span>
-                {% else %}
-                  <span class="text-muted">-</span>
-                {% endif %}
+              {% if produto.custo_total %}
+                <span class="text-success fw-bold">
+                  {{ produto.custo_total|formato_moeda }}
+                </span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
               </td>
 
               <td class="text-center">

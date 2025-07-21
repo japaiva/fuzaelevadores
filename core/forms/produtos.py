@@ -122,24 +122,10 @@ class SubgrupoProdutoForm(BaseModelForm, AuditMixin):
                 )
         return codigo
 
-
-# core/forms/produtos.py - CORREÇÃO: Permitir edição de custos em produtos montados
-
-from django import forms
-from django.core.exceptions import ValidationError
-
-from core.models import GrupoProduto, SubgrupoProduto, Produto
-from .base import BaseModelForm, BaseFiltroForm, AuditMixin, MoneyInput, QuantityInput, validar_positivo
-
-from core.choices import get_tipo_produto_choices 
-from core.models.base import UNIDADE_MEDIDA_CHOICES, STATUS_PRODUTO_CHOICES 
-
-
-# SUBSTITUA APENAS esta classe ProdutoForm no seu arquivo core/forms/produtos.py
-# MANTENHA todas as outras classes (GrupoProdutoForm, SubgrupoProdutoForm, etc.) como estão
+# core/forms/produtos.py - PRODUTOFORM CORRIGIDO
 
 class ProdutoForm(BaseModelForm, AuditMixin):
-    """Formulário para produtos - CORRIGIDO PARA RESOLVER PROBLEMA DO FORNECEDOR"""
+    """Formulário para produtos - CORRIGIDO BASEADO NO ORIGINAL"""
     
     class Meta:
         model = Produto
@@ -149,7 +135,12 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'unidade_medida', 'peso_unitario',
             'codigo_ncm', 'codigo_produto_fornecedor',
             'controla_estoque', 'estoque_atual', 'estoque_minimo',
-            'custo_medio', 'custo_industrializacao',
+            # ===== NOVA ESTRUTURA DE CUSTOS =====
+            'custo_material',        # ✅ Campo principal
+            'custo_servico',         # ✅ Campo principal
+            # ===== CAMPOS LEGACY (mantidos para compatibilidade) =====
+            'custo_medio',           # 🔄 Sincronizado automaticamente
+            'custo_industrializacao', # 🔄 Sincronizado automaticamente
             'fornecedor_principal', 'prazo_entrega_padrao', 
             'status', 'disponivel', 'utilizado'
         ]
@@ -191,10 +182,25 @@ class ProdutoForm(BaseModelForm, AuditMixin):
                 'maxlength': '50',
                 'class': 'form-control'
             }),
-            'custo_industrializacao': MoneyInput(),
+            # ===== CAMPOS DE CUSTO CORRIGIDOS =====
+            'custo_material': forms.NumberInput(attrs={
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0,00',
+                'class': 'form-control'
+            }),
+            'custo_servico': forms.NumberInput(attrs={
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0,00',
+                'class': 'form-control'
+            }),
+            # ===== CAMPOS LEGACY =====
+            'custo_medio': forms.HiddenInput(),           # Oculto - sincronizado via JS
+            'custo_industrializacao': forms.HiddenInput(), # Oculto - sincronizado via JS
+            
             'estoque_atual': QuantityInput(),
             'estoque_minimo': QuantityInput(),
-            'custo_medio': MoneyInput(),
             'prazo_entrega_padrao': forms.NumberInput(attrs={
                 'min': '0',
                 'step': '1',
@@ -227,11 +233,12 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'peso_unitario': 'Peso Unitário (kg)',
             'codigo_ncm': 'Código NCM',
             'codigo_produto_fornecedor': 'Código no Fornecedor',
-            'custo_industrializacao': 'Custo Industrialização',
+            # ===== NOVOS LABELS =====
+            'custo_material': 'Custo Material',
+            'custo_servico': 'Custo Serviço',
             'controla_estoque': 'Controla Estoque',
             'estoque_atual': 'Estoque Atual',
             'estoque_minimo': 'Estoque Mínimo',
-            'custo_medio': 'Custo Médio',
             'fornecedor_principal': 'Fornecedor Principal',
             'prazo_entrega_padrao': 'Prazo Entrega Padrão (dias)',
             'status': 'Status',
@@ -245,7 +252,6 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         # Configurar choices dos campos
         self.fields['unidade_medida'].choices = UNIDADE_MEDIDA_CHOICES
         self.fields['status'].choices = STATUS_PRODUTO_CHOICES
-        
         self.fields['tipo_pi'].choices = [('', 'Selecione o tipo')] + Produto.TIPO_PI_CHOICES
         self.fields['tipo_pi'].required = False  # Será validado no clean()
 
@@ -255,8 +261,76 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         self.fields['nome'].required = True
         self.fields['unidade_medida'].required = True
         
+        # ===== CAMPOS DE CUSTO - INICIALIZAR COMO NÃO OBRIGATÓRIOS =====
+        self.fields['custo_material'].required = False
+        self.fields['custo_servico'].required = False
+        
         # Filtrar apenas grupos ativos
         self.fields['grupo'].queryset = GrupoProduto.objects.filter(ativo=True).order_by('codigo')
+        
+        # ===== CONFIGURAÇÃO ESPECÍFICA POR TIPO DE PRODUTO =====
+        produto_tipo = None
+        if self.instance and self.instance.pk and self.instance.grupo:
+            produto_tipo = self.instance.grupo.tipo_produto
+        elif 'grupo' in self.data:
+            try:
+                grupo_id = int(self.data.get('grupo'))
+                grupo = GrupoProduto.objects.get(id=grupo_id)
+                produto_tipo = grupo.tipo_produto
+            except (ValueError, TypeError, GrupoProduto.DoesNotExist):
+                pass
+        
+        # ===== CONFIGURAÇÃO PARA MATÉRIAS-PRIMAS (MP) =====
+        if produto_tipo == 'MP':
+            # Para MP: mostrar apenas custo_material
+            self.fields['custo_material'].help_text = "Custo unitário da matéria prima"
+            
+            # Ocultar custo_servico para MP
+            self.fields['custo_servico'].widget = forms.HiddenInput()
+            self.fields['custo_servico'].required = False
+            
+            # Ocultar tipo_pi para MP
+            self.fields['tipo_pi'].widget = forms.HiddenInput()
+            
+        # ===== CONFIGURAÇÃO PARA PRODUTOS INTERMEDIÁRIOS (PI) =====
+        elif produto_tipo == 'PI':
+            self.fields['tipo_pi'].required = True
+            
+            # Configurar campos de custo baseado no tipo_pi
+            tipo_pi = None
+            if self.instance and self.instance.pk:
+                tipo_pi = self.instance.tipo_pi
+            elif 'tipo_pi' in self.data:
+                tipo_pi = self.data.get('tipo_pi')
+            
+            if tipo_pi == 'COMPRADO':
+                self.fields['custo_material'].help_text = "Custo total do produto comprado"
+                self.fields['custo_servico'].widget = forms.HiddenInput()
+            elif tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']:
+                self.fields['custo_material'].help_text = "Custo de materiais/componentes"
+                self.fields['custo_servico'].help_text = "Custo de mão de obra/serviços"
+            elif tipo_pi == 'SERVICO_INTERNO':
+                self.fields['custo_material'].widget = forms.HiddenInput()
+                self.fields['custo_servico'].help_text = "Custo da mão de obra interna"
+            elif tipo_pi == 'SERVICO_EXTERNO':
+                self.fields['custo_material'].widget = forms.HiddenInput()
+                self.fields['custo_servico'].help_text = "Custo do serviço terceirizado"
+        
+        # ===== CONFIGURAÇÃO PARA PRODUTOS ACABADOS (PA) =====
+        elif produto_tipo == 'PA':
+            self.fields['custo_material'].help_text = "Custo de materiais/componentes"
+            self.fields['custo_servico'].help_text = "Custo de mão de obra/serviços"
+            # Ocultar tipo_pi para PA
+            self.fields['tipo_pi'].widget = forms.HiddenInput()
+        
+        # ===== MIGRAÇÃO AUTOMÁTICA DE DADOS LEGACY =====
+        if self.instance and self.instance.pk:
+            # Se tem dados legacy mas não tem nos novos campos, migrar
+            if self.instance.custo_medio and not self.instance.custo_material:
+                self.fields['custo_material'].initial = self.instance.custo_medio
+            
+            if self.instance.custo_industrializacao and not self.instance.custo_servico:
+                self.fields['custo_servico'].initial = self.instance.custo_industrializacao
         
         # CONFIGURAÇÃO DINÂMICA DE SUBGRUPOS
         if 'grupo' in self.data:
@@ -277,11 +351,32 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         if self.instance.pk and self.instance.codigo:
             self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
 
-    def clean_custo_industrializacao(self):
-        """Validar custo de industrialização"""
-        custo = self.cleaned_data.get('custo_industrializacao')
-        if custo is not None:
-            validar_positivo(custo)
+    def clean_custo_material(self):
+        """Validar custo material - CORRIGIDO"""
+        custo = self.cleaned_data.get('custo_material')
+        
+        # Permitir valores None, vazios ou zero
+        if custo is None or custo == '' or custo == 0:
+            return None
+        
+        # Validar se é positivo (se preenchido)
+        if custo is not None and custo < 0:
+            raise ValidationError('Custo material deve ser maior ou igual a zero.')
+        
+        return custo
+
+    def clean_custo_servico(self):
+        """Validar custo serviço - CORRIGIDO"""
+        custo = self.cleaned_data.get('custo_servico')
+        
+        # Permitir valores None, vazios ou zero
+        if custo is None or custo == '' or custo == 0:
+            return None
+        
+        # Validar se é positivo (se preenchido)
+        if custo is not None and custo < 0:
+            raise ValidationError('Custo serviço deve ser maior ou igual a zero.')
+        
         return custo
 
     def clean_estoque_minimo(self):
@@ -290,56 +385,139 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         if estoque_minimo is not None:
             validar_positivo(estoque_minimo)
         return estoque_minimo
-    
-    def clean_custo_medio(self):
-        """Validar custo médio"""
-        custo_medio = self.cleaned_data.get('custo_medio')
-        if custo_medio is not None:
-            validar_positivo(custo_medio)
-        return custo_medio    
 
     def clean(self):
-        """Validações personalizadas - SIMPLIFICADAS PARA EVITAR CONFLITOS"""
+        """Validações personalizadas - CORRIGIDAS"""
         cleaned_data = super().clean()
         grupo = cleaned_data.get('grupo')
         subgrupo = cleaned_data.get('subgrupo')
         tipo_pi = cleaned_data.get('tipo_pi')
         fornecedor_principal = cleaned_data.get('fornecedor_principal')
+        custo_material = cleaned_data.get('custo_material')
+        custo_servico = cleaned_data.get('custo_servico')
         
         # Validar relacionamento grupo/subgrupo
         if grupo and subgrupo:
             if subgrupo.grupo != grupo:
                 self.add_error('subgrupo', 'O subgrupo selecionado não pertence ao grupo escolhido.')
         
-        # Validações específicas para PI
-        if grupo and grupo.tipo_produto == 'PI':
-            if not tipo_pi:
-                self.add_error('tipo_pi', 'Tipo do Produto Intermediário é obrigatório para produtos PI.')
-            else:
-                # APENAS VALIDAR OBRIGATORIEDADE DO FORNECEDOR - SEM INTERFERIR NOS CUSTOS
-                if tipo_pi in ['COMPRADO', 'MONTADO_EXTERNO', 'SERVICO_EXTERNO']:
-                    if not fornecedor_principal:
-                        campo_nome = 'Prestador principal' if tipo_pi == 'SERVICO_EXTERNO' else 'Fornecedor principal'
-                        self.add_error('fornecedor_principal', f'{campo_nome} é obrigatório para este tipo.')
+        # ===== VALIDAÇÕES ESPECÍFICAS POR TIPO - CORRIGIDAS =====
+        if grupo:
+            produto_tipo = grupo.tipo_produto
+            
+            # Validações para MP
+            if produto_tipo == 'MP':
+                if not custo_material or custo_material <= 0:
+                    self.add_error('custo_material', 'Custo da matéria prima é obrigatório e deve ser maior que zero.')
+                # Para MP, limpar custo_servico
+                cleaned_data['custo_servico'] = None
+            
+            # Validações para PI
+            elif produto_tipo == 'PI':
+                if not tipo_pi:
+                    self.add_error('tipo_pi', 'Tipo do Produto Intermediário é obrigatório para produtos PI.')
+                else:
+                    # Validações específicas por tipo_pi
+                    if tipo_pi == 'COMPRADO':
+                        if not fornecedor_principal:
+                            self.add_error('fornecedor_principal', 'Fornecedor principal é obrigatório para produtos comprados.')
+                        if not custo_material or custo_material <= 0:
+                            self.add_error('custo_material', 'Custo material é obrigatório para produtos comprados.')
+                        # Para comprados, limpar custo_servico
+                        cleaned_data['custo_servico'] = None
+                    
+                    elif tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']:
+                        if tipo_pi == 'MONTADO_EXTERNO' and not fornecedor_principal:
+                            self.add_error('fornecedor_principal', 'Fornecedor principal é obrigatório para produtos montados externamente.')
+                        # Para montados: permitir custos zerados (serão calculados pela estrutura)
+                        # Não é obrigatório ter custos para produtos montados
+                    
+                    elif tipo_pi == 'SERVICO_INTERNO':
+                        if not custo_servico or custo_servico <= 0:
+                            self.add_error('custo_servico', 'Custo de serviço é obrigatório para serviços internos.')
+                        # Para serviços, limpar custo_material
+                        cleaned_data['custo_material'] = None
+                    
+                    elif tipo_pi == 'SERVICO_EXTERNO':
+                        if not fornecedor_principal:
+                            self.add_error('fornecedor_principal', 'Prestador principal é obrigatório para serviços externos.')
+                        if not custo_servico or custo_servico <= 0:
+                            self.add_error('custo_servico', 'Custo de serviço é obrigatório para serviços externos.')
+                        # Para serviços, limpar custo_material
+                        cleaned_data['custo_material'] = None
+            
+            # Validações para PA
+            elif produto_tipo == 'PA':
+                # Para PA, pelo menos um dos custos deve ser preenchido
+                if not custo_material and not custo_servico:
+                    self.add_error('custo_material', 'Pelo menos um dos custos (material ou serviço) deve ser preenchido.')
         
         return cleaned_data
 
-    def save(self, commit=True):
-        """Override para garantir que o tipo seja definido corretamente"""
-        produto = super().save(commit=False)
+def save(self, commit=True):
+    """Override para sincronizar campos legacy e definir tipo corretamente - CORRIGIDO"""
+    produto = super().save(commit=False)
+    
+    # Debug: Imprimir valores recebidos
+    print(f"🐛 DEBUG SAVE - Valores recebidos:")
+    print(f"  custo_material: {produto.custo_material}")
+    print(f"  custo_servico: {produto.custo_servico}")
+    print(f"  custo_medio (legacy): {produto.custo_medio}")
+    print(f"  custo_industrializacao (legacy): {produto.custo_industrializacao}")
+    
+    # Definir tipo baseado no grupo
+    if produto.grupo and produto.grupo.tipo_produto:
+        produto.tipo = produto.grupo.tipo_produto
+    
+    # Limpar tipo_pi se não for PI
+    if produto.tipo != 'PI':
+        produto.tipo_pi = None
+    
+    # ===== SINCRONIZAÇÃO COM CAMPOS LEGACY - CORRIGIDA =====
+    # IMPORTANTE: NÃO sobrescrever os valores novos com os legacy!
+    
+    # Manter os valores dos novos campos como estão (não mexer neles)
+    custo_material_final = produto.custo_material
+    custo_servico_final = produto.custo_servico
+    
+    # Apenas sincronizar os campos legacy para manter compatibilidade
+    if custo_material_final is not None:
+        produto.custo_medio = custo_material_final
+    else:
+        produto.custo_medio = None
         
-        # Definir tipo baseado no grupo
-        if produto.grupo and produto.grupo.tipo_produto:
-            produto.tipo = produto.grupo.tipo_produto
-        
-        # Limpar tipo_pi se não for PI
-        if produto.tipo != 'PI':
-            produto.tipo_pi = None
-        
-        if commit:
-            produto.save()
-        
-        return produto
+    if custo_servico_final is not None:
+        produto.custo_industrializacao = custo_servico_final
+    else:
+        produto.custo_industrializacao = None
+    
+    # ===== REGRAS ESPECÍFICAS POR TIPO =====
+    # Para MP: garantir que custo_servico seja sempre None
+    if produto.tipo == 'MP':
+        produto.custo_servico = None
+        produto.custo_industrializacao = None
+    
+    # Para serviços: garantir que custo_material seja sempre None
+    elif produto.tipo == 'PI' and produto.tipo_pi in ['SERVICO_INTERNO', 'SERVICO_EXTERNO']:
+        produto.custo_material = None
+        produto.custo_medio = None
+    
+    # Para produtos comprados: garantir que custo_servico seja sempre None
+    elif produto.tipo == 'PI' and produto.tipo_pi == 'COMPRADO':
+        produto.custo_servico = None
+        produto.custo_industrializacao = None
+    
+    # Debug: Imprimir valores finais
+    print(f"🐛 DEBUG SAVE - Valores finais:")
+    print(f"  custo_material: {produto.custo_material}")
+    print(f"  custo_servico: {produto.custo_servico}")
+    print(f"  custo_medio (legacy): {produto.custo_medio}")
+    print(f"  custo_industrializacao (legacy): {produto.custo_industrializacao}")
+    
+    if commit:
+        produto.save()
+    
+    return produto
 
 
 # <<<< NOVOS FORMULÁRIOS DE FILTRO ATUALIZADOS

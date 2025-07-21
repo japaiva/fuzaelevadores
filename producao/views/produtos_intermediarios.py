@@ -294,37 +294,59 @@ def produto_intermediario_estrutura(request, pk):
     
     return render(request, 'producao/produtos/produto_intermediario_estrutura.html', context) #
 
-
 @login_required
 def produto_intermediario_calcular_custo(request, pk):
     """Calcular custo de produto intermediário baseado na estrutura"""
-    produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
+    produto = get_object_or_404(Produto, pk=pk, tipo='PI')
     
-    if not ESTRUTURA_DISPONIVEL: #
+    if not ESTRUTURA_DISPONIVEL:
         messages.info(request, 'Funcionalidade de cálculo de custo será implementada quando a estrutura estiver pronta.')
         return redirect('producao:produto_intermediario_list')
     
-    if not produto.pode_ter_estrutura: #
+    if not produto.pode_ter_estrutura:
         messages.error(request, f'O produto "{produto.nome}" não suporta cálculo automático de custo.')
         return redirect('producao:produto_intermediario_list')
     
     try:
-        if not produto.componentes.exists(): #
+        if not produto.componentes.exists():
             messages.warning(request, f'O produto "{produto.nome}" não possui estrutura de componentes definida.')
             return redirect('producao:produto_intermediario_estrutura', pk=pk)
         
         # CALCULAR CUSTO BASEADO NA ESTRUTURA REAL
-        custo_calculado = 0
+        custo_material_calculado = 0
+        custo_servico_calculado = 0
         componentes_processados = 0
         
-        for componente in produto.componentes.select_related('produto_filho'): #
-            produto_filho = componente.produto_filho #
-            custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0) #
+        for componente in produto.componentes.select_related('produto_filho'):
+            produto_filho = componente.produto_filho
+            quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
+            
+            # Usar custo_total (nova propriedade) com fallback para legacy
+            custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0)
             
             if custo_unitario > 0:
-                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
-                custo_componente = custo_unitario * quantidade_com_perda
-                custo_calculado += custo_componente
+                # Para componentes MP: tudo vai para custo_material
+                if produto_filho.tipo == 'MP':
+                    custo_componente = custo_unitario * quantidade_com_perda
+                    custo_material_calculado += custo_componente
+                    
+                # Para componentes PI: separar material e serviço
+                elif produto_filho.tipo == 'PI':
+                    if produto_filho.tipo_pi in ['SERVICO_INTERNO', 'SERVICO_EXTERNO']:
+                        # Serviços vão para custo_servico
+                        custo_componente = custo_unitario * quantidade_com_perda
+                        custo_servico_calculado += custo_componente
+                    else:
+                        # Outros tipos de PI: usar a separação do componente ou tudo para material
+                        if hasattr(produto_filho, 'custo_material') and produto_filho.custo_material:
+                            custo_material_calculado += (produto_filho.custo_material or 0) * quantidade_com_perda
+                        if hasattr(produto_filho, 'custo_servico') and produto_filho.custo_servico:
+                            custo_servico_calculado += (produto_filho.custo_servico or 0) * quantidade_com_perda
+                        
+                        # Se não tem separação, tudo vai para material
+                        if not produto_filho.custo_material and not produto_filho.custo_servico:
+                            custo_material_calculado += custo_unitario * quantidade_com_perda
+                
                 componentes_processados += 1
             else:
                 logger.warning(f'Componente {produto_filho.codigo} sem custo definido')
@@ -333,14 +355,32 @@ def produto_intermediario_calcular_custo(request, pk):
             messages.error(request, 'Nenhum componente possui custo definido. Verifique os custos dos componentes primeiro.')
             return redirect('producao:produto_intermediario_estrutura', pk=pk)
         
-        if custo_calculado > 0:
-            custo_anterior = produto.custo_medio or 0
-            produto.custo_medio = custo_calculado #
-            produto.atualizado_por = request.user
-            produto.save(update_fields=['custo_medio', 'atualizado_por', 'atualizado_em'])
+        custo_total_calculado = custo_material_calculado + custo_servico_calculado
+        
+        if custo_total_calculado > 0:
+            # ATUALIZAR NOVA ESTRUTURA DE CUSTOS
+            custo_anterior_total = produto.custo_total
             
-            messages.success(request, f'Custo recalculado para "{produto.nome}": R$ {custo_anterior:.2f} → R$ {custo_calculado:.2f}')
-            logger.info(f'Custo aplicado no produto {produto.codigo}: R$ {custo_anterior:.2f} → R$ {custo_calculado:.2f}')
+            produto.custo_material = custo_material_calculado
+            produto.custo_servico = custo_servico_calculado
+            
+            # MANTER COMPATIBILIDADE COM CAMPOS LEGACY
+            produto.custo_medio = custo_material_calculado
+            produto.custo_industrializacao = custo_servico_calculado
+            
+            produto.atualizado_por = request.user
+            produto.save(update_fields=[
+                'custo_material', 'custo_servico', 
+                'custo_medio', 'custo_industrializacao',
+                'atualizado_por', 'atualizado_em'
+            ])
+            
+            messages.success(request, 
+                f'Custo recalculado para "{produto.nome}": '
+                f'R$ {custo_anterior_total:.2f} → R$ {custo_total_calculado:.2f} '
+                f'(Material: R$ {custo_material_calculado:.2f} + Serviço: R$ {custo_servico_calculado:.2f})'
+            )
+            logger.info(f'Custo aplicado no produto {produto.codigo}: R$ {custo_anterior_total:.2f} → R$ {custo_total_calculado:.2f}')
         else:
             messages.error(request, 'Custo calculado resultou em R$ 0,00. Verifique os custos dos componentes.')
             
@@ -349,7 +389,6 @@ def produto_intermediario_calcular_custo(request, pk):
         messages.error(request, f'Erro ao calcular custo: {str(e)}')
     
     return redirect('producao:produto_intermediario_list')
-
 
 # =============================================================================
 # API ATUALIZADA PARA NOVOS TIPOS DE SERVIÇO
@@ -461,16 +500,18 @@ def relatorio_produtos_pi_por_tipo(request):
 @login_required
 @require_http_methods(["GET"])
 def api_listar_componentes_estrutura(request, produto_id):
-    """API PRINCIPAL: Listar componentes da estrutura em tempo real"""
-    if not ESTRUTURA_DISPONIVEL: #
+    """API PRINCIPAL: Listar componentes da estrutura em tempo real - CORRIGIDA"""
+    if not ESTRUTURA_DISPONIVEL:
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
-        produto = get_object_or_404(Produto, pk=produto_id, tipo='PI') #
+        from decimal import Decimal
+        
+        produto = get_object_or_404(Produto, pk=produto_id, tipo='PI')
         
         logger.info(f'📊 API: Listando componentes para produto {produto.codigo}')
         
-        if not produto.pode_ter_estrutura: #
+        if not produto.pode_ter_estrutura:
             return JsonResponse({
                 'success': True, 
                 'componentes': [],
@@ -487,22 +528,27 @@ def api_listar_componentes_estrutura(request, produto_id):
         # BUSCAR COMPONENTES COM RELACIONAMENTOS OTIMIZADOS
         componentes = produto.componentes.select_related(
             'produto_filho', 'produto_filho__grupo', 'produto_filho__subgrupo'
-        ).order_by('produto_filho__codigo') #
+        ).order_by('produto_filho__codigo')
         
         componentes_data = []
-        custo_total_estrutura = 0
+        custo_total_estrutura = Decimal('0')
         
         for componente in componentes:
             try:
-                # CALCULAR CUSTOS CORRETAMENTE
-                custo_unitario = 0
-                if hasattr(componente.produto_filho, 'custo_total'): #
-                    custo_unitario = componente.produto_filho.custo_total or 0 #
-                elif componente.produto_filho.custo_medio: #
-                    custo_unitario = componente.produto_filho.custo_medio #
+                # CALCULAR CUSTOS CORRETAMENTE COM CONVERSÃO DE TIPOS
+                custo_unitario_raw = 0
+                if hasattr(componente.produto_filho, 'custo_total'):
+                    custo_unitario_raw = componente.produto_filho.custo_total or 0
+                elif componente.produto_filho.custo_medio:
+                    custo_unitario_raw = componente.produto_filho.custo_medio or 0
                 
-                quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
-                custo_total_componente = custo_unitario * quantidade_com_perda #
+                # Converter tudo para Decimal para evitar erros de tipo
+                custo_unitario = Decimal(str(float(custo_unitario_raw)))
+                quantidade = Decimal(str(float(componente.quantidade)))
+                percentual_perda = Decimal(str(float(componente.percentual_perda)))
+                
+                quantidade_com_perda = quantidade * (Decimal('1') + (percentual_perda / Decimal('100')))
+                custo_total_componente = custo_unitario * quantidade_com_perda
                 custo_total_estrutura += custo_total_componente
                 
                 componente_data = {
@@ -554,7 +600,6 @@ def api_listar_componentes_estrutura(request, produto_id):
         logger.error(f'Erro ao listar componentes do produto {produto_id}: {str(e)}')
         return JsonResponse({'success': False, 'error': f'Erro interno: {str(e)}'}, status=500)
 
-
 @login_required
 @require_http_methods(["GET"])
 def api_buscar_produtos_estrutura(request):
@@ -571,7 +616,7 @@ def api_buscar_produtos_estrutura(request):
     try:
         produtos_query = Produto.objects.filter(
             Q(codigo__icontains=termo) | Q(nome__icontains=termo) | Q(descricao__icontains=termo),
-            tipo__in=['MP', 'PI'], status='ATIVO', disponivel=True
+            tipo__in=['MP', 'PI'], status='ATIVO'
         ).select_related('grupo', 'subgrupo') #
         
         if produto_pai_id:
@@ -612,11 +657,13 @@ def api_buscar_produtos_estrutura(request):
 @login_required
 @require_http_methods(["POST"])
 def api_adicionar_componente_estrutura(request):
-    """API para adicionar componente à estrutura"""
-    if not ESTRUTURA_DISPONIVEL: #
+    """API para adicionar componente à estrutura - CORRIGIDA"""
+    if not ESTRUTURA_DISPONIVEL:
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
+        from decimal import Decimal
+        
         data = json.loads(request.body)
         
         produto_pai_id = data.get('produto_pai_id')
@@ -628,31 +675,42 @@ def api_adicionar_componente_estrutura(request):
         if not all([produto_pai_id, produto_filho_id, quantidade, unidade]):
             return JsonResponse({'success': False, 'error': 'Dados obrigatórios não informados'}, status=400)
         
-        produto_pai = get_object_or_404(Produto, pk=produto_pai_id, tipo='PI') #
-        produto_filho = get_object_or_404(Produto, pk=produto_filho_id, tipo__in=['MP', 'PI']) #
+        produto_pai = get_object_or_404(Produto, pk=produto_pai_id, tipo='PI')
+        produto_filho = get_object_or_404(Produto, pk=produto_filho_id, tipo__in=['MP', 'PI'])
         
-        if not produto_pai.pode_ter_estrutura: #
+        if not produto_pai.pode_ter_estrutura:
             return JsonResponse({'success': False, 'error': f'Produto "{produto_pai.nome}" não suporta estrutura de componentes'}, status=400)
         
-        if EstruturaProduto.objects.filter(produto_pai=produto_pai, produto_filho=produto_filho).exists(): #
+        if EstruturaProduto.objects.filter(produto_pai=produto_pai, produto_filho=produto_filho).exists():
             return JsonResponse({'success': False, 'error': f'Componente "{produto_filho.codigo}" já está na estrutura'}, status=400)
         
         with transaction.atomic():
+            # Converter para Decimal para evitar problemas de tipo
             componente = EstruturaProduto.objects.create(
                 produto_pai=produto_pai,
                 produto_filho=produto_filho,
-                quantidade=float(quantidade),
+                quantidade=Decimal(str(float(quantidade))),
                 unidade=unidade,
-                percentual_perda=float(percentual_perda),
+                percentual_perda=Decimal(str(float(percentual_perda))),
                 criado_por=request.user
-            ) #
+            )
             
             logger.info(f'Componente adicionado: {produto_pai.codigo} → {produto_filho.codigo} (qtd: {quantidade})')
         
-        # Calcular custos
-        custo_unitario = produto_filho.custo_total if hasattr(produto_filho, 'custo_total') else (produto_filho.custo_medio or 0) #
-        quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
-        custo_total = custo_unitario * quantidade_com_perda #
+        # Calcular custos - CORRIGIDO COM CONVERSÃO DE TIPOS
+        custo_unitario_raw = 0
+        if hasattr(produto_filho, 'custo_total'):
+            custo_unitario_raw = produto_filho.custo_total or 0
+        elif produto_filho.custo_medio:
+            custo_unitario_raw = produto_filho.custo_medio or 0
+        
+        # Converter tudo para Decimal
+        custo_unitario = Decimal(str(float(custo_unitario_raw)))
+        quantidade_decimal = Decimal(str(float(componente.quantidade)))
+        percentual_perda_decimal = Decimal(str(float(componente.percentual_perda)))
+        
+        quantidade_com_perda = quantidade_decimal * (Decimal('1') + (percentual_perda_decimal / Decimal('100')))
+        custo_total = custo_unitario * quantidade_com_perda
         
         return JsonResponse({
             'success': True,
@@ -676,36 +734,55 @@ def api_adicionar_componente_estrutura(request):
         
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    except ValueError as e:
+        logger.error(f'Erro de conversão de valor: {str(e)}')
+        return JsonResponse({'success': False, 'error': 'Valor numérico inválido'}, status=400)
     except Exception as e:
         logger.error(f'Erro ao adicionar componente: {str(e)}')
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-
 @login_required
 @require_http_methods(["POST"])
 def api_editar_componente_estrutura(request, componente_id):
-    """API para editar componente da estrutura"""
-    if not ESTRUTURA_DISPONIVEL: #
+    """API para editar componente da estrutura - CORRIGIDA"""
+    if not ESTRUTURA_DISPONIVEL:
         return JsonResponse({'success': False, 'error': 'Funcionalidade ainda não disponível'})
     
     try:
+        from decimal import Decimal
+        
         data = json.loads(request.body)
-        componente = get_object_or_404(EstruturaProduto, pk=componente_id) #
+        componente = get_object_or_404(EstruturaProduto, pk=componente_id)
         
         if 'quantidade' in data:
-            componente.quantidade = float(data['quantidade'])
+            # Converter para Decimal para evitar erro de tipo
+            componente.quantidade = Decimal(str(float(data['quantidade'])))
         if 'percentual_perda' in data:
-            componente.percentual_perda = float(data['percentual_perda'])
+            # Converter para Decimal para evitar erro de tipo
+            componente.percentual_perda = Decimal(str(float(data['percentual_perda'])))
         if 'unidade' in data:
             componente.unidade = data['unidade']
         
         componente.save()
         logger.info(f'Componente editado: {componente.id} - nova qtd: {componente.quantidade}')
         
-        # Recalcular custos
-        custo_unitario = componente.produto_filho.custo_total if hasattr(componente.produto_filho, 'custo_total') else (componente.produto_filho.custo_medio or 0) #
-        quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100)) #
-        custo_total = custo_unitario * quantidade_com_perda #
+        # Recalcular custos - CORRIGIDO COM CONVERSÃO DE TIPOS
+        custo_unitario_raw = 0
+        if hasattr(componente.produto_filho, 'custo_total'):
+            custo_unitario_raw = componente.produto_filho.custo_total or 0
+        elif componente.produto_filho.custo_medio:
+            custo_unitario_raw = componente.produto_filho.custo_medio or 0
+        
+        # Converter tudo para Decimal para evitar erro de tipos
+        custo_unitario = Decimal(str(float(custo_unitario_raw)))
+        quantidade = Decimal(str(float(componente.quantidade)))
+        percentual_perda = Decimal(str(float(componente.percentual_perda)))
+        
+        # Calcular usando Decimal
+        quantidade_com_perda = quantidade * (Decimal('1') + (percentual_perda / Decimal('100')))
+        custo_total = custo_unitario * quantidade_com_perda
+        
+        logger.info(f'Cálculo corrigido: {quantidade} * (1 + {percentual_perda}/100) * {custo_unitario} = {custo_total}')
         
         return JsonResponse({
             'success': True,
@@ -722,9 +799,14 @@ def api_editar_componente_estrutura(request, componente_id):
         
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    except ValueError as e:
+        logger.error(f'Erro de conversão de valor no componente {componente_id}: {str(e)}')
+        return JsonResponse({'success': False, 'error': 'Valor numérico inválido'}, status=400)
     except Exception as e:
         logger.error(f'Erro ao editar componente {componente_id}: {str(e)}')
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
 
 
 @login_required

@@ -262,62 +262,74 @@
           </div>
         </div>
 
-        <!-- CUSTOS -->
+
+        <!-- CUSTOS - ATUALIZADO PARA NOVA ESTRUTURA -->
         <div class="card border-start border-success border-4 mb-4">
           <div class="card-header bg-light">
             <h6 class="card-title mb-0">
               <i class="fas fa-calculator me-2 text-success"></i>
-              Custos
+              Custos do Produto Intermediário
             </h6>
           </div>
           <div class="card-body p-4">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label for="{{ form.custo_medio.id_for_label }}" class="form-label">
-                  Custo Produto
-                  <span class="text-danger" id="custo-required" style="display: none;">*</span>
+            
+            <!-- CUSTOS PRINCIPAIS (novos campos) -->
+            <div class="row g-3" id="secao-custos-principais">
+              
+              <!-- CUSTO MATERIAL -->
+              <div class="col-md-4" id="campo-custo-material">
+                <label for="{{ form.custo_material.id_for_label }}" class="form-label">
+                  <i class="fas fa-box me-1 text-primary"></i>
+                  Custo Material
+                  <span class="text-danger" id="material-required" style="display: none;">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text">R$</span>
-                  {{ form.custo_medio }}
+                  {{ form.custo_material }}
                 </div>
-                {% if form.custo_medio.errors %}
+                <small class="text-muted" id="help-custo-material">Custo de materiais/componentes</small>
+                {% if form.custo_material.errors %}
                   <div class="text-danger small mt-1">
-                    {% for error in form.custo_medio.errors %}{{ error }}{% endfor %}
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.custo_material.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
               </div>
 
-              <div class="col-md-4">
-                <label for="{{ form.custo_industrializacao.id_for_label }}" class="form-label">
-                  Custo Industrialização
-                  <span class="text-danger" id="custo-indust-required" style="display: none;">*</span>
+              <!-- CUSTO SERVIÇO -->
+              <div class="col-md-4" id="campo-custo-servico">
+                <label for="{{ form.custo_servico.id_for_label }}" class="form-label">
+                  <i class="fas fa-wrench me-1 text-warning"></i>
+                  Custo Serviço
+                  <span class="text-danger" id="servico-required" style="display: none;">*</span>
                 </label>
                 <div class="input-group">
                   <span class="input-group-text">R$</span>
-                  {{ form.custo_industrializacao }}
+                  {{ form.custo_servico }}
                 </div>
-                {% if form.custo_industrializacao.errors %}
+                <small class="text-muted" id="help-custo-servico">Custo de mão de obra/serviços</small>
+                {% if form.custo_servico.errors %}
                   <div class="text-danger small mt-1">
-                    {% for error in form.custo_industrializacao.errors %}{{ error }}{% endfor %}
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    {% for error in form.custo_servico.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
               </div>
 
+              <!-- CUSTO TOTAL CALCULADO -->
               <div class="col-md-4">
-                <label class="form-label">Custo Total</label>
-                <div id="custo-total" class="form-control-plaintext fw-bold text-success fs-5">
-                  R$ 0,00
+                <label class="form-label">
+                  <i class="fas fa-equals me-1 text-success"></i>
+                  Custo Total
+                </label>
+                <div class="alert alert-success mb-0 p-2" id="display-custo-total">
+                  <div class="fw-bold fs-5 text-success" id="custo-total-valor">R$ 0,00</div>
+                  <small class="text-muted" id="formula-custo">Material + Serviço</small>
                 </div>
               </div>
             </div>
 
-            <!-- Aviso sobre estrutura -->
-            <div id="aviso-estrutura" class="alert alert-info mt-3" style="display: none;">
-              <i class="fas fa-info-circle me-2"></i>
-              <strong>Produto Montado:</strong> Os custos podem ser calculados automaticamente pela estrutura de componentes, 
-              mas você pode editá-los manualmente conforme necessário.
-            </div>
+
           </div>
         </div>
 
@@ -424,12 +436,12 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
     
     console.log('🚀 Inicializando formulário produto intermediário...');
     
     // =========================================================================
-    // ELEMENTOS DO FORMULÁRIO
+    // ELEMENTOS DO FORMULÁRIO - ATUALIZADO
     // =========================================================================
     
     const tipoPiSelect = document.getElementById('{{ form.tipo_pi.id_for_label }}');
@@ -439,9 +451,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const ativoCheck = document.getElementById('id_ativo');
     const statusHiddenInput = document.getElementById('id_status_hidden');
     
-    // Campos de custo
-    const custoMedioInput = document.getElementById('{{ form.custo_medio.id_for_label }}');
-    const custoIndustrializacaoInput = document.getElementById('{{ form.custo_industrializacao.id_for_label }}');
+    // NOVOS CAMPOS DE CUSTO
+    const custoMaterialInput = document.getElementById('{{ form.custo_material.id_for_label }}');
+    const custoServicoInput = document.getElementById('{{ form.custo_servico.id_for_label }}');
+    
+    // CAMPOS LEGACY (ocultos)
+    const custoMedioHidden = document.getElementById('{{ form.custo_medio.id_for_label }}');
+    const custoIndustrializacaoHidden = document.getElementById('{{ form.custo_industrializacao.id_for_label }}');
     
     // Seções do formulário
     const secaoFornecimentoGeral = document.getElementById('secao-fornecimento-geral');
@@ -454,10 +470,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const labelCodigoFornecedor = document.getElementById('label-codigo-fornecedor');
     const labelPrazo = document.getElementById('label-prazo');
     
-    // Elementos de obrigatoriedade
+    // Elementos de obrigatoriedade - ATUALIZADOS
     const fornecedorRequired = document.getElementById('fornecedor-required');
-    const custoRequired = document.getElementById('custo-required');
-    const custoIndustRequired = document.getElementById('custo-indust-required');
+    const materialRequired = document.getElementById('material-required');
+    const servicoRequired = document.getElementById('servico-required');
     
     // Campo fornecedor
     const fornecedorInput = document.getElementById('{{ form.fornecedor_principal.id_for_label }}');
@@ -474,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // =========================================================================
-    // FUNÇÃO: ATUALIZAR SEÇÕES BASEADO NO TIPO PI
+    // FUNÇÃO: ATUALIZAR SEÇÕES BASEADO NO TIPO PI - ATUALIZADA
     // =========================================================================
     
     function atualizarSecoesPorTipo() {
@@ -486,27 +502,39 @@ document.addEventListener('DOMContentLoaded', function() {
         if (secaoFornecimentoGeral) secaoFornecimentoGeral.style.display = 'none';
         if (avisoEstrutura) avisoEstrutura.style.display = 'none';
         
+        // Resetar campos de custo
+        document.getElementById('campo-custo-material')?.classList.remove('d-none');
+        document.getElementById('campo-custo-servico')?.classList.remove('d-none');
+        
         // Resetar obrigatoriedade
         if (fornecedorRequired) fornecedorRequired.style.display = 'none';
-        if (custoRequired) custoRequired.style.display = 'none';
-        if (custoIndustRequired) custoIndustRequired.style.display = 'none';
+        if (materialRequired) materialRequired.style.display = 'none';
+        if (servicoRequired) servicoRequired.style.display = 'none';
         
         // Resetar required nos campos
         if (fornecedorInput) fornecedorInput.removeAttribute('required');
-        if (custoMedioInput) custoMedioInput.removeAttribute('required');
-        if (custoIndustrializacaoInput) custoIndustrializacaoInput.removeAttribute('required');
+        if (custoMaterialInput) custoMaterialInput.removeAttribute('required');
+        if (custoServicoInput) custoServicoInput.removeAttribute('required');
         
         // Configurar baseado no tipo
         switch (tipoSelecionado) {
             case 'COMPRADO':
                 mostrarSecaoFornecimento('Fornecimento', 'Fornecedor Principal', 'Código do Produto no Fornecedor', 'Prazo Entrega (dias)');
+                // Para comprado: só custo material
+                document.getElementById('campo-custo-servico')?.classList.add('d-none');
                 if (fornecedorRequired) fornecedorRequired.style.display = 'inline';
-                if (custoRequired) custoRequired.style.display = 'inline';
+                if (materialRequired) materialRequired.style.display = 'inline';
                 if (fornecedorInput) fornecedorInput.setAttribute('required', 'required');
+                if (custoMaterialInput) custoMaterialInput.setAttribute('required', 'required');
+                document.getElementById('help-custo-material').textContent = 'Custo total do produto comprado';
+                document.getElementById('formula-custo').textContent = 'Produto Comprado';
                 break;
                 
             case 'MONTADO_INTERNO':
                 if (avisoEstrutura) avisoEstrutura.style.display = 'block';
+                document.getElementById('help-custo-material').textContent = 'Custo de materiais/componentes';
+                document.getElementById('help-custo-servico').textContent = 'Custo de mão de obra/serviços';
+                document.getElementById('formula-custo').textContent = 'Material + Serviço';
                 break;
                 
             case 'MONTADO_EXTERNO':
@@ -514,17 +542,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (avisoEstrutura) avisoEstrutura.style.display = 'block';
                 if (fornecedorRequired) fornecedorRequired.style.display = 'inline';
                 if (fornecedorInput) fornecedorInput.setAttribute('required', 'required');
+                document.getElementById('help-custo-material').textContent = 'Custo de materiais/componentes';
+                document.getElementById('help-custo-servico').textContent = 'Custo de mão de obra/serviços';
+                document.getElementById('formula-custo').textContent = 'Material + Serviço';
                 break;
                 
             case 'SERVICO_INTERNO':
-                if (custoIndustRequired) custoIndustRequired.style.display = 'inline';
+                // Para serviço interno: só custo serviço
+                document.getElementById('campo-custo-material')?.classList.add('d-none');
+                if (servicoRequired) servicoRequired.style.display = 'inline';
+                if (custoServicoInput) custoServicoInput.setAttribute('required', 'required');
+                document.getElementById('help-custo-servico').textContent = 'Custo da mão de obra interna';
+                document.getElementById('formula-custo').textContent = 'Apenas Serviço';
                 break;
                 
             case 'SERVICO_EXTERNO':
                 mostrarSecaoFornecimento('Prestador', 'Prestador Principal', 'Código do Serviço no Prestador', 'Prazo Produção (dias)');
+                // Para serviço externo: só custo serviço
+                document.getElementById('campo-custo-material')?.classList.add('d-none');
                 if (fornecedorRequired) fornecedorRequired.style.display = 'inline';
-                if (custoIndustRequired) custoIndustRequired.style.display = 'inline';
+                if (servicoRequired) servicoRequired.style.display = 'inline';
                 if (fornecedorInput) fornecedorInput.setAttribute('required', 'required');
+                if (custoServicoInput) custoServicoInput.setAttribute('required', 'required');
+                document.getElementById('help-custo-servico').textContent = 'Custo do serviço terceirizado';
+                document.getElementById('formula-custo').textContent = 'Apenas Serviço';
                 break;
         }
         
@@ -589,32 +630,44 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // =========================================================================
-    // FUNÇÃO: CALCULAR CUSTO TOTAL
+    // FUNÇÃO: CALCULAR CUSTO TOTAL - ATUALIZADA
     // =========================================================================
     
     function calcularCustoTotal() {
-        const custoMedio = parseFloat(custoMedioInput?.value?.replace(',', '.')) || 0;
-        const custoIndustrializacao = parseFloat(custoIndustrializacaoInput?.value?.replace(',', '.')) || 0;
+        const custoMaterial = parseFloat(custoMaterialInput?.value?.replace(',', '.')) || 0;
+        const custoServico = parseFloat(custoServicoInput?.value?.replace(',', '.')) || 0;
         
-        const custoTotal = custoMedio + custoIndustrializacao;
+        const custoTotal = custoMaterial + custoServico;
         
-        const displayElement = document.getElementById('custo-total');
+        // Atualizar display
+        const displayElement = document.getElementById('custo-total-valor');
         if (displayElement) {
             displayElement.textContent = 'R$ ' + custoTotal.toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
             
+            // Feedback visual
             if (custoTotal > 0) {
-                displayElement.className = displayElement.className.replace('text-muted', 'text-success');
+                displayElement.className = 'fw-bold fs-5 text-success';
+                document.getElementById('display-custo-total').className = 'alert alert-success mb-0 p-2';
             } else {
-                displayElement.className = displayElement.className.replace('text-success', 'text-muted');
+                displayElement.className = 'fw-bold fs-5 text-muted';
+                document.getElementById('display-custo-total').className = 'alert alert-secondary mb-0 p-2';
             }
+        }
+        
+        // SINCRONIZAR COM CAMPOS LEGACY
+        if (custoMedioHidden) {
+            custoMedioHidden.value = custoMaterial.toFixed(2);
+        }
+        if (custoIndustrializacaoHidden) {
+            custoIndustrializacaoHidden.value = custoServico.toFixed(2);
         }
     }
     
     // =========================================================================
-    // EVENT LISTENERS
+    // EVENT LISTENERS - ATUALIZADOS
     // =========================================================================
     
     // Tipo PI
@@ -644,15 +697,15 @@ document.addEventListener('DOMContentLoaded', function() {
         ativoCheck.addEventListener('change', atualizarStatus);
     }
     
-    // Custos
-    if (custoMedioInput) {
-        custoMedioInput.addEventListener('input', calcularCustoTotal);
-        custoMedioInput.addEventListener('blur', calcularCustoTotal);
+    // NOVOS CAMPOS DE CUSTO
+    if (custoMaterialInput) {
+        custoMaterialInput.addEventListener('input', calcularCustoTotal);
+        custoMaterialInput.addEventListener('blur', calcularCustoTotal);
     }
     
-    if (custoIndustrializacaoInput) {
-        custoIndustrializacaoInput.addEventListener('input', calcularCustoTotal);
-        custoIndustrializacaoInput.addEventListener('blur', calcularCustoTotal);
+    if (custoServicoInput) {
+        custoServicoInput.addEventListener('input', calcularCustoTotal);
+        custoServicoInput.addEventListener('blur', calcularCustoTotal);
     }
     
     // =========================================================================
@@ -674,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // =========================================================================
-    // INICIALIZAÇÃO
+    // INICIALIZAÇÃO - ATUALIZADA
     // =========================================================================
     
     console.log('🚀 Executando inicialização...');
@@ -684,7 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
     atualizarSecaoEstoque();
     calcularCustoTotal();
     
-    // Se for edição, configurar campos baseados nos valores existentes
+    // Se for edição, migrar dados legacy se necessário
     {% if form.instance.pk %}
         console.log('📝 Modo edição detectado');
         
@@ -692,10 +745,25 @@ document.addEventListener('DOMContentLoaded', function() {
             updateSubgrupos(grupoSelect.value);
         }
         
+        // Migração automática de dados legacy
+        {% if form.instance.custo_medio and not form.instance.custo_material %}
+        if (custoMaterialInput && !custoMaterialInput.value) {
+            custoMaterialInput.value = '{{ form.instance.custo_medio }}';
+            console.log('🔄 Migrado custo_medio para custo_material');
+        }
+        {% endif %}
+        
+        {% if form.instance.custo_industrializacao and not form.instance.custo_servico %}
+        if (custoServicoInput && !custoServicoInput.value) {
+            custoServicoInput.value = '{{ form.instance.custo_industrializacao }}';
+            console.log('🔄 Migrado custo_industrializacao para custo_servico');
+        }
+        {% endif %}
+        
         setTimeout(calcularCustoTotal, 100);
     {% endif %}
     
-    console.log('✅ Formulário inicializado com sucesso!');
+    console.log('✅ Formulário inicializado com nova estrutura de custos!');
 });
 </script>
 {% endblock %}

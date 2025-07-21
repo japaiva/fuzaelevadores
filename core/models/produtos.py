@@ -1,5 +1,4 @@
-# core/models/produtos.py
-
+# core/models/produtos.py - ATUALIZAÇÃO: Cálculo automático de custos ao salvar
 
 from django.db import models
 from django.conf import settings
@@ -12,6 +11,8 @@ from .base import (
     UNIDADE_MEDIDA_CHOICES, 
     STATUS_PRODUTO_CHOICES
 )
+
+# Adicione estas classes no INÍCIO do arquivo core/models/produtos.py
 
 class GrupoProduto(models.Model):
     """Grupos de produtos com classificação por tipo"""
@@ -103,8 +104,8 @@ class Produto(models.Model):
         ('COMPRADO', 'Comprado Pronto'),
         ('MONTADO_INTERNO', 'Montado Internamente'),
         ('MONTADO_EXTERNO', 'Montado Externamente'),
-        ('SERVICO_INTERNO', 'Serviço Interno'),     # <<<< NOVO
-        ('SERVICO_EXTERNO', 'Serviço Externo'),     # <<<< NOVO
+        ('SERVICO_INTERNO', 'Serviço Interno'),
+        ('SERVICO_EXTERNO', 'Serviço Externo'),
     ]
     
     # Identificação
@@ -114,7 +115,7 @@ class Produto(models.Model):
     descricao = models.TextField(blank=True, verbose_name="Descrição")
     tipo = models.CharField(max_length=2, choices=TIPO_PRODUTO_CHOICES, verbose_name="Tipo")
     
-    # NOVO CAMPO: Tipo do Produto Intermediário
+    # Tipo do Produto Intermediário
     tipo_pi = models.CharField(
         max_length=20,
         choices=TIPO_PI_CHOICES,
@@ -126,13 +127,13 @@ class Produto(models.Model):
     
     # Classificação
     grupo = models.ForeignKey(
-        GrupoProduto, 
+        'GrupoProduto', 
         on_delete=models.PROTECT, 
         verbose_name="Grupo",
         related_name='produtos'
     )
     subgrupo = models.ForeignKey(
-        SubgrupoProduto, 
+        'SubgrupoProduto', 
         on_delete=models.PROTECT, 
         blank=True, 
         null=True,
@@ -162,14 +163,13 @@ class Produto(models.Model):
         help_text="Dimensões: altura, largura, profundidade, diâmetro, etc."
     )
     
-
     # Controle de estoque
     controla_estoque = models.BooleanField(default=True, verbose_name="Controla Estoque")
     estoque_minimo = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        null=True,  # <<<< ADICIONAR
-        blank=True, # <<<< ADICIONAR
+        null=True,
+        blank=True,
         verbose_name="Estoque Mínimo"
     )
     estoque_atual = models.DecimalField(
@@ -179,23 +179,49 @@ class Produto(models.Model):
         verbose_name="Estoque Atual"
     )
 
-    # Custos e preços
+    # ====================================================================
+    # CUSTOS ATUALIZADOS - SEPARAÇÃO MATERIAL E SERVIÇO
+    # ====================================================================
+    
+    custo_material = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        blank=True, 
+        null=True, 
+        verbose_name="Custo Material",
+        help_text="Custo de materiais/componentes do produto"
+    )
+    
+    custo_servico = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Custo Serviço",
+        help_text="Custo de mão de obra/serviços do produto"
+    )
+    
+    # CAMPO LEGACY - mantido para compatibilidade
     custo_medio = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
         blank=True, 
         null=True, 
-        verbose_name="Custo Médio"
+        verbose_name="Custo Médio (Legacy)",
+        help_text="Campo mantido para compatibilidade. Use custo_material + custo_servico"
     )
 
+    # CAMPO LEGACY - mantido para compatibilidade
     custo_industrializacao = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         blank=True,
         null=True,
-        verbose_name="Custo Industrialização"
+        verbose_name="Custo Industrialização (Legacy)",
+        help_text="Campo mantido para compatibilidade. Use custo_servico"
     )
 
+    # Outros campos de preço
     preco_venda = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -274,14 +300,107 @@ class Produto(models.Model):
             models.Index(fields=['tipo', 'grupo']),
             models.Index(fields=['disponivel', 'status']),
             models.Index(fields=['utilizado']),
-            models.Index(fields=['tipo_pi']),  # NOVO ÍNDICE
+            models.Index(fields=['tipo_pi']),
         ]
     
     def __str__(self):
         return f"{self.codigo} - {self.nome}"
     
-
-
+    # ====================================================================
+    # PROPRIEDADES PARA CUSTOS TOTAIS
+    # ====================================================================
+    
+    @property
+    def custo_total(self):
+        """Retorna a soma do custo material + custo serviço"""
+        custo_mat = self.custo_material or 0
+        custo_serv = self.custo_servico or 0
+        return custo_mat + custo_serv
+    
+    @property
+    def custo_total_legacy(self):
+        """Retorna a soma dos campos legacy (compatibilidade)"""
+        custo_base = self.custo_medio or 0
+        custo_indust = self.custo_industrializacao or 0
+        return custo_base + custo_indust
+    
+    # ====================================================================
+    # MÉTODOS PARA CÁLCULO AUTOMÁTICO DE CUSTOS
+    # ====================================================================
+    
+    def calcular_custo_por_estrutura(self):
+        """
+        Calcula custos de material e serviço baseado na estrutura de componentes
+        Retorna (custo_material, custo_servico)
+        """
+        if not self.pode_ter_estrutura:
+            return (0, 0)
+        
+        # Verificar se tem estrutura
+        if not hasattr(self, 'componentes') or not self.componentes.exists():
+            return (0, 0)
+        
+        custo_material_total = 0
+        custo_servico_total = 0
+        
+        for componente in self.componentes.select_related('produto_filho'):
+            produto_filho = componente.produto_filho
+            quantidade_com_perda = componente.quantidade * (1 + (componente.percentual_perda / 100))
+            
+            # Calcular custo do componente
+            if produto_filho.tipo == 'MP':
+                # Matéria-prima sempre é material
+                custo_unitario_material = produto_filho.custo_material or 0
+                custo_unitario_servico = 0
+                
+            elif produto_filho.tipo == 'PI':
+                if produto_filho.tipo_pi in ['SERVICO_INTERNO', 'SERVICO_EXTERNO']:
+                    # Serviços são 100% serviço
+                    custo_unitario_material = 0
+                    custo_unitario_servico = produto_filho.custo_total
+                else:
+                    # Outros tipos de PI: pegar os custos separados
+                    custo_unitario_material = produto_filho.custo_material or 0
+                    custo_unitario_servico = produto_filho.custo_servico or 0
+            else:
+                # PA: pegar os custos separados
+                custo_unitario_material = produto_filho.custo_material or 0
+                custo_unitario_servico = produto_filho.custo_servico or 0
+            
+            # Aplicar quantidade
+            custo_material_total += custo_unitario_material * quantidade_com_perda
+            custo_servico_total += custo_unitario_servico * quantidade_com_perda
+        
+        return (custo_material_total, custo_servico_total)
+    
+    def aplicar_custo_calculado(self, salvar=True):
+        """
+        Aplica o custo calculado pela estrutura aos campos do produto
+        """
+        if not self.pode_ter_estrutura:
+            return False
+        
+        custo_material, custo_servico = self.calcular_custo_por_estrutura()
+        
+        if custo_material > 0 or custo_servico > 0:
+            self.custo_material = custo_material
+            self.custo_servico = custo_servico
+            
+            # Manter compatibilidade com campos legacy
+            self.custo_medio = custo_material
+            self.custo_industrializacao = custo_servico
+            
+            if salvar:
+                self.save(update_fields=[
+                    'custo_material', 'custo_servico', 
+                    'custo_medio', 'custo_industrializacao',
+                    'atualizado_em', 'atualizado_por'
+                ])
+            
+            return True
+        
+        return False
+    
     def clean(self):
         """Validações personalizadas do produto"""
         super().clean()
@@ -290,26 +409,26 @@ class Produto(models.Model):
         if self.grupo and self.grupo.tipo_produto:
             self.tipo = self.grupo.tipo_produto
         
-        # ATUALIZADA: Validação tipo_pi para produtos PI
+        # Validação tipo_pi para produtos PI
         if self.tipo == 'PI':
             if not self.tipo_pi:
                 raise ValidationError({
                     'tipo_pi': 'Tipo do Produto Intermediário é obrigatório para produtos PI.'
                 })
             
-            # NOVA: Validação específica para serviços externos (requer fornecedor)
+            # Validação específica para serviços externos (requer fornecedor)
             if self.tipo_pi == 'SERVICO_EXTERNO' and not self.fornecedor_principal:
                 raise ValidationError({
                     'fornecedor_principal': 'Prestador principal é obrigatório para serviços externos.'
                 })
                 
-            # NOVA: Validação específica para produtos comprados (requer fornecedor)
+            # Validação específica para produtos comprados (requer fornecedor)
             if self.tipo_pi == 'COMPRADO' and not self.fornecedor_principal:
                 raise ValidationError({
                     'fornecedor_principal': 'Fornecedor principal é obrigatório para produtos comprados.'
                 })
                 
-            # NOVA: Validação específica para montados externos (requer fornecedor)
+            # Validação específica para montados externos (requer fornecedor)
             if self.tipo_pi == 'MONTADO_EXTERNO' and not self.fornecedor_principal:
                 raise ValidationError({
                     'fornecedor_principal': 'Fornecedor principal é obrigatório para produtos montados externamente.'
@@ -317,7 +436,124 @@ class Produto(models.Model):
         else:
             # Para MP e PA, tipo_pi deve ser None
             self.tipo_pi = None
-
+    
+    def save(self, *args, **kwargs):
+        """
+        Override do save para:
+        1. Gerar código automático
+        2. Calcular custos automaticamente para produtos montados
+        3. Manter compatibilidade com campos legacy
+        """
+        # Garantir que o tipo coincida com o grupo
+        if self.grupo and self.grupo.tipo_produto:
+            self.tipo = self.grupo.tipo_produto
+        
+        # Gerar código automático se não existir e tiver subgrupo
+        if not self.codigo and self.subgrupo:
+            with transaction.atomic():
+                subgrupo = SubgrupoProduto.objects.select_for_update().get(id=self.subgrupo.id)
+                proximo_numero = subgrupo.ultimo_numero + 1
+                
+                if proximo_numero > 99999:
+                    raise ValidationError(
+                        f'Limite de produtos atingido para o subgrupo {subgrupo.codigo_completo}. '
+                        f'Máximo permitido: 99999 produtos.'
+                    )
+                
+                self.codigo = f"{self.grupo.codigo}.{subgrupo.codigo}.{proximo_numero:05d}"
+                subgrupo.ultimo_numero = proximo_numero
+                subgrupo.save(update_fields=['ultimo_numero'])
+        
+        # ============================================================
+        # CÁLCULO AUTOMÁTICO DE CUSTOS PARA PRODUTOS MONTADOS
+        # ============================================================
+        
+        # Verificar se deve calcular custos automaticamente
+        deve_calcular_custos = (
+            self.tipo == 'PI' and 
+            self.tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO'] and
+            self.pk  # Só calcular se o produto já existe (tem estrutura)
+        )
+        
+        if deve_calcular_custos:
+            try:
+                # Tentar calcular custos pela estrutura
+                custo_material_calc, custo_servico_calc = self.calcular_custo_por_estrutura()
+                
+                if custo_material_calc > 0 or custo_servico_calc > 0:
+                    # Aplicar custos calculados
+                    self.custo_material = custo_material_calc
+                    self.custo_servico = custo_servico_calc
+                    
+                    # Manter compatibilidade com campos legacy
+                    self.custo_medio = custo_material_calc
+                    self.custo_industrializacao = custo_servico_calc
+                    
+                    # Log da operação (opcional)
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(
+                        f'Custos recalculados automaticamente para {self.codigo}: '
+                        f'Material: R$ {custo_material_calc:.2f}, '
+                        f'Serviço: R$ {custo_servico_calc:.2f}'
+                    )
+            
+            except Exception as e:
+                # Se falhar o cálculo, apenas logar o erro e continuar
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f'Falha ao calcular custos para {self.codigo}: {str(e)}')
+        
+        # Salvar o produto
+        super().save(*args, **kwargs)
+    
+    # ====================================================================
+    # MÉTODOS E PROPRIEDADES EXISTENTES (MANTIDOS)
+    # ====================================================================
+    
+    @property
+    def pode_ter_estrutura(self):
+        """Retorna True se o produto pode ter estrutura de componentes"""
+        return (
+            self.tipo == 'PI' and 
+            self.tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']
+        )
+    
+    @property
+    def tipo_pi_display_badge(self):
+        """Retorna classe CSS para badge do tipo PI"""
+        badges = {
+            'COMPRADO': 'bg-info',
+            'MONTADO_INTERNO': 'bg-success',
+            'MONTADO_EXTERNO': 'bg-warning',
+            'SERVICO_INTERNO': 'bg-secondary',
+            'SERVICO_EXTERNO': 'bg-dark',
+        }
+        return badges.get(self.tipo_pi, 'bg-primary')
+    
+    @property
+    def disponibilidade_info(self):
+        """Informações sobre disponibilidade para o motor de regras"""
+        if not self.disponivel:
+            return {
+                'disponivel': False,
+                'motivo': self.motivo_indisponibilidade,
+                'tipo': 'bloqueio_manual'
+            }
+        
+        if self.controla_estoque and self.estoque_atual <= (self.estoque_minimo or 0):
+            return {
+                'disponivel': False,
+                'motivo': f'Estoque baixo: {self.estoque_atual} (mín: {self.estoque_minimo})',
+                'tipo': 'estoque_baixo'
+            }
+            
+        return {'disponivel': True, 'motivo': '', 'tipo': 'ok'}
+    
+    @property
+    def status_utilizado_display(self):
+        """Retorna classe CSS para badge do status utilizado"""
+        return 'bg-warning' if self.utilizado else 'bg-success'
     
     def gerar_codigo_automatico(self):
         """
@@ -368,194 +604,15 @@ class Produto(models.Model):
             
             return codigo_gerado
 
-    def save(self, *args, **kwargs):
-        """
-        Override do save para gerar código automático no formato GG.SS.NNNNN
-        """
-        # Garantir que o tipo coincida com o grupo
-        if self.grupo and self.grupo.tipo_produto:
-            self.tipo = self.grupo.tipo_produto
-        
-        # Gerar código automático se não existir e tiver subgrupo
-        if not self.codigo and self.subgrupo:
-            with transaction.atomic():
-                # Buscar o subgrupo novamente para garantir dados atualizados
-                subgrupo = SubgrupoProduto.objects.select_for_update().get(id=self.subgrupo.id)
-                
-                # Incrementar o último número
-                proximo_numero = subgrupo.ultimo_numero + 1
-                
-                # Verificar limite
-                if proximo_numero > 99999:
-                    raise ValidationError(
-                        f'Limite de produtos atingido para o subgrupo {subgrupo.codigo_completo}. '
-                        f'Máximo permitido: 99999 produtos.'
-                    )
-                
-                # Gerar código: GG.SS.NNNNN (5 dígitos)
-                self.codigo = f"{self.grupo.codigo}.{subgrupo.codigo}.{proximo_numero:05d}"
-                
-                # Atualizar o último número no subgrupo
-                subgrupo.ultimo_numero = proximo_numero
-                subgrupo.save(update_fields=['ultimo_numero'])
-        
-        super().save(*args, **kwargs)
 
-    # =================================================================================
-    # NOVAS PROPERTIES E MÉTODOS PARA TIPOS DE PI
-    # =================================================================================
-    
-    @property
-    def pode_ter_estrutura(self):
-        """Retorna True se o produto pode ter estrutura de componentes"""
-        return (
-            self.tipo == 'PI' and 
-            self.tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']
-        )
-    
-    @property
-    def tipo_pi_display_badge(self):
-        """Retorna classe CSS para badge do tipo PI"""
-        badges = {
-            'COMPRADO': 'bg-info',
-            'MONTADO_INTERNO': 'bg-success',
-            'MONTADO_EXTERNO': 'bg-warning',
-            'SERVICO_INTERNO': 'bg-secondary',      # <<<< NOVO
-            'SERVICO_EXTERNO': 'bg-dark',           # <<<< NOVO
-        }
-        return badges.get(self.tipo_pi, 'bg-primary')
-    
-    
-    def calcular_custo_estrutura(self):
-        """Calcula custo baseado na estrutura de componentes"""
-        if not self.pode_ter_estrutura:
-            return None
-            
-        custo_total = 0
-        
-        for componente in self.componentes.all():
-            produto_filho = componente.produto_filho
-            quantidade = componente.quantidade
-            
-            # Pegar custo do componente
-            if produto_filho.tipo == 'MP':
-                custo_unitario = produto_filho.custo_total or 0
-            elif produto_filho.tipo == 'PI':
-                if produto_filho.tipo_pi in ['MONTADO_INTERNO', 'MONTADO_EXTERNO']:
-                    # Recursivo - calcular custo do componente primeiro
-                    custo_unitario = produto_filho.calcular_custo_estrutura() or produto_filho.custo_total or 0
-                else:
-                    custo_unitario = produto_filho.custo_total or 0
-            else:
-                custo_unitario = produto_filho.custo_total or 0
-            
-            # Aplicar quantidade e perda
-            quantidade_com_perda = quantidade * (1 + (componente.percentual_perda / 100))
-            custo_componente = custo_unitario * quantidade_com_perda
-            custo_total += custo_componente
-        
-        return custo_total
-
-    # =================================================================================
-    # PROPERTIES EXISTENTES (MANTIDAS)
-    # =================================================================================
-
-    @property
-    def disponibilidade_info(self):
-        """Informações sobre disponibilidade para o motor de regras"""
-        if not self.disponivel:
-            return {
-                'disponivel': False,
-                'motivo': self.motivo_indisponibilidade,
-                'tipo': 'bloqueio_manual'
-            }
-        
-        if self.controla_estoque and self.estoque_atual <= self.estoque_minimo:
-            return {
-                'disponivel': False,
-                'motivo': f'Estoque baixo: {self.estoque_atual} (mín: {self.estoque_minimo})',
-                'tipo': 'estoque_baixo'
-            }
-            
-        return {'disponivel': True, 'motivo': '', 'tipo': 'ok'}
-    
-    @property
-    def status_utilizado_display(self):
-        """Retorna classe CSS para badge do status utilizado"""
-        return 'bg-warning' if self.utilizado else 'bg-success'
-    
-    @property
-    def fornecedor_principal_novo(self):
-        """Retorna o fornecedor principal baseado na nova estrutura"""
-        # Se existir um relacionamento futuro com fornecedores_produto, usar:
-        if hasattr(self, 'fornecedores_produto'):
-            fornecedor_principal = self.fornecedores_produto.filter(
-                ativo=True, 
-                prioridade=1
-            ).first()
-            
-            if fornecedor_principal:
-                return fornecedor_principal.fornecedor
-        
-        # Fallback para o campo atual
-        return self.fornecedor_principal
-    
-    @property
-    def custo_total(self):
-        """Retorna a soma do custo médio + custo de industrialização"""
-        custo_base = self.custo_medio or 0
-        custo_indust = self.custo_industrializacao or 0
-        return custo_base + custo_indust
-    
-    @property
-    def melhor_preco(self):
-        """Retorna o melhor preço entre os fornecedores ativos ou preço atual"""
-        # Se existir relacionamento futuro com fornecedores_produto:
-        if hasattr(self, 'fornecedores_produto'):
-            precos = self.fornecedores_produto.filter(
-                ativo=True,
-                preco_unitario__isnull=False
-            ).values_list('preco_unitario', flat=True)
-            
-            if precos:
-                return min(precos)
-        
-        # Por enquanto, retornar o custo médio ou preço de venda
-        return self.custo_medio or self.preco_venda
-    
-    @property
-    def menor_prazo_entrega(self):
-        """Retorna o menor prazo de entrega"""
-        # Se existir relacionamento futuro com fornecedores_produto:
-        if hasattr(self, 'fornecedores_produto'):
-            prazos = self.fornecedores_produto.filter(
-                ativo=True,
-                prazo_entrega__isnull=False
-            ).values_list('prazo_entrega', flat=True)
-            
-            if prazos:
-                return min(prazos)
-        
-        # Fallback para o campo atual
-        return self.prazo_entrega_padrao
-    
-    def fornecedores_ordenados(self):
-        """Retorna fornecedores ordenados por prioridade"""
-        # Se existir relacionamento futuro com fornecedores_produto:
-        if hasattr(self, 'fornecedores_produto'):
-            return self.fornecedores_produto.filter(ativo=True).order_by('prioridade')
-        
-        # Por enquanto, retornar lista com o fornecedor principal se existir
-        if self.fornecedor_principal:
-            return [self.fornecedor_principal]
-        
-        return []
-
+# ====================================================================
+# CLASSE ESTRUTURAPRODUTO ATUALIZADA
+# ====================================================================
 
 class EstruturaProduto(models.Model):
     """
     Define a estrutura/composição de produtos intermediários e acabados
-    ATUALIZADA PARA SUPORTAR TIPOS DE PI
+    ATUALIZADA PARA SUPORTAR TIPOS DE PI E CÁLCULO AUTOMÁTICO
     """
     produto_pai = models.ForeignKey(
         Produto, 
@@ -610,6 +667,43 @@ class EstruturaProduto(models.Model):
         # Evitar referência circular
         if self.produto_pai == self.produto_filho:
             raise ValidationError('Um produto não pode ser componente de si mesmo.')
+    
+    def save(self, *args, **kwargs):
+        """
+        Override do save para recalcular custos do produto pai automaticamente
+        """
+        super().save(*args, **kwargs)
+        
+        # Recalcular custos do produto pai após salvar componente
+        if self.produto_pai and self.produto_pai.pode_ter_estrutura:
+            try:
+                self.produto_pai.aplicar_custo_calculado(salvar=True)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f'Falha ao recalcular custos do produto pai {self.produto_pai.codigo} '
+                    f'após salvar componente: {str(e)}'
+                )
+    
+    def delete(self, *args, **kwargs):
+        """
+        Override do delete para recalcular custos do produto pai após remoção
+        """
+        produto_pai = self.produto_pai
+        super().delete(*args, **kwargs)
+        
+        # Recalcular custos do produto pai após remover componente
+        if produto_pai and produto_pai.pode_ter_estrutura:
+            try:
+                produto_pai.aplicar_custo_calculado(salvar=True)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(
+                    f'Falha ao recalcular custos do produto pai {produto_pai.codigo} '
+                    f'após remover componente: {str(e)}'
+                )
     
     @property
     def quantidade_com_perda(self):

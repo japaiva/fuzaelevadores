@@ -181,7 +181,7 @@ class PermissaoPortalMiddleware:
             # Definir permissões por portal
             portal_permissions = {
                 '/gestor/': ['admin', 'gestor'],
-                '/vendedor/': ['admin', 'gestor', 'vendedor'],
+                '/vendedor/': ['admin', 'gestor', 'vendedor','engenharia'],
                 '/producao/': ['admin', 'gestor', 'producao', 'compras', 'engenharia'], # Adicione 'engenharia' aqui
                 '/configuracao/': ['admin', 'gestor'],
             }
