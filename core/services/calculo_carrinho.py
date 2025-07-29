@@ -17,7 +17,6 @@ def safe_decimal(value):
         return value
     return Decimal(str(value))
 
-
 class CalculoCarrinhoService:
     """
     Serviço para cálculo completo do carrinho (chassi + plataforma + barra roscada)

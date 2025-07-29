@@ -19,13 +19,22 @@ from core.utils.formatters import extrair_especificacoes_do_pedido
 logger = logging.getLogger(__name__)
 
 
-def safe_decimal(value: Union[int, float, str, Decimal]) -> Decimal:
-    """Converte qualquer valor numérico para Decimal de forma segura"""
+
+def safe_decimal(value: Union[int, float, str, Decimal, None]) -> Decimal:
+    """
+    Converte qualquer valor para Decimal de forma segura
+    ✅ CORREÇÃO: Trata None e valores inválidos
+    """
     if value is None:
-        return Decimal('0')
+        return Decimal('0.00')
     if isinstance(value, Decimal):
         return value
-    return Decimal(str(value))
+    try:
+        return Decimal(str(value))
+    except (ValueError, TypeError):
+        logger.warning(f"Valor inválido convertido para 0: {value}")
+        return Decimal('0.00')
+
 
 
 class CalculoPedidoService:

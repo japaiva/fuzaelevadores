@@ -1,4 +1,4 @@
-# core/forms/produtos.py - ATUALIZAÇÃO 1: FORMULÁRIOS
+# core/forms/produtos.py - ATUALIZAÇÃO 1: FORMULÁRIOS - VERSÃO CORRIGIDA COMPLETA
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -122,10 +122,12 @@ class SubgrupoProdutoForm(BaseModelForm, AuditMixin):
                 )
         return codigo
 
-# core/forms/produtos.py - PRODUTOFORM CORRIGIDO
 
 class ProdutoForm(BaseModelForm, AuditMixin):
-    """Formulário para produtos - CORRIGIDO BASEADO NO ORIGINAL"""
+    """
+    Formulário para produtos - ✅ VERSÃO CORRIGIDA COMPLETA
+    CORREÇÃO: Verificações seguras de relacionamentos
+    """
     
     class Meta:
         model = Produto
@@ -246,6 +248,48 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             'utilizado': 'Material Utilizado',
         }
 
+    # ===================================================================
+    # ✅ MÉTODOS AUXILIARES PARA VERIFICAÇÃO SEGURA DE RELACIONAMENTOS
+    # ===================================================================
+    
+    def _tem_grupo_seguro(self):
+        """
+        Verifica se a instância tem grupo de forma segura
+        Evita o erro RelatedObjectDoesNotExist
+        """
+        if not self.instance or not self.instance.pk:
+            return False
+        
+        try:
+            return bool(self.instance.grupo)
+        except:
+            return False
+
+    def _get_grupo_seguro(self):
+        """
+        Retorna o grupo da instância de forma segura
+        Retorna None se não existir ou houver erro
+        """
+        if not self._tem_grupo_seguro():
+            return None
+        
+        try:
+            return self.instance.grupo
+        except:
+            return None
+
+    def _tem_subgrupo_seguro(self):
+        """
+        Verifica se a instância tem subgrupo de forma segura
+        """
+        if not self.instance or not self.instance.pk:
+            return False
+        
+        try:
+            return bool(self.instance.subgrupo)
+        except:
+            return False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
@@ -268,11 +312,17 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         # Filtrar apenas grupos ativos
         self.fields['grupo'].queryset = GrupoProduto.objects.filter(ativo=True).order_by('codigo')
         
-        # ===== CONFIGURAÇÃO ESPECÍFICA POR TIPO DE PRODUTO =====
+        # ===== CONFIGURAÇÃO ESPECÍFICA POR TIPO DE PRODUTO - ✅ CORRIGIDA =====
         produto_tipo = None
-        if self.instance and self.instance.pk and self.instance.grupo:
-            produto_tipo = self.instance.grupo.tipo_produto
-        elif 'grupo' in self.data:
+        
+        # ✅ VERIFICAÇÃO SEGURA PARA INSTÂNCIA EXISTENTE
+        if self._tem_grupo_seguro():
+            grupo = self._get_grupo_seguro()
+            if grupo:
+                produto_tipo = grupo.tipo_produto
+        
+        # Se não conseguiu pelo instance, tentar pelos dados do formulário
+        if not produto_tipo and 'grupo' in self.data:
             try:
                 grupo_id = int(self.data.get('grupo'))
                 grupo = GrupoProduto.objects.get(id=grupo_id)
@@ -299,7 +349,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             # Configurar campos de custo baseado no tipo_pi
             tipo_pi = None
             if self.instance and self.instance.pk:
-                tipo_pi = self.instance.tipo_pi
+                tipo_pi = getattr(self.instance, 'tipo_pi', None)
             elif 'tipo_pi' in self.data:
                 tipo_pi = self.data.get('tipo_pi')
             
@@ -323,16 +373,16 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             # Ocultar tipo_pi para PA
             self.fields['tipo_pi'].widget = forms.HiddenInput()
         
-        # ===== MIGRAÇÃO AUTOMÁTICA DE DADOS LEGACY =====
+        # ===== MIGRAÇÃO AUTOMÁTICA DE DADOS LEGACY - ✅ CORRIGIDA =====
         if self.instance and self.instance.pk:
             # Se tem dados legacy mas não tem nos novos campos, migrar
-            if self.instance.custo_medio and not self.instance.custo_material:
+            if getattr(self.instance, 'custo_medio', None) and not getattr(self.instance, 'custo_material', None):
                 self.fields['custo_material'].initial = self.instance.custo_medio
             
-            if self.instance.custo_industrializacao and not self.instance.custo_servico:
+            if getattr(self.instance, 'custo_industrializacao', None) and not getattr(self.instance, 'custo_servico', None):
                 self.fields['custo_servico'].initial = self.instance.custo_industrializacao
         
-        # CONFIGURAÇÃO DINÂMICA DE SUBGRUPOS
+        # ===== CONFIGURAÇÃO DINÂMICA DE SUBGRUPOS - ✅ CORRIGIDA =====
         if 'grupo' in self.data:
             try:
                 grupo_id = int(self.data.get('grupo'))
@@ -342,13 +392,18 @@ class ProdutoForm(BaseModelForm, AuditMixin):
                 ).order_by('codigo')
             except (ValueError, TypeError):
                 self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
-        elif self.instance.pk and hasattr(self.instance, 'grupo') and self.instance.grupo:
-            self.fields['subgrupo'].queryset = self.instance.grupo.subgrupos.filter(ativo=True).order_by('codigo')
+        elif self._tem_grupo_seguro():
+            # ✅ USAR MÉTODO SEGURO
+            grupo = self._get_grupo_seguro()
+            if grupo:
+                self.fields['subgrupo'].queryset = grupo.subgrupos.filter(ativo=True).order_by('codigo')
+            else:
+                self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         else:
             self.fields['subgrupo'].queryset = SubgrupoProduto.objects.none()
         
-        # Help text apenas para modo edição
-        if self.instance.pk and self.instance.codigo:
+        # Help text apenas para modo edição - ✅ CORRIGIDO
+        if self.instance.pk and getattr(self.instance, 'codigo', None):
             self.fields['nome'].help_text = f"Código atual: {self.instance.codigo}"
 
     def clean_custo_material(self):
@@ -387,7 +442,7 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         return estoque_minimo
 
     def clean(self):
-        """Validações personalizadas - CORRIGIDAS"""
+        """Validações personalizadas - ✅ CORRIGIDAS"""
         cleaned_data = super().clean()
         grupo = cleaned_data.get('grupo')
         subgrupo = cleaned_data.get('subgrupo')
@@ -454,73 +509,77 @@ class ProdutoForm(BaseModelForm, AuditMixin):
         
         return cleaned_data
 
-def save(self, commit=True):
-    """Override para sincronizar campos legacy e definir tipo corretamente - CORRIGIDO"""
-    produto = super().save(commit=False)
-    
-    # Debug: Imprimir valores recebidos
-    print(f"🐛 DEBUG SAVE - Valores recebidos:")
-    print(f"  custo_material: {produto.custo_material}")
-    print(f"  custo_servico: {produto.custo_servico}")
-    print(f"  custo_medio (legacy): {produto.custo_medio}")
-    print(f"  custo_industrializacao (legacy): {produto.custo_industrializacao}")
-    
-    # Definir tipo baseado no grupo
-    if produto.grupo and produto.grupo.tipo_produto:
-        produto.tipo = produto.grupo.tipo_produto
-    
-    # Limpar tipo_pi se não for PI
-    if produto.tipo != 'PI':
-        produto.tipo_pi = None
-    
-    # ===== SINCRONIZAÇÃO COM CAMPOS LEGACY - CORRIGIDA =====
-    # IMPORTANTE: NÃO sobrescrever os valores novos com os legacy!
-    
-    # Manter os valores dos novos campos como estão (não mexer neles)
-    custo_material_final = produto.custo_material
-    custo_servico_final = produto.custo_servico
-    
-    # Apenas sincronizar os campos legacy para manter compatibilidade
-    if custo_material_final is not None:
-        produto.custo_medio = custo_material_final
-    else:
-        produto.custo_medio = None
+    def save(self, commit=True):
+        """
+        Override para sincronizar campos legacy e definir tipo corretamente - ✅ CORRIGIDO
+        """
+        produto = super().save(commit=False)
         
-    if custo_servico_final is not None:
-        produto.custo_industrializacao = custo_servico_final
-    else:
-        produto.custo_industrializacao = None
-    
-    # ===== REGRAS ESPECÍFICAS POR TIPO =====
-    # Para MP: garantir que custo_servico seja sempre None
-    if produto.tipo == 'MP':
-        produto.custo_servico = None
-        produto.custo_industrializacao = None
-    
-    # Para serviços: garantir que custo_material seja sempre None
-    elif produto.tipo == 'PI' and produto.tipo_pi in ['SERVICO_INTERNO', 'SERVICO_EXTERNO']:
-        produto.custo_material = None
-        produto.custo_medio = None
-    
-    # Para produtos comprados: garantir que custo_servico seja sempre None
-    elif produto.tipo == 'PI' and produto.tipo_pi == 'COMPRADO':
-        produto.custo_servico = None
-        produto.custo_industrializacao = None
-    
-    # Debug: Imprimir valores finais
-    print(f"🐛 DEBUG SAVE - Valores finais:")
-    print(f"  custo_material: {produto.custo_material}")
-    print(f"  custo_servico: {produto.custo_servico}")
-    print(f"  custo_medio (legacy): {produto.custo_medio}")
-    print(f"  custo_industrializacao (legacy): {produto.custo_industrializacao}")
-    
-    if commit:
-        produto.save()
-    
-    return produto
+        # Debug: Imprimir valores recebidos
+        print(f"🐛 DEBUG SAVE - Valores recebidos:")
+        print(f"  custo_material: {produto.custo_material}")
+        print(f"  custo_servico: {produto.custo_servico}")
+        print(f"  custo_medio (legacy): {produto.custo_medio}")
+        print(f"  custo_industrializacao (legacy): {produto.custo_industrializacao}")
+        
+        # Definir tipo baseado no grupo
+        if produto.grupo and produto.grupo.tipo_produto:
+            produto.tipo = produto.grupo.tipo_produto
+        
+        # Limpar tipo_pi se não for PI
+        if produto.tipo != 'PI':
+            produto.tipo_pi = None
+        
+        # ===== SINCRONIZAÇÃO COM CAMPOS LEGACY - CORRIGIDA =====
+        # IMPORTANTE: NÃO sobrescrever os valores novos com os legacy!
+        
+        # Manter os valores dos novos campos como estão (não mexer neles)
+        custo_material_final = produto.custo_material
+        custo_servico_final = produto.custo_servico
+        
+        # Apenas sincronizar os campos legacy para manter compatibilidade
+        if custo_material_final is not None:
+            produto.custo_medio = custo_material_final
+        else:
+            produto.custo_medio = None
+            
+        if custo_servico_final is not None:
+            produto.custo_industrializacao = custo_servico_final
+        else:
+            produto.custo_industrializacao = None
+        
+        # ===== REGRAS ESPECÍFICAS POR TIPO =====
+        # Para MP: garantir que custo_servico seja sempre None
+        if produto.tipo == 'MP':
+            produto.custo_servico = None
+            produto.custo_industrializacao = None
+        
+        # Para serviços: garantir que custo_material seja sempre None
+        elif produto.tipo == 'PI' and produto.tipo_pi in ['SERVICO_INTERNO', 'SERVICO_EXTERNO']:
+            produto.custo_material = None
+            produto.custo_medio = None
+        
+        # Para produtos comprados: garantir que custo_servico seja sempre None
+        elif produto.tipo == 'PI' and produto.tipo_pi == 'COMPRADO':
+            produto.custo_servico = None
+            produto.custo_industrializacao = None
+        
+        # Debug: Imprimir valores finais
+        print(f"🐛 DEBUG SAVE - Valores finais:")
+        print(f"  custo_material: {produto.custo_material}")
+        print(f"  custo_servico: {produto.custo_servico}")
+        print(f"  custo_medio (legacy): {produto.custo_medio}")
+        print(f"  custo_industrializacao (legacy): {produto.custo_industrializacao}")
+        
+        if commit:
+            produto.save()
+        
+        return produto
 
 
-# <<<< NOVOS FORMULÁRIOS DE FILTRO ATUALIZADOS
+# ===================================================================
+# FORMULÁRIOS DE FILTRO - SEM ALTERAÇÕES
+# ===================================================================
 
 class ProdutoFiltroForm(BaseFiltroForm):
     """Formulário para filtros na listagem de produtos - ATUALIZADO"""
@@ -549,7 +608,6 @@ class ProdutoFiltroForm(BaseFiltroForm):
         required=False,
         label='Tipo'
     )
-    # <<<< NOVO FILTRO PARA TIPO_PI
     tipo_pi = forms.ChoiceField(
         required=False,
         label='Tipo PI'
@@ -568,14 +626,10 @@ class ProdutoFiltroForm(BaseFiltroForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['tipo'].choices = [('', 'Todos os Tipos')] + get_tipo_produto_choices()
-        
-        # <<<< CONFIGURAR CHOICES DO TIPO_PI
         self.fields['tipo_pi'].choices = [('', 'Todos os Tipos PI')] + Produto.TIPO_PI_CHOICES
-        
         self.fields['q'].widget.attrs['placeholder'] = 'Buscar por código, nome ou descrição...'
 
 
-# Outros formulários permanecem inalterados...
 class GrupoProdutoFiltroForm(BaseFiltroForm):
     """Formulário para filtros na listagem de grupos - SEM ALTERAÇÕES"""
     
@@ -616,7 +670,10 @@ class SubgrupoProdutoFiltroForm(BaseFiltroForm):
         self.fields['q'].widget.attrs['placeholder'] = 'Buscar por código ou nome...'
 
 
-# Formulários simples permanecem inalterados...
+# ===================================================================
+# FORMULÁRIOS SIMPLES - SEM ALTERAÇÕES
+# ===================================================================
+
 class ProdutoEstoqueForm(forms.ModelForm):
     """Formulário simplificado para atualização de estoque - SEM ALTERAÇÕES"""
     

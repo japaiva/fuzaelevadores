@@ -698,21 +698,30 @@ class Proposta(models.Model):
             logger.error(f"Erro na exclusão da proposta {self.numero}: {str(e)}")
             raise  # Re-raise para que o erro seja tratado pela view
     
-
     def calcular_impostos_dinamicos(self, base_calculo=None):
         """
         Calcula impostos baseado no campo 'faturado_por' e parâmetros do sistema
+        ✅ CORRIGIDO: Sempre retorna Decimal, nunca None
         """
         from core.models import ParametrosGerais
+        from decimal import Decimal
+        import logging
         
-        if not self.preco_com_comissao:
-            return None
+        logger = logging.getLogger(__name__)
+        
+        # ✅ USAR base_calculo se fornecida, senão usar preco_com_comissao
+        valor_base = base_calculo or self.preco_com_comissao
+        
+        # ✅ VALIDAÇÃO: Se não tiver base de cálculo, retornar zero
+        if not valor_base:
+            logger.warning(f"Proposta {self.numero}: Sem base para cálculo de impostos")
+            return Decimal('0.00')  # ← NUNCA retorna None
         
         try:
             parametros = ParametrosGerais.objects.first()
             if not parametros:
                 # Fallback para 10% se não houver parâmetros
-                return self.preco_com_comissao * Decimal('0.10')
+                return Decimal(str(valor_base)) * Decimal('0.10')
             
             # Mapear faturado_por para o campo correto nos parâmetros
             percentual_impostos = None
@@ -726,15 +735,17 @@ class Proposta(models.Model):
             
             if percentual_impostos and percentual_impostos > 0:
                 # Converter percentual para decimal (ex: 10.5 -> 0.105)
-                percentual_decimal = percentual_impostos / Decimal('100')
-                return self.preco_com_comissao * percentual_decimal
+                percentual_decimal = Decimal(str(percentual_impostos)) / Decimal('100')
+                return Decimal(str(valor_base)) * percentual_decimal
             else:
                 # Fallback para 10% se não houver percentual configurado
-                return self.preco_com_comissao * Decimal('0.10')
+                return Decimal(str(valor_base)) * Decimal('0.10')
                 
-        except Exception:
-            # Fallback para 10% em caso de erro
-            return self.preco_com_comissao * Decimal('0.10')
+        except Exception as e:
+            logger.error(f"Erro no cálculo de impostos para proposta {self.numero}: {e}")
+            # ✅ SEMPRE retorna Decimal, mesmo em caso de erro
+            return Decimal(str(valor_base)) * Decimal('0.10')
+
 
     def calcular_precos_completo(self):
         """
