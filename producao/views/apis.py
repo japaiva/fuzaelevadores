@@ -249,3 +249,40 @@ def api_buscar_produtos(request):
             'success': False, 
             'error': str(e)
         }, status=500)
+    
+
+# ADICIONAR esta função no final do seu producao/views/apis.py:
+
+@login_required
+@require_GET
+def api_grupos_todos(request):
+    """
+    API para retornar TODOS os grupos (para reclassificação)
+    Retorna grupos MP e PI separados
+    """
+    try:
+        # Buscar todos os grupos ativos
+        grupos = GrupoProduto.objects.filter(ativo=True).order_by('tipo_produto', 'codigo')
+        
+        grupos_data = []
+        for grupo in grupos:
+            grupos_data.append({
+                'id': grupo.id,
+                'codigo': grupo.codigo,
+                'nome': grupo.nome,
+                'tipo_produto': grupo.tipo_produto,
+                'tipo_produto_display': grupo.get_tipo_produto_display()
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'grupos': grupos_data,
+            'total': len(grupos_data)
+        })
+        
+    except Exception as e:
+        logger.error(f'Erro ao buscar grupos: {str(e)}')
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=500)

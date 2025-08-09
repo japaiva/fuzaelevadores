@@ -153,7 +153,18 @@ urlpatterns = [
     path('api/estrutura/produto/<uuid:produto_id>/componentes/', 
         views.api_listar_componentes_estrutura, 
         name='api_listar_componentes_estrutura'),
+
+
+    path('api/subgrupos/', views.get_subgrupos_by_grupo, name='api_subgrupos'),
+    path('api/grupos-todos/', views.api_grupos_todos, name='api_grupos_todos'),  # ✅ NOVA
+    path('api/produto-codigo/', views.get_info_produto_codigo, name='api_produto_codigo'),
     
+    # RECLASSIFICAÇÃO DE PRODUTOS
+    path('reclassificar-produto/', views.reclassificacao.reclassificar_produto_form, name='reclassificar_produto_form'),
+    path('reclassificar-produto/executar/', views.reclassificacao.reclassificar_produto_executar, name='reclassificar_produto_executar'),
+    path('api/buscar-produto-reclassificar/', views.reclassificacao.api_buscar_produto_para_reclassificar, name='api_buscar_produto_reclassificar'),
+    path('api/preview-novo-codigo/', views.reclassificacao.api_preview_novo_codigo, name='api_preview_novo_codigo'),
+                
     # =======================================================================
     # 🆕 NOVO: API PARA RELATÓRIO DE PRODUTOS
     # =======================================================================

@@ -205,6 +205,14 @@
                      onclick="return confirm('Tem certeza que deseja excluir este produto intermediário?')">
                     <i class="fas fa-trash"></i>
                   </a>
+
+
+
+                  <a href="{% url 'producao:reclassificar_produto_form' %}?codigo={{ produto.codigo }}" 
+                    class="btn btn-outline-danger btn-sm" 
+                    title="Reclassificar este produto">
+                    <i class="fas fa-exchange-alt"></i>
+                  </a>
                 </div>
               </td>
             </tr>

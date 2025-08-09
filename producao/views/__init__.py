@@ -1,4 +1,4 @@
-# producao/views/__init__.py - CORRIGIDO
+# producao/views/__init__.py - ATUALIZADO COM RECLASSIFICAÇÃO
 
 # Dashboard e páginas principais
 from .dashboard import home, dashboard, dashboard_analytics
@@ -110,10 +110,19 @@ from .lista_materiais_itens import (
     api_buscar_produtos
 )
 
+# <<<< NOVO: MÓDULO DE RECLASSIFICAÇÃO DE PRODUTOS
+from .reclassificacao import (
+    reclassificar_produto_form,
+    reclassificar_produto_executar,
+    api_buscar_produto_para_reclassificar,
+    api_subgrupos_por_grupo_reclassificacao,
+    api_preview_novo_codigo
+)
+
 # APIs e AJAX
 from .apis import (
     get_subgrupos_by_grupo, get_info_produto_codigo,
-    api_produto_info, api_fornecedor_produtos
+    api_produto_info, api_fornecedor_produtos, api_buscar_produtos, api_grupos_todos
 )
 
 # Relatórios
@@ -123,7 +132,7 @@ from .relatorios import (
 )
 
 # =============================================================================
-# LISTA DE TODAS AS VIEWS EXPORTADAS - ATUALIZADA
+# LISTA DE TODAS AS VIEWS EXPORTADAS - ATUALIZADA COM RECLASSIFICAÇÃO
 # =============================================================================
 
 __all__ = [
@@ -205,6 +214,13 @@ __all__ = [
     'pedido_compra_update', 'pedido_compra_delete', 'pedido_compra_alterar_status',
     'pedido_compra_gerar_pdf', 'pedido_compra_duplicar',
     'pedido_compra_recebimento', 'receber_item_pedido',
+    
+    # <<<< NOVO: RECLASSIFICAÇÃO DE PRODUTOS
+    'reclassificar_produto_form',
+    'reclassificar_produto_executar',
+    'api_buscar_produto_para_reclassificar',
+    'api_subgrupos_por_grupo_reclassificacao',
+    'api_preview_novo_codigo',
     
     # APIs
     'get_subgrupos_by_grupo', 'get_info_produto_codigo',

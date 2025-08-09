@@ -1,0 +1,217 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Reclassificar Produto{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Reclassificar Produto</h5>
+      <a href="{{ request.META.HTTP_REFERER|default:'/producao/' }}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i> Voltar
+      </a>
+    </div>
+
+    <div class="card-body">
+      <div class="alert alert-warning">
+        <strong>⚠️ Atenção:</strong> Esta operação altera o código do produto permanentemente e não pode ser desfeita.
+      </div>
+
+      <form method="post" action="{% url 'producao:reclassificar_produto_executar' %}" id="form-reclassificar">
+        {% csrf_token %}
+
+        <!-- BUSCAR PRODUTO -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <label class="form-label">Código do Produto <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="codigo_original" name="codigo_original" 
+                     value="{{ request.GET.codigo|default:'' }}" required>
+              <button type="button" class="btn btn-primary" id="btn-buscar">Buscar</button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div id="produto-info" style="display: none;"></div>
+            <div id="produto-erro" style="display: none;"></div>
+          </div>
+        </div>
+
+        <!-- NOVA CLASSIFICAÇÃO -->
+        <div id="nova-classificacao" style="display: none;">
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">Novo Tipo <span class="text-danger">*</span></label>
+              <select class="form-select" id="novo_tipo" name="novo_tipo" required>
+                <option value="">Selecione</option>
+                <option value="MP">MP - Matéria Prima</option>
+                <option value="PI">PI - Produto Intermediário</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Novo Grupo <span class="text-danger">*</span></label>
+              <select class="form-select" id="novo_grupo_id" name="novo_grupo_id" required>
+                <option value="">Primeiro selecione o tipo</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Novo Subgrupo <span class="text-danger">*</span></label>
+              <select class="form-select" id="novo_subgrupo_id" name="novo_subgrupo_id" required>
+                <option value="">Primeiro selecione o grupo</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- PREVIEW -->
+          <div id="preview" class="alert alert-info" style="display: none;">
+            <strong>Preview:</strong> <span id="codigo-atual"></span> → <span id="codigo-novo"></span>
+          </div>
+
+          <button type="submit" class="btn btn-warning" id="btn-confirmar" disabled>
+            <i class="fas fa-exchange-alt"></i> Confirmar Reclassificação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let produtoAtual = null;
+
+// Buscar produto
+document.getElementById('btn-buscar').onclick = function() {
+  const codigo = document.getElementById('codigo_original').value.trim();
+  if (!codigo) return;
+
+  fetch(`/producao/api/buscar-produto-reclassificar/?codigo=${codigo}`)
+    .then(r => r.json())
+    .then(data => {
+      const infoDiv = document.getElementById('produto-info');
+      const erroDiv = document.getElementById('produto-erro');
+      
+      if (data.success) {
+        produtoAtual = data.produto;
+        infoDiv.innerHTML = `
+          <div class="alert alert-success">
+            <strong>${data.produto.codigo}</strong> - ${data.produto.nome}<br>
+            <small>Tipo: ${data.produto.tipo_display}</small>
+          </div>
+        `;
+        infoDiv.style.display = 'block';
+        erroDiv.style.display = 'none';
+        document.getElementById('nova-classificacao').style.display = 'block';
+        document.getElementById('codigo-atual').textContent = data.produto.codigo;
+      } else {
+        erroDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        erroDiv.style.display = 'block';
+        infoDiv.style.display = 'none';
+        document.getElementById('nova-classificacao').style.display = 'none';
+      }
+    });
+};
+
+// ✅ USAR API EXISTENTE DE GRUPOS
+document.getElementById('novo_tipo').onchange = function() {
+  const tipo = this.value;
+  const grupoSelect = document.getElementById('novo_grupo_id');
+  const subgrupoSelect = document.getElementById('novo_subgrupo_id');
+  
+  grupoSelect.innerHTML = '<option value="">Carregando...</option>';
+  subgrupoSelect.innerHTML = '<option value="">Primeiro selecione o grupo</option>';
+  
+  if (tipo) {
+    // ✅ USAR A API QUE ADICIONAMOS NO apis.py
+    fetch('/producao/api/grupos-todos/')
+      .then(r => r.json())
+      .then(data => {
+        grupoSelect.innerHTML = '<option value="">Selecione o grupo</option>';
+        
+        if (data.success && data.grupos) {
+          // Filtrar grupos pelo tipo selecionado
+          const gruposFiltrados = data.grupos.filter(g => g.tipo_produto === tipo);
+          gruposFiltrados.forEach(g => {
+            grupoSelect.innerHTML += `<option value="${g.id}">${g.codigo} - ${g.nome}</option>`;
+          });
+          
+          if (gruposFiltrados.length === 0) {
+            grupoSelect.innerHTML = `<option value="">Nenhum grupo ${tipo} encontrado</option>`;
+          }
+        }
+      })
+      .catch(error => {
+        grupoSelect.innerHTML = '<option value="">Erro ao carregar grupos</option>';
+        console.error('Erro ao carregar grupos:', error);
+      });
+  }
+  
+  atualizarPreview();
+};
+
+// ✅ USAR API EXISTENTE DE SUBGRUPOS
+document.getElementById('novo_grupo_id').onchange = function() {
+  const grupoId = this.value;
+  const subgrupoSelect = document.getElementById('novo_subgrupo_id');
+  
+  subgrupoSelect.innerHTML = '<option value="">Carregando...</option>';
+  
+  if (grupoId) {
+    // ✅ USAR A API QUE JÁ EXISTE: /api/subgrupos/
+    fetch(`/producao/api/subgrupos/?grupo_id=${grupoId}`)
+      .then(r => r.json())
+      .then(data => {
+        subgrupoSelect.innerHTML = '<option value="">Selecione o subgrupo</option>';
+        if (data.success && data.subgrupos) {
+          data.subgrupos.forEach(s => {
+            subgrupoSelect.innerHTML += `<option value="${s.id}">${s.codigo} - ${s.nome}</option>`;
+          });
+        }
+      })
+      .catch(error => {
+        subgrupoSelect.innerHTML = '<option value="">Erro ao carregar subgrupos</option>';
+        console.error('Erro ao carregar subgrupos:', error);
+      });
+  }
+  
+  atualizarPreview();
+};
+
+// Preview
+document.getElementById('novo_subgrupo_id').onchange = atualizarPreview;
+
+function atualizarPreview() {
+  const grupoId = document.getElementById('novo_grupo_id').value;
+  const subgrupoId = document.getElementById('novo_subgrupo_id').value;
+  const previewDiv = document.getElementById('preview');
+  const btnConfirmar = document.getElementById('btn-confirmar');
+  
+  if (grupoId && subgrupoId) {
+    fetch(`/producao/api/preview-novo-codigo/?grupo_id=${grupoId}&subgrupo_id=${subgrupoId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('codigo-novo').textContent = data.preview.codigo_completo;
+          previewDiv.style.display = 'block';
+          btnConfirmar.disabled = false;
+        }
+      });
+  } else {
+    previewDiv.style.display = 'none';
+    btnConfirmar.disabled = true;
+  }
+}
+
+// Buscar automaticamente se código veio na URL
+if (document.getElementById('codigo_original').value) {
+  setTimeout(() => {
+    document.getElementById('btn-buscar').click();
+  }, 500);
+}
+
+// Confirmação
+document.getElementById('form-reclassificar').onsubmit = function(e) {
+  if (!confirm('Tem certeza? Esta operação não pode ser desfeita!')) {
+    e.preventDefault();
+  }
+};
+</script>
+{% endblock %}
