@@ -1,4 +1,4 @@
-# producao/views/__init__.py - ATUALIZADO COM RECLASSIFICAÇÃO
+# producao/views/__init__.py - ATUALIZADO COM MOTOR DE REGRAS COMPLETO
 
 # Dashboard e páginas principais
 from .dashboard import home, dashboard, dashboard_analytics
@@ -46,8 +46,6 @@ from .materias_primas import (
     materiaprima_detail, materiaprima_delete, materiaprima_toggle_status,
     materiaprima_toggle_utilizado
 )
-
-# <<<< PRODUTOS INTERMEDIÁRIOS COM IMPORT CORRIGIDO
 from .produtos_intermediarios import (
     # Views básicas CRUD
     produto_intermediario_list, produto_intermediario_create, produto_intermediario_update,
@@ -110,7 +108,6 @@ from .lista_materiais_itens import (
     api_buscar_produtos
 )
 
-# <<<< NOVO: MÓDULO DE RECLASSIFICAÇÃO DE PRODUTOS
 from .reclassificacao import (
     reclassificar_produto_form,
     reclassificar_produto_executar,
@@ -132,7 +129,23 @@ from .relatorios import (
 )
 
 # =============================================================================
-# LISTA DE TODAS AS VIEWS EXPORTADAS - ATUALIZADA COM RECLASSIFICAÇÃO
+# REGRAS YAML - SISTEMA CONFIGURÁVEL SIMPLES
+# =============================================================================
+from .regras_yaml import (
+    # CRUD Regras YAML
+    regras_yaml_list,
+    regra_yaml_create,
+    regra_yaml_detail,
+    regra_yaml_update,
+    regra_yaml_delete,
+    
+    # Actions Regras YAML
+    regra_yaml_toggle_status,
+    regra_yaml_validar,
+)
+
+# =============================================================================
+# LISTA DE TODAS AS VIEWS EXPORTADAS - ATUALIZADA COM MOTOR DE REGRAS COMPLETO
 # =============================================================================
 
 __all__ = [
@@ -221,14 +234,27 @@ __all__ = [
     'api_buscar_produto_para_reclassificar',
     'api_subgrupos_por_grupo_reclassificacao',
     'api_preview_novo_codigo',
+
+    # CRUD Regras YAML
+    'regras_yaml_list',
+    'regra_yaml_create',
+    'regra_yaml_detail',
+    'regra_yaml_update',
+    'regra_yaml_delete',
     
-    # APIs
+    # Actions Regras YAML
+    'regra_yaml_toggle_status',
+    'regra_yaml_validar',
+
+    # APIs Gerais
     'get_subgrupos_by_grupo', 'get_info_produto_codigo',
     'api_produto_info', 'api_fornecedor_produtos',
     'api_tipo_pi_info',  # API PARA TIPOS PI
     
-    # Relatórios
+    # Relatórios Gerais
     'relatorio_estoque_baixo', 'relatorio_produtos_sem_fornecedor',
     'relatorio_producao',
     'relatorio_produtos_pi_por_tipo',  # NOVO RELATÓRIO PI
+    'relatorio_produtos_completo',      # RELATÓRIO PRODUTOS COMPLETO
+    'api_subgrupos_por_grupo_relatorio', # API PARA RELATÓRIOS
 ]

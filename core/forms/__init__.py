@@ -60,17 +60,6 @@ from .produtos import (
     ProdutoPrecoForm
 )
 
-# === FORMULÁRIOS DE ELEVADORES ===
-from .elevadores import (
-    EspecificacaoElevadorForm,
-    OpcaoEspecificacaoForm,
-    RegraComponenteForm,
-    ComponenteDerivadoForm,
-    SimulacaoElevadorForm,
-    EspecificacaoFiltroForm,
-    SimulacaoFiltroForm
-)
-
 # === FORMULÁRIOS DE COMPRAS ===
 from .compras import (
     PedidoCompraForm,
@@ -117,6 +106,12 @@ from .producao import (
     ItemOrcamentoCompraFormSet,
     OrcamentoCompraFiltroForm,
     AlterarStatusOrcamentoForm,
+)
+
+# === FORMULÁRIOS DE REGRAS YAML ===
+from .regras_yaml import (
+    RegraYAMLForm,
+    RegraYAMLFiltroForm
 )
 
 # === LISTA DE TODOS OS FORMULÁRIOS DISPONÍVEIS ===
@@ -166,15 +161,6 @@ __all__ = [
     'ProdutoEstoqueForm',
     'ProdutoPrecoForm',
     
-    # Elevadores
-    'EspecificacaoElevadorForm',
-    'OpcaoEspecificacaoForm',
-    'RegraComponenteForm',
-    'ComponenteDerivadoForm',
-    'SimulacaoElevadorForm',
-    'EspecificacaoFiltroForm',
-    'SimulacaoFiltroForm',
-    
     # Compras
     'PedidoCompraForm',
     'ItemPedidoCompraForm',
@@ -209,4 +195,8 @@ __all__ = [
     'ItemOrcamentoCompraFormSet',
     'OrcamentoCompraFiltroForm',
     'AlterarStatusOrcamentoForm',
+    
+    # Regras YAML - Motor de Regras Configurável
+    'RegraYAMLForm',
+    'RegraYAMLFiltroForm',
 ]

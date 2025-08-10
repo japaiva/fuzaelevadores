@@ -1,0 +1,140 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Excluir Regra | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card shadow border-danger">
+    <div class="card-header bg-danger text-white">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-trash-alt me-2"></i>
+        Confirmar Exclusão
+      </h5>
+    </div>
+
+    <div class="card-body">
+      <div class="alert alert-warning">
+        <h6><i class="fas fa-exclamation-triangle me-2"></i>Atenção!</h6>
+        <p class="mb-0">
+          Esta ação <strong>não pode ser desfeita</strong>. 
+          A regra será permanentemente removida do sistema.
+        </p>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <h6>Detalhes da Regra</h6>
+          <table class="table table-sm">
+            <tr>
+              <td><strong>Tipo:</strong></td>
+              <td><span class="badge bg-primary">{{ regra.get_tipo_display }}</span></td>
+            </tr>
+            <tr>
+              <td><strong>Nome:</strong></td>
+              <td>{{ regra.nome }}</td>
+            </tr>
+            <tr>
+              <td><strong>Versão:</strong></td>
+              <td><span class="badge bg-secondary">v{{ regra.versao }}</span></td>
+            </tr>
+            <tr>
+              <td><strong>Status:</strong></td>
+              <td>
+                {% if regra.ativa %}
+                  <span class="badge bg-success">Ativa</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativa</span>
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+        </div>
+        
+        <div class="col-md-6">
+          <h6>Informações de Criação</h6>
+          <table class="table table-sm">
+            <tr>
+              <td><strong>Criado em:</strong></td>
+              <td>{{ regra.criado_em|date:"d/m/Y H:i" }}</td>
+            </tr>
+            <tr>
+              <td><strong>Criado por:</strong></td>
+              <td>{{ regra.criado_por.first_name|default:regra.criado_por.username }}</td>
+            </tr>
+            <tr>
+              <td><strong>Última atualização:</strong></td>
+              <td>{{ regra.atualizado_em|date:"d/m/Y H:i" }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      {% if regra.descricao %}
+      <div class="row mt-3">
+        <div class="col-12">
+          <h6>Descrição</h6>
+          <p class="text-muted">{{ regra.descricao }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="row mt-3">
+        <div class="col-12">
+          <h6>Preview do Conteúdo YAML</h6>
+          <div class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">
+            <pre class="mb-0 small"><code>{{ regra.conteudo_yaml|truncatechars:500 }}</code></pre>
+            {% if regra.conteudo_yaml|length > 500 %}
+              <div class="text-muted small mt-2">
+                <i class="fas fa-info-circle me-1"></i>
+                Conteúdo truncado para visualização. Total: {{ regra.conteudo_yaml|length }} caracteres.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-footer bg-light">
+      <form method="post" class="d-inline">
+        {% csrf_token %}
+        <div class="d-flex justify-content-between align-items-center">
+          <a href="{% url 'producao:regras_yaml_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Cancelar
+          </a>
+          
+          <div class="d-flex gap-2">
+            <a href="{% url 'producao:regra_yaml_detail' regra.pk %}" class="btn btn-outline-info">
+              <i class="fas fa-eye me-1"></i> Visualizar Detalhes
+            </a>
+            <button type="submit" class="btn btn-danger">
+              <i class="fas fa-trash-alt me-1"></i> 
+              Confirmar Exclusão
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmação adicional antes de excluir
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const confirmacao = confirm(
+                'Tem absoluta certeza que deseja excluir esta regra?\n\n' +
+                'Esta ação é IRREVERSÍVEL!'
+            );
+            
+            if (!confirmacao) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

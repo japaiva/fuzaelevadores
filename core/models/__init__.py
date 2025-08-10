@@ -11,13 +11,6 @@ from .fornecedores import Fornecedor, FornecedorProduto
 from .parametros import ParametrosGerais
 from .produtos import GrupoProduto, SubgrupoProduto, Produto, EstruturaProduto
 from .compras import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
-from .elevadores import (
-    EspecificacaoElevador, 
-    OpcaoEspecificacao, 
-    RegraComponente, 
-    ComponenteDerivado, 
-    SimulacaoElevador
-)
 from .propostas import Proposta, HistoricoProposta, AnexoProposta, ParcelaProposta
 
 # === MODELS DE PRODUÇÃO ===
@@ -32,6 +25,9 @@ from .producao import (
 )
 
 from .portas_pavimento import PortaPavimento
+
+# === MOTOR DE REGRAS ===
+from .regras_yaml import RegraYAML, TipoRegra
 
 # === LISTA ESSENCIAL ===
 __all__ = [
@@ -49,18 +45,12 @@ __all__ = [
     'GrupoProduto',
     'SubgrupoProduto', 
     'Produto',
+    'EstruturaProduto',
     
     # Compras
     'PedidoCompra',
     'ItemPedidoCompra',
     'HistoricoPedidoCompra',
-    
-    # Elevadores
-    'EspecificacaoElevador',
-    'OpcaoEspecificacao',
-    'RegraComponente',
-    'ComponenteDerivado',
-    'SimulacaoElevador',
     
     # Propostas
     'Proposta',
@@ -77,4 +67,8 @@ __all__ = [
     'OrcamentoCompra',
     'ItemOrcamentoCompra',
     'HistoricoOrcamentoCompra',
+    
+    # Motor de Regras
+    'RegraYAML',
+    'TipoRegra',
 ]

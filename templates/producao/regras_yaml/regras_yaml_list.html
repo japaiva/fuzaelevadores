@@ -1,0 +1,173 @@
+{% extends 'producao/base_producao.html' %}
+{% load formato_br %}
+
+{% block title %}Motor de Regras YAML | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-cogs me-2"></i> Motor de Regras YAML
+    </h5>
+    <div>
+      <a href="{% url 'producao:regra_yaml_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Nova Regra
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm me-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-header bg-white">
+    <div class="row">
+      <div class="col-md-8">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-auto">
+            {{ form_filtro.tipo }}
+          </div>
+          <div class="col-auto">
+            {{ form_filtro.status }}
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-filter"></i> Filtrar
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="col-md-4">
+        <form method="get" class="d-flex">
+          {{ form_filtro.q }}
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Tipo</th>
+            <th>Nome</th>
+            <th>Descrição</th>
+            <th style="width: 80px;">Versão</th>
+            <th class="text-center" style="width: 80px;">Validado</th>
+            <th class="text-center" style="width: 80px;">Status</th>
+            <th class="text-center" style="min-width: 150px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for regra in regras %}
+            <tr>
+              <td>
+                <span class="badge bg-primary">{{ regra.get_tipo_display }}</span>
+              </td>
+              <td>
+                <strong>{{ regra.nome }}</strong>
+              </td>
+              <td>
+                <small class="text-muted">{{ regra.descricao|truncatechars:60 }}</small>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-secondary">v{{ regra.versao }}</span>
+              </td>
+              <td class="text-center">
+                {% if regra.validado %}
+                  <span class="badge bg-success" title="Regra validada">
+                    <i class="fas fa-check"></i>
+                  </span>
+                {% else %}
+                  <span class="badge bg-warning" title="{{ regra.ultimo_erro }}">
+                    <i class="fas fa-exclamation-triangle"></i>
+                  </span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if regra.ativa %}
+                  <span class="badge bg-success">Ativa</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativa</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:regra_yaml_detail' regra.pk %}" 
+                     class="btn btn-outline-info btn-sm" 
+                     title="Visualizar">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="{% url 'producao:regra_yaml_update' regra.pk %}" 
+                     class="btn btn-outline-primary btn-sm" 
+                     title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'producao:regra_yaml_validar' regra.pk %}" 
+                     class="btn btn-outline-warning btn-sm" 
+                     title="Validar">
+                    <i class="fas fa-check-circle"></i>
+                  </a>
+                  <a href="{% url 'producao:regra_yaml_toggle_status' regra.pk %}" 
+                     class="btn btn-sm {% if regra.ativa %}btn-outline-warning{% else %}btn-outline-success{% endif %}" 
+                     title="{% if regra.ativa %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if regra.ativa %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                  </a>
+                  <a href="{% url 'producao:regra_yaml_delete' regra.pk %}" 
+                     class="btn btn-outline-danger btn-sm" 
+                     title="Excluir"
+                     onclick="return confirm('Tem certeza que deseja excluir esta regra?')">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="fas fa-cogs fa-2x mb-2 text-muted"></i>
+                <div>Nenhuma regra cadastrada.</div>
+                <a href="{% url 'producao:regra_yaml_create' %}" class="btn btn-sm btn-primary mt-2">
+                  <i class="fas fa-plus me-1"></i> Cadastrar Primeira Regra
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  {% if regras.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="text-muted small">
+        Mostrando {{ regras.start_index }} a {{ regras.end_index }} de {{ regras.paginator.count }} regras
+      </div>
+      <nav aria-label="Navegação de página">
+        <ul class="pagination pagination-sm mb-0">
+          {% if regras.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ regras.previous_page_number }}">Anterior</a>
+            </li>
+          {% endif %}
+          
+          <li class="page-item active">
+            <span class="page-link">{{ regras.number }}</span>
+          </li>
+          
+          {% if regras.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ regras.next_page_number }}">Próximo</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}{{ titulo }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus{% endif %} me-2"></i>
+      {{ titulo }}
+    </h5>
+    <a href="{% url 'producao:regras_yaml_list' %}" class="btn btn-outline-light btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          <h6><i class="fas fa-exclamation-triangle me-1"></i> Erros no Formulário:</h6>
+          {% for error in form.non_field_errors %}
+            <p class="mb-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label for="{{ form.tipo.id_for_label }}" class="form-label">
+            {{ form.tipo.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.tipo.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="form-text">{{ form.tipo.help_text }}</div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="{{ form.nome.id_for_label }}" class="form-label">
+            {{ form.nome.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.nome }}
+          {% if form.nome.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.nome.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="form-text">{{ form.nome.help_text }}</div>
+        </div>
+
+        <div class="col-md-2">
+          <div class="form-check form-switch mt-4">
+            {{ form.ativa }}
+            <label class="form-check-label fw-semibold" for="{{ form.ativa.id_for_label }}">
+              {{ form.ativa.label }}
+            </label>
+            {% if form.ativa.help_text %}
+              <div class="form-text">{{ form.ativa.help_text }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-12">
+          <label for="{{ form.descricao.id_for_label }}" class="form-label">
+            {{ form.descricao.label }}
+          </label>
+          {{ form.descricao }}
+          {% if form.descricao.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="form-text">{{ form.descricao.help_text }}</div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-3">
+        <div class="col-12">
+          <label for="{{ form.conteudo_yaml.id_for_label }}" class="form-label">
+            {{ form.conteudo_yaml.label }} <span class="text-danger">*</span>
+          </label>
+          {{ form.conteudo_yaml }}
+          {% if form.conteudo_yaml.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.conteudo_yaml.errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+          <div class="form-text">{{ form.conteudo_yaml.help_text }}</div>
+        </div>
+      </div>
+
+      {% if form.instance.pk %}
+      <div class="row g-3 mt-3">
+        <div class="col-12">
+          <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle me-1"></i> Informações da Regra</h6>
+            <p class="mb-1"><strong>Versão:</strong> {{ form.instance.versao }}</p>
+            <p class="mb-1"><strong>Criado em:</strong> {{ form.instance.criado_em|date:"d/m/Y H:i" }} por {{ form.instance.criado_por.first_name|default:form.instance.criado_por.username }}</p>
+            <p class="mb-1"><strong>Última atualização:</strong> {{ form.instance.atualizado_em|date:"d/m/Y H:i" }} por {{ form.instance.atualizado_por.first_name|default:form.instance.atualizado_por.username }}</p>
+            <p class="mb-0">
+              <strong>Status de Validação:</strong>
+              {% if form.instance.validado %}
+                <span class="badge bg-success">Validado</span>
+              {% else %}
+                <span class="badge bg-warning">Precisa validar</span>
+                {% if form.instance.ultimo_erro %}
+                  <br><small class="text-muted">{{ form.instance.ultimo_erro }}</small>
+                {% endif %}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="d-flex justify-content-between align-items-center mt-4 p-3 bg-light rounded">
+        <div>
+          {% if form.instance.pk %}
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>
+              Última atualização: {{ form.instance.atualizado_em|date:"d/m/Y H:i" }}
+            </small>
+          {% endif %}
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'producao:regras_yaml_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i> 
+            {% if form.instance.pk %}Atualizar{% else %}Salvar{% endif %} Regra
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.font-monospace {
+  font-family: 'Courier New', Consolas, Monaco, monospace;
+  font-size: 14px;
+}
+</style>
+{% endblock %}

@@ -26,30 +26,27 @@
     <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
         Matérias-Primas
     </a></li>
-       <li><a class="dropdown-item" href="{% url 'producao:produto_intermediario_list' %}">
+    <li><a class="dropdown-item" href="{% url 'producao:produto_intermediario_list' %}">
         Produtos Intermediários
     </a></li>
-
     <li><a class="dropdown-item" href="{% url 'producao:grupo_list' %}">
         Grupos de Produtos
     </a></li>
     <li><a class="dropdown-item" href="{% url 'producao:subgrupo_list' %}">
         Subgrupos de Produtos
-
-
+    </a></li>
   </ul>
 </li>
 
 <!-- Menu de Compras e Orçamentos -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'compra' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'requisicao' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'compra' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'requisicao' in request.resolver_match.url_name or 'proposta' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Suprimentos
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'producao:proposta_list_producao' %}">
         Propostas
     </a></li>
-
     <li><a class="dropdown-item" href="{% url 'producao:requisicao_compra_list' %}">
         Requisições de Compra
     </a></li>
@@ -60,21 +57,22 @@
     <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
         Pedidos de Compra
     </a></li>
-
   </ul>
 </li>
 
 <!-- Relatórios -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'compra' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'requisicao' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Relatórios
+  <a class="nav-link dropdown-toggle {% if 'relatorio' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Adm
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'producao:relatorio_produtos_completo' %}">
         Relatório de Produtos
     </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:regras_yaml_list' %}">
+        Gerenciar Regras Cálculo
+    </a></li>
   </ul>
 </li>
-
 
 {% endblock %}

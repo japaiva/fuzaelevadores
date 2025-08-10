@@ -15,14 +15,11 @@ from django.db.models.deletion import ProtectedError
 
 from core.models import (
     Usuario, Produto, GrupoProduto, SubgrupoProduto, Fornecedor,
-    EspecificacaoElevador, OpcaoEspecificacao, RegraComponente,
-    ComponenteDerivado, SimulacaoElevador, Cliente, ParametrosGerais
+    Cliente, ParametrosGerais
 )
 from core.forms import (
     UsuarioForm, ProdutoForm, GrupoProdutoForm, SubgrupoProdutoForm, 
-    FornecedorForm, EspecificacaoElevadorForm, OpcaoEspecificacaoForm,
-    RegraComponenteForm, ComponenteDerivadoForm, ClienteForm,
-    ParametrosGeraisForm
+    FornecedorForm, ClienteForm,ParametrosGeraisForm
 )
 
 logger = logging.getLogger(__name__)
@@ -43,7 +40,6 @@ def dashboard(request):
         'total_usuarios': Usuario.objects.count(),
         'total_produtos': Produto.objects.count(),
         'total_fornecedores': Fornecedor.objects.filter(ativo=True).count(),
-        'total_simulacoes': SimulacaoElevador.objects.count(),
         'produtos_sem_estoque': Produto.objects.filter(
             controla_estoque=True, 
             estoque_atual__lte=models.F('estoque_minimo')

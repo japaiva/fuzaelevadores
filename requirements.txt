@@ -9,6 +9,7 @@ djangorestframework==3.16.0
 et_xmlfile==2.0.0
 git-filter-repo==2.47.0
 jmespath==1.0.1
+Levenshtein==0.27.1
 numpy==2.2.6
 openpyxl==3.1.5
 pandas==2.3.0
@@ -16,8 +17,11 @@ pillow==11.2.1
 psycopg2-binary==2.9.10
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
+python-Levenshtein==0.27.1
 pytz==2025.2
-reportlab==4.4.1
+PyYAML==6.0.2
+RapidFuzz==3.13.0
+reportlab==4.0.4
 s3transfer==0.12.0
 six==1.17.0
 sqlparse==0.5.3
