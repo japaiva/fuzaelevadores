@@ -1,278 +1,545 @@
-# core/services/calculo_pedido_yaml.py
-from decimal import Decimal
-from typing import Any, Dict, List, Optional
-import math
+# core/services/calculo_pedido_yaml_evolved.py
+"""
+Parser YAML evoluído para suportar o novo formato mais elegante
+- Templates com {{ variavel }}
+- Sistema switch/casos
+- Lookups por painel_catalogo
+- Estrutura de subcategorias
+"""
+
+from __future__ import annotations
+import re
 import yaml
+import logging
+from decimal import Decimal
+from typing import Any, Dict, List, Optional, Union
+from jinja2 import Template, Environment, BaseLoader
 
 from core.models import Produto
 from core.models.regras_yaml import RegraYAML
+from core.services.config_repo_db import ConfigRepoDB
 
-# ------------------------------------------------------------
-# Loader das regras (DB -> dict)
-# ------------------------------------------------------------
-class ConfigRepoDB:
-    def load(self, nome: str) -> Dict[str, Any]:
-        obj = (RegraYAML.objects
-               .filter(tipo=nome, ativa=True)
-               .order_by("-atualizado_em")
-               .first())
-        if not obj:
-            return {}
-        return yaml.safe_load(obj.conteudo_yaml) or {}
+logger = logging.getLogger(__name__)
 
-# ------------------------------------------------------------
-# Utilitários p/ fórmulas (whitelist)
-# ------------------------------------------------------------
-SAFE_FUNCS = {
-    "abs": abs,
-    "ceil": math.ceil,
-    "floor": math.floor,
-    "min": min,
-    "max": max,
-    "round": round,
-}
-def case(*args):
-    # case(cond1, val1, cond2, val2, ..., default)
-    if not args:
-        return None
-    if len(args) % 2 == 0:
-        args = (*args, None)
-    *pairs, default = args
-    for i in range(0, len(pairs), 2):
-        if pairs[i]:
-            return pairs[i+1]
-    return default
-SAFE_FUNCS["case"] = case
 
-def _eval_formula(expr: str, ctx: Dict[str, Any]) -> Decimal:
-    if not expr:
-        return Decimal("0")
-    class DotDict(dict):
-        __getattr__ = dict.get
-    safe_ctx = {k: DotDict(v) if isinstance(v, dict) else v for k, v in ctx.items()}
-    safe_ctx.update(SAFE_FUNCS)
-    val = eval(expr, {"__builtins__": {}}, safe_ctx)  # ambiente fechado
-    return Decimal(str(val))
+# ============================================================================
+# Helpers e Utilities
+# ============================================================================
 
-# ------------------------------------------------------------
-# Resolvers de regras
-# ------------------------------------------------------------
-def _resolve_painel_catalogo(cfg: Dict[str, Any], material: str, esp: str) -> Optional[str]:
-    for row in (cfg.get("painel_catalogo") or []):
-        if str(row.get("material")) == str(material) and str(row.get("espessura")) == str(esp):
-            return row.get("codigo_produto")
-    return None
+def d(x: Any, default: str = "0") -> Decimal:
+    """Converte qualquer valor para Decimal, tratando None/""/inválidos como 0."""
+    if x is None or x == "":
+        return Decimal(default)
+    try:
+        return Decimal(str(x))
+    except Exception:
+        return Decimal(default)
 
-def _resolve_by_capacidade(rules, cap: float) -> Optional[str]:
-    for r in (rules or []):
-        mn, mx = r.get("min"), r.get("max")
-        if (mn is None or cap >= mn) and (mx is None or cap <= mx):
-            return r.get("codigo_produto")
-    return None
 
-def _resolve_by_cap_vel(rules, cap: float, vel: float) -> Optional[str]:
-    for r in (rules or []):
-        ok_cap = (r.get("cap_min") is None or cap >= r["cap_min"]) and (r.get("cap_max") is None or cap <= r["cap_max"])
-        ok_vel = (r.get("vel_max") is None or vel <= r["vel_max"])
-        if ok_cap and ok_vel:
-            return r.get("codigo_produto")
-    return None
+def safe_float(x: Any) -> float:
+    """Converte para float; se None/erro, retorna 0.0."""
+    try:
+        if x is None:
+            return 0.0
+        return float(x)
+    except Exception:
+        return 0.0
 
-def _resolve_by_tipo_vao(rules, tipo: str, vao: float, folhas: int) -> Optional[str]:
-    for r in (rules or []):
-        if (r.get("tipo") == tipo) and \
-           (r.get("vao_min") is None or vao >= r["vao_min"]) and (r.get("vao_max") is None or vao <= r["vao_max"]) and \
-           (r.get("folhas") is None or folhas == r["folhas"]):
-            return r.get("codigo_produto")
-    return None
 
-def _resolve_by_linha(rules, linha: str) -> Optional[str]:
-    for r in (rules or []):
-        if r.get("linha") == linha:
-            return r.get("codigo_produto")
-    return None
+def safe_int(x: Any) -> int:
+    """Converte para int; se None/erro, retorna 0."""
+    try:
+        return int(x) if x is not None else 0
+    except Exception:
+        return 0
 
-# ------------------------------------------------------------
-# Agregador de itens
-# ------------------------------------------------------------
-def _add_item(itens, custos_db, codigo: str, qtd: Decimal, origem: str, trace: List[Dict[str, Any]]):
-    if not codigo or qtd <= 0:
-        return
-    prod = custos_db.get(codigo) or Produto.objects.filter(codigo=codigo).first()
-    if not prod:
-        trace.append({"origem": origem, "codigo": codigo, "qtd": str(qtd), "motivo": "produto_nao_encontrado"})
-        return
-    vu = Decimal(str(getattr(prod, "custo_total", "0")))
-    if codigo not in itens:
-        itens[codigo] = {
-            "codigo": codigo,
-            "descricao": getattr(prod, "nome", ""),
-            "quantidade": Decimal("0"),
-            "valor_unitario": vu,
-            "valor_total": Decimal("0"),
+
+# ============================================================================
+# Sistema de Templates Jinja2
+# ============================================================================
+
+class TemplateProcessor:
+    """Processa templates {{ variavel }} usando Jinja2"""
+    
+    def __init__(self):
+        self.env = Environment(loader=BaseLoader())
+        # Adicionar funções helper ao ambiente
+        self.env.globals.update({
+            'max': max,
+            'min': min,
+            'round': round,
+            'abs': abs,
+        })
+    
+    def render(self, template_str: str, context: Dict[str, Any]) -> str:
+        """Renderiza template com contexto"""
+        try:
+            if not isinstance(template_str, str):
+                return str(template_str)
+            
+            # Se não tem template, retorna direto
+            if '{{' not in template_str:
+                return template_str
+            
+            template = self.env.from_string(template_str)
+            return template.render(**context)
+        except Exception as e:
+            logger.warning(f"Erro ao renderizar template '{template_str}': {e}")
+            return str(template_str)
+    
+    def render_to_number(self, template_str: str, context: Dict[str, Any]) -> Decimal:
+        """Renderiza template e converte para Decimal"""
+        result = self.render(template_str, context)
+        return d(result)
+
+
+# ============================================================================
+# Sistema de Lookups
+# ============================================================================
+
+class LookupResolver:
+    """Resolve lookups baseados em diferentes estratégias"""
+    
+    def __init__(self, custos_db: Dict[str, Any]):
+        self.custos_db = custos_db
+    
+    def resolve_painel_catalogo(self, regra: Dict[str, Any], context: Dict[str, Any]) -> Optional[str]:
+        """
+        Resolve lookup por painel_catalogo:
+        lookup_por:
+          material: "{{ ctx.material_painel }}"
+          espessura: "{{ ctx.espessura_painel }}"
+        """
+        try:
+            # Buscar configuração do catálogo no YAML (assumindo que está em cabine.painel_catalogo)
+            template_proc = TemplateProcessor()
+            
+            lookup_config = regra.get('lookup_por', {})
+            material_template = lookup_config.get('material', '')
+            espessura_template = lookup_config.get('espessura', '')
+            
+            # Renderizar templates
+            material = template_proc.render(material_template, context)
+            espessura = template_proc.render(espessura_template, context)
+            
+            logger.debug(f"Buscando painel: material={material}, espessura={espessura}")
+            
+            # Buscar no catálogo (seria melhor ter isso como configuração separada)
+            catalogo_paineis = [
+                {"material": "Inox 430", "espessura": "1,2", "codigo_produto": "01.01.00016"},
+                {"material": "Inox 430", "espessura": "1,5", "codigo_produto": "01.01.00017"},
+                {"material": "Inox 430", "espessura": "2,0", "codigo_produto": "01.01.00018"},
+                {"material": "Inox 304", "espessura": "1,2", "codigo_produto": "01.01.00019"},
+                {"material": "Inox 304", "espessura": "1,5", "codigo_produto": "01.01.00020"},
+                {"material": "Chapa Pintada", "espessura": "1,2", "codigo_produto": "01.01.00021"},
+                {"material": "Chapa Pintada", "espessura": "1,5", "codigo_produto": "01.01.00022"},
+            ]
+            
+            for item in catalogo_paineis:
+                if (str(item.get("material")) == str(material) and 
+                    str(item.get("espessura")) == str(espessura)):
+                    return item.get("codigo_produto")
+            
+            # Fallback para default se configurado
+            de_para = regra.get('de_para', {})
+            default_codigo = de_para.get('default')
+            if default_codigo:
+                logger.warning(f"Usando código padrão {default_codigo} para material={material}, espessura={espessura}")
+                return default_codigo
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Erro no lookup painel_catalogo: {e}")
+            return None
+
+
+# ============================================================================
+# Sistema Switch/Casos
+# ============================================================================
+
+class SwitchProcessor:
+    """Processa estruturas switch/casos do YAML"""
+    
+    def __init__(self, template_proc: TemplateProcessor):
+        self.template_proc = template_proc
+    
+    def process_switch(self, switch_config: Dict[str, Any], context: Dict[str, Any]) -> Optional[str]:
+        """
+        Processa switch:
+          quando: "{{ ctx.piso_cabine }}"
+          casos:
+            "Por conta da empresa":
+              inner_switch: ...
+            "Por conta do cliente":
+              codigo_produto: "..."
+        """
+        try:
+            quando_template = switch_config.get('quando', '')
+            valor_condicao = self.template_proc.render(quando_template, context)
+            
+            casos = switch_config.get('casos', {})
+            
+            # Verificar se há caso específico
+            if valor_condicao in casos:
+                caso = casos[valor_condicao]
+                
+                # Se tem inner_switch, processar recursivamente
+                if 'inner_switch' in caso:
+                    return self.process_switch(caso['inner_switch'], context)
+                
+                # Se tem codigo_produto direto, retornar
+                if 'codigo_produto' in caso:
+                    return self.template_proc.render(caso['codigo_produto'], context)
+            
+            # Verificar caso default
+            if 'default' in casos:
+                caso_default = casos['default']
+                if 'codigo_produto' in caso_default:
+                    return self.template_proc.render(caso_default['codigo_produto'], context)
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Erro no processamento switch: {e}")
+            return None
+
+
+# ============================================================================
+# Processador Principal de Regras
+# ============================================================================
+
+class RegraProcessor:
+    """Processa uma regra individual do YAML"""
+    
+    def __init__(self, custos_db: Dict[str, Any]):
+        self.custos_db = custos_db
+        self.template_proc = TemplateProcessor()
+        self.lookup_resolver = LookupResolver(custos_db)
+        self.switch_processor = SwitchProcessor(self.template_proc)
+    
+    def process_regra(self, regra: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Processa uma regra e retorna item calculado
+        """
+        try:
+            nome = regra.get('nome', 'item_sem_nome')
+            codigo_produto = None
+            
+            # 1. Determinar código do produto
+            if 'origem' in regra and regra['origem'] == 'painel_catalogo':
+                codigo_produto = self.lookup_resolver.resolve_painel_catalogo(regra, context)
+            
+            elif 'switch' in regra:
+                codigo_produto = self.switch_processor.process_switch(regra['switch'], context)
+            
+            elif 'codigo_produto' in regra:
+                codigo_produto = self.template_proc.render(regra['codigo_produto'], context)
+            
+            if not codigo_produto:
+                return {
+                    'erro': f"Não foi possível determinar código do produto para {nome}",
+                    'regra': nome
+                }
+            
+            # 2. Calcular quantidade
+            quantidade_template = regra.get('quantidade', '1')
+            quantidade = self.template_proc.render_to_number(quantidade_template, context)
+            
+            if quantidade <= 0:
+                return {
+                    'erro': f"Quantidade inválida ({quantidade}) para {nome}",
+                    'regra': nome
+                }
+            
+            # 3. Buscar produto no banco
+            produto = self.custos_db.get(codigo_produto)
+            if not produto:
+                produto = Produto.objects.filter(codigo=codigo_produto, disponivel=True).first()
+            
+            if not produto:
+                return {
+                    'erro': f"Produto {codigo_produto} não encontrado para {nome}",
+                    'regra': nome,
+                    'codigo': codigo_produto
+                }
+            
+            # 4. Calcular valores
+            valor_unitario = d(getattr(produto, 'custo_total', 0))
+            valor_total = (quantidade * valor_unitario).quantize(Decimal('0.01'))
+            
+            # 5. Preparar explicação
+            explicacao_template = regra.get('explicacao', '')
+            explicacao = self.template_proc.render(explicacao_template, context) if explicacao_template else f"Item {nome}"
+            
+            return {
+                'nome': nome,
+                'codigo': codigo_produto,
+                'descricao': getattr(produto, 'nome', ''),
+                'quantidade': quantidade,
+                'unidade': regra.get('unidade', 'un'),
+                'valor_unitario': valor_unitario,
+                'valor_total': valor_total,
+                'explicacao': explicacao,
+                'sucesso': True
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar regra {regra.get('nome', 'sem_nome')}: {e}")
+            return {
+                'erro': str(e),
+                'regra': regra.get('nome', 'sem_nome')
+            }
+
+
+# ============================================================================
+# Processador de Subcategorias
+# ============================================================================
+
+class SubcategoriaProcessor:
+    """Processa subcategorias com múltiplas regras"""
+    
+    def __init__(self, custos_db: Dict[str, Any]):
+        self.regra_processor = RegraProcessor(custos_db)
+    
+    def process_subcategoria(self, nome_sub: str, config_sub: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Processa uma subcategoria com suas regras
+        """
+        regras = config_sub.get('regras', [])
+        unidade_subcategoria = config_sub.get('unidade', 'un')
+        
+        itens = []
+        subtotal = Decimal('0.00')
+        erros = []
+        
+        for regra in regras:
+            item = self.regra_processor.process_regra(regra, context)
+            
+            if item.get('sucesso'):
+                itens.append(item)
+                subtotal += d(item.get('valor_total', 0))
+            else:
+                erros.append(item.get('erro', 'Erro desconhecido'))
+        
+        return {
+            'nome': nome_sub,
+            'unidade': unidade_subcategoria,
+            'itens': itens,
+            'subtotal': subtotal,
+            'erros': erros,
+            'quantidade_itens': len(itens)
         }
-    itens[codigo]["quantidade"] += qtd
-    itens[codigo]["valor_total"] = (itens[codigo]["quantidade"] * itens[codigo]["valor_unitario"]).quantize(Decimal("0.01"))
-    trace.append({"origem": origem, "codigo": codigo, "qtd": str(qtd), "motivo": "ok"})
 
-# ------------------------------------------------------------
-# Cálculo de cada bloco
-# ------------------------------------------------------------
-def _calc_cabine(cfg: Dict[str, Any], ctx: Dict[str, Any], custos_db) -> Dict[str, Any]:
-    cab = cfg.get("cabine") or {}
-    itens, trace = {}, []
 
-    # 1) PAINEL (lookup material+espessura)
-    codigo = _resolve_painel_catalogo(cab, ctx["ped"].get("material_cabine"), ctx["ped"].get("espessura_cabine"))
-    if codigo:
-        qtd = Decimal(str(
-            (ctx["pnl"].get("lateral",0) or 0) +
-            (ctx["pnl"].get("fundo",0)   or 0) +
-            (ctx["pnl"].get("teto",0)    or 0)
-        ))
-        _add_item(itens, custos_db, codigo, qtd, "cabine.painel", trace)
+# ============================================================================
+# Construtor de Contexto
+# ============================================================================
 
-    # 2) FIXAÇÃO PAINÉIS
-    node = cab.get("fixacao_paineis") or {}
-    codigo = node.get("codigo_produto")
-    if codigo:
-        qtd = _eval_formula(node.get("qty_formula","0"), ctx)
-        _add_item(itens, custos_db, codigo, qtd, "cabine.fixacao_paineis", trace)
+class ContextBuilder:
+    """Constrói contexto para templates a partir do pedido e dimensionamento"""
+    
+    @staticmethod
+    def build_context(pedido, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Constrói contexto completo para templates
+        """
+        # Dados do pedido
+        ctx = {
+            'material_painel': getattr(pedido, 'material_cabine', ''),
+            'espessura_painel': getattr(pedido, 'espessura_cabine', ''),
+            'piso_cabine': getattr(pedido, 'piso_cabine', ''),
+            'material_piso_cabine': getattr(pedido, 'material_piso_cabine', ''),
+            'capacidade': safe_float(getattr(pedido, 'capacidade', 0)),
+            'modelo_elevador': getattr(pedido, 'modelo_elevador', ''),
+            'acionamento': getattr(pedido, 'acionamento', ''),
+        }
+        
+        # Dimensionamento
+        cab = dimensionamento.get('cab', {})
+        
+        # Painéis (já calculados)
+        pnl = cab.get('pnl', {})
+        pnl_data = {
+            'lateral': safe_int(pnl.get('lateral', 0)),
+            'fundo': safe_int(pnl.get('fundo', 0)),
+            'teto': safe_int(pnl.get('teto', 0)),
+        }
+        
+        # Chapas (já calculadas)
+        chp = cab.get('chp', {})
+        chp_data = {
+            'corpo': safe_int(chp.get('corpo', 0)),
+            'piso': safe_int(chp.get('piso', 0)),
+        }
+        
+        # Áreas calculadas
+        area_paineis_m2 = d(pnl_data['lateral'] + pnl_data['fundo'] + pnl_data['teto'])
+        area_piso_m2 = d(chp_data['piso'])
+        
+        # Contexto completo
+        context = {
+            'ctx': ctx,
+            'pnl': pnl_data,
+            'chp': chp_data,
+            'dim': cab,  # Dimensionamento completo
+            'area_paineis_m2': area_paineis_m2,
+            'area_piso_m2': area_piso_m2,
+            'pedido': pedido,  # Objeto completo disponível
+        }
+        
+        return context
 
-    # 3) PISO (empresa/cliente + antiderrapante)
-    piso = cab.get("piso") or {}
-    if ctx["ped"].get("piso_cabine") == "Por conta da empresa":
-        codigo = piso.get("empresa_antiderrapante") if ctx["ped"].get("material_piso_cabine") == "Antiderrapante" else piso.get("empresa_outros")
-    else:
-        codigo = piso.get("cliente")
-    if codigo:
-        qtd = Decimal(str(ctx["chp"].get("piso",0) or 0))
-        _add_item(itens, custos_db, codigo, qtd, "cabine.piso", trace)
 
-    # 4) FIXAÇÃO PISO
-    node = cab.get("fixacao_piso") or {}
-    codigo = node.get("codigo_produto")
-    if codigo:
-        qtd = _eval_formula(node.get("qty_formula","0"), ctx)
-        _add_item(itens, custos_db, codigo, qtd, "cabine.fixacao_piso", trace)
+# ============================================================================
+# Serviço Principal Evoluído
+# ============================================================================
 
-    subtotal = sum((v["valor_total"] for v in itens.values()), Decimal("0.00"))
-    return {"itens": itens, "subtotal": subtotal, "trace": trace}
-
-def _calc_generico(nome_bloco: str, cfg: Dict[str, Any], ctx: Dict[str, Any], custos_db) -> Dict[str, Any]:
-    bloco = cfg.get(nome_bloco) or {}
-    itens, trace = {}, []
-    dim, ped = ctx.get("dim", {}), ctx.get("ped", {})
-
-    for sub, node in bloco.items():
-        codigo = None
-        if "codigo_produto" in node:
-            codigo = node["codigo_produto"]
-        elif "by_capacidade" in node:
-            codigo = _resolve_by_capacidade(node["by_capacidade"], float(dim.get("capacidade", 0)))
-        elif "by_capacidade_e_velocidade" in node:
-            codigo = _resolve_by_cap_vel(
-                node["by_capacidade_e_velocidade"], float(dim.get("capacidade", 0)), float(dim.get("velocidade", 0))
-            )
-        elif "by_tipo_e_vao" in node:
-            codigo = _resolve_by_tipo_vao(
-                node["by_tipo_e_vao"], ped.get("tipo_porta"), float(dim.get("vao_porta", 0)), int(dim.get("folhas_porta", 0))
-            )
-        elif "by_linha" in node:
-            codigo = _resolve_by_linha(node["by_linha"], ped.get("linha_produto"))
-
-        if not codigo:
-            trace.append({"origem": f"{nome_bloco}.{sub}", "motivo": "nao_resolvido"})
-            continue
-
-        expr = node.get("qty_formula", "1")
-        qtd = _eval_formula(expr, ctx) if isinstance(expr, str) else Decimal(str(expr))
-        _add_item(itens, custos_db, codigo, qtd, f"{nome_bloco}.{sub}", trace)
-
-    subtotal = sum((v["valor_total"] for v in itens.values()), Decimal("0.00"))
-    return {"itens": itens, "subtotal": subtotal, "trace": trace}
-
-# ------------------------------------------------------------
-# Serviço unificado (substitui o calculo_pedido antigo)
-# ------------------------------------------------------------
 class CalculoPedidoYAMLService:
     """
-    Serviço único: lê regras YAML do banco (cabine, carrinho, tracao, sistemas),
-    executa os cálculos e retorna o resultado consolidado.
+    Serviço evoluído que suporta o novo formato YAML com:
+    - Templates {{ variavel }}
+    - Sistema switch/casos  
+    - Lookups por painel_catalogo
+    - Estrutura de subcategorias
+    
+    RENOMEADO: Era CalculoPedidoYAMLEvolvedService
     """
-
-    def __init__(self, custos_db: Optional[Dict[str, Any]] = None, repo: Optional[ConfigRepoDB] = None):
+    
+    def __init__(self, custos_db: Optional[Dict[str, Any]] = None):
         self.custos_db = custos_db or {}
-        self.repo = repo or ConfigRepoDB()
-
-    def _build_ctx(self, pedido, dimm: Dict[str, Any]) -> Dict[str, Any]:
-        pnl = dimm.get("paineis", {}) or {}
-        chp = {"piso": dimm.get("chapas_piso", 0)}
-        dim = {
-            "capacidade": getattr(pedido, "capacidade", None) or dimm.get("capacidade"),
-            "velocidade": getattr(pedido, "velocidade", None) or dimm.get("velocidade"),
-            "paradas": dimm.get("paradas"),
-            "curso": dimm.get("curso"),
-            "vao_porta": dimm.get("vao_porta"),
-            "folhas_porta": dimm.get("folhas_porta"),
-            "comprimento_cabine": dimm.get("comprimento_cabine"),
-        }
-        ped = {
-            "material_cabine": getattr(pedido, "material_cabine", None),
-            "espessura_cabine": getattr(pedido, "espessura_cabine", None),
-            "piso_cabine": getattr(pedido, "piso_cabine", None),
-            "material_piso_cabine": getattr(pedido, "material_piso_cabine", None),
-            "tipo_porta": getattr(pedido, "tipo_porta", None),
-            "linha_produto": getattr(pedido, "linha_produto", None),
-        }
-        return {"pnl": pnl, "chp": chp, "dim": dim, "ped": ped, "fix": {}}
-
-    def calcular(self, pedido, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
-        ctx = self._build_ctx(pedido, dimensionamento)
-
-        resultado_por_bloco: Dict[str, Dict[str, Any]] = {}
-        total_geral = Decimal("0.00")
-        trace_all: List[Dict[str, Any]] = []
-
-        # CABINE
-        cfg_cab = self.repo.load("cabine")
-        res = _calc_cabine(cfg_cab, ctx, self.custos_db)
-        resultado_por_bloco["cabine"] = res
-        total_geral += res["subtotal"]; trace_all += res["trace"]
-
-        # CARRINHO
-        cfg_car = self.repo.load("carrinho")
-        res = _calc_generico("carrinho", cfg_car, ctx, self.custos_db)
-        resultado_por_bloco["carrinho"] = res
-        total_geral += res["subtotal"]; trace_all += res["trace"]
-
-        # TRAÇÃO
-        cfg_tr = self.repo.load("tracao")
-        res = _calc_generico("tracao", cfg_tr, ctx, self.custos_db)
-        resultado_por_bloco["tracao"] = res
-        total_geral += res["subtotal"]; trace_all += res["trace"]
-
-        # SISTEMAS
-        cfg_sys = self.repo.load("sistemas")
-        res = _calc_generico("sistemas", cfg_sys, ctx, self.custos_db)
-        resultado_por_bloco["sistemas"] = res
-        total_geral += res["subtotal"]; trace_all += res["trace"]
-
-        # consolidação por código
-        itens_consolidados: Dict[str, Dict[str, Any]] = {}
-        for res in resultado_por_bloco.values():
-            for codigo, item in res["itens"].items():
-                if codigo not in itens_consolidados:
-                    itens_consolidados[codigo] = item.copy()
-                else:
-                    itens_consolidados[codigo]["quantidade"] += item["quantidade"]
-                    itens_consolidados[codigo]["valor_total"] = (
-                        itens_consolidados[codigo]["quantidade"] * itens_consolidados[codigo]["valor_unitario"]
-                    ).quantize(Decimal("0.01"))
-
+        self.subcategoria_processor = SubcategoriaProcessor(self.custos_db)
+    
+    def _load_yaml_config(self, tipo: str) -> Dict[str, Any]:
+        """Carrega configuração YAML do banco usando ConfigRepoDB com cache"""
+        try:
+            if not hasattr(self, 'config_repo'):
+                self.config_repo = ConfigRepoDB()
+            
+            data = self.config_repo.load(tipo)
+            if not data:
+                logger.warning(f"Nenhuma regra YAML ativa encontrada para tipo: {tipo}")
+            
+            return data
+            
+        except Exception as e:
+            logger.error(f"Erro ao carregar YAML para {tipo}: {e}")
+            return {}
+    
+    def calcular_categoria(self, tipo: str, pedido, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calcula uma categoria específica (cabine, carrinho, tracao, sistemas)
+        """
+        # Carregar configuração YAML
+        config = self._load_yaml_config(tipo)
+        if not config:
+            return {
+                'erro': f'Configuração YAML não encontrada para {tipo}',
+                'subcategorias': {},
+                'total_categoria': Decimal('0.00')
+            }
+        
+        # Construir contexto
+        context = ContextBuilder.build_context(pedido, dimensionamento)
+        
+        # Processar categoria
+        categoria_config = config.get(tipo, {})
+        subcategorias_config = categoria_config.get('subcategorias', {})
+        
+        subcategorias_resultado = {}
+        total_categoria = Decimal('0.00')
+        erros_gerais = []
+        
+        for nome_sub, config_sub in subcategorias_config.items():
+            try:
+                resultado_sub = self.subcategoria_processor.process_subcategoria(
+                    nome_sub, config_sub, context
+                )
+                
+                subcategorias_resultado[nome_sub] = resultado_sub
+                total_categoria += d(resultado_sub.get('subtotal', 0))
+                
+                # Coletar erros
+                if resultado_sub.get('erros'):
+                    erros_gerais.extend(resultado_sub['erros'])
+                    
+            except Exception as e:
+                erro_msg = f"Erro na subcategoria {nome_sub}: {str(e)}"
+                logger.error(erro_msg)
+                erros_gerais.append(erro_msg)
+        
         return {
-            "itens_consolidados": itens_consolidados,
-            "subtotal_por_bloco": {k: v["subtotal"] for k, v in resultado_por_bloco.items()},
-            "total_geral": total_geral.quantize(Decimal("0.01")),
-            "trace": trace_all,
+            'categoria': tipo.upper(),
+            'subcategorias': subcategorias_resultado,
+            'total_categoria': total_categoria,
+            'erros': erros_gerais,
+            'sucesso': len(erros_gerais) == 0
         }
+    
+    def calcular_completo(self, pedido, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Calcula todas as categorias e retorna resultado consolidado
+        """
+        categorias = ['cabine', 'carrinho', 'tracao', 'sistemas']
+        resultado_completo = {}
+        total_geral = Decimal('0.00')
+        erros_gerais = []
+        
+        for categoria in categorias:
+            resultado_cat = self.calcular_categoria(categoria, pedido, dimensionamento)
+            
+            resultado_completo[categoria.upper()] = resultado_cat
+            total_geral += d(resultado_cat.get('total_categoria', 0))
+            
+            if resultado_cat.get('erros'):
+                erros_gerais.extend(resultado_cat['erros'])
+        
+        return {
+            'categorias': resultado_completo,
+            'total_geral': total_geral,
+            'erros': erros_gerais,
+            'sucesso': len(erros_gerais) == 0,
+            'resumo': {
+                cat: float(resultado_completo[cat.upper()].get('total_categoria', 0))
+                for cat in categorias
+            }
+        }
+
+
+# ============================================================================
+# Integração com o Sistema Existente
+# ============================================================================
+
+def substituir_calculo_hard_coded(pedido, dimensionamento: Dict[str, Any], custos_db: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Função para integrar com o calculo_pedido.py existente
+    Substitui apenas o cálculo de materiais, mantendo resto igual
+    """
+    try:
+        # Usar serviço evoluído
+        service = CalculoPedidoYAMLService(custos_db)
+        resultado = service.calcular_completo(pedido, dimensionamento)
+        
+        if not resultado['sucesso']:
+            raise ValueError(f"Erros no cálculo YAML: {'; '.join(resultado['erros'])}")
+        
+        # Retornar no formato esperado pelo calculo_pedido.py
+        componentes_consolidados = resultado['categorias']
+        custos_por_categoria = {
+            categoria: d(dados.get('total_categoria', 0))
+            for categoria, dados in componentes_consolidados.items()
+        }
+        
+        return {
+            'componentes': componentes_consolidados,
+            'custos_por_categoria': custos_por_categoria,
+            'total_componentes': len(componentes_consolidados),
+            'custo_materiais': resultado['total_geral'],  # Este é o valor que importa
+            'yaml_usado': True,
+            'erros': resultado.get('erros', [])
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro no cálculo YAML: {e}")
+        # Fallback para cálculo original se houver erro
+        raise ValueError(f"Erro no cálculo YAML: {str(e)}")
