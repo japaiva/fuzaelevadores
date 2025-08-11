@@ -1,10 +1,10 @@
-# core/models/regras_yaml.py - Sistema de Regras YAML SIMPLES - CORRIGIDO
+# core/models/regras_yaml.py - Modelo SIMPLIFICADO para Regras YAML
 
 import yaml
 import json
 from decimal import Decimal
 from django.db import models
-from django.conf import settings  # ✅ ADICIONADO
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from core.models import Produto
 
@@ -19,60 +19,37 @@ class TipoRegra(models.TextChoices):
 
 class RegraYAML(models.Model):
     """
-    Modelo para armazenar regras de cálculo em formato YAML
-    Substitui o motor de regras hard-coded por configurações editáveis
+    Modelo simplificado para armazenar regras de cálculo em formato YAML
+    Motor de regras configurável que substitui hard-code
     """
     tipo = models.CharField(
         max_length=20,
         choices=TipoRegra.choices,
-        unique=True,
-        help_text="Tipo da regra (cabine, carrinho, tração, sistemas)"
+        unique=True
     )
     
-    nome = models.CharField(
-        max_length=100,
-        help_text="Nome descritivo da regra"
-    )
+    nome = models.CharField(max_length=100)
     
-    descricao = models.TextField(
-        blank=True,
-        help_text="Descrição detalhada do que a regra faz"
-    )
+    conteudo_yaml = models.TextField()
     
-    conteudo_yaml = models.TextField(
-        help_text="Conteúdo da regra em formato YAML"
-    )
+    versao = models.PositiveIntegerField(default=1)
     
-    versao = models.PositiveIntegerField(
-        default=1,
-        help_text="Versão da regra para controle de mudanças"
-    )
+    ativa = models.BooleanField(default=True)
     
-    ativa = models.BooleanField(
-        default=True,
-        help_text="Se a regra está ativa e deve ser utilizada"
-    )
+    validado = models.BooleanField(default=False)
     
-    validado = models.BooleanField(
-        default=False,
-        help_text="Se a regra foi validada e todos os códigos existem"
-    )
+    ultimo_erro = models.TextField(blank=True)
     
-    ultimo_erro = models.TextField(
-        blank=True,
-        help_text="Último erro encontrado na validação"
-    )
-    
-    # Auditoria - ✅ CORRIGIDO
+    # Auditoria
     criado_em = models.DateTimeField(auto_now_add=True)
     criado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL,  # ✅ CORRIGIDO: settings.AUTH_USER_MODEL
+        settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='regras_yaml_criadas'
     )
     atualizado_em = models.DateTimeField(auto_now=True)
     atualizado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL,  # ✅ CORRIGIDO: settings.AUTH_USER_MODEL
+        settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='regras_yaml_atualizadas'
     )

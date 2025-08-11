@@ -90,7 +90,7 @@ def regra_yaml_create(request):
 
     return render(request, 'producao/regras_yaml/regra_yaml_form.html', {
         'form': form,
-        'titulo': 'Nova Regra YAML'
+        'titulo': 'Nova Regra'
     })
 
 

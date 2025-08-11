@@ -1,0 +1,87 @@
+{# templates/producao/partials/regras_yaml_help.html #}
+<div class="modal fade" id="regrasYamlHelpModal" tabindex="-1" aria-labelledby="regrasYamlHelpLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="regrasYamlHelpLabel">
+          Ajuda — Regras YAML (o que pode, variáveis e exemplos)
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+<pre style="white-space:pre-wrap">
+<b>O que você PODE fazer (todos os YAMLs)</b>
+• Trocar <code>codigo_produto</code>.
+• Editar <code>qty_formula</code> usando variáveis permitidas.
+• Adicionar novos itens simples (blocos com <code>codigo_produto</code> + <code>qty_formula</code>).
+• Editar catálogos/faixas (<code>painel_catalogo</code>, <code>by_capacidade</code> etc.) mantendo o formato.
+• Comentar linhas com <code>#</code>.
+
+<b>O que você NÃO pode fazer</b>
+• Renomear chaves principais esperadas pelo motor (ex.: <code>cabine</code>, <code>carrinho</code>, <code>tracao</code>, <code>sistemas</code>, <code>painel_catalogo</code>, <code>piso</code>).
+• Mudar o formato de estruturas conhecidas (ex.: em <code>painel_catalogo</code> cada linha deve ter <code>material</code>, <code>espessura</code>, <code>codigo_produto</code>).
+• Usar funções fora da whitelist nas fórmulas.
+• Referenciar variáveis inexistentes (ver lista abaixo).
+• Criar lógicas “se/então” fora dos formatos suportados (use <code>by_*</code> ou <code>qty_formula</code>).
+
+<b>Fórmulas — permitido</b>
+• Operadores: <code>+ - * / ( )</code>  |  Números (use ponto em decimais: <code>1.5</code>)
+• Variáveis: veja “Variáveis disponíveis” abaixo.
+• Funções (whitelist): <code>abs</code>, <code>ceil</code>, <code>floor</code>, <code>min</code>, <code>max</code>, <code>round</code>, <code>case</code>(cond1,val1,cond2,val2,default)
+
+<b>Variáveis disponíveis</b>
+• <code>dim.*</code> (dimensionamento — números globais)
+   - <code>dim.capacidade</code> (kg)  |  <code>dim.velocidade</code> (m/s)
+   - <code>dim.paradas</code> (un)     |  <code>dim.curso</code> (m)
+   - <code>dim.vao_porta</code> (mm)   |  <code>dim.folhas_porta</code> (un)
+   - <code>dim.comprimento_cabine</code> (m)
+• <code>pnl.*</code> (cabine — quantidades de painéis)
+   - <code>pnl.lateral</code>, <code>pnl.fundo</code>, <code>pnl.teto</code>
+• <code>chp.*</code> (cabine — chapas)
+   - <code>chp.piso</code>
+• <code>ped.*</code> (pedido — escolhas do usuário)
+   - <code>ped.material_cabine</code> — string (ex.: "Inox 304", "Inox 430", "Chapa Pintada", "Alumínio")
+   - <code>ped.espessura_cabine</code> — string (ex.: "1,5") *atenção: vírgula se assim cadastrado no catálogo*
+   - <code>ped.piso_cabine</code> — "Por conta da empresa" | "Por conta do cliente"
+   - <code>ped.material_piso_cabine</code> — ex.: "Antiderrapante"
+   - <code>ped.tipo_porta</code> — ex.: "Automática", "Semiautomática"
+   - <code>ped.linha_produto</code> — ex.: "Residencial", "Hospitalar"
+
+<b>Estruturas suportadas por YAML</b>
+• cabine:
+   - <code>painel_catalogo</code> (lookup material+espessura→código)
+   - <code>fixacao_paineis</code> { codigo_produto, qty_formula }
+   - <code>piso</code> { empresa_antiderrapante, empresa_outros, cliente }
+   - <code>fixacao_piso</code> { codigo_produto, qty_formula }
+• carrinho:
+   - subitens (ex.: <code>travessa</code>, <code>longarina</code>, ...) com
+     - <code>codigo_produto</code> direto OU <code>by_capacidade</code> [{min,max,codigo_produto}]
+     - <code>qty_formula</code> (padrão "1")
+• tracao:
+   - subitens (ex.: <code>maquina</code>, <code>polia_tracao</code>, ...) com
+     - <code>codigo_produto</code> direto OU <code>by_capacidade_e_velocidade</code> [{cap_min,cap_max,vel_max,codigo_produto}]
+     - <code>qty_formula</code>
+• sistemas:
+   - subitens simples { codigo_produto, qty_formula }
+   - (opcional) seletores como <code>by_linha</code> / <code>by_tipo_e_vao</code> se habilitados
+
+<b>Exemplos prontos</b>
+• Cabine – fixação painéis: <code>13 * pnl.lateral + 2 * pnl.fundo + 2 * pnl.teto</code>
+• Cabine – fixação piso: <code>13 * chp.piso</code>
+• Carrinho – 2 travessas fixas: <code>"2"</code>
+• Tração – cabos por curso: <code>ceil((dim.curso + 10)/100)</code>
+• Sistemas – iluminação: <code>case(dim.comprimento_cabine <= 1.80, 2, dim.comprimento_cabine <= 2.20, 3, 4)</code>
+
+<b>Checklist antes de salvar</b>
+[ ] Mantive as chaves principais (ex.: <code>cabine</code>, <code>painel_catalogo</code>).
+[ ] Catálogos/faixas têm os campos obrigatórios e <code>codigo_produto</code> válido.
+[ ] Fórmulas só usam variáveis/funções permitidas.
+[ ] Decimais com <b>ponto</b> nas fórmulas (ex.: 1.5).
+</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>

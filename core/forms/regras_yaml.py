@@ -1,4 +1,4 @@
-# core/forms/regras_yaml.py - Formulário SIMPLES para Regras YAML
+# core/forms/regras_yaml.py - Formulário SIMPLIFICADO para Regras YAML
 
 import yaml
 from django import forms
@@ -8,11 +8,11 @@ from .base import BaseModelForm, AuditMixin
 
 
 class RegraYAMLForm(BaseModelForm, AuditMixin):
-    """Formulário simples para edição de regras YAML"""
+    """Formulário simplificado para edição de regras YAML"""
     
     class Meta:
         model = RegraYAML
-        fields = ['tipo', 'nome', 'descricao', 'conteudo_yaml', 'ativa']
+        fields = ['tipo', 'nome', 'conteudo_yaml', 'ativa']
         widgets = {
             'tipo': forms.Select(attrs={
                 'class': 'form-select'
@@ -21,14 +21,9 @@ class RegraYAMLForm(BaseModelForm, AuditMixin):
                 'class': 'form-control',
                 'placeholder': 'Nome descritivo da regra'
             }),
-            'descricao': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Descrição do que a regra faz...'
-            }),
             'conteudo_yaml': forms.Textarea(attrs={
                 'class': 'form-control font-monospace',
-                'rows': 20,
+                'rows': 25,
                 'placeholder': 'Digite o conteúdo YAML aqui...'
             }),
             'ativa': forms.CheckboxInput(attrs={
@@ -38,7 +33,6 @@ class RegraYAMLForm(BaseModelForm, AuditMixin):
         labels = {
             'tipo': 'Tipo da Regra',
             'nome': 'Nome',
-            'descricao': 'Descrição',
             'conteudo_yaml': 'Conteúdo YAML',
             'ativa': 'Regra Ativa'
         }
@@ -54,24 +48,11 @@ class RegraYAMLForm(BaseModelForm, AuditMixin):
         self.fields['nome'].required = True
         self.fields['conteudo_yaml'].required = True
         
-        # Help texts
-        self.fields['tipo'].help_text = "Tipo de cálculo que a regra controla"
-        self.fields['nome'].help_text = "Nome único para identificar a regra"
-        self.fields['conteudo_yaml'].help_text = "Estrutura YAML com as regras de cálculo"
-        
-        # Se é edição, mostrar informações extras
+        # Se é edição, mostrar versão no nome
         if self.instance.pk:
-            self.fields['nome'].help_text = f"Versão atual: {self.instance.versao}"
+            self.fields['nome'].label = f"Nome (Versão atual: {self.instance.versao})"
             
-            # Mostrar status de validação
-            if self.instance.validado:
-                self.fields['ativa'].help_text = "✅ Regra validada e pronta para uso"
-            else:
-                self.fields['ativa'].help_text = f"⚠️ Regra precisa ser validada"
-                if self.instance.ultimo_erro:
-                    self.fields['ativa'].help_text += f". Erro: {self.instance.ultimo_erro}"
-        
-        # Exemplo baseado no tipo
+        # Exemplo baseado no tipo selecionado ou padrão
         if not self.instance.pk:
             self.fields['conteudo_yaml'].widget.attrs['placeholder'] = self._get_exemplo_yaml()
     
@@ -113,37 +94,32 @@ class RegraYAMLForm(BaseModelForm, AuditMixin):
         return cleaned_data
     
     def _get_exemplo_yaml(self):
-        """Exemplo básico de YAML para cabine"""
+        """Exemplo simplificado de YAML"""
         return """cabine:
-  # 1) PAINEL (mesmo produto para laterais e teto)
+  # PAINÉIS (laterais e teto)
   painel_catalogo:
     - material: "Inox 304"
       espessura: "1,5"
       codigo_produto: "01.01.00014"
-    - material: "Inox 430"
+    - material: "Inox 430" 
       espessura: "1,5"
       codigo_produto: "01.01.00017"
       
-  # 2) FIXAÇÃO DOS PAINÉIS
+  # FIXAÇÃO
   fixacao_paineis:
     codigo_produto: "01.04.00009"
     qty_formula: "13 * pnl.lateral + 2 * pnl.fundo + 2 * pnl.teto"
     
-  # 3) PISO
+  # PISO
   piso:
     empresa_antiderrapante: "01.01.00005"
     empresa_outros: "01.01.00008"
     cliente: "01.01.00008"
-    
-  # 4) FIXAÇÃO DO PISO
-  fixacao_piso:
-    codigo_produto: "01.04.00013"
-    qty_formula: "13 * chp.piso"
 """
 
 
 class RegraYAMLFiltroForm(forms.Form):
-    """Formulário para filtros na listagem de regras"""
+    """Formulário simplificado para filtros"""
     
     STATUS_CHOICES = [
         ('', 'Todos'),
@@ -169,6 +145,6 @@ class RegraYAMLFiltroForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-sm',
-            'placeholder': 'Buscar por nome ou descrição...'
+            'placeholder': 'Buscar por nome...'
         })
     )

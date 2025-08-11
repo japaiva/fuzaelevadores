@@ -1,3 +1,4 @@
+<!-- regra_yaml_detail.html SIMPLIFICADO -->
 {% extends 'producao/base_producao.html' %}
 
 {% block title %}{{ regra.nome }} | Portal Produção{% endblock %}
@@ -85,15 +86,6 @@
         </table>
       </div>
     </div>
-
-    {% if regra.descricao %}
-    <div class="row mt-3">
-      <div class="col-12">
-        <h6>Descrição</h6>
-        <p class="text-muted">{{ regra.descricao }}</p>
-      </div>
-    </div>
-    {% endif %}
 
     {% if not regra.validado and regra.ultimo_erro %}
     <div class="row mt-3">

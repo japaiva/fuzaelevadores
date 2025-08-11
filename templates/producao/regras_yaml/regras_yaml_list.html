@@ -1,5 +1,5 @@
+<!-- regras_yaml_list.html SIMPLIFICADO -->
 {% extends 'producao/base_producao.html' %}
-{% load formato_br %}
 
 {% block title %}Motor de Regras YAML | Portal Produção{% endblock %}
 
@@ -7,7 +7,7 @@
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">
-      <i class="fas fa-cogs me-2"></i> Motor de Regras YAML
+      <i class="fas fa-cogs me-2"></i> Regras Composição Preço
     </h5>
     <div>
       <a href="{% url 'producao:regra_yaml_create' %}" class="btn btn-primary btn-sm">
@@ -54,11 +54,10 @@
           <tr>
             <th>Tipo</th>
             <th>Nome</th>
-            <th>Descrição</th>
             <th style="width: 80px;">Versão</th>
             <th class="text-center" style="width: 80px;">Validado</th>
             <th class="text-center" style="width: 80px;">Status</th>
-            <th class="text-center" style="min-width: 150px;">Ações</th>
+            <th class="text-center" style="min-width: 120px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -69,9 +68,7 @@
               </td>
               <td>
                 <strong>{{ regra.nome }}</strong>
-              </td>
-              <td>
-                <small class="text-muted">{{ regra.descricao|truncatechars:60 }}</small>
+                <br><small class="text-muted">Atualizado em {{ regra.atualizado_em|date:"d/m/Y H:i" }}</small>
               </td>
               <td class="text-center">
                 <span class="badge bg-secondary">v{{ regra.versao }}</span>
@@ -82,7 +79,7 @@
                     <i class="fas fa-check"></i>
                   </span>
                 {% else %}
-                  <span class="badge bg-warning" title="{{ regra.ultimo_erro }}">
+                  <span class="badge bg-warning" title="{{ regra.ultimo_erro|truncatechars:50 }}">
                     <i class="fas fa-exclamation-triangle"></i>
                   </span>
                 {% endif %}
@@ -127,8 +124,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-center py-4 text-muted">
-                <i class="fas fa-cogs fa-2x mb-2 text-muted"></i>
+              <td colspan="6" class="text-center py-4 text-muted">
                 <div>Nenhuma regra cadastrada.</div>
                 <a href="{% url 'producao:regra_yaml_create' %}" class="btn btn-sm btn-primary mt-2">
                   <i class="fas fa-plus me-1"></i> Cadastrar Primeira Regra

@@ -1,7 +1,5 @@
 # producao/views/propostas_producao.py
 
-
-
 import json
 import logging
 from datetime import date, timedelta

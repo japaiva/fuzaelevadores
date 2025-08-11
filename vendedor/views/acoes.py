@@ -1,10 +1,5 @@
 # vendedor/views/acoes.py
 
-"""
-Views para ações das propostas: calcular, duplicar, enviar, etc.
-✅ CORRIGIDO: Imports e função unificada com impostos dinâmicos
-"""
-
 import logging
 from datetime import date
 from decimal import Decimal  # ✅ IMPORT ADICIONADO
