@@ -67,20 +67,32 @@ class CalculoPedidoService:
         # =================================================================
         # 1. CABINE - OBRIGATORIAMENTE VIA YAML
         # =================================================================
+        
+
         try:
             logger.info("🔥 CALCULANDO CABINE VIA YAML (obrigatório)...")
             
             yaml_service = CalculoPedidoYAMLService(custos_db)            
             resultado_wrap = yaml_service.calcular_completo(pedido, dimensionamento, categorias=['cabine'])
-            resultado_cabine_yaml = resultado_wrap['categorias']['CABINE']  # chave vem em maiúsculas
-
+            resultado_cabine_yaml = resultado_wrap['categorias']['CABINE']
 
             if not resultado_cabine_yaml.get('sucesso'):
                 erros_cabine = '; '.join(resultado_cabine_yaml.get('erros', ['Erro desconhecido']))
                 raise ValueError(f"YAML CABINE falhou: {erros_cabine}")
             
-            # ✅ SUCESSO YAML CABINE
-            componentes_consolidados["CABINE"] = resultado_cabine_yaml
+            # ✅ CORREÇÃO: Transformar estrutura YAML para compatibilidade com template
+            cabine_compativel = {}
+            
+            # Pegar subcategorias do YAML e colocar no nível principal
+            if 'subcategorias' in resultado_cabine_yaml:
+                for nome_subcat, dados_subcat in resultado_cabine_yaml['subcategorias'].items():
+                    cabine_compativel[nome_subcat] = dados_subcat
+            
+            # Manter total_categoria no nível principal
+            cabine_compativel['total_categoria'] = resultado_cabine_yaml.get('total_categoria', 0)
+            
+            # ✅ SALVAR estrutura compatível
+            componentes_consolidados["CABINE"] = cabine_compativel
             custos_por_categoria['CABINE'] = safe_decimal(resultado_cabine_yaml.get('total_categoria', 0))
             
             logger.info(f"✅ CABINE YAML: R$ {custos_por_categoria['CABINE']}")
@@ -88,6 +100,7 @@ class CalculoPedidoService:
         except Exception as e:
             logger.error(f"❌ ERRO CRÍTICO - CABINE YAML falhou: {e}")
             raise ValueError(f"Erro no cálculo YAML da CABINE: {str(e)}")
+
         
         # =================================================================
         # 2. CARRINHO - HARD CODED (por enquanto)

@@ -33,16 +33,41 @@ def safe_float(x: Any, default: float = 0.0) -> float:
         return float(x)
     except Exception:
         return default
+    
+# core/services/calculo_pedido_yaml.py - CORRIGIR FUNÇÃO _get_unit_cost
 
 def _get_unit_cost(produto: Any) -> Decimal:
-    for field in ("custo", "preco_custo", "preco", "valor", "price"):
+    """
+    ✅ CORRIGIDO: Busca custo do produto nos campos corretos do modelo FUZA
+    """
+    # 1. PRIORIDADE: custo_total (property que soma custo_material + custo_servico)
+    if hasattr(produto, 'custo_total') and produto.custo_total:
+        return d(produto.custo_total)
+    
+    # 2. FALLBACK: custo_material (campo principal)
+    if hasattr(produto, 'custo_material') and produto.custo_material:
+        return d(produto.custo_material)
+    
+    # 3. FALLBACK: custo_medio (campo legacy)
+    if hasattr(produto, 'custo_medio') and produto.custo_medio:
+        return d(produto.custo_medio)
+    
+    # 4. FALLBACK: custo_total_legacy (property dos campos legacy)
+    if hasattr(produto, 'custo_total_legacy') and produto.custo_total_legacy:
+        return d(produto.custo_total_legacy)
+    
+    # 5. FALLBACK: outros campos possíveis
+    for field in ("preco_custo", "preco", "valor", "price", "cost"):
         if hasattr(produto, field):
             try:
-                return d(getattr(produto, field))
+                valor = getattr(produto, field)
+                if valor:
+                    return d(valor)
             except Exception:
                 continue
+    
+    # 6. Se nada funcionar, retornar zero
     return Decimal("0.00")
-
 # =============================================================================
 # Templates
 # =============================================================================
@@ -191,37 +216,84 @@ class SubcategoriaProcessor:
 # =============================================================================
 # Contexto
 # =============================================================================
+
+# core/services/calculo_pedido_yaml.py - CONTEXTO CORRIGIDO
+
 class ContextBuilder:
     @staticmethod
     def build(pedido: Any, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Constrói contexto completo e debugado para templates YAML
+        ✅ CORRIGIDO: Mapeamento correto das variáveis para o YAML da cabine
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Extrair dados do dimensionamento
         cab = dimensionamento.get("cab", {}) or {}
-        # garantir sub-estruturas
+        
+        # ✅ GARANTIR que todas as sub-estruturas existam
         cab.setdefault("pnl", {})
         cab.setdefault("chp", {})
+        
+        # ✅ GARANTIR valores padrão para painéis (pnl)
         for k in ("lateral", "fundo", "teto"):
             cab["pnl"].setdefault(k, 0)
+        
+        # ✅ GARANTIR valores padrão para chapas (chp)  
         for k in ("corpo", "piso"):
             cab["chp"].setdefault(k, 0)
 
+        # ✅ MAPEAMENTO CORRETO das variáveis do pedido para o YAML
         ctx = {
-            "material_painel": getattr(pedido, "material_cabine", ""),
-            "espessura_painel": getattr(pedido, "espessura_cabine", ""),
+            # === MATERIAL DA CABINE ===
+            "material": getattr(pedido, "material_cabine", ""),  # ← YAML usa "material"
+            "material_cabine": getattr(pedido, "material_cabine", ""),  # ← Compatibilidade
+            
+            # === ESPESSURA ===
+            "espessura": getattr(pedido, "espessura_cabine", ""),  # ← YAML usa "espessura"
+            "espessura_cabine": getattr(pedido, "espessura_cabine", ""),  # ← Compatibilidade
+            
+            # === PISO ===
             "piso_cabine": getattr(pedido, "piso_cabine", ""),
             "material_piso_cabine": getattr(pedido, "material_piso_cabine", ""),
+            
+            # === OUTROS CAMPOS IMPORTANTES ===
             "capacidade": getattr(pedido, "capacidade", ""),
             "modelo_elevador": getattr(pedido, "modelo_elevador", ""),
             "acionamento": getattr(pedido, "acionamento", ""),
-            # aliases usados no YAML da CABINE
-            "material_cabine": getattr(pedido, "material_cabine", ""),
-            "espessura_cabine": getattr(pedido, "espessura_cabine", ""),
+            
+            # === ALIASES EXTRAS PARA COMPATIBILIDADE ===
+            "material_painel": getattr(pedido, "material_cabine", ""),
+            "espessura_painel": getattr(pedido, "espessura_cabine", ""),
         }
 
-        return {
+        # ✅ DEBUG: Log das variáveis principais
+        logger.info(f"=== CONTEXTO PARA YAML CABINE ===")
+        logger.info(f"📊 DIMENSIONAMENTO:")
+        logger.info(f"  - cab.chp.corpo: {cab['chp']['corpo']}")
+        logger.info(f"  - cab.chp.piso: {cab['chp']['piso']}")
+        logger.info(f"  - cab.pnl.lateral: {cab['pnl']['lateral']}")
+        logger.info(f"  - cab.pnl.fundo: {cab['pnl']['fundo']}")
+        logger.info(f"  - cab.pnl.teto: {cab['pnl']['teto']}")
+        logger.info(f"")
+        logger.info(f"🎨 ESPECIFICAÇÕES:")
+        logger.info(f"  - ctx.material: '{ctx['material']}'")
+        logger.info(f"  - ctx.espessura: '{ctx['espessura']}'")
+        logger.info(f"  - ctx.piso_cabine: '{ctx['piso_cabine']}'")
+        logger.info(f"  - ctx.material_piso_cabine: '{ctx['material_piso_cabine']}'")
+
+        # ✅ ESTRUTURA FINAL DO CONTEXTO
+        context = {
             "ctx": ctx,
             "cab": cab,
+            "chp": cab["chp"],  # ← ACESSO DIRETO para templates
+            "pnl": cab["pnl"],  # ← ACESSO DIRETO para templates
             "pedido": pedido,
             "dimensionamento": dimensionamento,
         }
+        
+        return context
 
 # =============================================================================
 # Serviço principal
