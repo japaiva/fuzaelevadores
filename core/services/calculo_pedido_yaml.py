@@ -1,7 +1,7 @@
-# core/services/calculo_pedido_yaml.py
-from __future__ import annotations
+# core/services/calculo_pedido_yaml.py - PARSER AVANÇADO
 
 import logging
+import math
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 
@@ -11,10 +11,10 @@ from jinja2 import Environment, BaseLoader, StrictUndefined
 from core.models import Produto
 
 logger = logging.getLogger(__name__)
-__PARSER_VERSION__ = "yaml-v1.2.0 (cabine condicoes)"
+__PARSER_VERSION__ = "yaml-v2.0.0 (avançado com ranges e operadores)"
 
 # =============================================================================
-# Utils
+# Utils Avançados
 # =============================================================================
 def d(x: Any, default: str = "0.00") -> Decimal:
     if x is None or x == "":
@@ -33,50 +33,113 @@ def safe_float(x: Any, default: float = 0.0) -> float:
         return float(x)
     except Exception:
         return default
-    
-# core/services/calculo_pedido_yaml.py - CORRIGIR FUNÇÃO _get_unit_cost
+
+def safe_int(x: Any, default: int = 0) -> int:
+    try:
+        if x is None or x == "":
+            return default
+        return int(float(x))  # Converte via float primeiro para aceitar "2.0"
+    except Exception:
+        return default
 
 def _get_unit_cost(produto: Any) -> Decimal:
-    """
-    ✅ CORRIGIDO: Busca custo do produto nos campos corretos do modelo FUZA
-    """
-    # 1. PRIORIDADE: custo_total (property que soma custo_material + custo_servico)
+    """Busca custo do produto nos campos corretos do modelo FUZA"""
     if hasattr(produto, 'custo_total') and produto.custo_total:
         return d(produto.custo_total)
-    
-    # 2. FALLBACK: custo_material (campo principal)
     if hasattr(produto, 'custo_material') and produto.custo_material:
         return d(produto.custo_material)
-    
-    # 3. FALLBACK: custo_medio (campo legacy)
     if hasattr(produto, 'custo_medio') and produto.custo_medio:
         return d(produto.custo_medio)
-    
-    # 4. FALLBACK: custo_total_legacy (property dos campos legacy)
     if hasattr(produto, 'custo_total_legacy') and produto.custo_total_legacy:
         return d(produto.custo_total_legacy)
-    
-    # 5. FALLBACK: outros campos possíveis
-    for field in ("preco_custo", "preco", "valor", "price", "cost"):
-        if hasattr(produto, field):
-            try:
-                valor = getattr(produto, field)
-                if valor:
-                    return d(valor)
-            except Exception:
-                continue
-    
-    # 6. Se nada funcionar, retornar zero
     return Decimal("0.00")
+
 # =============================================================================
-# Templates
+# Comparadores Avançados
 # =============================================================================
-class TemplateProcessor:
+class AdvancedComparator:
+    """Classe para comparações avançadas em condições YAML"""
+    
+    @staticmethod
+    def compare_value(actual_value: Any, expected_condition: str) -> bool:
+        """
+        Compara valor real com condição YAML avançada
+        
+        Suporta:
+        - "1000" (exato)
+        - "<=1000" (menor ou igual)
+        - ">=1000" (maior ou igual)  
+        - ">1000" (maior que)
+        - "<1000" (menor que)
+        - "!=Motor" (diferente)
+        - "Motor" (exato string)
+        """
+        try:
+            condition_str = str(expected_condition).strip()
+            
+            # Operadores de comparação
+            if condition_str.startswith("<="):
+                threshold = float(condition_str[2:])
+                return float(actual_value) <= threshold
+            elif condition_str.startswith(">="):
+                threshold = float(condition_str[2:])
+                return float(actual_value) >= threshold
+            elif condition_str.startswith("!="):
+                expected = condition_str[2:].strip()
+                return str(actual_value).strip() != expected
+            elif condition_str.startswith(">"):
+                threshold = float(condition_str[1:])
+                return float(actual_value) > threshold
+            elif condition_str.startswith("<"):
+                threshold = float(condition_str[1:])
+                return float(actual_value) < threshold
+            else:
+                # Comparação exata (string ou numérica)
+                try:
+                    # Tentar comparação numérica
+                    return float(actual_value) == float(condition_str)
+                except (ValueError, TypeError):
+                    # Comparação string
+                    return str(actual_value).strip() == condition_str.strip()
+                    
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Erro na comparação: {actual_value} vs {expected_condition}: {e}")
+            return False
+
+# =============================================================================
+# Templates Avançados
+# =============================================================================
+class AdvancedTemplateProcessor:
     def __init__(self) -> None:
         self.env = Environment(loader=BaseLoader(), undefined=StrictUndefined, autoescape=False)
         self.env.filters["d"] = d
         self.env.filters["float"] = safe_float
+        self.env.filters["int"] = safe_int
         self.env.filters["string"] = lambda x: "" if x is None else str(x)
+        
+        # ✅ FILTROS MATEMÁTICOS AVANÇADOS
+        self.env.filters["round"] = self._advanced_round
+        self.env.filters["ceil"] = lambda x: math.ceil(float(x))
+        self.env.filters["floor"] = lambda x: math.floor(float(x))
+        self.env.filters["abs"] = lambda x: abs(float(x))
+        self.env.filters["max"] = lambda x, y: max(float(x), float(y))
+        self.env.filters["min"] = lambda x, y: min(float(x), float(y))
+
+    def _advanced_round(self, value: Any, precision: int = 0, method: str = 'round') -> float:
+        """
+        Filtro de arredondamento avançado
+        method: 'round', 'ceil', 'floor'
+        """
+        try:
+            val = float(value)
+            if method == 'ceil':
+                return math.ceil(val * (10 ** precision)) / (10 ** precision)
+            elif method == 'floor':
+                return math.floor(val * (10 ** precision)) / (10 ** precision)
+            else:  # 'round'
+                return round(val, precision)
+        except Exception:
+            return 0.0
 
     def render(self, tpl: Any, context: Dict[str, Any]) -> str:
         if tpl is None:
@@ -90,58 +153,108 @@ class TemplateProcessor:
             return ""
 
 # =============================================================================
-# Processadores
+# Processadores Avançados
 # =============================================================================
-class RegraProcessor:
-    def __init__(self, template_proc: TemplateProcessor, custos_db: Dict[str, Produto]) -> None:
+class AdvancedRegraProcessor:
+    def __init__(self, template_proc: AdvancedTemplateProcessor, custos_db: Dict[str, Produto]) -> None:
         self.template_proc = template_proc
         self.custos_db = custos_db
+        self.comparator = AdvancedComparator()
 
     def _valor_para_condicao(self, var: str, context: Dict[str, Any]) -> Any:
+        """Busca valor da variável no contexto, com fallbacks"""
         ctx = context.get("ctx", {}) or {}
-        for key in (var, f"{var}_cabine", f"{var}_painel"):
-            if key in ctx:
-                return ctx.get(key)
-        return context.get(var)
+        cab = context.get("cab", {}) or {}
+        
+        # ✅ BUSCA EXPANDIDA
+        search_keys = [
+            var,
+            f"{var}_cabine",
+            f"{var}_painel",
+            f"ctx.{var}",
+            f"cab.{var}"
+        ]
+        
+        # Buscar em ctx primeiro
+        for key in search_keys:
+            if key in ctx and ctx[key] is not None:
+                return ctx[key]
+        
+        # Buscar em cab
+        if var in cab and cab[var] is not None:
+            return cab[var]
+            
+        # Buscar no context geral
+        if var in context and context[var] is not None:
+            return context[var]
+            
+        return None
 
     def _resolver_por_condicoes(self, regra: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Resolve condições avançadas com operadores"""
         out: Dict[str, Any] = {}
         conds = regra.get("condicoes")
         if not conds:
             return out
+            
         for cond in conds:
             q = cond.get("quando", {}) or {}
             bateu = True
+            
+            # ✅ COMPARAÇÕES AVANÇADAS
             for var, esperado in q.items():
                 atual = self._valor_para_condicao(var, context)
-                if str(atual).strip() != str(esperado).strip():
+                if atual is None:
+                    logger.warning(f"Variável '{var}' não encontrada no contexto")
                     bateu = False
                     break
+                    
+                # ✅ USAR COMPARADOR AVANÇADO
+                if not self.comparator.compare_value(atual, esperado):
+                    bateu = False
+                    break
+                    
             if bateu:
                 if "codigo_produto" in cond:
                     out["codigo_produto"] = self.template_proc.render(cond["codigo_produto"], context)
                 if "descricao" in cond:
                     out["descricao"] = self.template_proc.render(cond["descricao"], context)
-                break
+                break  # Primeira condição que bater
+                
         return out
 
     def process_regra(self, regra: Dict[str, Any], subcat_padrao_unid: Optional[str], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Processa regra com lógica avançada"""
         erros: List[str] = []
         nome = regra.get("nome", "")
         unidade_regra = regra.get("unidade") or subcat_padrao_unid or "un"
 
+        # ✅ RESOLVER CONDIÇÕES AVANÇADAS
         escolhido = self._resolver_por_condicoes(regra, context)
         codigo_produto = escolhido.get("codigo_produto")
+        
+        # Fallback para código direto
         if not codigo_produto and regra.get("codigo_produto"):
             codigo_produto = self.template_proc.render(regra["codigo_produto"], context).strip() or None
 
+        # ✅ QUANTIDADE COM TEMPLATES AVANÇADOS
         qtd_expr = regra.get("quantidade", "0")
         qtd_str = self.template_proc.render(str(qtd_expr), context)
         try:
             quantidade = d(qtd_str)
-        except Exception:
+            # ✅ PROTEÇÃO: Se quantidade for 0, não adicionar item
+            if quantidade <= 0:
+                return {
+                    "nome": nome,
+                    "codigo": codigo_produto or "",
+                    "quantidade": 0,
+                    "valor_total": 0,
+                    "sucesso": True,
+                    "skip": True  # ✅ FLAG para pular item
+                }
+        except Exception as e:
             quantidade = Decimal("0.00")
-            erros.append(f"Quantidade inválida para '{nome}': '{qtd_str}'")
+            erros.append(f"Quantidade inválida para '{nome}': '{qtd_str}' - {e}")
 
         explicacao_tpl = regra.get("explicacao")
         explicacao = self.template_proc.render(explicacao_tpl, context) if explicacao_tpl else ""
@@ -156,7 +269,8 @@ class RegraProcessor:
             else:
                 valor_unitario = _get_unit_cost(produto)
         else:
-            erros.append(f"Regra '{nome}': nenhum código de produto determinado")
+            if quantidade > 0:  # Só reclamar se quantidade > 0
+                erros.append(f"Regra '{nome}': nenhum código de produto determinado")
 
         valor_total = (quantidade * valor_unitario).quantize(Decimal("0.01"))
 
@@ -181,13 +295,14 @@ class RegraProcessor:
             "explicacao": explicacao,
             "sucesso": len(erros) == 0,
             "erros": erros,
+            "skip": False
         }
 
-class SubcategoriaProcessor:
-    def __init__(self, template_proc: TemplateProcessor, custos_db: Dict[str, Produto]) -> None:
+class AdvancedSubcategoriaProcessor:
+    def __init__(self, template_proc: AdvancedTemplateProcessor, custos_db: Dict[str, Produto]) -> None:
         self.template_proc = template_proc
         self.custos_db = custos_db
-        self.regra_proc = RegraProcessor(template_proc, custos_db)
+        self.regra_proc = AdvancedRegraProcessor(template_proc, custos_db)
 
     def process_subcategoria(self, nome_subcat: str, subdef: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         unidade = subdef.get("unidade", "un")
@@ -199,8 +314,12 @@ class SubcategoriaProcessor:
 
         for regra in regras:
             item = self.regra_proc.process_regra(regra, unidade, context)
-            itens.append(item)
-            total_sub += d(item.get("valor_total", 0))
+            
+            # ✅ PULAR ITENS COM QUANTIDADE 0
+            if not item.get("skip", False):
+                itens.append(item)
+                total_sub += d(item.get("valor_total", 0))
+                
             if not item.get("sucesso", True):
                 erros.extend(item.get("erros", []))
 
@@ -214,81 +333,65 @@ class SubcategoriaProcessor:
         }
 
 # =============================================================================
-# Contexto
+# Context Builder Avançado
 # =============================================================================
-
-# core/services/calculo_pedido_yaml.py - CONTEXTO CORRIGIDO
-
-class ContextBuilder:
+class AdvancedContextBuilder:
     @staticmethod
     def build(pedido: Any, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Constrói contexto completo e debugado para templates YAML
-        ✅ CORRIGIDO: Mapeamento correto das variáveis para o YAML da cabine
-        """
+        """Constrói contexto completo e detalhado para TODOS os YAMLs avançados"""
         import logging
         logger = logging.getLogger(__name__)
         
-        # Extrair dados do dimensionamento
         cab = dimensionamento.get("cab", {}) or {}
-        
-        # ✅ GARANTIR que todas as sub-estruturas existam
         cab.setdefault("pnl", {})
         cab.setdefault("chp", {})
         
-        # ✅ GARANTIR valores padrão para painéis (pnl)
         for k in ("lateral", "fundo", "teto"):
             cab["pnl"].setdefault(k, 0)
-        
-        # ✅ GARANTIR valores padrão para chapas (chp)  
         for k in ("corpo", "piso"):
             cab["chp"].setdefault(k, 0)
 
-        # ✅ MAPEAMENTO CORRETO das variáveis do pedido para o YAML
+        # ✅ CONTEXTO COMPLETO E DETALHADO
         ctx = {
-            # === MATERIAL DA CABINE ===
-            "material": getattr(pedido, "material_cabine", ""),  # ← YAML usa "material"
-            "material_cabine": getattr(pedido, "material_cabine", ""),  # ← Compatibilidade
-            
-            # === ESPESSURA ===
-            "espessura": getattr(pedido, "espessura_cabine", ""),  # ← YAML usa "espessura"
-            "espessura_cabine": getattr(pedido, "espessura_cabine", ""),  # ← Compatibilidade
-            
-            # === PISO ===
+            # === CABINE ===
+            "material": getattr(pedido, "material_cabine", ""),
+            "material_cabine": getattr(pedido, "material_cabine", ""),
+            "espessura": getattr(pedido, "espessura_cabine", ""),
+            "espessura_cabine": getattr(pedido, "espessura_cabine", ""),
             "piso_cabine": getattr(pedido, "piso_cabine", ""),
             "material_piso_cabine": getattr(pedido, "material_piso_cabine", ""),
             
-            # === OUTROS CAMPOS IMPORTANTES ===
-            "capacidade": getattr(pedido, "capacidade", ""),
+            # === DADOS BÁSICOS ===
+            "capacidade": float(getattr(pedido, "capacidade", 0) or 0),
             "modelo_elevador": getattr(pedido, "modelo_elevador", ""),
             "acionamento": getattr(pedido, "acionamento", ""),
+            "tracao": getattr(pedido, "tracao", ""),
+            "contrapeso": getattr(pedido, "contrapeso", ""),
             
-            # === ALIASES EXTRAS PARA COMPATIBILIDADE ===
-            "material_painel": getattr(pedido, "material_cabine", ""),
-            "espessura_painel": getattr(pedido, "espessura_cabine", ""),
+            # === DIMENSÕES POÇO ===
+            "largura_poco": float(getattr(pedido, "largura_poco", 0) or 0),
+            "comprimento_poco": float(getattr(pedido, "comprimento_poco", 0) or 0),
+            "altura_poco": float(getattr(pedido, "altura_poco", 0) or 0),
+            "pavimentos": int(getattr(pedido, "pavimentos", 0) or 0),
+            
+            # === DIMENSÕES CALCULADAS ===
+            "largura_cabine": float(cab.get('largura', 0) or 0),
+            "comprimento_cabine": float(cab.get('compr', 0) or 0),
+            "capacidade_cabine": float(cab.get('capacidade', 0) or 0),
+            "tracao_cabine": float(cab.get('tracao', 0) or 0),
         }
 
-        # ✅ DEBUG: Log das variáveis principais
-        logger.info(f"=== CONTEXTO PARA YAML CABINE ===")
-        logger.info(f"📊 DIMENSIONAMENTO:")
-        logger.info(f"  - cab.chp.corpo: {cab['chp']['corpo']}")
-        logger.info(f"  - cab.chp.piso: {cab['chp']['piso']}")
-        logger.info(f"  - cab.pnl.lateral: {cab['pnl']['lateral']}")
-        logger.info(f"  - cab.pnl.fundo: {cab['pnl']['fundo']}")
-        logger.info(f"  - cab.pnl.teto: {cab['pnl']['teto']}")
-        logger.info(f"")
-        logger.info(f"🎨 ESPECIFICAÇÕES:")
-        logger.info(f"  - ctx.material: '{ctx['material']}'")
-        logger.info(f"  - ctx.espessura: '{ctx['espessura']}'")
-        logger.info(f"  - ctx.piso_cabine: '{ctx['piso_cabine']}'")
-        logger.info(f"  - ctx.material_piso_cabine: '{ctx['material_piso_cabine']}'")
+        # ✅ DEBUG COMPLETO
+        logger.info(f"=== CONTEXTO AVANÇADO PARA TODOS OS YAMLs ===")
+        logger.info(f"📊 DIMENSIONAMENTO: capacidade={cab.get('capacidade')}, largura={cab.get('largura')}, compr={cab.get('compr')}")
+        logger.info(f"🎨 ESPECIFICAÇÕES: acionamento='{ctx['acionamento']}', tracao='{ctx['tracao']}', contrapeso='{ctx['contrapeso']}'")
+        logger.info(f"📏 POÇO: {ctx['largura_poco']}x{ctx['comprimento_poco']}x{ctx['altura_poco']}m, {ctx['pavimentos']} pavimentos")
 
-        # ✅ ESTRUTURA FINAL DO CONTEXTO
         context = {
             "ctx": ctx,
             "cab": cab,
-            "chp": cab["chp"],  # ← ACESSO DIRETO para templates
-            "pnl": cab["pnl"],  # ← ACESSO DIRETO para templates
+            "chp": cab["chp"],
+            "pnl": cab["pnl"],
             "pedido": pedido,
             "dimensionamento": dimensionamento,
         }
@@ -296,13 +399,13 @@ class ContextBuilder:
         return context
 
 # =============================================================================
-# Serviço principal
+# Serviço Principal Avançado
 # =============================================================================
 class CalculoPedidoYAMLService:
     def __init__(self, custos_db: Dict[str, Produto]) -> None:
         self.custos_db = custos_db
-        self.template_proc = TemplateProcessor()
-        self.subcat_proc = SubcategoriaProcessor(self.template_proc, custos_db)
+        self.template_proc = AdvancedTemplateProcessor()
+        self.subcat_proc = AdvancedSubcategoriaProcessor(self.template_proc, custos_db)
         logger.info(f"[CalculoPedidoYAMLService] carregado {__PARSER_VERSION__}")
 
     def _load_yaml_dict(self, categoria_slug: str) -> Dict[str, Any]:
@@ -315,25 +418,17 @@ class CalculoPedidoYAMLService:
             .first()
         )
         if not registro:
-            registro = (
-                RegraYAML.objects.filter(ativa=True, nome__icontains=slug)
-                .order_by("-atualizado_em")
-                .first()
-            )
-        if not registro:
-            raise ValueError(f"Nenhum YAML encontrado para a categoria '{slug}' (tipo/nome).")
+            raise ValueError(f"Nenhum YAML encontrado para a categoria '{slug}'.")
 
         raw = getattr(registro, "conteudo_yaml", None)
         if not raw or not str(raw).strip():
-            raise ValueError(f"Registro YAML '{registro.id}' não possui 'conteudo_yaml'.")
+            raise ValueError(f"Registro YAML '{registro.id}' não possui conteúdo.")
 
         data = yaml.safe_load(raw) or {}
         if not isinstance(data, dict):
             raise ValueError("Estrutura YAML raiz não é dict.")
         return data
 
-
-# ---------- calcular apenas 1 categoria (ex.: 'cabine') -------------------
     def calcular_categoria(self, categoria_slug: str, pedido: Any, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
         slug = (categoria_slug or "").strip().lower()
         if not slug:
@@ -349,7 +444,8 @@ class CalculoPedidoYAMLService:
         if not isinstance(subcats, dict):
             raise ValueError(f"Categoria '{nome_categoria}' sem 'subcategorias' válidas.")
 
-        context = ContextBuilder.build(pedido, dimensionamento)
+        # ✅ USAR CONTEXT BUILDER AVANÇADO
+        context = AdvancedContextBuilder.build(pedido, dimensionamento)
 
         resultado_subcats: Dict[str, Any] = {}
         erros_cat: List[str] = []
@@ -359,7 +455,7 @@ class CalculoPedidoYAMLService:
         for nome_subcat, subdef in subcats.items():
             subres = self.subcat_proc.process_subcategoria(nome_subcat, subdef, context)
             
-            # ✅ CORREÇÃO: Converter itens de lista para dicionário (compatibilidade com template)
+            # ✅ CONVERTER para compatibilidade com template
             if 'itens' in subres and isinstance(subres['itens'], list):
                 itens_lista = subres['itens']
                 itens_dict = {}
@@ -383,7 +479,6 @@ class CalculoPedidoYAMLService:
             "sucesso": len(erros_cat) == 0,
         }
 
-    # ---------- calcular várias categorias (lista de slugs) -------------------
     def calcular_completo(self, pedido: Any, dimensionamento: Dict[str, Any], categorias: Optional[List[str]] = None) -> Dict[str, Any]:
         if not categorias:
             categorias = ["cabine"]
@@ -407,11 +502,3 @@ class CalculoPedidoYAMLService:
             "erros": erros_totais,
             "sucesso": len(erros_totais) == 0,
         }
-
-    # ---------- helpers conveniência ------------------------------------------
-    def calcular_somente(self, categorias: List[str], pedido: Any, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
-        categorias = categorias or ["cabine"]
-        return self.calcular_completo(pedido, dimensionamento, categorias=categorias)
-
-    def calcular_somente_cabine(self, pedido: Any, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
-        return self.calcular_somente(["cabine"], pedido, dimensionamento)

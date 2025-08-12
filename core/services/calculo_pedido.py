@@ -45,8 +45,7 @@ class CalculoPedidoService:
     def _calcular_custos_componentes(pedido, dimensionamento) -> Dict[str, Any]:
         """
         Calcula os custos de produção completos
-        ✅ HÍBRIDO: CABINE obrigatoriamente YAML + resto hard-coded
-
+        ✅ YAML OBRIGATÓRIO PARA TUDO - SEM FALLBACK HARD-CODED
         """
 
         qs = Produto.objects.filter(
@@ -57,22 +56,20 @@ class CalculoPedidoService:
         )
         custos_db = {p.codigo.strip(): p for p in qs}
 
-         
         logger.info(f"Produtos disponíveis para cálculo: {len(custos_db)}")
-        #logger.debug(f"Códigos carregados no custos_db: {sorted(custos_db.keys())}")
 
         componentes_consolidados = {}
         custos_por_categoria = {}
         
-        # =================================================================
-        # 1. CABINE - OBRIGATORIAMENTE VIA YAML
-        # =================================================================
+        # ✅ USAR O SERVIÇO YAML AVANÇADO
+        from core.services.calculo_pedido_yaml import CalculoPedidoYAMLService
+        yaml_service = CalculoPedidoYAMLService(custos_db)
         
-
+        # =================================================================
+        # 1. CABINE - YAML OBRIGATÓRIO
+        # =================================================================
         try:
-            logger.info("🔥 CALCULANDO CABINE VIA YAML (obrigatório)...")
-            
-            yaml_service = CalculoPedidoYAMLService(custos_db)            
+            logger.info("🔥 CALCULANDO CABINE VIA YAML...")
             resultado_wrap = yaml_service.calcular_completo(pedido, dimensionamento, categorias=['cabine'])
             resultado_cabine_yaml = resultado_wrap['categorias']['CABINE']
 
@@ -80,75 +77,110 @@ class CalculoPedidoService:
                 erros_cabine = '; '.join(resultado_cabine_yaml.get('erros', ['Erro desconhecido']))
                 raise ValueError(f"YAML CABINE falhou: {erros_cabine}")
             
-            # ✅ CORREÇÃO: Transformar estrutura YAML para compatibilidade com template
+            # ✅ TRANSFORMAR estrutura YAML para compatibilidade com template
             cabine_compativel = {}
-            
-            # Pegar subcategorias do YAML e colocar no nível principal
             if 'subcategorias' in resultado_cabine_yaml:
                 for nome_subcat, dados_subcat in resultado_cabine_yaml['subcategorias'].items():
                     cabine_compativel[nome_subcat] = dados_subcat
-            
-            # Manter total_categoria no nível principal
             cabine_compativel['total_categoria'] = resultado_cabine_yaml.get('total_categoria', 0)
             
-            # ✅ SALVAR estrutura compatível
             componentes_consolidados["CABINE"] = cabine_compativel
             custos_por_categoria['CABINE'] = safe_decimal(resultado_cabine_yaml.get('total_categoria', 0))
-            
             logger.info(f"✅ CABINE YAML: R$ {custos_por_categoria['CABINE']}")
             
         except Exception as e:
             logger.error(f"❌ ERRO CRÍTICO - CABINE YAML falhou: {e}")
             raise ValueError(f"Erro no cálculo YAML da CABINE: {str(e)}")
 
-        
         # =================================================================
-        # 2. CARRINHO - HARD CODED (por enquanto)
-        # =================================================================
-        try:
-            logger.info("🔧 CALCULANDO CARRINHO VIA HARD CODED...")
-            custo_carrinho = CalculoCarrinhoService.calcular_custo_carrinho(pedido, dimensionamento, custos_db)
-            componentes_consolidados["CARRINHO"] = custo_carrinho['componentes']
-            componentes_consolidados["CARRINHO"]["total_categoria"] = float(custo_carrinho['total'])
-            custos_por_categoria['CARRINHO'] = safe_decimal(custo_carrinho['total'])
-            logger.info(f"✅ CARRINHO HARD: R$ {custos_por_categoria['CARRINHO']}")
-        except Exception as e:
-            logger.error(f"Erro no cálculo do carrinho: {e}")
-            componentes_consolidados["CARRINHO"] = {}
-            custos_por_categoria['CARRINHO'] = Decimal('0')
-        
-        # =================================================================
-        # 3. TRAÇÃO - HARD CODED (por enquanto)
+        # 2. CARRINHO - YAML OBRIGATÓRIO (SEM FALLBACK)
         # =================================================================
         try:
-            logger.info("🔧 CALCULANDO TRAÇÃO VIA HARD CODED...")
-            custo_tracao = CalculoTracaoService.calcular_custo_tracao(pedido, dimensionamento, custos_db)
-            componentes_consolidados["TRACAO"] = custo_tracao['componentes']
-            componentes_consolidados["TRACAO"]["total_categoria"] = float(custo_tracao['total'])
-            custos_por_categoria['TRACAO'] = safe_decimal(custo_tracao['total'])
-            logger.info(f"✅ TRAÇÃO HARD: R$ {custos_por_categoria['TRACAO']}")
+            logger.info("🔥 CALCULANDO CARRINHO VIA YAML...")
+            resultado_wrap = yaml_service.calcular_completo(pedido, dimensionamento, categorias=['carrinho'])
+            resultado_carrinho_yaml = resultado_wrap['categorias']['CARRINHO']
+
+            if not resultado_carrinho_yaml.get('sucesso'):
+                erros_carrinho = '; '.join(resultado_carrinho_yaml.get('erros', ['Erro desconhecido']))
+                # ❌ SEM FALLBACK - ERRO DIRETO
+                raise ValueError(f"YAML CARRINHO falhou: {erros_carrinho}")
+            
+            # ✅ TRANSFORMAR estrutura YAML para compatibilidade
+            carrinho_compativel = {}
+            if 'subcategorias' in resultado_carrinho_yaml:
+                for nome_subcat, dados_subcat in resultado_carrinho_yaml['subcategorias'].items():
+                    carrinho_compativel[nome_subcat] = dados_subcat
+            carrinho_compativel['total_categoria'] = resultado_carrinho_yaml.get('total_categoria', 0)
+            
+            componentes_consolidados["CARRINHO"] = carrinho_compativel
+            custos_por_categoria['CARRINHO'] = safe_decimal(resultado_carrinho_yaml.get('total_categoria', 0))
+            logger.info(f"✅ CARRINHO YAML: R$ {custos_por_categoria['CARRINHO']}")
+            
         except Exception as e:
-            logger.error(f"Erro no cálculo da tração: {e}")
-            componentes_consolidados["TRACAO"] = {}
-            custos_por_categoria['TRACAO'] = Decimal('0')
-        
+            logger.error(f"❌ ERRO CRÍTICO - CARRINHO YAML falhou: {e}")
+            # ❌ PROPAGAR ERRO - NÃO HÁ FALLBACK
+            raise ValueError(f"Erro no cálculo YAML do CARRINHO: {str(e)}")
+
         # =================================================================
-        # 4. SISTEMAS - HARD CODED (por enquanto)  
+        # 3. TRAÇÃO - YAML OBRIGATÓRIO (SEM FALLBACK)
         # =================================================================
         try:
-            logger.info("🔧 CALCULANDO SISTEMAS VIA HARD CODED...")
-            custo_sistemas = CalculoSistemasService.calcular_custo_sistemas(pedido, dimensionamento, custos_db)
-            componentes_consolidados["SIST_COMPLEMENTARES"] = custo_sistemas['componentes']
-            componentes_consolidados["SIST_COMPLEMENTARES"]["total_categoria"] = float(custo_sistemas['total'])
-            custos_por_categoria['SIST_COMPLEMENTARES'] = safe_decimal(custo_sistemas['total'])
-            logger.info(f"✅ SISTEMAS HARD: R$ {custos_por_categoria['SIST_COMPLEMENTARES']}")
+            logger.info("🔥 CALCULANDO TRAÇÃO VIA YAML...")
+            resultado_wrap = yaml_service.calcular_completo(pedido, dimensionamento, categorias=['tracao'])
+            resultado_tracao_yaml = resultado_wrap['categorias']['TRACAO']
+
+            if not resultado_tracao_yaml.get('sucesso'):
+                erros_tracao = '; '.join(resultado_tracao_yaml.get('erros', ['Erro desconhecido']))
+                # ❌ SEM FALLBACK - ERRO DIRETO
+                raise ValueError(f"YAML TRAÇÃO falhou: {erros_tracao}")
+            
+            # ✅ TRANSFORMAR estrutura YAML para compatibilidade
+            tracao_compativel = {}
+            if 'subcategorias' in resultado_tracao_yaml:
+                for nome_subcat, dados_subcat in resultado_tracao_yaml['subcategorias'].items():
+                    tracao_compativel[nome_subcat] = dados_subcat
+            tracao_compativel['total_categoria'] = resultado_tracao_yaml.get('total_categoria', 0)
+            
+            componentes_consolidados["TRACAO"] = tracao_compativel
+            custos_por_categoria['TRACAO'] = safe_decimal(resultado_tracao_yaml.get('total_categoria', 0))
+            logger.info(f"✅ TRAÇÃO YAML: R$ {custos_por_categoria['TRACAO']}")
+            
         except Exception as e:
-            logger.error(f"Erro no cálculo dos sistemas: {e}")
-            componentes_consolidados["SIST_COMPLEMENTARES"] = {}
-            custos_por_categoria['SIST_COMPLEMENTARES'] = Decimal('0')
+            logger.error(f"❌ ERRO CRÍTICO - TRAÇÃO YAML falhou: {e}")
+            # ❌ PROPAGAR ERRO - NÃO HÁ FALLBACK
+            raise ValueError(f"Erro no cálculo YAML da TRAÇÃO: {str(e)}")
+
+        # =================================================================
+        # 4. SISTEMAS - YAML OBRIGATÓRIO (SEM FALLBACK)
+        # =================================================================
+        try:
+            logger.info("🔥 CALCULANDO SISTEMAS VIA YAML...")
+            resultado_wrap = yaml_service.calcular_completo(pedido, dimensionamento, categorias=['sistemas'])
+            resultado_sistemas_yaml = resultado_wrap['categorias']['SIST_COMPLEMENTARES']
+
+            if not resultado_sistemas_yaml.get('sucesso'):
+                erros_sistemas = '; '.join(resultado_sistemas_yaml.get('erros', ['Erro desconhecido']))
+                # ❌ SEM FALLBACK - ERRO DIRETO
+                raise ValueError(f"YAML SISTEMAS falhou: {erros_sistemas}")
+            
+            # ✅ TRANSFORMAR estrutura YAML para compatibilidade
+            sistemas_compativel = {}
+            if 'subcategorias' in resultado_sistemas_yaml:
+                for nome_subcat, dados_subcat in resultado_sistemas_yaml['subcategorias'].items():
+                    sistemas_compativel[nome_subcat] = dados_subcat
+            sistemas_compativel['total_categoria'] = resultado_sistemas_yaml.get('total_categoria', 0)
+            
+            componentes_consolidados["SIST_COMPLEMENTARES"] = sistemas_compativel
+            custos_por_categoria['SIST_COMPLEMENTARES'] = safe_decimal(resultado_sistemas_yaml.get('total_categoria', 0))
+            logger.info(f"✅ SISTEMAS YAML: R$ {custos_por_categoria['SIST_COMPLEMENTARES']}")
+            
+        except Exception as e:
+            logger.error(f"❌ ERRO CRÍTICO - SISTEMAS YAML falhou: {e}")
+            # ❌ PROPAGAR ERRO - NÃO HÁ FALLBACK
+            raise ValueError(f"Erro no cálculo YAML dos SISTEMAS: {str(e)}")
         
         # =================================================================
-        # TOTALIZAÇÕES E FORMAÇÃO DE PREÇO (IGUAL)
+        # TOTALIZAÇÕES E FORMAÇÃO DE PREÇO (MANTÉM IGUAL)
         # =================================================================
         
         custo_materiais = sum(custos_por_categoria.values())
@@ -175,30 +207,15 @@ class CalculoPedidoService:
         impostos = pedido.calcular_impostos_dinamicos(preco_com_comissao)
         preco_final = preco_com_comissao + impostos
         
-        # LOGS DETALHADOS
-        logger.info(f"=== RESUMO DOS CUSTOS HÍBRIDO ===")
+        # LOGS DE SUCESSO TOTAL
+        logger.info(f"=== SUCESSO: TODOS OS CÁLCULOS VIA YAML ===")
         logger.info(f"  - CABINE (YAML): R$ {custos_por_categoria.get('CABINE', 0)}")
-        logger.info(f"  - CARRINHO (HARD): R$ {custos_por_categoria.get('CARRINHO', 0)}")
-        logger.info(f"  - TRAÇÃO (HARD): R$ {custos_por_categoria.get('TRACAO', 0)}")
-        logger.info(f"  - SISTEMAS (HARD): R$ {custos_por_categoria.get('SIST_COMPLEMENTARES', 0)}")
+        logger.info(f"  - CARRINHO (YAML): R$ {custos_por_categoria.get('CARRINHO', 0)}")
+        logger.info(f"  - TRAÇÃO (YAML): R$ {custos_por_categoria.get('TRACAO', 0)}")
+        logger.info(f"  - SISTEMAS (YAML): R$ {custos_por_categoria.get('SIST_COMPLEMENTARES', 0)}")
         logger.info(f"  - TOTAL MATERIAIS: R$ {custo_materiais}")
-        logger.info(f"")
-        logger.info(f"=== CUSTOS DE PRODUÇÃO ===")
-        logger.info(f"  - MOD Produção (15%): R$ {custo_mao_obra_producao}")
-        logger.info(f"  - Custos Indiretos (5%): R$ {custo_indiretos_fabricacao}")
-        logger.info(f"  - CUSTO DE PRODUÇÃO: R$ {custo_producao}")
-        logger.info(f"")
-        logger.info(f"=== PROJETO COMPLETO ===")
-        logger.info(f"  - Custo Instalação (5%): R$ {custo_instalacao}")
-        logger.info(f"  - CUSTO TOTAL PROJETO: R$ {custo_total_projeto}")
-        logger.info(f"")
-        logger.info(f"=== FORMAÇÃO DE PREÇO ===")
-        logger.info(f"  - Margem Lucro (30%): R$ {margem_lucro}")
-        logger.info(f"  - Preço c/ Margem: R$ {preco_com_margem}")
-        logger.info(f"  - Comissão (3%): R$ {comissao}")
-        logger.info(f"  - Preço c/ Comissão: R$ {preco_com_comissao}")
-        logger.info(f"  - Impostos: R$ {impostos}")
         logger.info(f"  - PREÇO FINAL: R$ {preco_final}")
+        logger.info(f"===== 🎉 TUDO FUNCIONANDO VIA YAML! =====")
         
         return {
             'componentes': componentes_consolidados,
@@ -220,12 +237,12 @@ class CalculoPedidoService:
             'preco_final': preco_final,
             # Outros
             'total_componentes': len(componentes_consolidados),
-            # ✅ FLAG PARA DEBUG
+            # ✅ TODOS VIA YAML
             'metodo_usado': {
                 'CABINE': 'YAML',
-                'CARRINHO': 'HARD_CODED',
-                'TRACAO': 'HARD_CODED', 
-                'SIST_COMPLEMENTARES': 'HARD_CODED'
+                'CARRINHO': 'YAML',
+                'TRACAO': 'YAML', 
+                'SIST_COMPLEMENTARES': 'YAML'
             }
         }
 
