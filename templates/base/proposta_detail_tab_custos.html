@@ -102,14 +102,17 @@
                 <div class="card-header bg-light">
                   <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 text-dark">
-                      {% if 'chapas' in subcategoria_nome %}
-                        <i class="fas fa-square me-1"></i>Chapas
-                      {% elif 'piso' in subcategoria_nome %}
-                        <i class="fas fa-layer-group me-1"></i>Piso
-                      {% elif 'fixacao' in subcategoria_nome %}
-                        <i class="fas fa-bolt me-1"></i>Fixação
+                      <!-- ✅ NOMES ESPECÍFICOS DAS SUBCATEGORIAS -->
+                      {% if subcategoria_nome == 'chapas_corpo' %}
+                        <i class="fas fa-square me-1"></i>Chapas do Corpo
+                      {% elif subcategoria_nome == 'chapas_piso' %}
+                        <i class="fas fa-layer-group me-1"></i>Chapas do Piso
+                      {% elif subcategoria_nome == 'fixacao_chapas_corpo' %}
+                        <i class="fas fa-bolt me-1"></i>Fixação Chapas Corpo
+                      {% elif subcategoria_nome == 'fixacao_piso' %}
+                        <i class="fas fa-screwdriver me-1"></i>Fixação do Piso
                       {% else %}
-                        {{ subcategoria_nome|title }}
+                        <i class="fas fa-cog me-1"></i>{{ subcategoria_nome|title }}
                       {% endif %}
                     </h6>
                     <span class="badge bg-dark text-white">{{ subcategoria_dados.total_subcategoria|formato_br }}</span>
@@ -126,7 +129,7 @@
                         </div>
                         <div class="flex-grow-1">
                           <h6 class="mb-1">{{ comp.descricao|default:comp.codigo }}</h6>
-                          <small class="text-muted">{{ comp.categoria }} › {{ comp.subcategoria }}</small>
+                          <small class="text-muted">{{ comp.categoria|default:"MATERIAL" }} › {{ comp.subcategoria|default:subcategoria_nome|title }}</small>
                           
                           {% if comp.explicacao %}
                           <div class="mt-2 p-2 bg-light rounded">
@@ -164,6 +167,7 @@
           </div>
         </div>
         {% endif %}
+
 
         <!-- CARRINHO -->
         {% if pedido.componentes_calculados.CARRINHO %}

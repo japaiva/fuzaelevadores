@@ -332,7 +332,8 @@ class CalculoPedidoYAMLService:
             raise ValueError("Estrutura YAML raiz não é dict.")
         return data
 
-    # ---------- calcular apenas 1 categoria (ex.: 'cabine') -------------------
+
+# ---------- calcular apenas 1 categoria (ex.: 'cabine') -------------------
     def calcular_categoria(self, categoria_slug: str, pedido: Any, dimensionamento: Dict[str, Any]) -> Dict[str, Any]:
         slug = (categoria_slug or "").strip().lower()
         if not slug:
@@ -357,11 +358,21 @@ class CalculoPedidoYAMLService:
 
         for nome_subcat, subdef in subcats.items():
             subres = self.subcat_proc.process_subcategoria(nome_subcat, subdef, context)
+            
+            # ✅ CORREÇÃO: Converter itens de lista para dicionário (compatibilidade com template)
+            if 'itens' in subres and isinstance(subres['itens'], list):
+                itens_lista = subres['itens']
+                itens_dict = {}
+                for item in itens_lista:
+                    codigo = item.get('codigo', item.get('nome', f'item_{len(itens_dict)}'))
+                    itens_dict[codigo] = item
+                subres['itens'] = itens_dict
+            
             resultado_subcats[nome_subcat] = subres
             total_categoria += d(subres.get("total_subcategoria", 0))
             if not subres.get("sucesso", True):
                 erros_cat.extend(subres.get("erros", []))
-            itens_flat.extend(subres.get("itens", []))
+            itens_flat.extend(subres.get("itens", []) if isinstance(subres.get("itens", []), list) else list(subres.get("itens", {}).values()))
 
         return {
             "categoria": nome_categoria,
