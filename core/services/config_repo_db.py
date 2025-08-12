@@ -1,4 +1,4 @@
-# core/services/config_repo_db.py
+# core/services/config_repo_db.py - CORRIGIDO
 import yaml
 from functools import lru_cache
 from typing import Dict, Any
@@ -7,8 +7,11 @@ from core.models.regras_yaml import RegraYAML
 class ConfigRepoDB:
     @lru_cache(maxsize=16)
     def load(self, nome: str) -> Dict[str, Any]:
+        """
+        ✅ CORRIGIDO: Campo é 'ativa' não 'ativo'
+        """
         obj = (RegraYAML.objects
-               .filter(tipo=nome, ativa=True)
+               .filter(tipo=nome, ativa=True)  # ✅ 'ativa' não 'ativo'
                .order_by("-atualizado_em")
                .first())
         if not obj:

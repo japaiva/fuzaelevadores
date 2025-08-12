@@ -1,20 +1,19 @@
-# core/services/calculo_pedido.py - INTEGRAÇÃO COM YAML
-# Mudanças mínimas para usar o novo parser YAML
+# core/services/calculo_pedido.py - HÍBRIDO: CABINE YAML + RESTO HARD CODED
 
 import logging
 from decimal import Decimal
 from typing import Dict, Any, Union
 from django.db import transaction
+from django.db.models import Q
 
 from core.models import Produto, ParametrosGerais
 from core.services.dimensionamento import DimensionamentoService
 from core.services.pricing import PricingService
 
-# ✅ IMPORT CORRETO - Do arquivo que vai existir no seu projeto
-from core.services.calculo_pedido_yaml import substituir_calculo_hard_coded
+# ✅ IMPORT PARA CABINE YAML
+from core.services.calculo_pedido_yaml import CalculoPedidoYAMLService
 
-# SERVICES ESPECÍFICOS - Manter para fallback se necessário
-from .calculo_cabine import CalculoCabineService
+# ✅ IMPORTS PARA HARD CODED (carrinho, tração, sistemas)
 from .calculo_carrinho import CalculoCarrinhoService
 from .calculo_tracao import CalculoTracaoService
 from .calculo_sistemas import CalculoSistemasService
@@ -39,95 +38,110 @@ def safe_decimal(value: Union[int, float, str, Decimal, None]) -> Decimal:
 class CalculoPedidoService:
     """
     Serviço principal para cálculos de pedidos de elevadores
-    ✅ ATUALIZADO: Usa YAML quando disponível, fallback para hard coded
+    ✅ HÍBRIDO: CABINE via YAML + CARRINHO/TRAÇÃO/SISTEMAS via hard-coded
     """
     
     @staticmethod
     def _calcular_custos_componentes(pedido, dimensionamento) -> Dict[str, Any]:
         """
         Calcula os custos de produção completos
-        ✅ NOVA VERSÃO: Tenta YAML primeiro, fallback para hard coded
+        ✅ HÍBRIDO: CABINE obrigatoriamente YAML + resto hard-coded
+
         """
-        # Buscar todos os produtos ativos (MPs - Matéria Prima)
-        custos_db = {p.codigo: p for p in Produto.objects.filter(
-            disponivel=True, 
+
+        qs = Produto.objects.filter(
+            utilizado=True,
             status='ATIVO',
-            tipo='MP'  # Só matérias primas
-        )}
-        
+        ).filter(
+            Q(tipo__istartswith='MP') | Q(tipo__istartswith='PI')
+        )
+        custos_db = {p.codigo.strip(): p for p in qs}
+
+         
         logger.info(f"Produtos disponíveis para cálculo: {len(custos_db)}")
+        #logger.debug(f"Códigos carregados no custos_db: {sorted(custos_db.keys())}")
+
+        componentes_consolidados = {}
+        custos_por_categoria = {}
         
+        # =================================================================
+        # 1. CABINE - OBRIGATORIAMENTE VIA YAML
+        # =================================================================
         try:
-            # ✅ TENTAR CÁLCULO YAML PRIMEIRO
-            logger.info("Tentando cálculo via YAML...")
-            custos_resultado_yaml = substituir_calculo_hard_coded(pedido, dimensionamento, custos_db)
+            logger.info("🔥 CALCULANDO CABINE VIA YAML (obrigatório)...")
             
-            # Se chegou aqui, YAML funcionou
-            logger.info(f"✅ Cálculo YAML bem-sucedido! Total materiais: R$ {custos_resultado_yaml['custo_materiais']}")
+            yaml_service = CalculoPedidoYAMLService(custos_db)            
+            resultado_wrap = yaml_service.calcular_completo(pedido, dimensionamento, categorias=['cabine'])
+            resultado_cabine_yaml = resultado_wrap['categorias']['CABINE']  # chave vem em maiúsculas
+
+
+            if not resultado_cabine_yaml.get('sucesso'):
+                erros_cabine = '; '.join(resultado_cabine_yaml.get('erros', ['Erro desconhecido']))
+                raise ValueError(f"YAML CABINE falhou: {erros_cabine}")
             
-            componentes_consolidados = custos_resultado_yaml['componentes']
-            custos_por_categoria = custos_resultado_yaml['custos_por_categoria']
-            custo_materiais = custos_resultado_yaml['custo_materiais']
+            # ✅ SUCESSO YAML CABINE
+            componentes_consolidados["CABINE"] = resultado_cabine_yaml
+            custos_por_categoria['CABINE'] = safe_decimal(resultado_cabine_yaml.get('total_categoria', 0))
             
-        except Exception as yaml_error:
-            # ✅ FALLBACK PARA HARD CODED
-            logger.warning(f"Erro no cálculo YAML: {yaml_error}")
-            logger.info("Usando fallback para cálculo hard coded...")
+            logger.info(f"✅ CABINE YAML: R$ {custos_por_categoria['CABINE']}")
             
-            componentes_consolidados = {} 
-            custos_por_categoria = {}
-            
-            # CABINE - Hard coded
-            try:
-                custo_cabine = CalculoCabineService.calcular_custo_cabine(pedido, dimensionamento, custos_db)
-                componentes_consolidados["CABINE"] = custo_cabine['componentes']
-                componentes_consolidados["CABINE"]["total_categoria"] = float(custo_cabine['total'])
-                custos_por_categoria['CABINE'] = safe_decimal(custo_cabine['total'])
-            except Exception as e:
-                logger.error(f"Erro no cálculo da cabine: {e}")
-                componentes_consolidados["CABINE"] = {}
-                custos_por_categoria['CABINE'] = Decimal('0')
-            
-            # CARRINHO - Hard coded
-            try:
-                custo_carrinho = CalculoCarrinhoService.calcular_custo_carrinho(pedido, dimensionamento, custos_db)
-                componentes_consolidados["CARRINHO"] = custo_carrinho['componentes']
-                componentes_consolidados["CARRINHO"]["total_categoria"] = float(custo_carrinho['total'])
-                custos_por_categoria['CARRINHO'] = safe_decimal(custo_carrinho['total'])
-            except Exception as e:
-                logger.error(f"Erro no cálculo do carrinho: {e}")
-                componentes_consolidados["CARRINHO"] = {}
-                custos_por_categoria['CARRINHO'] = Decimal('0')
-            
-            # TRAÇÃO - Hard coded
-            try:
-                custo_tracao = CalculoTracaoService.calcular_custo_tracao(pedido, dimensionamento, custos_db)
-                componentes_consolidados["TRACAO"] = custo_tracao['componentes']
-                componentes_consolidados["TRACAO"]["total_categoria"] = float(custo_tracao['total'])
-                custos_por_categoria['TRACAO'] = safe_decimal(custo_tracao['total'])
-            except Exception as e:
-                logger.error(f"Erro no cálculo da tração: {e}")
-                componentes_consolidados["TRACAO"] = {}
-                custos_por_categoria['TRACAO'] = Decimal('0')
-            
-            # SISTEMAS - Hard coded
-            try:
-                custo_sistemas = CalculoSistemasService.calcular_custo_sistemas(pedido, dimensionamento, custos_db)
-                componentes_consolidados["SIST_COMPLEMENTARES"] = custo_sistemas['componentes']
-                componentes_consolidados["SIST_COMPLEMENTARES"]["total_categoria"] = float(custo_sistemas['total'])
-                custos_por_categoria['SIST_COMPLEMENTARES'] = safe_decimal(custo_sistemas['total'])
-            except Exception as e:
-                logger.error(f"Erro no cálculo dos sistemas: {e}")
-                componentes_consolidados["SIST_COMPLEMENTARES"] = {}
-                custos_por_categoria['SIST_COMPLEMENTARES'] = Decimal('0')
-            
-            custo_materiais = sum(custos_por_categoria.values())
-            logger.info(f"✅ Fallback hard coded concluído. Total materiais: R$ {custo_materiais}")
+        except Exception as e:
+            logger.error(f"❌ ERRO CRÍTICO - CABINE YAML falhou: {e}")
+            raise ValueError(f"Erro no cálculo YAML da CABINE: {str(e)}")
         
         # =================================================================
-        # RESTO PERMANECE IGUAL (MOD, indiretos, margem, etc.)
+        # 2. CARRINHO - HARD CODED (por enquanto)
+        # =================================================================
+        try:
+            logger.info("🔧 CALCULANDO CARRINHO VIA HARD CODED...")
+            custo_carrinho = CalculoCarrinhoService.calcular_custo_carrinho(pedido, dimensionamento, custos_db)
+            componentes_consolidados["CARRINHO"] = custo_carrinho['componentes']
+            componentes_consolidados["CARRINHO"]["total_categoria"] = float(custo_carrinho['total'])
+            custos_por_categoria['CARRINHO'] = safe_decimal(custo_carrinho['total'])
+            logger.info(f"✅ CARRINHO HARD: R$ {custos_por_categoria['CARRINHO']}")
+        except Exception as e:
+            logger.error(f"Erro no cálculo do carrinho: {e}")
+            componentes_consolidados["CARRINHO"] = {}
+            custos_por_categoria['CARRINHO'] = Decimal('0')
+        
+        # =================================================================
+        # 3. TRAÇÃO - HARD CODED (por enquanto)
+        # =================================================================
+        try:
+            logger.info("🔧 CALCULANDO TRAÇÃO VIA HARD CODED...")
+            custo_tracao = CalculoTracaoService.calcular_custo_tracao(pedido, dimensionamento, custos_db)
+            componentes_consolidados["TRACAO"] = custo_tracao['componentes']
+            componentes_consolidados["TRACAO"]["total_categoria"] = float(custo_tracao['total'])
+            custos_por_categoria['TRACAO'] = safe_decimal(custo_tracao['total'])
+            logger.info(f"✅ TRAÇÃO HARD: R$ {custos_por_categoria['TRACAO']}")
+        except Exception as e:
+            logger.error(f"Erro no cálculo da tração: {e}")
+            componentes_consolidados["TRACAO"] = {}
+            custos_por_categoria['TRACAO'] = Decimal('0')
+        
+        # =================================================================
+        # 4. SISTEMAS - HARD CODED (por enquanto)  
+        # =================================================================
+        try:
+            logger.info("🔧 CALCULANDO SISTEMAS VIA HARD CODED...")
+            custo_sistemas = CalculoSistemasService.calcular_custo_sistemas(pedido, dimensionamento, custos_db)
+            componentes_consolidados["SIST_COMPLEMENTARES"] = custo_sistemas['componentes']
+            componentes_consolidados["SIST_COMPLEMENTARES"]["total_categoria"] = float(custo_sistemas['total'])
+            custos_por_categoria['SIST_COMPLEMENTARES'] = safe_decimal(custo_sistemas['total'])
+            logger.info(f"✅ SISTEMAS HARD: R$ {custos_por_categoria['SIST_COMPLEMENTARES']}")
+        except Exception as e:
+            logger.error(f"Erro no cálculo dos sistemas: {e}")
+            componentes_consolidados["SIST_COMPLEMENTARES"] = {}
+            custos_por_categoria['SIST_COMPLEMENTARES'] = Decimal('0')
+        
+        # =================================================================
+        # TOTALIZAÇÕES E FORMAÇÃO DE PREÇO (IGUAL)
         # =================================================================
         
+        custo_materiais = sum(custos_por_categoria.values())
+        logger.info(f"📊 TOTAL MATERIAIS: R$ {custo_materiais}")
+        
+        # MOD, indiretos, etc. (MANTÉM IGUAL)
         custo_mao_obra_producao = custo_materiais * Decimal('0.15')     # 15%
         custo_indiretos_fabricacao = custo_materiais * Decimal('0.05')  # 5%
         custo_instalacao = custo_materiais * Decimal('0.05')            # 5%
@@ -149,9 +163,11 @@ class CalculoPedidoService:
         preco_final = preco_com_comissao + impostos
         
         # LOGS DETALHADOS
-        logger.info(f"=== RESUMO DOS CUSTOS ===")
-        for categoria, valor in custos_por_categoria.items():
-            logger.info(f"  - {categoria}: R$ {valor}")
+        logger.info(f"=== RESUMO DOS CUSTOS HÍBRIDO ===")
+        logger.info(f"  - CABINE (YAML): R$ {custos_por_categoria.get('CABINE', 0)}")
+        logger.info(f"  - CARRINHO (HARD): R$ {custos_por_categoria.get('CARRINHO', 0)}")
+        logger.info(f"  - TRAÇÃO (HARD): R$ {custos_por_categoria.get('TRACAO', 0)}")
+        logger.info(f"  - SISTEMAS (HARD): R$ {custos_por_categoria.get('SIST_COMPLEMENTARES', 0)}")
         logger.info(f"  - TOTAL MATERIAIS: R$ {custo_materiais}")
         logger.info(f"")
         logger.info(f"=== CUSTOS DE PRODUÇÃO ===")
@@ -190,11 +206,18 @@ class CalculoPedidoService:
             'impostos': impostos,
             'preco_final': preco_final,
             # Outros
-            'total_componentes': len(componentes_consolidados)
+            'total_componentes': len(componentes_consolidados),
+            # ✅ FLAG PARA DEBUG
+            'metodo_usado': {
+                'CABINE': 'YAML',
+                'CARRINHO': 'HARD_CODED',
+                'TRACAO': 'HARD_CODED', 
+                'SIST_COMPLEMENTARES': 'HARD_CODED'
+            }
         }
 
     # ============================================================================
-    # RESTO DOS MÉTODOS PERMANECE IGUAL
+    # RESTO DOS MÉTODOS PERMANECE IGUAL (calcular_custos_completo, etc.)
     # ============================================================================
 
     @staticmethod
@@ -202,10 +225,10 @@ class CalculoPedidoService:
     def calcular_custos_completo(pedido):
         """
         Calcula tudo: dimensionamento + custos + preços e salva no pedido
-        ✅ MANTIDO: Só mudou a parte de cálculo de materiais
+        ✅ MANTIDO: Só mudou a parte de cálculo de materiais para híbrido
         """
         try:
-            logger.info(f"Iniciando cálculo completo para pedido {pedido.numero}")
+            logger.info(f"Iniciando cálculo completo HÍBRIDO para pedido {pedido.numero}")
             
             # 1. Extrair especificações do pedido
             especificacoes = extrair_especificacoes_do_pedido(pedido)
@@ -215,9 +238,10 @@ class CalculoPedidoService:
             dimensionamento, explicacao_dimensionamento = DimensionamentoService.calcular_dimensionamento_completo(especificacoes)
             logger.info(f"Dimensionamento calculado - Cabine: {dimensionamento.get('cab', {}).get('largura', 0)}x{dimensionamento.get('cab', {}).get('compr', 0)}m")
             
-            # 3. ✅ NOVO: Calcular custos usando YAML (com fallback para hard coded)
+            # 3. ✅ HÍBRIDO: Calcular custos (CABINE YAML + resto hard-coded)
             custos_resultado = CalculoPedidoService._calcular_custos_componentes(pedido, dimensionamento)
-            logger.info(f"Custos calculados - Total: R$ {custos_resultado['custo_total_projeto']}")
+            logger.info(f"Custos HÍBRIDOS calculados - Total: R$ {custos_resultado['custo_total_projeto']}")
+            logger.info(f"Método usado: {custos_resultado['metodo_usado']}")
             
             # 4. Calcular formação de preço (compatibilidade)
             formacao_preco_result = PricingService.calcular_formacao_preco(
@@ -235,7 +259,7 @@ class CalculoPedidoService:
                 custos_resultado, formacao_preco_result, ficha_tecnica
             )
             
-            logger.info(f"Cálculo completo finalizado para pedido {pedido.numero}")
+            logger.info(f"✅ Cálculo HÍBRIDO completo finalizado para pedido {pedido.numero}")
             
             return {
                 'success': True,
@@ -243,11 +267,12 @@ class CalculoPedidoService:
                 'explicacao': explicacao_dimensionamento,
                 'custos': custos_resultado,
                 'formacao_preco': formacao_preco_result,
-                'ficha_tecnica': ficha_tecnica
+                'ficha_tecnica': ficha_tecnica,
+                'metodo_usado': custos_resultado['metodo_usado']  # ✅ PARA DEBUG
             }
             
         except Exception as e:
-            logger.error(f"Erro no cálculo completo do pedido {pedido.numero}: {str(e)}")
+            logger.error(f"Erro no cálculo HÍBRIDO do pedido {pedido.numero}: {str(e)}")
             raise ValueError(f"Erro nos cálculos: {str(e)}")
     
     @staticmethod
@@ -283,7 +308,9 @@ class CalculoPedidoService:
                 'custo_producao': float(custos_resultado['custo_producao']),
                 'custo_instalacao': float(custos_resultado['custo_instalacao']),
                 'custo_total_projeto': float(custos_resultado['custo_total_projeto'])
-            }
+            },
+            # ✅ ADICIONAR INFO DO MÉTODO USADO
+            'metodo_calculo': custos_resultado.get('metodo_usado', {})
         }
     
     @staticmethod
@@ -351,7 +378,9 @@ class CalculoPedidoService:
                 'preco_com_comissao': float(custos_resultado['preco_com_comissao']),
                 'impostos': float(custos_resultado['impostos']),
                 'preco_final': float(custos_resultado['preco_final'])
-            }
+            },
+            # ✅ SALVAR MÉTODO USADO PARA DEBUG
+            'metodo_usado': custos_resultado.get('metodo_usado', {})
         }
         
         # Manter componentes_calculados para compatibilidade
@@ -364,7 +393,7 @@ class CalculoPedidoService:
                 pedido.status = 'simulado'
         
         pedido.save()
-        logger.info(f"Cálculos salvos no pedido {pedido.numero}")
+        logger.info(f"Cálculos HÍBRIDOS salvos no pedido {pedido.numero}")
 
     # ============================================================================
     # MÉTODOS ADICIONAIS MANTIDOS IGUAIS
@@ -374,7 +403,7 @@ class CalculoPedidoService:
     def recalcular_proposta_existente(pedido):
         """Recalcula uma proposta existente mantendo valores negociados"""
         try:
-            logger.info(f"Recalculando proposta existente {pedido.numero}")
+            logger.info(f"Recalculando proposta existente {pedido.numero} - MODO HÍBRIDO")
             
             # Salvar valor negociado atual
             valor_proposta_atual = pedido.valor_proposta
@@ -398,11 +427,11 @@ class CalculoPedidoService:
                 
                 pedido.save()
             
-            logger.info(f"Recálculo finalizado para proposta {pedido.numero}")
+            logger.info(f"Recálculo HÍBRIDO finalizado para proposta {pedido.numero}")
             return resultado
             
         except Exception as e:
-            logger.error(f"Erro no recálculo da proposta {pedido.numero}: {str(e)}")
+            logger.error(f"Erro no recálculo HÍBRIDO da proposta {pedido.numero}: {str(e)}")
             raise ValueError(f"Erro no recálculo: {str(e)}")
 
     @staticmethod
@@ -435,7 +464,9 @@ class CalculoPedidoService:
                     'lucro_bruto': float(pedido.lucro_bruto),
                     'margem_real': float(pedido.margem_real_percentual),
                     'economia_cliente': float(pedido.economia_cliente)
-                }
+                },
+                # ✅ ADICIONAR INFO DO MÉTODO USADO
+                'metodo_calculo': pedido.custos_detalhados.get('metodo_usado', {}) if pedido.custos_detalhados else {}
             }
             
             return resumo
