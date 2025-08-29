@@ -207,7 +207,7 @@
             </div>
             
             <div class="col-md-3">
-              <label for="{{ form.comprimento_poco.id_for_label }}" class="form-label">Comprimento (m)*</label>
+              <label for="{{ form.comprimento_poco.id_for_label }}" class="form-label">Profundidade (m)*</label>
               {{ form.comprimento_poco }}
               {% if form.comprimento_poco.errors %}
                 <div class="text-danger small mt-1">
@@ -217,7 +217,7 @@
             </div>
             
             <div class="col-md-3">
-              <label for="{{ form.altura_poco.id_for_label }}" class="form-label">Altura (m)*</label>
+              <label for="{{ form.altura_poco.id_for_label }}" class="form-label">Percurso Total (m)*</label>
               {{ form.altura_poco }}
               {% if form.altura_poco.errors %}
                 <div class="text-danger small mt-1">
@@ -638,14 +638,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const altura = parseFloat(alturaInput.value.replace(',', '.')) || 0;
         const pavimentos = parseInt(pavimentosInput.value) || 0;
         
-        if (largura <= 0 || comprimento <= 0 || altura <= 0) {
-            e.preventDefault();
-            alert('As dimensões do poço (Largura, Comprimento e Altura) devem ser maiores que zero.');
-            if (largura <= 0) larguraInput.focus();
-            else if (comprimento <= 0) comprimentoInput.focus();
-            else alturaInput.focus();
-            return;
-        }
+        //if (largura <= 0 || comprimento <= 0 || altura <= 0) {
+        //    e.preventDefault();
+        //   alert('As dimensões do poço (Largura, Comprimento e Altura) devem ser maiores que zero.');
+        //    if (largura <= 0) larguraInput.focus();
+        //   else if (comprimento <= 0) comprimentoInput.focus();
+        //   else alturaInput.focus();
+        //   return;
+        //}
         
         if (pavimentos < 2) {
             e.preventDefault();

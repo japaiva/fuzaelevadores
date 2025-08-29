@@ -96,20 +96,17 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'largura_poco': QuantityInput(attrs={
                 'min': 0.8,
                 'max': 10,
-                'step': 0.01,
-                'required': True
+                'step': 0.01
             }),
             'comprimento_poco': QuantityInput(attrs={
                 'min': 0.8,
                 'max': 10,
-                'step': 0.01,
-                'required': True
+                'step': 0.01
             }),
             'altura_poco': QuantityInput(attrs={
                 'min': 2.0,
                 'max': 50,
-                'step': 0.01,
-                'required': True
+                'step': 0.01
             }),
             'pavimentos': QuantityInput(attrs={
                 'min': 2,
@@ -166,14 +163,14 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         altura_poco = cleaned_data.get('altura_poco')
         pavimentos = cleaned_data.get('pavimentos')
 
-        if not largura_poco or float(largura_poco) <= 0:
-            self.add_error('largura_poco', 'Largura do poço é obrigatória e deve ser maior que zero.')
-        if not comprimento_poco or float(comprimento_poco) <= 0:
-            self.add_error('comprimento_poco', 'Comprimento do poço é obrigatório e deve ser maior que zero.')
-        if not altura_poco or float(altura_poco) <= 0:
-            self.add_error('altura_poco', 'Altura do poço é obrigatória e deve ser maior que zero.')
-        if not pavimentos or int(pavimentos) < 2:
-            self.add_error('pavimentos', 'Número de pavimentos é obrigatório e deve ser no mínimo 2.')
+        #if not largura_poco or float(largura_poco) <= 0:
+        #    self.add_error('largura_poco', 'Largura do poço é obrigatória e deve ser maior que zero.')
+        #if not comprimento_poco or float(comprimento_poco) <= 0:
+        #    self.add_error('comprimento_poco', 'Comprimento do poço é obrigatório e deve ser maior que zero.')
+        #if not altura_poco or float(altura_poco) <= 0:
+        #    self.add_error('altura_poco', 'Altura do poço é obrigatória e deve ser maior que zero.')
+        #if not pavimentos or int(pavimentos) < 2:
+        #    self.add_error('pavimentos', 'Número de pavimentos é obrigatório e deve ser no mínimo 2.')
 
         return cleaned_data
 
@@ -235,8 +232,7 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             'altura_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00',
-                'required': True
+                'placeholder': '0,00'
             }),
             'piso_cabine': forms.Select(attrs={
                 'class': 'form-select',
@@ -270,13 +266,11 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             'largura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00',
-                'required': True
+                'placeholder': '0,00'
             }),
             'altura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00',
-                'required': True
+                'placeholder': '0,00'
             }),
             
             # Porta Pavimento
@@ -298,19 +292,13 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             'largura_porta_pavimento': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00',
-                'required': True
+                'placeholder': '0,00'
             }),
             'altura_porta_pavimento': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00',
-                'required': True
+                'placeholder': '0,00'
             }),
         }
-
-
-
-# core/forms/propostas.py - CORREÇÃO DA LINHA 303+
 
 class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     class Meta:
@@ -323,6 +311,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             # Validade e Prazos
             'prazo_entrega_dias',
             'data_validade',
+            'previsao_conclusao_obra',  # ✅ ADICIONADO
             
             # Forma de Pagamento
             'forma_pagamento',
@@ -333,15 +322,16 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'valor_parcela',
             'tipo_parcela',
             'primeira_parcela',
-            
-            # ❌ CAMPO REMOVIDO: 'preco_negociado'
-            # Motivo: Campo não existe no modelo Proposta
-            # O valor negociado será gerenciado através de 'valor_proposta'
         ]
         
         widgets = {
             # Validade e Prazos
             'data_validade': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            # ✅ ADICIONADO WIDGET
+            'previsao_conclusao_obra': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
             }),
@@ -374,9 +364,6 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            
-            # ❌ WIDGET REMOVIDO: 'preco_negociado': MoneyInput()
-            # O valor_proposta já gerencia este aspecto
         }
 
     def __init__(self, *args, **kwargs):
@@ -393,6 +380,10 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         # Definir data de validade padrão se não informada
         if not self.instance.pk and not self.initial.get('data_validade'):
             self.initial['data_validade'] = date.today() + timedelta(days=30)
+        
+        # ✅ ADICIONADO: Definir previsão de conclusão da obra padrão (+90 dias)
+        if not self.instance.pk and not self.initial.get('previsao_conclusao_obra'):
+            self.initial['previsao_conclusao_obra'] = date.today() + timedelta(days=90)
         
         # Definir primeira parcela padrão
         if not self.instance.pk and not self.initial.get('primeira_parcela'):
@@ -441,6 +432,13 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         if data_validade and data_validade <= date.today():
             raise ValidationError({
                 'data_validade': 'A data de validade deve ser futura.'
+            })
+        
+        # ✅ ADICIONADO: Validação da previsão de conclusão da obra
+        previsao_conclusao_obra = cleaned_data.get('previsao_conclusao_obra')
+        if previsao_conclusao_obra and previsao_conclusao_obra <= date.today():
+            raise ValidationError({
+                'previsao_conclusao_obra': 'A previsão de conclusão da obra deve ser futura.'
             })
         
         return cleaned_data

@@ -94,6 +94,14 @@ class Proposta(models.Model):
         verbose_name="Validade da Proposta",
         help_text="Data até quando a proposta é válida"
     )
+
+    previsao_conclusao_obra = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Previsão Conclusão da Obra",
+        help_text="Data prevista para conclusão da obra civil"
+    )
+
     prazo_entrega_dias = models.PositiveIntegerField(
         default=45,
         verbose_name="Prazo de Entrega (dias)",
@@ -223,20 +231,25 @@ class Proposta(models.Model):
         verbose_name="Contrapeso"
     )
     
-    # Dimensões do Poço
     largura_poco = models.DecimalField(
         max_digits=8, 
         decimal_places=2, 
+        blank=True, 
+        null=True,
         verbose_name="Largura do Poço (m)"
     )
     comprimento_poco = models.DecimalField(
         max_digits=8, 
         decimal_places=2, 
+        blank=True, 
+        null=True,
         verbose_name="Comprimento do Poço (m)"
     )
     altura_poco = models.DecimalField(
         max_digits=8, 
         decimal_places=2, 
+        blank=True, 
+        null=True,
         verbose_name="Altura do Poço (m)"
     )
     pavimentos = models.IntegerField(verbose_name="Número de Pavimentos")

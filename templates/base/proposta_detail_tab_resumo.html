@@ -287,6 +287,28 @@
               </div>
             </div>
             {% endif %}
+
+
+            {% if pedido.data_validade %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Validade da Proposta</label>
+              <div class="form-control-plaintext">
+                {{ pedido.data_validade|date:"d/m/Y" }}
+                {% if pedido.esta_vencida %}
+                  <small class="text-danger">(Vencida)</small>
+                {% elif pedido.dias_para_vencer <= 7 %}
+                  <small class="text-warning">({{ pedido.dias_para_vencer }} dias)</small>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if pedido.previsao_conclusao_obra %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Previsão Conclusão da Obra</label>
+              <div class="form-control-plaintext">{{ pedido.previsao_conclusao_obra|date:"d/m/Y" }}</div>
+            </div>
+            {% endif %}
             
             {% if pedido.valor_entrada %}
             <div class="mb-3">

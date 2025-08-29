@@ -149,6 +149,17 @@
                 </div>
               {% endif %}
             </div>
+
+            <div class="col-md-4"> 
+              <label class="form-label" for="{{ form.previsao_conclusao_obra.id_for_label }}">Previsão Conclusão da Obra</label>
+              {{ form.previsao_conclusao_obra }}
+              {% if form.previsao_conclusao_obra.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.previsao_conclusao_obra.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
           </div>
           
           <div class="row mt-3" id="indicador-desconto" style="display: none;">
@@ -262,6 +273,7 @@
 
 {% block extra_js %}
 <script>
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 STEP 3: JavaScript inicializado');
     
@@ -279,6 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Campos de data
     const dataValidadeInput = document.getElementById('{{ form.data_validade.id_for_label }}');
+    const previsaoObraInput = document.getElementById('{{ form.previsao_conclusao_obra.id_for_label }}');
     const primeiraParcelaInput = document.getElementById('{{ form.primeira_parcela.id_for_label }}');
     
     // Forma de pagamento
@@ -296,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const numeroParcelasInput = document.getElementById('{{ form.numero_parcelas.id_for_label }}');
     const valorParcelaCalculado = document.getElementById('valorParcelaCalculado');
     
-    // Resumo (se ainda forem utilizados, caso contrário, podem ser removidos)
+    // Resumo (se ainda forem utilizados)
     const resumoPagamento = document.getElementById('resumo-pagamento');
     const resumoEntrada = document.getElementById('resumo-entrada');
     const resumoParcelas = document.getElementById('resumo-parcelas');
@@ -319,14 +332,34 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return `${ano}-${mes}-${dia}`;
     }
+
+    // === FUNÇÃO PARA CALCULAR DATA +90 DIAS (para obra) ===
+    function calcularData90Dias() {
+        const hoje = new Date();
+        const data90Dias = new Date(hoje);
+        data90Dias.setDate(hoje.getDate() + 90);
+        
+        // Formato YYYY-MM-DD para input date
+        const ano = data90Dias.getFullYear();
+        const mes = String(data90Dias.getMonth() + 1).padStart(2, '0');
+        const dia = String(data90Dias.getDate()).padStart(2, '0');
+        
+        return `${ano}-${mes}-${dia}`;
+    }
     
     // === DEFINIR DATAS PADRÃO ===
     function definirDatasPadrao() {
         const data30Dias = calcularData30Dias();
+        const data90Dias = calcularData90Dias();
         
         // Definir data de validade se estiver vazia
         if (dataValidadeInput && !dataValidadeInput.value) {
             dataValidadeInput.value = data30Dias;
+        }
+        
+        // Definir previsão de conclusão da obra se estiver vazia
+        if (previsaoObraInput && !previsaoObraInput.value) {
+            previsaoObraInput.value = data90Dias;
         }
         
         // Definir primeira parcela se estiver vazia
@@ -604,6 +637,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
             }
+
+            // Validar previsão de conclusão da obra
+            if (previsaoObraInput && previsaoObraInput.value) {
+                const hoje = new Date();
+                hoje.setHours(0, 0, 0, 0); 
+                const previsaoObra = new Date(previsaoObraInput.value + 'T00:00:00'); 
+                
+                if (previsaoObra <= hoje) {
+                    e.preventDefault();
+                    alert('A previsão de conclusão da obra deve ser futura.');
+                    previsaoObraInput.focus();
+                    return;
+                }
+            }
             
             console.log('✅ Validação step 3 concluída - enviando formulário');
         });
@@ -620,5 +667,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ STEP 3: JavaScript inicializado com sucesso');
 });
+
 </script>
 {% endblock %}
