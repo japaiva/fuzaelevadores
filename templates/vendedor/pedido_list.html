@@ -116,7 +116,7 @@
                 </span>
               </td>
 
-              <td class="text-end">
+             <td class="text-end">
                 <div class="valor-info">
                   {% if pedido.valor_proposta %}
                     <div class="valor-principal">
@@ -133,7 +133,6 @@
               </td>
 
 
-              <!-- BOTOES DE ACAO -->
 
               <td class="text-end">
                 <div class="btn-group" role="group">
@@ -153,6 +152,23 @@
                   </a>
                   {% endif %}
                   
+                  <!-- Minuta do Contrato sempre visível -->
+                  <a href="{% url 'vendedor:gerar_pdf_contrato' pedido.pk %}" 
+                    class="btn btn-sm btn-outline-info" 
+                    title="Gerar Minuta do Contrato"
+                    target="_blank"
+                    data-bs-toggle="tooltip">
+                    <i class="fas fa-file-contract"></i>
+                  </a>
+
+                  <!-- Alterar Status sempre visível -->
+                  <a href="{% url 'vendedor:pedido_status' pedido.pk %}" 
+                    class="btn btn-sm btn-outline-secondary" 
+                    title="Alterar Status"
+                    data-bs-toggle="tooltip">
+                    <i class="fas fa-exchange-alt"></i>
+                  </a>
+                  
                   <div class="btn-group" role="group">
                     <button type="button" 
                             class="btn btn-sm btn-outline-secondary dropdown-toggle" 
@@ -165,20 +181,6 @@
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:pedido_duplicar' pedido.pk %}">
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
-                        </a>
-                      </li>
-                      
-                      <!-- Orçamento sempre visível -->
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:gerar_pdf_orcamento' pedido.pk %}" target="_blank">
-                          <i class="fas fa-file-invoice me-2"></i>Gerar Orçamento
-                        </a>
-                      </li>
-
-                      <!-- Alterar Status sempre visível -->
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:pedido_status' pedido.pk %}">
-                          <i class="fas fa-exchange-alt me-2"></i>Alterar Status
                         </a>
                       </li>
 
@@ -194,7 +196,7 @@
                       </li>
                       {% endif %}
 
-                      <!-- ✅ Exclusão direto para página de confirmação -->
+                      <!-- Exclusão direto para página de confirmação -->
                       {% if pedido.pode_excluir %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
@@ -208,7 +210,6 @@
                   </div>
                 </div>
               </td>
-
 
             </tr>
           {% empty %}

@@ -52,6 +52,10 @@ from .relatorios import (
     gerar_pdf_demonstrativo,
 )
 
+# PDFs e relatórios
+from .contrato import (
+    gerar_contrato_pdf,
+)
 
 # Exports para compatibilidade
 __all__ = [

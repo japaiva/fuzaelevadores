@@ -2,6 +2,7 @@
 """
 View compartilhada para alterar status de propostas
 Usada tanto pelo vendedor quanto pela produção
+✅ CORRIGIDO: Redirecionamento para lista + campo observacao_status
 """
 
 import logging
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
-def proposta_alterar_status(request, pk, redirect_view_name='pedido_detail'):
+def proposta_alterar_status(request, pk, redirect_view_name='pedido_list'):
     """
     View compartilhada para alterar status da proposta
     
@@ -46,7 +47,7 @@ def proposta_alterar_status(request, pk, redirect_view_name='pedido_detail'):
                 # Registrar no histórico
                 observacao = form.cleaned_data.get('observacao_status', '')
                 if not observacao:
-                    observacao = f'Status alterado de {proposta.get_status_display()} para {proposta.get_status_display()}'
+                    observacao = f'Status alterado para {proposta.get_status_display()}'
                 
                 HistoricoProposta.objects.create(
                     proposta=proposta,
@@ -67,8 +68,12 @@ def proposta_alterar_status(request, pk, redirect_view_name='pedido_detail'):
                     f'"{proposta.get_status_display()}" com sucesso!'
                 )
                 
-                # Redirect baseado no contexto (vendedor ou produção)
-                return redirect(redirect_view_name, pk=proposta.pk)
+                # ✅ CORRIGIDO: Redirect adequado para lista vs detail
+                if redirect_view_name in ['vendedor:pedido_list', 'producao:proposta_list']:
+                    return redirect(redirect_view_name)
+                else:
+                    # Para views que precisam de parâmetros (detail)
+                    return redirect(redirect_view_name, pk=proposta.pk)
                 
             except Exception as e:
                 logger.error(f"Erro ao alterar status da proposta {proposta.numero}: {str(e)}")
@@ -151,12 +156,12 @@ def proposta_alterar_status_ajax(request, pk):
 # Para o vendedor - wrapper específico
 @login_required
 def vendedor_proposta_alterar_status(request, pk):
-    """Wrapper para o vendedor"""
-    return proposta_alterar_status(request, pk, 'vendedor:pedido_detail')
+    """Wrapper para o vendedor - ✅ CORRIGIDO: vai para lista"""
+    return proposta_alterar_status(request, pk, 'vendedor:pedido_list')
 
 
 # Para a produção - wrapper específico  
 @login_required
 def producao_proposta_alterar_status(request, pk):
-    """Wrapper para a produção"""
-    return proposta_alterar_status(request, pk, 'producao:proposta_detail')
+    """Wrapper para a produção - ✅ CORRIGIDO: vai para lista"""
+    return proposta_alterar_status(request, pk, 'producao:proposta_list')

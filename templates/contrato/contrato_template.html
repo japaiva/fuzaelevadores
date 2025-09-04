@@ -1,0 +1,539 @@
+<!-- templates/contratos/contrato_template.html -->
+{% load formato_br %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato {{ proposta.numero_contrato|default:proposta.numero }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #4A6785;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            margin: 0;
+            color: #4A6785;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .contract-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        .parties {
+            margin-bottom: 25px;
+        }
+        
+        .party {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        
+        .party-title {
+            font-weight: bold;
+            font-size: 12px;
+            color: #4A6785;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+        
+        .party-name {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        .party-info {
+            margin-bottom: 3px;
+            font-size: 10px;
+        }
+        
+        .clause {
+            margin-bottom: 20px;
+            page-break-inside: avoid;
+        }
+        
+        .clause-title {
+            font-weight: bold;
+            font-size: 12px;
+            color: #4A6785;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            border-bottom: 1px solid #4A6785;
+            padding-bottom: 3px;
+        }
+        
+        .clause-content {
+            margin-left: 10px;
+        }
+        
+        .specs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 10px;
+        }
+        
+        .specs-table th,
+        .specs-table td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        
+        .specs-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #4A6785;
+        }
+        
+        .specs-table .spec-label {
+            font-weight: bold;
+            width: 40%;
+        }
+        
+        .value-box {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #4A6785;
+            margin: 10px 0;
+            padding: 10px;
+            border: 2px solid #4A6785;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        
+        .payment-schedule {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .subcclause {
+            margin-bottom: 8px;
+            padding-left: 15px;
+        }
+        
+        .subcclause-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .signature-area {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-box {
+            border: 1px solid #ddd;
+            padding: 30px 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            min-height: 80px;
+        }
+        
+        .signature-title {
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #4A6785;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin: 20px auto 5px auto;
+            width: 300px;
+        }
+        
+        .witness-area {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        .witness-box {
+            width: 45%;
+            border: 1px solid #ddd;
+            padding: 20px 10px;
+            text-align: center;
+            min-height: 60px;
+        }
+        
+        /* Utilitários */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-10 { margin-bottom: 10px; }
+        .mb-15 { margin-bottom: 15px; }
+        .mt-20 { margin-top: 20px; }
+        
+        /* Quebras de página */
+        .page-break { page-break-before: always; }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <h1>Contrato de Fornecimento e Instalação de Elevador</h1>
+        <div class="contract-info">
+            <strong>Contrato Nº:</strong> {{ proposta.numero_contrato|default:proposta.numero }}<br>
+            <strong>Data:</strong> {{ proposta.data_contrato|date:"d/m/Y"|default:data_atual|date:"d/m/Y" }}<br>
+            <strong>Proposta Base:</strong> {{ proposta.numero }} - {{ proposta.nome_projeto }}
+        </div>
+    </div>
+
+    <!-- Partes Contratantes -->
+    <div class="parties">
+        <!-- Contratada -->
+        <div class="party">
+            <div class="party-title">Contratada:</div>
+            <div class="party-name">{{ empresa.nome }}</div>
+            <div class="party-info">CNPJ: {{ empresa.cnpj }}</div>
+            <div class="party-info">Endereço: {{ empresa.endereco }}</div>
+            <div class="party-info">CEP: {{ empresa.cep }} - {{ empresa.cidade }}</div>
+            {% if empresa.telefone %}<div class="party-info">Telefone: {{ empresa.telefone }}</div>{% endif %}
+            {% if empresa.email %}<div class="party-info">Email: {{ empresa.email }}</div>{% endif %}
+        </div>
+
+        <!-- Contratante -->
+        <div class="party">
+            <div class="party-title">Contratante:</div>
+            <div class="party-name">{{ cliente.nome }}</div>
+            {% if cliente.nome_fantasia %}<div class="party-info">({{ cliente.nome_fantasia }})</div>{% endif %}
+            <div class="party-info">{{ cliente.get_tipo_pessoa_display }}: {{ cliente.cpf_cnpj_formatado }}</div>
+            {% if cliente.endereco_completo %}<div class="party-info">Endereço: {{ cliente.endereco_completo }}</div>{% endif %}
+            {% if cliente.telefone %}<div class="party-info">Telefone: {{ cliente.telefone }}</div>{% endif %}
+            {% if cliente.email %}<div class="party-info">Email: {{ cliente.email }}</div>{% endif %}
+            {% if cliente.contato_principal %}<div class="party-info">Contato: {{ cliente.contato_principal }}</div>{% endif %}
+        </div>
+
+        <!-- Local de Instalação -->
+        {% if local_instalacao %}
+        <div class="party">
+            <div class="party-title">Local de Instalação:</div>
+            <div class="party-info">{{ local_instalacao }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Cláusula 1ª - Objeto do Contrato -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 1ª - Objeto do Contrato</div>
+        <div class="clause-content">
+            <p>A CONTRATADA obriga-se a fornecer e instalar, colocando em perfeito funcionamento, conforme normas técnicas vigentes:</p>
+            
+            <div class="value-box">
+                {{ proposta.get_modelo_elevador_display }} - Capacidade {{ proposta.capacidade }} kg
+                {% if proposta.capacidade_pessoas %}({{ proposta.capacidade_pessoas }} pessoas){% endif %}
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">1.1 ESPECIFICAÇÕES TÉCNICAS PRINCIPAIS</div>
+                <table class="specs-table">
+                    <tr><td class="spec-label">Modelo</td><td>{{ proposta.get_modelo_elevador_display }}</td></tr>
+                    <tr><td class="spec-label">Capacidade</td><td>{{ proposta.capacidade }} kg {% if proposta.capacidade_pessoas %}({{ proposta.capacidade_pessoas }} pessoas){% endif %}</td></tr>
+                    <tr><td class="spec-label">Total de Paradas</td><td>{{ proposta.pavimentos }} pavimentos</td></tr>
+                    <tr><td class="spec-label">Acionamento</td><td>{{ proposta.get_acionamento_display }}</td></tr>
+                    {% if proposta.tracao %}<tr><td class="spec-label">Tração</td><td>{{ proposta.tracao }}</td></tr>{% endif %}
+                    <tr><td class="spec-label">Velocidade</td><td>{{ proposta.velocidade_calculada|default:"0.5" }} m/s</td></tr>
+                    <tr><td class="spec-label">Potência do Motor</td><td>{{ proposta.potencia_motor_calculada|floatformat:1|default:"25.0" }} cv</td></tr>
+                    {% if proposta.normas_abnt %}<tr><td class="spec-label">Norma Técnica</td><td>{{ proposta.get_normas_abnt_display }}</td></tr>{% endif %}
+                </table>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">1.2 DIMENSÕES DO POÇO</div>
+                <table class="specs-table">
+                    <tr><td class="spec-label">Largura</td><td>{{ proposta.largura_poco }} m</td></tr>
+                    <tr><td class="spec-label">Comprimento</td><td>{{ proposta.comprimento_poco }} m</td></tr>
+                    <tr><td class="spec-label">Altura (Percurso)</td><td>{{ proposta.altura_poco }} m</td></tr>
+                </table>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">1.3 ESPECIFICAÇÕES DA CABINE</div>
+                <table class="specs-table">
+                    <tr><td class="spec-label">Material</td><td>{{ proposta.get_material_cabine_display }}</td></tr>
+                    {% if proposta.espessura_cabine %}<tr><td class="spec-label">Espessura</td><td>{{ proposta.espessura_cabine }} mm</td></tr>{% endif %}
+                    <tr><td class="spec-label">Altura</td><td>{{ proposta.altura_cabine }} m</td></tr>
+                    {% if proposta.largura_cabine_calculada and proposta.comprimento_cabine_calculado %}
+                    <tr><td class="spec-label">Dimensões Calculadas</td><td>{{ proposta.largura_cabine_calculada }} x {{ proposta.comprimento_cabine_calculado }} m</td></tr>
+                    {% endif %}
+                    {% if proposta.material_piso_cabine %}<tr><td class="spec-label">Piso</td><td>{{ proposta.get_material_piso_cabine_display }}</td></tr>{% endif %}
+                </table>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">1.4 PORTAS</div>
+                <table class="specs-table">
+                    <tr>
+                        <td class="spec-label">Porta da Cabine</td>
+                        <td>
+                            {{ proposta.get_modelo_porta_cabine_display|default:"Automática" }}, 
+                            {{ proposta.get_material_porta_cabine_display|default:"Inox" }}{% if proposta.folhas_porta_cabine %}, 
+                            {{ proposta.folhas_porta_cabine }} folhas{% endif %}
+                            {% if proposta.largura_porta_cabine and proposta.altura_porta_cabine %}
+                            <br>Dimensões: {{ proposta.largura_porta_cabine }} x {{ proposta.altura_porta_cabine }} m
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="spec-label">Portas de Pavimento</td>
+                        <td>
+                            {{ proposta.get_modelo_porta_pavimento_display|default:"Automática" }}, 
+                            {{ proposta.get_material_porta_pavimento_display|default:"Inox" }}
+                            <br>Quantidade: {{ proposta.pavimentos }} unidades
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">1.5 SISTEMAS DE SEGURANÇA E COMANDO</div>
+                <table class="specs-table">
+                    <tr><td class="spec-label">Painel de Comando</td><td>Painel elétrico trifásico 220V</td></tr>
+                    <tr><td class="spec-label">Finais de Curso</td><td>Em todas as paradas e portas de pavimento</td></tr>
+                    <tr><td class="spec-label">Contrapeso</td><td>{{ proposta.get_contrapeso_display|default:"Em roldana, chapas e polia" }}</td></tr>
+                    <tr><td class="spec-label">Mola de Segurança</td><td>Mola de sustentação da cabine no poço</td></tr>
+                    <tr><td class="spec-label">Freio de Emergência</td><td>Freio instantâneo na cabine</td></tr>
+                    <tr><td class="spec-label">Sistema de Segurança</td><td>Elevador não funciona com portas abertas</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cláusula 2ª - Valor do Contrato -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 2ª - Valor do Contrato</div>
+        <div class="clause-content">
+            <div class="value-box">
+                R$ {{ proposta.valor_proposta|formato_br|default:"0,00" }}
+                ({{ proposta.valor_proposta|floatformat:2 }})
+            </div>
+        </div>
+    </div>
+
+    <!-- Cláusula 3ª - Condições de Pagamento -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 3ª - Condições de Pagamento</div>
+        <div class="clause-content">
+            <div class="payment-schedule">
+                {% if proposta.forma_pagamento == 'vista' %}
+                    <strong>À VISTA:</strong> R$ {{ proposta.valor_proposta|formato_br }} em {{ proposta.data_vencimento_entrada|date:"d/m/Y" }}
+                {% elif proposta.forma_pagamento == 'parcelado' %}
+                    <strong>PARCELADO:</strong> {{ proposta.numero_parcelas }}x de R$ {{ proposta.valor_parcela|formato_br }}<br>
+                    <strong>1ª Parcela:</strong> {{ proposta.primeira_parcela|date:"d/m/Y" }}<br>
+                    <strong>Periodicidade:</strong> {{ proposta.get_tipo_parcela_display }}
+                {% elif proposta.forma_pagamento == 'entrada_parcelas' %}
+                    <strong>ENTRADA:</strong> R$ {{ proposta.valor_entrada|formato_br }} em {{ proposta.data_vencimento_entrada|date:"d/m/Y" }}<br>
+                    <strong>PARCELAS:</strong> {{ proposta.numero_parcelas }}x de R$ {{ proposta.valor_parcela|formato_br }}<br>
+                    <strong>1ª Parcela:</strong> {{ proposta.primeira_parcela|date:"d/m/Y" }}<br>
+                    <strong>Periodicidade:</strong> {{ proposta.get_tipo_parcela_display }}
+                {% else %}
+                    <strong>Condições:</strong> {{ proposta.get_forma_pagamento_display }}
+                {% endif %}
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">3.1 CONDIÇÕES GERAIS DE PAGAMENTO</div>
+                <p>a) Os pagamentos deverão ser efetuados através de boleto bancário ou transferência eletrônica;</p>
+                <p>b) O atraso no pagamento implicará em juros de 1% ao mês e multa de 2%;</p>
+                <p>c) Em caso de inadimplência superior a 30 dias, a CONTRATADA poderá suspender os serviços.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cláusula 4ª - Prazos -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 4ª - Prazos</div>
+        <div class="clause-content">
+            <div class="subcclause">
+                <div class="subcclause-title">4.1 PRAZO DE ENTREGA</div>
+                <p><strong>{{ proposta.prazo_entrega_dias|default:"45" }} dias corridos</strong> contados a partir da aprovação do projeto e liberação do local pela CONTRATANTE.</p>
+            </div>
+
+            {% if proposta.previsao_conclusao_obra %}
+            <div class="subcclause">
+                <div class="subcclause-title">4.2 PREVISÃO DE CONCLUSÃO DA OBRA CIVIL</div>
+                <p>Conforme informado pela CONTRATANTE: {{ proposta.previsao_conclusao_obra|date:"d/m/Y" }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Página 2 - Responsabilidades e demais cláusulas -->
+    <div class="page-break"></div>
+
+    <!-- Cláusula 5ª - Responsabilidades -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 5ª - Responsabilidades</div>
+        <div class="clause-content">
+            <div class="subcclause">
+                <div class="subcclause-title">5.1 DA CONTRATADA</div>
+                <p>a) Fornecer e instalar o elevador conforme especificações técnicas;</p>
+                <p>b) Executar os serviços com materiais de primeira qualidade;</p>
+                <p>c) Responsabilizar-se pela instalação elétrica do equipamento;</p>
+                <p>d) Fornecer projeto técnico e memorial descritivo;</p>
+                {% if proposta.documentacao_prefeitura %}
+                <p>e) Providenciar documentação e regularização junto à Prefeitura;</p>
+                {% endif %}
+                <p>f) Conceder garantia conforme cláusula específica.</p>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">5.2 DA CONTRATANTE</div>
+                <p>a) Preparar o poço conforme dimensões especificadas;</p>
+                <p>b) Fornecer energia elétrica no local (220V trifásico);</p>
+                <p>c) Garantir acesso livre ao local da instalação;</p>
+                <p>d) Efetuar os pagamentos nos prazos estabelecidos;</p>
+                <p>e) Aceitar o equipamento mediante vistoria técnica.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cláusula 6ª - Garantia -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 6ª - Garantia</div>
+        <div class="clause-content">
+            <div class="subcclause">
+                <div class="subcclause-title">6.1 PRAZO DE GARANTIA</div>
+                <p>A CONTRATADA concede <strong>12 (doze) meses de garantia</strong> para o equipamento, contados a partir da data de entrega técnica.</p>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">6.2 COBERTURA DA GARANTIA</div>
+                <p>a) Defeitos de fabricação e instalação;</p>
+                <p>b) Funcionamento inadequado por falha técnica;</p>
+                <p>c) Peças e componentes originais;</p>
+                <p>d) Mão de obra para reparos cobertos.</p>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">6.3 EXCLUSÕES DA GARANTIA</div>
+                <p>a) Danos por uso inadequado ou sobrecarga;</p>
+                <p>b) Manutenção por terceiros não autorizados;</p>
+                <p>c) Desgaste natural dos componentes;</p>
+                <p>d) Danos elétricos por oscilações na rede.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demais cláusulas -->
+    <div class="clause">
+        <div class="clause-title">Cláusula 7ª - Rescisão</div>
+        <div class="clause-content">
+            <p>O presente contrato poderá ser rescindido:</p>
+            <p>a) Por inadimplência de qualquer das partes;</p>
+            <p>b) Por impossibilidade técnica superveniente;</p>
+            <p>c) Por acordo mútuo entre as partes.</p>
+        </div>
+    </div>
+
+    <div class="clause">
+        <div class="clause-title">Cláusula 8ª - Disposições Gerais</div>
+        <div class="clause-content">
+            <div class="subcclause">
+                <div class="subcclause-title">8.1 ALTERAÇÕES</div>
+                <p>Alterações neste contrato somente terão validade se formalizadas por escrito e assinadas por ambas as partes.</p>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">8.2 CESSÃO</div>
+                <p>Nenhuma das partes poderá ceder seus direitos sem anuência prévia da outra.</p>
+            </div>
+
+            <div class="subcclause">
+                <div class="subcclause-title">8.3 FORÇA MAIOR</div>
+                <p>Eventos de força maior ou caso fortuito suspenderão temporariamente as obrigações contratuais.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="clause">
+        <div class="clause-title">Cláusula 9ª - Foro</div>
+        <div class="clause-content">
+            <p>Fica eleito o foro da Comarca de São Paulo - SP para dirimir questões oriundas deste contrato.</p>
+        </div>
+    </div>
+
+    <!-- Data e Local -->
+    <div class="text-center mt-20 mb-15">
+        <strong>São Paulo, {{ proposta.data_contrato|date:"d \d\e F \d\e Y"|default:data_atual|date:"d \d\e F \d\e Y" }}</strong>
+    </div>
+
+    <!-- Área de Assinaturas -->
+    <div class="signature-area">
+        <!-- Contratada -->
+        <div class="signature-box">
+            <div class="signature-title">CONTRATADA:</div>
+            <div class="mb-15"><strong>{{ empresa.nome }}</strong></div>
+            <div class="signature-line"></div>
+            <div>Nome: _________________________________</div>
+            <div>CPF: _________________________________</div>
+            <div>Cargo: Representante Legal</div>
+        </div>
+
+        <!-- Contratante -->
+        <div class="signature-box">
+            <div class="signature-title">CONTRATANTE:</div>
+            <div class="mb-15"><strong>{{ cliente.nome }}</strong></div>
+            <div class="signature-line"></div>
+            <div>Nome: _________________________________</div>
+            <div>CPF: _________________________________</div>
+            {% if cliente.contato_principal %}<div>Cargo: {{ cliente.contato_principal }}</div>{% endif %}
+        </div>
+
+        <!-- Testemunhas -->
+        <div class="witness-area">
+            <div class="witness-box">
+                <div class="signature-title">TESTEMUNHA 1:</div>
+                <div class="signature-line"></div>
+                <div>Nome: ________________________</div>
+                <div>CPF: ________________________</div>
+            </div>
+            <div class="witness-box">
+                <div class="signature-title">TESTEMUNHA 2:</div>
+                <div class="signature-line"></div>
+                <div>Nome: ________________________</div>
+                <div>CPF: ________________________</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="text-center mt-20" style="font-size: 9px; color: #666;">
+        <em>Contrato gerado automaticamente a partir da Proposta {{ proposta.numero }} - Sistema FUZA</em>
+    </div>
+</body>
+</html>

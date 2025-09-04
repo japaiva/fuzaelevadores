@@ -449,8 +449,7 @@ class PropostaStatusForm(forms.ModelForm):
     observacao_status = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Observação sobre a mudança de status...'
+            'rows': 3
         }),
         required=False,
         label="Observação"

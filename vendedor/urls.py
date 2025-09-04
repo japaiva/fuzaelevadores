@@ -4,6 +4,7 @@ from django.urls import path
 from . import views
 from core.views.status import vendedor_proposta_alterar_status
 
+
 app_name = 'vendedor'
 
 urlpatterns = [
@@ -68,6 +69,11 @@ urlpatterns = [
     path('propostas/<uuid:pk>/historico/', views.proposta_historico, name='proposta_historico'),
     path('propostas/<uuid:pk>/anexos/', views.proposta_anexos, name='proposta_anexos'),
     path('propostas/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='proposta_status'),
+
+
+
+
+    path('proposta/<uuid:pk>/contrato/', views.gerar_contrato_pdf, name='gerar_pdf_contrato'),
     
     # =============================================================================
     # GERAÇÃO DE PDFs - AMBOS OS PADRÕES
