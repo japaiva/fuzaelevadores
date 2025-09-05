@@ -77,6 +77,12 @@ class Proposta(models.Model):
     # === STATUS E CONTROLE ===
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='rascunho')
     observacoes = models.TextField(blank=True, verbose_name="Observações")
+
+    
+    numero_contrato = models.CharField(max_length=20, blank=True, null=True)
+    data_contrato = models.DateField(blank=True, null=True)
+    local_instalacao = models.TextField(blank=True)
+    documentacao_prefeitura = models.BooleanField(default=False)
     
     # === DADOS COMERCIAIS ===
     valor_proposta = models.DecimalField(
@@ -786,13 +792,34 @@ class Proposta(models.Model):
         
         return True
 
-
-
-
     # =================================================================
     # PROPRIEDADES CALCULADAS
     # =================================================================
-    
+
+    @property
+    def velocidade_calculada(self):
+        """Calcula velocidade baseada no modelo e capacidade"""
+        if self.modelo_elevador == 'Passageiro':
+            if self.capacidade <= 320:
+                return "0.5"
+            elif self.capacidade <= 630:
+                return "0.63"
+            else:
+                return "1.0"
+        return "0.5"
+
+    @property
+    def potencia_motor_calculada(self):
+        """Calcula potência do motor baseada na capacidade"""
+        if self.capacidade <= 320:
+            return 20.0
+        elif self.capacidade <= 630:
+            return 25.0
+        elif self.capacidade <= 1000:
+            return 30.0
+        else:
+            return 40.0
+
     @property
     def lucro_bruto(self):
         """Lucro bruto: valor proposta - custo total"""
@@ -814,8 +841,6 @@ class Proposta(models.Model):
             return self.preco_venda_calculado - self.valor_proposta
         return Decimal('0')
 
-    # === PROPRIEDADES DE STATUS ===
-    
     @property
     def status_badge_class(self):
         """Retorna classe CSS para badge de status"""
@@ -854,8 +879,6 @@ class Proposta(models.Model):
         from datetime import date
         delta = self.data_validade - date.today()
         return delta.days
-    
-    # === MÉTODOS DE CÁLCULO COMERCIAL ===
     
     def calcular_parcelas(self):
         """Calcula as datas de vencimento das parcelas"""

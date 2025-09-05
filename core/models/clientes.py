@@ -11,8 +11,6 @@ import re
 
 from .base import TIPO_PESSOA_CHOICES
 from core.utils.validators import validar_cpf, validar_cnpj, formatar_cpf, formatar_cnpj, validar_cpf_cnpj_unico
-
-
 class Cliente(models.Model):
     """Cadastro básico de clientes com validação de CPF/CNPJ"""
     

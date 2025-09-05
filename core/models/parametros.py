@@ -111,6 +111,56 @@ class ParametrosGerais(models.Model):
         ]
         return all(campo for campo in campos_obrigatorios)
     
+    # Adicionar no modelo ParametrosGerais:
+
+# Campos para contratos (usar dados existentes como base)
+@property
+def nome_empresa(self):
+    """Nome para contratos - usa razão social"""
+    return self.razao_social
+
+@property
+def cnpj_empresa(self):
+    """CNPJ formatado para contratos"""
+    return self.cnpj
+
+@property
+def endereco_empresa(self):
+    """Endereço completo para contratos"""
+    partes = []
+    if self.endereco:
+        endereco_numero = f"{self.endereco}, {self.numero}" if self.numero else self.endereco
+        partes.append(endereco_numero)
+    if self.complemento:
+        partes.append(self.complemento)
+    if self.bairro:
+        partes.append(self.bairro)
+    if self.cidade:
+        cidade_estado = f"{self.cidade} - {self.estado}" if self.estado else self.cidade
+        partes.append(cidade_estado)
+    
+    return ", ".join(partes) if partes else ""
+
+    @property
+    def telefone_empresa(self):
+        """Telefone para contratos"""
+        return self.telefone
+
+    @property
+    def email_empresa(self):
+        """Email para contratos"""
+        return self.email
+
+    @property
+    def cep_empresa(self):
+        """CEP para contratos"""
+        return self.cep
+
+    @property
+    def cidade_empresa(self):
+        """Cidade para contratos"""
+        return f"{self.cidade} - {self.estado}" if self.cidade and self.estado else self.cidade or ""
+        
     @property
     def dados_compras_completos(self):
         """Verifica se os dados de compras estão completos"""

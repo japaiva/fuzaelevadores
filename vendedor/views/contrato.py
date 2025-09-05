@@ -27,66 +27,56 @@ def gerar_contrato_pdf(request, pk):
     proposta = get_object_or_404(Proposta, pk=pk)
     
     # Verificar se proposta foi aprovada
-    if proposta.status != 'aprovado':
-        logger.warning(f"Tentativa de gerar contrato para proposta não aprovada: {proposta.numero}")
-        # Você pode retornar erro ou redirecionar conforme necessário
-    
-    try:
-        # Gerar número do contrato se não existir
-        if not proposta.numero_contrato:
-            numero_contrato = gerar_numero_contrato()
-            proposta.numero_contrato = numero_contrato
-            proposta.data_contrato = date.today()
-            proposta.save()
-        
-        # Preparar contexto para o template
-        context = {
-            'proposta': proposta,
-            'cliente': proposta.cliente,
-            'data_atual': date.today(),
-            'local_instalacao': proposta.cliente.endereco_completo,  # ou campo específico
-            # Dados da empresa (fixos)
-            'empresa': {
-                'nome': 'ELEVADORES FUZA LTDA EPP',
-                'cnpj': '10.614.614/0001-17',
-                'endereco': 'Rua Edmundo de Paula Coelho, 38 - Limoeiro',
-                'cep': '08235-790',
-                'cidade': 'São Paulo - SP',
-                'telefone': '(11) 0000-0000',  # Ajustar conforme necessário
-                'email': 'contato@elevadoresfuza.com.br'
-            }
-        }
-        
-        # Renderizar HTML
-        html_content = render_to_string('contratos/contrato_template.html', context)
-        
-        # Caminho para CSS customizado (se existir)
-        css_path = os.path.join(settings.BASE_DIR, 'static/css/contrato.css')
-        stylesheets = []
-        if os.path.exists(css_path):
-            stylesheets.append(CSS(css_path))
-        
-        # Gerar PDF
-        pdf = HTML(
-            string=html_content, 
-            base_url=request.build_absolute_uri()
-        ).write_pdf(stylesheets=stylesheets)
-        
-        # Resposta HTTP
-        response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f'Contrato_{proposta.numero}_{proposta.cliente.nome[:20]}.pdf'
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        
-        # Log da operação
-        logger.info(f"Contrato gerado com sucesso: {proposta.numero_contrato} - {proposta.cliente.nome}")
-        
-        return response
-        
-    except Exception as e:
-        logger.error(f"Erro ao gerar contrato para proposta {proposta.numero}: {str(e)}")
-        # Em produção, você pode retornar uma página de erro personalizada
-        return HttpResponse(f"Erro ao gerar contrato: {str(e)}", status=500)
 
+    if not proposta.numero_contrato:
+        numero_contrato = gerar_numero_contrato()
+        proposta.numero_contrato = numero_contrato
+        proposta.data_contrato = date.today()
+        proposta.save()
+        
+    # Preparar contexto para o template
+    context = {
+        'proposta': proposta,
+        'cliente': proposta.cliente,
+        'data_atual': date.today(),
+        'local_instalacao': proposta.cliente.endereco_completo,  # ou campo específico
+        # Dados da empresa (fixos)
+        'empresa': {
+            'nome': 'ELEVADORES FUZA LTDA EPP',
+            'cnpj': '10.614.614/0001-17',
+            'endereco': 'Rua Edmundo de Paula Coelho, 38 - Limoeiro',
+            'cep': '08235-790',
+            'cidade': 'São Paulo - SP',
+            'telefone': '(11) 0000-0000',  # Ajustar conforme necessário
+            'email': 'contato@elevadoresfuza.com.br'
+        }
+    }
+        
+    # Renderizar HTML
+    html_content = render_to_string('contrato/contrato_template.html', context)
+        
+    # Caminho para CSS customizado (se existir)
+    css_path = os.path.join(settings.BASE_DIR, 'static/css/contrato.css')
+    stylesheets = []
+    if os.path.exists(css_path):
+        stylesheets.append(CSS(css_path))
+        
+    # Gerar PDF
+    pdf = HTML(
+        string=html_content, 
+        base_url=request.build_absolute_uri()
+    ).write_pdf(stylesheets=stylesheets)
+        
+    # Resposta HTTP
+    response = HttpResponse(pdf, content_type='application/pdf')
+    filename = f'Contrato_{proposta.numero}_{proposta.cliente.nome[:20]}.pdf'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+    # Log da operação
+    logger.info(f"Contrato gerado com sucesso: {proposta.numero_contrato} - {proposta.cliente.nome}")
+        
+    return response
+        
 
 def gerar_numero_contrato():
     """

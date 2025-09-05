@@ -12,7 +12,6 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
     """
     Formulário unificado para a Etapa 1: Cliente + Elevador + Poço + Valor Principal
     """
-    
     class Meta:
         model = Proposta
         fields = [
@@ -20,6 +19,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'cliente',
             'nome_projeto', 
             'normas_abnt', 
+            'local_instalacao',
             'observacoes',
             'faturado_por',
                     
@@ -62,7 +62,10 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
                 'class': 'form-select',
                 'required': True
             }),
-            
+            'local_instalacao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2
+            }),
             
             # Elevador
             'modelo_elevador': forms.Select(attrs={
@@ -307,12 +310,15 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             # Dados comerciais básicos
             'vendedor',  
             'valor_proposta', 
+            'numero_contrato',
+            'data_contrato', 
+            'documentacao_prefeitura',
 
             # Validade e Prazos
             'prazo_entrega_dias',
             'data_validade',
             'previsao_conclusao_obra',  # ✅ ADICIONADO
-            
+       
             # Forma de Pagamento
             'forma_pagamento',
             'valor_entrada',
@@ -364,6 +370,17 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
+            'numero_contrato': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_contrato': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'documentacao_prefeitura': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+
         }
 
     def __init__(self, *args, **kwargs):
@@ -376,7 +393,11 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             is_active=True
         ).order_by('first_name', 'last_name')
         self.fields['vendedor'].empty_label = "-- Selecione um vendedor --"
-        
+
+
+        if not self.instance.pk and not self.initial.get('data_contrato'):
+            self.initial['data_contrato'] = date.today()
+
         # Definir data de validade padrão se não informada
         if not self.instance.pk and not self.initial.get('data_validade'):
             self.initial['data_validade'] = date.today() + timedelta(days=30)

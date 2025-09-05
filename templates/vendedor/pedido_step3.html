@@ -97,6 +97,43 @@
           <h6 class="card-title mb-0">Dados Comerciais</h6>
         </div>
         <div class="card-body">
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.numero_contrato.id_for_label }}">Número do Contrato</label>
+              {{ form.numero_contrato }}
+              {% if form.numero_contrato.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.numero_contrato.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.data_contrato.id_for_label }}">Data do Contrato</label>
+              {{ form.data_contrato }}
+              {% if form.data_contrato.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_contrato.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <div class="form-check mt-4">
+                {{ form.documentacao_prefeitura }}
+                <label class="form-check-label" for="{{ form.documentacao_prefeitura.id_for_label }}">
+                  Documentação na Prefeitura
+                </label>
+                {% if form.documentacao_prefeitura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.documentacao_prefeitura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
           <div class="row g-3">
             <div class="col-md-4"> 
               <label class="form-label" for="{{ form.vendedor.id_for_label }}">Vendedor*</label>
