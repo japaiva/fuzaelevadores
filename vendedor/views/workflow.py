@@ -79,7 +79,7 @@ def proposta_step1(request, pk=None):
         'editing': editing,
     }
     
-    return render(request, 'vendedor/pedido_step1.html', context)
+    return render(request, 'vendedor/proposta_step1.html', context)
 
 
 @login_required
@@ -140,7 +140,7 @@ def proposta_step2(request, pk):
         'portas_individuais': portas_individuais,
     }
     
-    return render(request, 'vendedor/pedido_step2.html', context)
+    return render(request, 'vendedor/proposta_step2.html', context)
 
 
 @login_required
@@ -155,7 +155,7 @@ def proposta_step3(request, pk):
             f'Proposta {proposta.numero} não pode ser editada. '
             f'Status atual: {proposta.get_status_display()}'
         )
-        return redirect('vendedor:pedido_list')
+        return redirect('vendedor:proposta_list')
 
     if request.method == 'POST':
         form = PropostaComercialForm(request.POST, instance=proposta)
@@ -168,7 +168,7 @@ def proposta_step3(request, pk):
                     f"Etapa 3 da proposta {proposta.numero} salva pelo usuário {request.user.username}. "
                     f"Valor final: R$ {proposta.valor_proposta or 0:.2f}"
                 )
-                return redirect('vendedor:pedido_list')
+                return redirect('vendedor:proposta_list')
             except Exception as e:
                 logger.error(f"Erro ao finalizar proposta {proposta.numero}: {str(e)}")
                 messages.error(request, f'Erro ao finalizar proposta: {str(e)}')
@@ -187,7 +187,7 @@ def proposta_step3(request, pk):
         'editing': True,
     }
 
-    return render(request, 'vendedor/pedido_step3.html', context)
+    return render(request, 'vendedor/proposta_step3.html', context)
 
 
 # === FUNÇÕES AUXILIARES ===

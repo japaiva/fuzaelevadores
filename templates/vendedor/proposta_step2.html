@@ -20,7 +20,7 @@
         {% endif %}
       </h5>
 
-      <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:pedido_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
+      <a href="{% if editing %}{% url 'vendedor:pedido_detail' pedido.pk %}{% else %}{% url 'vendedor:proposta_list' %}{% endif %}" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-arrow-left me-1"></i> {% if editing %}Cancelar{% else %}Voltar{% endif %}
      </a>
     </div>
@@ -400,7 +400,7 @@
 
         <!-- Botões de ação -->
         <div class="d-flex justify-content-between mt-4 mb-4">
-          <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}">
+          <a class="btn btn-outline-secondary" href="{% url 'vendedor:proposta_step1_edit' pedido.pk %}">
             <i class="fas fa-arrow-left me-1"></i> Anterior
           </a>
 

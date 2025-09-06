@@ -1,10 +1,5 @@
 # vendedor/views/propostas.py
 
-"""
-Views para CRUD básico de propostas - listagem, detalhes e exclusão
-✅ ATUALIZADA: Para usar template unificado
-"""
-
 import logging
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
@@ -109,16 +104,12 @@ def proposta_list(request):
         'total_propostas': propostas_list.count(),
     }
     
-    return render(request, 'vendedor/pedido_list.html', context)
+    return render(request, 'vendedor/proposta_list.html', context)
 
 
 @login_required
 def proposta_detail(request, pk):
-    """
-    Detalhes da proposta - Vendedor
-    ✅ ATUALIZADA: Usa template unificado
-    """
-    # 🎯 REMOVIDO: vendedor=request.user
+
     proposta = get_object_or_404(Proposta, pk=pk)
     
     extra_context = {
@@ -186,14 +177,13 @@ def proposta_delete(request, pk):
             messages.success(request, mensagem_sucesso)
             
             # ✅ REDIRECIONAMENTO SEMPRE PARA LISTA
-            return redirect('vendedor:pedido_list')
+            return redirect('vendedor:proposta_list')
             
         except Exception as e:
             logger.error(f"Erro ao excluir proposta {proposta.numero}: {str(e)}")
             messages.error(request, f'Erro ao excluir proposta: {str(e)}')
             return redirect('vendedor:pedido_detail', pk=proposta.pk)
     
-    # ✅ CORRIGIDO: GET request - mostrar formulário de confirmação
     # PortaPavimento já importado, sem erro
     context = {
         'proposta': proposta,

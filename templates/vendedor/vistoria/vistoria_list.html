@@ -1,0 +1,487 @@
+{% extends 'vendedor/base_vendedor.html' %}
+{% load formato_br %}
+
+{% block title %}Vistorias | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-hard-hat me-2"></i>Controle de Vistorias
+    </h5>
+    <div>
+      <a href="{% url 'vendedor:vistoria_calendario' %}" class="btn btn-info btn-sm">
+        <i class="fas fa-calendar me-1"></i> Calendário
+      </a>
+      <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary btn-sm ms-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Estatísticas Rápidas -->
+  <div class="card-header bg-white py-2">
+    <div class="row g-3">
+      <div class="col-md-2">
+        <div class="text-center">
+          <div class="text-muted small">Total</div>
+          <div class="h5 mb-0 text-primary">{{ estatisticas.total_propostas }}</div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-center">
+          <div class="text-muted small">Sem Vistoria</div>
+          <div class="h5 mb-0 text-secondary">{{ estatisticas.sem_vistoria }}</div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-center">
+          <div class="text-muted small">Medição OK</div>
+          <div class="h5 mb-0 text-success">{{ estatisticas.medicao_ok }}</div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-center">
+          <div class="text-muted small">Em Vistoria</div>
+          <div class="h5 mb-0 text-warning">{{ estatisticas.em_vistoria }}</div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-center">
+          <div class="text-muted small">Obra OK</div>
+          <div class="h5 mb-0 text-primary">{{ estatisticas.obra_ok }}</div>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <div class="text-center">
+          <div class="text-muted small">Vencidas</div>
+          <div class="h5 mb-0 text-danger">{{ estatisticas.vencidas }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Filtros -->
+  <div class="card-header bg-white py-2 border-top">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Status Obra</label>
+        {{ form.status_obra }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Período</label>
+        {{ form.periodo_vistoria }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Responsável</label>
+        {{ form.responsavel }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Buscar</label>
+        {{ form.q }}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">&nbsp;</label>
+        <div class="d-flex gap-1">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+          <a href="{% url 'vendedor:vistoria_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-times"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <div class="card-body py-2">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th width="8%">Proposta</th>
+            <th width="15%">Cliente</th>
+            <th width="15%">Projeto</th>
+            <th width="12%">Status Obra</th>
+            <th width="10%">Última Vistoria</th>
+            <th width="10%">Próxima Vistoria</th>
+            <th width="8%">Total Vistorias</th>
+            <th width="12%" class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for proposta in propostas %}
+            <tr class="{% if proposta.proxima_vistoria_vencida %}table-warning{% endif %}">
+              <td>
+                <strong class="text-primary">{{ proposta.numero }}</strong>
+                <div class="small text-muted">{{ proposta.criado_em|date:"d/m/Y" }}</div>
+              </td>
+
+              <td>
+                <div class="text-truncate" style="max-width: 140px;" title="{{ proposta.cliente.nome }}">
+                  <strong>{{ proposta.cliente.nome }}</strong>
+                </div>
+              </td>
+
+              <td>
+                <div class="text-truncate" style="max-width: 140px;" title="{{ proposta.nome_projeto }}">
+                  <strong>{{ proposta.nome_projeto }}</strong>
+                </div>
+                <div class="small text-muted">{{ proposta.local_instalacao|truncatechars:30 }}</div>
+              </td>
+
+              <td>
+                {% if proposta.status_obra %}
+                  <span class="badge {{ proposta.status_obra_badge_class }}">
+                    {{ proposta.get_status_obra_display }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary">
+                    Aguardando
+                  </span>
+                {% endif %}
+                
+                <!-- Status Quick Change -->
+                <div class="btn-group mt-1" role="group">
+                  <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                          data-bs-toggle="dropdown" title="Alterar Status">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <ul class="dropdown-menu">
+                    {% for status_code, status_name in form.status_obra.field.choices %}
+                      {% if status_code %}
+                        <li>
+                          <button class="dropdown-item quick-status-btn" 
+                                  data-proposta="{{ proposta.pk }}" 
+                                  data-status="{{ status_code }}">
+                            {{ status_name }}
+                          </button>
+                        </li>
+                      {% endif %}
+                    {% endfor %}
+                  </ul>
+                </div>
+              </td>
+
+              <td>
+                {% if proposta.ultima_vistoria %}
+                  <div class="text-success">
+                    <strong>{{ proposta.ultima_vistoria|date:"d/m/Y" }}</strong>
+                  </div>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if proposta.data_proxima_vistoria %}
+                  <div class="{% if proposta.proxima_vistoria_vencida %}text-danger{% elif proposta.dias_proxima_vistoria <= 3 %}text-warning{% else %}text-primary{% endif %}">
+                    <strong>{{ proposta.data_proxima_vistoria|date:"d/m/Y" }}</strong>
+                    {% if proposta.dias_proxima_vistoria is not None %}
+                      <div class="small">
+                        {% if proposta.dias_proxima_vistoria < 0 %}
+                          {{ proposta.dias_proxima_vistoria|add:"-1"|stringformat:"d" }} dias atrás
+                        {% elif proposta.dias_proxima_vistoria == 0 %}
+                          Hoje
+                        {% else %}
+                          em {{ proposta.dias_proxima_vistoria }} dias
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+
+              <td class="text-center">
+                <span class="badge bg-info">{{ proposta.total_vistorias }}</span>
+              </td>
+
+              <td class="text-end">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="Ver Vistorias"
+                     data-bs-toggle="tooltip">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  
+                  {% if not proposta.data_vistoria_medicao %}
+                    <a href="{% url 'vendedor:vistoria_agendar_primeira' proposta.pk %}" 
+                       class="btn btn-sm btn-success" 
+                       title="Agendar Primeira Vistoria"
+                       data-bs-toggle="tooltip">
+                      <i class="fas fa-calendar-plus"></i>
+                    </a>
+                  {% else %}
+                    <a href="{% url 'vendedor:vistoria_create' proposta.pk %}" 
+                       class="btn btn-sm btn-warning" 
+                       title="Nova Vistoria"
+                       data-bs-toggle="tooltip">
+                      <i class="fas fa-plus"></i>
+                    </a>
+                  {% endif %}
+                  
+                  <div class="btn-group" role="group">
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                            data-bs-toggle="dropdown" 
+                            title="Mais ações">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:pedido_detail' proposta.pk %}">
+                          <i class="fas fa-file-alt me-2"></i>Ver Proposta Completa
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:gerar_contrato_pdf' proposta.pk %}" target="_blank">
+                          <i class="fas fa-file-contract me-2"></i>Gerar Contrato
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5">
+                <div class="empty-state">
+                  <i class="fas fa-hard-hat fa-3x text-muted mb-3"></i>
+                  <h5 class="text-muted">Nenhuma proposta encontrada</h5>
+                  <p class="text-muted">Propostas aprovadas aparecerão aqui para controle de vistorias.</p>
+                  <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Ver Todas as Propostas
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  {% if propostas.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="pagination-info">
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} propostas
+        </small>
+      </div>
+      <nav aria-label="Navegação de página">
+        <ul class="pagination pagination-sm mb-0">
+          {% if propostas.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ propostas.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;&laquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
+            </li>
+          {% endif %}
+          
+          {% for i in propostas.paginator.page_range %}
+            {% if propostas.number == i %}
+              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% elif i > propostas.number|add:'-3' and i < propostas.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if propostas.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ propostas.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ propostas.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;&raquo;</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table-sm td, .table-sm th {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.quick-status-btn:hover {
+  background-color: #f8f9fa;
+}
+
+/* Highlight para vistorias vencidas */
+.table-warning {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+/* Cores dos badges */
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.badge.bg-info {
+  background-color: #0dcaf0 !important;
+  color: #000 !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+  
+  .empty-state {
+    padding: 2rem 0.5rem;
+  }
+  
+  .empty-state .fa-3x {
+    font-size: 2rem !important;
+  }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Auto-submit do formulário quando filtros mudarem
+    const selects = document.querySelectorAll('select[name="status_obra"], select[name="periodo_vistoria"], select[name="responsavel"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+    
+    // Quick Status Change
+    document.querySelectorAll('.quick-status-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const propostaId = this.dataset.proposta;
+            const novoStatus = this.dataset.status;
+            
+            if (!confirm(`Alterar status da obra para "${this.textContent.trim()}"?`)) {
+                return;
+            }
+            
+            // Desabilitar botão temporariamente
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Alterando...';
+            
+            fetch(`/vendas/api/vistorias/proposta/${propostaId}/quick-status/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `status_obra=${novoStatus}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Atualizar a badge de status na linha
+                    const row = this.closest('tr');
+                    const statusBadge = row.querySelector('.badge');
+                    statusBadge.className = `badge ${data.badge_class}`;
+                    statusBadge.textContent = data.status_display;
+                    
+                    // Mostrar mensagem de sucesso
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed';
+                    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+                    alertDiv.innerHTML = `
+                        <i class="fas fa-check-circle me-2"></i>
+                        Status alterado com sucesso!
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    
+                    document.body.appendChild(alertDiv);
+                    
+                    setTimeout(() => {
+                        if (alertDiv.parentNode) alertDiv.remove();
+                    }, 3000);
+                    
+                } else {
+                    alert('Erro ao alterar status: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao alterar status. Tente novamente.');
+            })
+            .finally(() => {
+                // Restaurar botão
+                this.disabled = false;
+                this.innerHTML = this.textContent.trim();
+                
+                // Fechar dropdown
+                const dropdown = bootstrap.Dropdown.getInstance(this.closest('.dropdown').querySelector('.dropdown-toggle'));
+                if (dropdown) dropdown.hide();
+            });
+        });
+    });
+    
+    console.log('✅ Lista de vistorias inicializada');
+});
+</script>
+{% endblock %}

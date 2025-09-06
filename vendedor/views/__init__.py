@@ -47,14 +47,21 @@ from .apis import (
 )
 
 # PDFs e relatórios
-from .relatorios import (
-    gerar_pdf_orcamento,
-    gerar_pdf_demonstrativo,
-)
-
-# PDFs e relatórios
 from .contrato import (
     gerar_contrato_pdf,
+)
+
+# Views de Vistoria
+from .vistoria import (
+    vistoria_list,
+    vistoria_proposta_detail,
+    vistoria_agendar_primeira,
+    vistoria_create,
+    vistoria_realizar,
+    vistoria_detail,
+    vistoria_cancelar,
+    vistoria_calendario,
+    api_vistoria_quick_status,
 )
 
 # Exports para compatibilidade
@@ -91,9 +98,17 @@ __all__ = [
     'cliente_create_ajax',
     'api_calcular_preco',
 
-    # PDFs
-    'gerar_pdf_orcamento',
-    'gerar_pdf_demonstrativo',
-    
+
+    # Vistorias
+    'vistoria_list',
+    'vistoria_proposta_detail',
+    'vistoria_agendar_primeira',
+    'vistoria_create',
+    'vistoria_realizar',
+    'vistoria_detail',
+    'vistoria_cancelar',
+    'vistoria_calendario',
+    'api_vistoria_quick_status',
+
 
 ]

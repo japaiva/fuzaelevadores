@@ -1,0 +1,390 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Nova Vistoria - {{ proposta.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-plus-circle me-2"></i>Nova Vistoria - {{ proposta.numero }}
+    </h5>
+    <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <!-- Informações da Proposta -->
+    <div class="card shadow-sm border-primary mb-4">
+      <div class="card-header bg-primary text-white">
+        <h6 class="card-title mb-0">Informações da Proposta</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Número:</span>
+              <strong>{{ proposta.numero }}</strong>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Cliente:</span>
+              <strong>{{ proposta.cliente.nome }}</strong>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Projeto:</span>
+              <strong>{{ proposta.nome_projeto }}</strong>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Status Obra:</span>
+              {% if proposta.status_obra %}
+                <span class="badge {{ proposta.status_obra_badge_class }}">{{ proposta.get_status_obra_display }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Aguardando</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form method="post" id="vistoriaForm">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <div class="card shadow-sm border-warning mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="card-title mb-0">Dados da Vistoria</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.data_agendada.id_for_label }}">
+                Data da Vistoria*
+              </label>
+              {{ form.data_agendada }}
+              {% if form.data_agendada.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_agendada.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Data quando a vistoria foi/será realizada</div>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.tipo_vistoria.id_for_label }}">
+                Tipo de Vistoria*
+              </label>
+              {{ form.tipo_vistoria }}
+              {% if form.tipo_vistoria.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.tipo_vistoria.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Finalidade desta vistoria</div>
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.status_obra_novo.id_for_label }}">
+                Alterar Status da Obra
+              </label>
+              {{ form.status_obra_novo }}
+              {% if form.status_obra_novo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.status_obra_novo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Novo status baseado nesta vistoria</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-info mb-4">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">Observações e Recomendações</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.observacoes.id_for_label }}">
+                Observações
+              </label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">O que foi observado na vistoria</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.recomendacoes.id_for_label }}">
+                Recomendações
+              </label>
+              {{ form.recomendacoes }}
+              {% if form.recomendacoes.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.recomendacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Recomendações técnicas e pendências</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-success mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">Próxima Vistoria</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.proxima_vistoria_sugerida.id_for_label }}">
+                Data da Próxima Vistoria
+              </label>
+              {{ form.proxima_vistoria_sugerida }}
+              {% if form.proxima_vistoria_sugerida.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.proxima_vistoria_sugerida.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Quando deve ser feita a próxima vistoria</div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mt-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="marcarComoRealizada">
+                  <label class="form-check-label" for="marcarComoRealizada">
+                    <strong>Marcar como realizada agora</strong>
+                  </label>
+                </div>
+                <div class="form-text">Marque se esta vistoria já foi realizada</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações de Ajuda -->
+      <div class="alert alert-info">
+        <h6><i class="fas fa-info-circle me-2"></i>Informações Importantes</h6>
+        <ul class="mb-0">
+          <li><strong>Tipo de Vistoria:</strong>
+            <ul>
+              <li><em>Medição Inicial:</em> Primeira vistoria para medições</li>
+              <li><em>Acompanhamento:</em> Verificação do andamento da obra</li>
+              <li><em>Obra Pronta:</em> Confirmação de obra finalizada</li>
+              <li><em>Entrega:</em> Vistoria para entrega do elevador</li>
+            </ul>
+          </li>
+          <li><strong>Status da Obra:</strong> Será automaticamente atualizado na proposta se selecionado</li>
+          <li><strong>Próxima Vistoria:</strong> Será agendada automaticamente na proposta</li>
+        </ul>
+      </div>
+
+      <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary">
+          <i class="fas fa-times me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save me-1"></i> Registrar Vistoria
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('vistoriaForm');
+    const dataAgendadaInput = document.getElementById('{{ form.data_agendada.id_for_label }}');
+    const tipoVistoriaSelect = document.getElementById('{{ form.tipo_vistoria.id_for_label }}');
+    const statusObraSelect = document.getElementById('{{ form.status_obra_novo.id_for_label }}');
+    const proximaVistoriaInput = document.getElementById('{{ form.proxima_vistoria_sugerida.id_for_label }}');
+    const marcarRealizadaCheck = document.getElementById('marcarComoRealizada');
+    
+    // Função para sugerir próxima vistoria baseada no tipo
+    function sugerirProximaVistoria() {
+        const tipo = tipoVistoriaSelect.value;
+        const dataAtual = dataAgendadaInput.value;
+        
+        if (!dataAtual) return;
+        
+        const dataBase = new Date(dataAtual);
+        let diasParaProxima;
+        
+        switch(tipo) {
+            case 'medicao':
+                diasParaProxima = 15; // 15 dias após medição
+                break;
+            case 'acompanhamento':
+                diasParaProxima = 14; // 14 dias entre acompanhamentos
+                break;
+            case 'obra_pronta':
+                diasParaProxima = 0; // Não precisa de próxima se obra está pronta
+                break;
+            case 'entrega':
+                diasParaProxima = 0; // Não precisa de próxima se é entrega
+                break;
+            default:
+                diasParaProxima = 15;
+        }
+        
+        if (diasParaProxima > 0) {
+            const proximaData = new Date(dataBase);
+            proximaData.setDate(dataBase.getDate() + diasParaProxima);
+            
+            // Formatar para input date (YYYY-MM-DD)
+            const ano = proximaData.getFullYear();
+            const mes = String(proximaData.getMonth() + 1).padStart(2, '0');
+            const dia = String(proximaData.getDate()).padStart(2, '0');
+            
+            proximaVistoriaInput.value = `${ano}-${mes}-${dia}`;
+        } else {
+            proximaVistoriaInput.value = ''; // Limpar se não precisa de próxima
+        }
+    }
+    
+    // Função para sugerir status baseado no tipo de vistoria
+    function sugerirStatus() {
+        const tipo = tipoVistoriaSelect.value;
+        
+        // Só sugerir se não há status selecionado
+        if (statusObraSelect.value) return;
+        
+        switch(tipo) {
+            case 'medicao':
+                statusObraSelect.value = 'medicao_ok';
+                break;
+            case 'acompanhamento':
+                statusObraSelect.value = 'em_vistoria';
+                break;
+            case 'obra_pronta':
+                statusObraSelect.value = 'obra_ok';
+                break;
+            case 'entrega':
+                statusObraSelect.value = 'obra_ok';
+                break;
+        }
+    }
+    
+    // Event listeners
+    if (tipoVistoriaSelect) {
+        tipoVistoriaSelect.addEventListener('change', function() {
+            sugerirProximaVistoria();
+            sugerirStatus();
+        });
+    }
+    
+    if (dataAgendadaInput) {
+        dataAgendadaInput.addEventListener('change', sugerirProximaVistoria);
+    }
+    
+    // Marcar como realizada - ajustar campos
+    if (marcarRealizadaCheck) {
+        marcarRealizadaCheck.addEventListener('change', function() {
+            if (this.checked) {
+                // Se marcar como realizada, a data agendada vira a data de hoje
+                const hoje = new Date();
+                const ano = hoje.getFullYear();
+                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+                const dia = String(hoje.getDate()).padStart(2, '0');
+                
+                dataAgendadaInput.value = `${ano}-${mes}-${dia}`;
+                
+                // Adicionar campo hidden para indicar que deve ser marcada como realizada
+                let hiddenInput = document.getElementById('marcar_realizada_hidden');
+                if (!hiddenInput) {
+                    hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.id = 'marcar_realizada_hidden';
+                    hiddenInput.name = 'marcar_realizada';
+                    form.appendChild(hiddenInput);
+                }
+                hiddenInput.value = 'true';
+                
+                sugerirProximaVistoria();
+                sugerirStatus();
+            } else {
+                // Remover campo hidden
+                const hiddenInput = document.getElementById('marcar_realizada_hidden');
+                if (hiddenInput) {
+                    hiddenInput.remove();
+                }
+            }
+        });
+    }
+    
+    // Validação do formulário
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const dataAgendada = dataAgendadaInput.value;
+            const proximaVistoria = proximaVistoriaInput.value;
+            
+            if (!dataAgendada) {
+                e.preventDefault();
+                alert('A data da vistoria é obrigatória.');
+                dataAgendadaInput.focus();
+                return;
+            }
+            
+            // Validar se data não é muito antiga
+            const hoje = new Date();
+            const vistoria = new Date(dataAgendada);
+            const diasDiferenca = Math.ceil((hoje - vistoria) / (1000 * 60 * 60 * 24));
+            
+            if (diasDiferenca > 30) {
+                e.preventDefault();
+                alert('A data da vistoria não pode ser muito antiga (máximo 30 dias).');
+                dataAgendadaInput.focus();
+                return;
+            }
+            
+            // Validar próxima vistoria se preenchida
+            if (proximaVistoria) {
+                const proxima = new Date(proximaVistoria);
+                if (proxima <= hoje) {
+                    e.preventDefault();
+                    alert('A data da próxima vistoria deve ser futura.');
+                    proximaVistoriaInput.focus();
+                    return;
+                }
+                
+                if (proxima <= vistoria) {
+                    e.preventDefault();
+                    alert('A próxima vistoria deve ser posterior à vistoria atual.');
+                    proximaVistoriaInput.focus();
+                    return;
+                }
+            }
+            
+            console.log('✅ Formulário validado - enviando...');
+        });
+    }
+    
+    // Sugerir dados iniciais
+    sugerirProximaVistoria();
+    sugerirStatus();
+    
+    console.log('✅ Formulário de nova vistoria inicializado');
+});
+</script>
+{% endblock %}

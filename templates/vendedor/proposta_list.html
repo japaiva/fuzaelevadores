@@ -10,7 +10,7 @@
       <i class="fas fa-clipboard-list me-2"></i>Propostas
     </h5>
     <div>
-      <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-sm">
+      <a href="{% url 'vendedor:proposta_step1' %}" class="btn btn-success btn-sm">
         <i class="fas fa-plus me-1"></i> Nova Proposta
       </a>
       <a href="{% url 'vendedor:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
@@ -144,7 +144,7 @@
                   </a>
                   
                   {% if pedido.pode_editar %}
-                  <a href="{% url 'vendedor:pedido_step1_edit' pedido.pk %}" 
+                  <a href="{% url 'vendedor:proposta_step1_edit' pedido.pk %}" 
                     class="btn btn-sm btn-outline-warning" 
                     title="Editar Proposta"
                     data-bs-toggle="tooltip">
@@ -153,7 +153,7 @@
                   {% endif %}
                   
                   <!-- Minuta do Contrato sempre visível -->
-                  <a href="{% url 'vendedor:gerar_pdf_contrato' pedido.pk %}" 
+                  <a href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" 
                     class="btn btn-sm btn-outline-info" 
                     title="Gerar Minuta do Contrato"
                     target="_blank"
@@ -162,7 +162,7 @@
                   </a>
 
                   <!-- Alterar Status sempre visível -->
-                  <a href="{% url 'vendedor:pedido_status' pedido.pk %}" 
+                  <a href="{% url 'vendedor:proposta_status' pedido.pk %}" 
                     class="btn btn-sm btn-outline-secondary" 
                     title="Alterar Status"
                     data-bs-toggle="tooltip">
@@ -179,7 +179,7 @@
 
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:pedido_duplicar' pedido.pk %}">
+                        <a class="dropdown-item" href="{% url 'vendedor:proposta_duplicar' pedido.pk %}">
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
                         </a>
                       </li>
@@ -200,7 +200,7 @@
                       {% if pedido.pode_excluir %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
-                        <a href="{% url 'vendedor:pedido_delete' pedido.pk %}" 
+                        <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" 
                           class="dropdown-item text-danger">
                           <i class="fas fa-trash me-2"></i>Excluir Proposta
                         </a>
@@ -217,7 +217,7 @@
               <td colspan="8" class="text-center py-5">
                 <div class="empty-state">
                   <h5 class="text-muted">Nenhuma proposta encontrada</h5>
-                  <a href="{% url 'vendedor:pedido_step1' %}" class="btn btn-success btn-lg">
+                  <a href="{% url 'vendedor:proposta_step1' %}" class="btn btn-success btn-lg">
                     <i class="fas fa-plus me-2"></i>Criar Primeira Proposta
                   </a>
                 </div>
@@ -306,7 +306,7 @@
         </small>
       </div>
       <div>
-        <a href="{% url 'vendedor:pedido_list' %}" class="btn btn-sm btn-outline-secondary">
+        <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-sm btn-outline-secondary">
           <i class="fas fa-times me-1"></i>Limpar Filtros
         </a>
       </div>

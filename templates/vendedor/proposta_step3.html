@@ -16,7 +16,7 @@
         <i class="fas fa-calculator me-1"></i>Calcular
       </button>
       
-      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:pedido_list' %}">
+      <a class="btn btn-outline-secondary btn-sm" href="{% url 'vendedor:proposta_list' %}">
         <i class="fas fa-arrow-left me-1"></i> Voltar
       </a>
     </div>
@@ -296,7 +296,7 @@
       </div>
 
       <div class="d-flex justify-content-between mt-4 mb-4">
-        <a class="btn btn-outline-secondary" href="{% url 'vendedor:pedido_step2' proposta.pk %}">
+        <a class="btn btn-outline-secondary" href="{% url 'vendedor:proposta_step2' proposta.pk %}">
           <i class="fas fa-arrow-left me-1"></i> Anterior
         </a>
         <button class="btn btn-success" type="submit">

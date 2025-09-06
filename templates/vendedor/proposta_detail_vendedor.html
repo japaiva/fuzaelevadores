@@ -1,7 +1,7 @@
 <!-- templates/vendedor/proposta_detail_vendedor.html -->
 {% extends 'base/proposta_detail.html' %}
 
-{% block back_url %}{% url 'vendedor:pedido_list' %}{% endblock %}
+{% block back_url %}{% url 'vendedor:proposta_list' %}{% endblock %}
 
 {% block extra_buttons %}
 <!-- Botões específicos do vendedor -->
@@ -18,7 +18,7 @@
 {% endif %}
 
 {% if pedido.pode_excluir %}
-  <a href="{% url 'vendedor:pedido_delete' pedido.pk %}" class="btn btn-outline-danger btn-sm">
+  <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" class="btn btn-outline-danger btn-sm">
     <i class="fas fa-trash me-1"></i> Excluir
   </a>
 {% endif %}

@@ -4,7 +4,6 @@ from django.urls import path
 from . import views
 from core.views.status import vendedor_proposta_alterar_status
 
-
 app_name = 'vendedor'
 
 urlpatterns = [
@@ -19,7 +18,7 @@ urlpatterns = [
     # =============================================================================
     
     # URLs principais (mantém padrão atual para compatibilidade)
-    path('pedidos/', views.proposta_list, name='pedido_list'),
+    path('pedidos/', views.proposta_list, name='proposta_list'),
     path('pedidos/<uuid:pk>/', views.proposta_detail, name='pedido_detail'),
     
     # URLs alternativas (futuro)
@@ -31,36 +30,40 @@ urlpatterns = [
     # =============================================================================
     
     # Criar nova proposta (SEM PK) 
-    path('pedidos/novo/', views.proposta_step1, name='pedido_create'),
-    path('pedidos/novo/step1/', views.proposta_step1, name='pedido_step1'),
+ 
     path('propostas/novo/', views.proposta_step1, name='proposta_create'),
     path('propostas/novo/step1/', views.proposta_step1, name='proposta_step1'),
-    
-    # Editar proposta existente (COM PK) - PADRÃO PEDIDO (templates atuais)
-    path('pedidos/<uuid:pk>/step1/', views.proposta_step1, name='pedido_step1_edit'),
-    path('pedidos/<uuid:pk>/step2/', views.proposta_step2, name='pedido_step2'),
-    path('pedidos/<uuid:pk>/step3/', views.proposta_step3, name='pedido_step3'),
-    
+       
     # Editar proposta existente (COM PK) - PADRÃO PROPOSTA (futuro)
     path('propostas/<uuid:pk>/step1/', views.proposta_step1, name='proposta_step1_edit'),
     path('propostas/<uuid:pk>/step2/', views.proposta_step2, name='proposta_step2'),
     path('propostas/<uuid:pk>/step3/', views.proposta_step3, name='proposta_step3'),
     
     # =============================================================================
+    # MÓDULO DE VISTORIA
+    # =============================================================================
+    
+    # Lista principal de vistorias
+    path('vistorias/', views.vistoria_list, name='vistoria_list'),
+    path('vistorias/calendario/', views.vistoria_calendario, name='vistoria_calendario'),
+    
+    # Proposta específica para vistoria
+    path('vistorias/proposta/<uuid:pk>/', views.vistoria_proposta_detail, name='vistoria_proposta_detail'),
+    path('vistorias/proposta/<uuid:pk>/agendar-primeira/', views.vistoria_agendar_primeira, name='vistoria_agendar_primeira'),
+    
+    # CRUD de vistorias
+    path('vistorias/proposta/<uuid:proposta_pk>/nova/', views.vistoria_create, name='vistoria_create'),
+    path('vistorias/<int:pk>/', views.vistoria_detail, name='vistoria_detail'),
+    path('vistorias/<int:pk>/realizar/', views.vistoria_realizar, name='vistoria_realizar'),
+    path('vistorias/<int:pk>/cancelar/', views.vistoria_cancelar, name='vistoria_cancelar'),
+    
+    # APIs AJAX
+    path('api/vistorias/proposta/<uuid:proposta_pk>/quick-status/', views.api_vistoria_quick_status, name='api_vistoria_quick_status'),
+    
+    # =============================================================================
     # AÇÕES DAS PROPOSTAS - AMBOS OS PADRÕES
     # =============================================================================
     
-    # Padrão pedido (templates atuais)
-    path('pedidos/<uuid:pk>/calcular/', views.proposta_calcular, name='pedido_calcular'),
-    path('pedidos/<uuid:pk>/duplicar/', views.proposta_duplicar, name='pedido_duplicar'),
-    path('pedidos/<uuid:pk>/excluir/', views.proposta_delete, name='pedido_delete'),
-    path('pedidos/<uuid:pk>/enviar-cliente/', views.proposta_enviar_cliente, name='pedido_enviar_cliente'),
-    path('pedidos/<uuid:pk>/gerar-numero/', views.proposta_gerar_numero_definitivo, name='pedido_gerar_numero'),
-    path('pedidos/<uuid:pk>/historico/', views.proposta_historico, name='pedido_historico'),
-    path('pedidos/<uuid:pk>/anexos/', views.proposta_anexos, name='pedido_anexos'),
-    path('pedidos/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='pedido_status'),
-    
-    # Padrão proposta (futuro)
     path('propostas/<uuid:pk>/calcular/', views.proposta_calcular, name='proposta_calcular'),
     path('propostas/<uuid:pk>/duplicar/', views.proposta_duplicar, name='proposta_duplicar'),
     path('propostas/<uuid:pk>/excluir/', views.proposta_delete, name='proposta_delete'),
@@ -70,40 +73,15 @@ urlpatterns = [
     path('propostas/<uuid:pk>/anexos/', views.proposta_anexos, name='proposta_anexos'),
     path('propostas/<uuid:pk>/status/', vendedor_proposta_alterar_status, name='proposta_status'),
 
-
-
-
-    path('proposta/<uuid:pk>/contrato/', views.gerar_contrato_pdf, name='gerar_pdf_contrato'),
+    path('proposta/<uuid:pk>/contrato/', views.gerar_contrato_pdf, name='gerar_contrato_pdf'),
     
-    # =============================================================================
-    # GERAÇÃO DE PDFs - AMBOS OS PADRÕES
-    # =============================================================================
-    
-    # Padrão pedido
-    path('pedidos/<uuid:pk>/pdf/orcamento/', views.gerar_pdf_orcamento, name='gerar_pdf_orcamento'),
-    path('pedidos/<uuid:pk>/pdf/demonstrativo/', views.gerar_pdf_demonstrativo, name='gerar_pdf_demonstrativo'),
-    
-    # Padrão proposta
-    path('propostas/<uuid:pk>/pdf/orcamento/', views.gerar_pdf_orcamento, name='proposta_pdf_orcamento'),
-    path('propostas/<uuid:pk>/pdf/demonstrativo/', views.gerar_pdf_demonstrativo, name='proposta_pdf_demonstrativo'),
-
-    # URLs simplificadas (compatibilidade com templates)
-    path('pedidos/<uuid:pk>/orcamento.pdf', views.gerar_pdf_orcamento, name='pdf_orcamento'),
-
     # =============================================================================
     # APIS AJAX - AMBOS OS PADRÕES
     # =============================================================================
     
-    # APIs padrão pedido (compatibilidade com templates atuais)
-    path('api/pedidos/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_dados_precificacao'),
-    path('api/pedidos/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_salvar_preco_negociado'),
-    # ✅ LINHA ADICIONADA: API para o botão de cálculo
-    path('api/pedidos/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_pedido_calcular_preco'), # Note 'calcular/' matching your log
-    
     # APIs padrão proposta (futuro)
     path('api/propostas/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_proposta_dados_precificacao'),
     path('api/propostas/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_proposta_salvar_preco'),
-    # ✅ LINHA ADICIONADA: API para o botão de cálculo
     path('api/propostas/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_proposta_calcular_preco'), # Note 'calcular/' matching your log
     
     # APIs de cliente (sem mudança)

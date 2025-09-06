@@ -1,0 +1,480 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Realizar Vistoria - {{ proposta.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-check-circle me-2"></i>Realizar Vistoria - {{ proposta.numero }}
+    </h5>
+    <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+  
+  <div class="card-body">
+    <!-- Informações da Vistoria Agendada -->
+    <div class="card shadow-sm border-info mb-4">
+      <div class="card-header bg-info text-white">
+        <h6 class="card-title mb-0">Vistoria Agendada</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Data Agendada:</span>
+              <strong>{{ vistoria.data_agendada|date:"d/m/Y" }}</strong>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Tipo:</span>
+              <span class="badge bg-outline-secondary">{{ vistoria.get_tipo_vistoria_display }}</span>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Responsável:</span>
+              <strong>{{ vistoria.responsavel.get_full_name|default:vistoria.responsavel.username }}</strong>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Status:</span>
+              <span class="badge {{ vistoria.status_badge_class }}">{{ vistoria.get_status_vistoria_display }}</span>
+            </div>
+          </div>
+          
+          {% if vistoria.observacoes %}
+          <div class="col-12">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Observações iniciais:</span>
+              <span class="text-end">{{ vistoria.observacoes }}</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Informações da Proposta -->
+    <div class="card shadow-sm border-primary mb-4">
+      <div class="card-header bg-primary text-white">
+        <h6 class="card-title mb-0">Informações da Proposta</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Cliente:</span>
+              <strong>{{ proposta.cliente.nome }}</strong>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Projeto:</span>
+              <strong>{{ proposta.nome_projeto }}</strong>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Status Obra:</span>
+              {% if proposta.status_obra %}
+                <span class="badge {{ proposta.status_obra_badge_class }}">{{ proposta.get_status_obra_display }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Aguardando</span>
+              {% endif %}
+            </div>
+          </div>
+          
+          {% if proposta.local_instalacao %}
+          <div class="col-12">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Local:</span>
+              <strong>{{ proposta.local_instalacao }}</strong>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form method="post" id="realizarVistoriaForm">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <div class="card shadow-sm border-success mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">Dados da Realização</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.data_realizada.id_for_label }}">
+                Data Realizada*
+              </label>
+              {{ form.data_realizada }}
+              {% if form.data_realizada.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_realizada.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Data quando a vistoria foi efetivamente realizada</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.status_obra_novo.id_for_label }}">
+                Alterar Status da Obra
+              </label>
+              {{ form.status_obra_novo }}
+              {% if form.status_obra_novo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.status_obra_novo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Novo status baseado no que foi observado</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-warning mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="card-title mb-0">Relatório da Vistoria</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.observacoes.id_for_label }}">
+                Observações*
+              </label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">O que foi observado durante a vistoria</div>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.recomendacoes.id_for_label }}">
+                Recomendações
+              </label>
+              {{ form.recomendacoes }}
+              {% if form.recomendacoes.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.recomendacoes.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Recomendações técnicas e pendências encontradas</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-info mb-4">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">Próxima Vistoria</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label" for="{{ form.proxima_vistoria_sugerida.id_for_label }}">
+                Data da Próxima Vistoria
+              </label>
+              {{ form.proxima_vistoria_sugerida }}
+              {% if form.proxima_vistoria_sugerida.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.proxima_vistoria_sugerida.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Quando deve ser feita a próxima vistoria (deixe vazio se não precisar)</div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mt-4">
+                <div class="alert alert-info py-2">
+                  <small>
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Sugestões por tipo:</strong><br>
+                    • Medição: 15 dias após<br>
+                    • Acompanhamento: 14 dias após<br>
+                    • Obra Pronta/Entrega: Não precisa de próxima
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checklist Rápido -->
+      <div class="card shadow-sm border-dark mb-4">
+        <div class="card-header bg-dark text-white">
+          <h6 class="card-title mb-0">Checklist Rápido</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <h6 class="text-muted">Estrutura Civil</h6>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="poco_escavado">
+                <label class="form-check-label" for="poco_escavado">Poço escavado</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="paredes_prontas">
+                <label class="form-check-label" for="paredes_prontas">Paredes prontas</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="laje_pronta">
+                <label class="form-check-label" for="laje_pronta">Laje de cobertura</label>
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <h6 class="text-muted">Instalações</h6>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="energia_disponivel">
+                <label class="form-check-label" for="energia_disponivel">Energia elétrica</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="quadro_instalado">
+                <label class="form-check-label" for="quadro_instalado">Quadro elétrico</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="iluminacao_poco">
+                <label class="form-check-label" for="iluminacao_poco">Iluminação do poço</label>
+              </div>
+            </div>
+            
+            <div class="col-md-4">
+              <h6 class="text-muted">Acesso</h6>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="acesso_livre">
+                <label class="form-check-label" for="acesso_livre">Acesso livre</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="protecao_poço">
+                <label class="form-check-label" for="protecao_poço">Proteção do poço</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="limpeza_area">
+                <label class="form-check-label" for="limpeza_area">Área limpa</label>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-3">
+            <small class="text-muted">
+              <i class="fas fa-lightbulb me-1"></i>
+              Este checklist é apenas para referência. Use as observações para registrar detalhes específicos.
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between mt-4">
+        <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary">
+          <i class="fas fa-times me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-check-circle me-1"></i> Marcar como Realizada
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('realizarVistoriaForm');
+    const dataRealizadaInput = document.getElementById('{{ form.data_realizada.id_for_label }}');
+    const statusObraSelect = document.getElementById('{{ form.status_obra_novo.id_for_label }}');
+    const proximaVistoriaInput = document.getElementById('{{ form.proxima_vistoria_sugerida.id_for_label }}');
+    const observacoesTextarea = document.getElementById('{{ form.observacoes.id_for_label }}');
+    
+    // Função para sugerir próxima vistoria baseada no tipo atual
+    function sugerirProximaVistoria() {
+        const tipoAtual = '{{ vistoria.tipo_vistoria }}';
+        const dataRealizada = dataRealizadaInput.value;
+        
+        if (!dataRealizada) return;
+        
+        const dataBase = new Date(dataRealizada);
+        let diasParaProxima;
+        
+        switch(tipoAtual) {
+            case 'medicao':
+                diasParaProxima = 15;
+                break;
+            case 'acompanhamento':
+                diasParaProxima = 14;
+                break;
+            case 'obra_pronta':
+                diasParaProxima = 0; // Não precisa
+                break;
+            case 'entrega':
+                diasParaProxima = 0; // Não precisa
+                break;
+            default:
+                diasParaProxima = 15;
+        }
+        
+        if (diasParaProxima > 0 && !proximaVistoriaInput.value) {
+            const proximaData = new Date(dataBase);
+            proximaData.setDate(dataBase.getDate() + diasParaProxima);
+            
+            const ano = proximaData.getFullYear();
+            const mes = String(proximaData.getMonth() + 1).padStart(2, '0');
+            const dia = String(proximaData.getDate()).padStart(2, '0');
+            
+            proximaVistoriaInput.value = `${ano}-${mes}-${dia}`;
+        }
+    }
+    
+    // Função para sugerir status baseado no tipo
+    function sugerirStatus() {
+        const tipoAtual = '{{ vistoria.tipo_vistoria }}';
+        
+        if (statusObraSelect.value) return; // Já tem status selecionado
+        
+        switch(tipoAtual) {
+            case 'medicao':
+                statusObraSelect.value = 'medicao_ok';
+                break;
+            case 'acompanhamento':
+                statusObraSelect.value = 'em_vistoria';
+                break;
+            case 'obra_pronta':
+                statusObraSelect.value = 'obra_ok';
+                break;
+            case 'entrega':
+                statusObraSelect.value = 'obra_ok';
+                break;
+        }
+    }
+    
+    // Função para atualizar observações baseadas no checklist
+    function atualizarObservacoes() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const itensChecados = [];
+        const itensNaoChecados = [];
+        
+        checkboxes.forEach(checkbox => {
+            const label = document.querySelector(`label[for="${checkbox.id}"]`).textContent;
+            
+            if (checkbox.checked) {
+                itensChecados.push(label);
+            } else {
+                itensNaoChecados.push(label);
+            }
+        });
+        
+        // Não sobrescrever se já tem observações
+        if (observacoesTextarea.value.trim()) return;
+        
+        let observacoes = 'CHECKLIST DA VISTORIA:\n\n';
+        
+        if (itensChecados.length > 0) {
+            observacoes += '✓ ITENS CONFORMES:\n';
+            itensChecados.forEach(item => {
+                observacoes += `• ${item}\n`;
+            });
+            observacoes += '\n';
+        }
+        
+        if (itensNaoChecados.length > 0) {
+            observacoes += '⚠ PENDÊNCIAS:\n';
+            itensNaoChecados.forEach(item => {
+                observacoes += `• ${item}\n`;
+            });
+        }
+        
+        observacoesTextarea.value = observacoes;
+    }
+    
+    // Event listeners
+    if (dataRealizadaInput) {
+        dataRealizadaInput.addEventListener('change', sugerirProximaVistoria);
+    }
+    
+    // Atualizar observações quando checkboxes mudarem
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', atualizarObservacoes);
+    });
+    
+    // Validação do formulário
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const dataRealizada = dataRealizadaInput.value;
+            const observacoes = observacoesTextarea.value.trim();
+            
+            if (!dataRealizada) {
+                e.preventDefault();
+                alert('A data realizada é obrigatória.');
+                dataRealizadaInput.focus();
+                return;
+            }
+            
+            if (!observacoes) {
+                e.preventDefault();
+                alert('As observações são obrigatórias para marcar a vistoria como realizada.');
+                observacoesTextarea.focus();
+                return;
+            }
+            
+            // Validar se data realizada não é muito futura
+            const hoje = new Date();
+            const realizada = new Date(dataRealizada);
+            
+            if (realizada > hoje) {
+                e.preventDefault();
+                alert('A data realizada não pode ser futura.');
+                dataRealizadaInput.focus();
+                return;
+            }
+            
+            // Validar se data realizada não é anterior à agendada
+            const dataAgendada = new Date('{{ vistoria.data_agendada|date:"Y-m-d" }}');
+            if (realizada < dataAgendada) {
+                e.preventDefault();
+                alert('A data realizada não pode ser anterior à data agendada.');
+                dataRealizadaInput.focus();
+                return;
+            }
+            
+            // Validar próxima vistoria se preenchida
+            const proximaVistoria = proximaVistoriaInput.value;
+            if (proximaVistoria) {
+                const proxima = new Date(proximaVistoria);
+                if (proxima <= realizada) {
+                    e.preventDefault();
+                    alert('A próxima vistoria deve ser posterior à data realizada.');
+                    proximaVistoriaInput.focus();
+                    return;
+                }
+            }
+            
+            console.log('✅ Formulário validado - marcando vistoria como realizada...');
+        });
+    }
+    
+    // Sugerir dados iniciais
+    sugerirProximaVistoria();
+    sugerirStatus();
+    
+    console.log('✅ Formulário de realizar vistoria inicializado');
+});
+</script>
+{% endblock %}

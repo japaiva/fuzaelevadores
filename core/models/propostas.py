@@ -1,9 +1,5 @@
 # core/models/propostas.py
 
-"""
-Modelo de Propostas com estrutura de custos contabilmente correta
-"""
-
 from django.db import models
 from django.conf import settings
 from datetime import datetime, timedelta
@@ -14,10 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Proposta(models.Model):
-    """
-    Modelo completo para propostas de elevadores
-    ATUALIZADO: Estrutura de custos contabilmente correta
-    """
+
     STATUS_CHOICES = [
         ('rascunho', 'Rascunho'),
         ('simulado', 'Simulado'),
@@ -43,29 +36,18 @@ class Proposta(models.Model):
         ('personalizado', 'Personalizado'),
     ]
 
-    TIPO_ENTREGA_CHOICES = [
-        ('assinatura', 'Na Assinatura do Contrato'),
-        ('inicio_obra', 'No Início da Obra'),
-        ('50_obra', '50% da Obra'),
-        ('entrega', 'Na Entrega'),
-        ('personalizado', 'Personalizado'),
+    STATUS_OBRA_CHOICES = [
+        ('', 'Aguardando Medição'),
+        ('medicao_ok', 'Medição OK'),
+        ('em_vistoria', 'Em Vistoria'),
+        ('obra_ok', 'Obra OK'),
     ]
 
-    # === IDENTIFICAÇÃO ===
+
+    # === IDENTIFICAÇÃO E STATUS ===
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     numero = models.CharField(max_length=8, unique=True, verbose_name="Número da Proposta")
-    nome_projeto = models.CharField(max_length=200, verbose_name="Nome do Projeto")
-    
-    # === RELACIONAMENTOS ===
-    cliente = models.ForeignKey('Cliente', on_delete=models.PROTECT, verbose_name="Cliente")
-    vendedor = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.PROTECT, 
-        related_name='propostas_vendedor',
-        verbose_name="Vendedor",
-        null=True, blank=True,  # ← ADICIONAR ESTA LINHA
-        limit_choices_to={'nivel': 'vendedor'}
-    )
+
     atualizado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.PROTECT, 
@@ -74,45 +56,35 @@ class Proposta(models.Model):
         null=True
     )
     
-    # === STATUS E CONTROLE ===
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='rascunho')
     observacoes = models.TextField(blank=True, verbose_name="Observações")
 
-    
-    numero_contrato = models.CharField(max_length=20, blank=True, null=True)
-    data_contrato = models.DateField(blank=True, null=True)
-    local_instalacao = models.TextField(blank=True)
-    documentacao_prefeitura = models.BooleanField(default=False)
-    
-    # === DADOS COMERCIAIS ===
-    valor_proposta = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2,
-        null=True, blank=True,
-        verbose_name="Valor da Proposta",
-        help_text="Valor final negociado com o cliente"
-    )
-    
-    # Validade e Vencimento
-    data_validade = models.DateField(
-        blank=True, 
-        null=True, 
-        verbose_name="Validade da Proposta",
-        help_text="Data até quando a proposta é válida"
-    )
-
-    previsao_conclusao_obra = models.DateField(
+    status_obra = models.CharField(
+        max_length=20, 
+        choices=STATUS_OBRA_CHOICES, 
         blank=True,
+        verbose_name="Status da Obra",
+        help_text="Status do acompanhamento da obra civil"
+    )
+    
+    data_vistoria_medicao = models.DateField(
+        blank=True, 
         null=True,
-        verbose_name="Previsão Conclusão da Obra",
-        help_text="Data prevista para conclusão da obra civil"
+        verbose_name="Data da Vistoria/Medição",
+        help_text="Data da primeira vistoria para medição"
+    )
+    
+    data_proxima_vistoria = models.DateField(
+        blank=True, 
+        null=True,
+        verbose_name="Data da Próxima Vistoria",
+        help_text="Data agendada para próxima vistoria"
     )
 
-    prazo_entrega_dias = models.PositiveIntegerField(
-        default=45,
-        verbose_name="Prazo de Entrega (dias)",
-        help_text="Prazo em dias corridos para entrega após aprovação"
-    )
+    # === ETAPA 1 - CLIENTE/ELEVADOR ===
+    # CLIENTE
+    cliente = models.ForeignKey('Cliente', on_delete=models.PROTECT, verbose_name="Cliente")
+    nome_projeto = models.CharField(max_length=200, verbose_name="Nome do Projeto")
     
     # Faturamento
     faturado_por = models.CharField(
@@ -126,7 +98,7 @@ class Proposta(models.Model):
         verbose_name="Faturado por"
     )
 
-    # ✅ NOVO CAMPO - Normas ABNT
+    # Normas ABNT
     normas_abnt = models.CharField(
         max_length=20,
         choices=[
@@ -137,61 +109,10 @@ class Proposta(models.Model):
         verbose_name="Normas ABNT",
         help_text="Norma técnica aplicável ao elevador"
     )
-    
-    # Forma de Pagamento
-    forma_pagamento = models.CharField(
-        max_length=20,
-        choices=FORMA_PAGAMENTO_CHOICES,
-        default='parcelado',
-        verbose_name="Forma de Pagamento"
-    )
-    
-    # Entrada (quando aplicável)
-    valor_entrada = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Valor da Entrada"
-    )
-    percentual_entrada = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Percentual da Entrada (%)"
-    )
-    data_vencimento_entrada = models.DateField(
-        blank=True, 
-        null=True,
-        verbose_name="Vencimento da Entrada"
-    )
-    
-    # Parcelamento
-    numero_parcelas = models.PositiveIntegerField(
-        default=1,
-        verbose_name="Número de Parcelas"
-    )
-    valor_parcela = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Valor da Parcela"
-    )
-    tipo_parcela = models.CharField(
-        max_length=15,
-        choices=TIPO_PARCELA_CHOICES,
-        default='mensal',
-        verbose_name="Tipo de Parcela"
-    )
-    primeira_parcela = models.DateField(
-        blank=True, 
-        null=True,
-        verbose_name="Vencimento da 1ª Parcela"
-    )
-    
-    # === DADOS DO ELEVADOR === (Step 1)
+
+    local_instalacao = models.TextField(blank=True)
+
+    # ELEVADOR
     # Modelo e Capacidade
     modelo_elevador = models.CharField(
         max_length=50, 
@@ -260,7 +181,59 @@ class Proposta(models.Model):
     )
     pavimentos = models.IntegerField(verbose_name="Número de Pavimentos")
 
-    # === DADOS DAS PORTAS === (Step 2)
+    # === ETAPA 2 - CABINE/PORTAS ===
+    # CABINE
+
+    material_cabine = models.CharField(
+        max_length=50,
+        choices=[
+            ('Inox 430', 'Inox 430'),
+            ('Inox 304', 'Inox 304'),
+            ('Chapa Pintada', 'Chapa Pintada'),
+            ('Alumínio', 'Alumínio'),
+        ],
+        null=True, blank=True,
+        verbose_name="Material da Cabine"
+    )
+    
+    espessura_cabine = models.CharField(
+        max_length=10,
+        choices=[('1,2', '1,2 mm'), ('1,5', '1,5 mm'), ('2,0', '2,0 mm')],
+        null=True, blank=True,
+        verbose_name="Espessura"
+    )
+    saida_cabine = models.CharField(
+        max_length=20,
+        choices=[('Padrão', 'Padrão'), ('Oposta', 'Oposta')],
+        null=True, blank=True,
+        verbose_name="Saída"
+    )
+    altura_cabine = models.DecimalField(
+        max_digits=8, 
+        decimal_places=2,
+        null=True, blank=True,
+        verbose_name="Altura da Cabine (m)"
+    )
+    
+    # Piso da Cabine
+    piso_cabine = models.CharField(
+        max_length=50,
+        choices=[
+            ('Por conta do cliente', 'Por conta do cliente'),
+            ('Por conta da empresa', 'Por conta da empresa'),
+        ],
+        null=True, blank=True,
+        verbose_name="Piso"
+    )
+    material_piso_cabine = models.CharField(
+        max_length=50,
+        choices=[
+            ('Antiderrapante', 'Antiderrapante'),
+        ],
+        blank=True,
+        verbose_name="Material do Piso"
+    )
+
     # Porta da Cabine
     modelo_porta_cabine = models.CharField(
         max_length=20,
@@ -284,28 +257,14 @@ class Proposta(models.Model):
             ('Inox 304', 'Inox 304'),      # ✅ ESPECÍFICO
             ('Chapa Pintada', 'Chapa Pintada'),
             ('Alumínio', 'Alumínio'),
-            ('Outro', 'Outro'),
         ],
         null=True, blank=True,
         verbose_name="Material Porta Cabine"
     )
 
-
-    material_porta_cabine_outro = models.CharField(
-        max_length=100, 
-        blank=True, 
-        verbose_name="Material Porta Cabine (Outro)"
-    )
-    valor_porta_cabine_outro = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Valor Material Porta Cabine (Outro)"
-    )
     folhas_porta_cabine = models.CharField(
         max_length=10,
-        choices=[('2', '2'), ('3', '3'), ('Central', 'Central')],
+        choices=[('2', '2'), ('3', '3'),  ('4', '4'),('Central', 'Central')],
         blank=True,
         verbose_name="Folhas Porta Cabine"
     )
@@ -345,28 +304,14 @@ class Proposta(models.Model):
             ('Inox 304', 'Inox 304'),      # ✅ ESPECÍFICO
             ('Chapa Pintada', 'Chapa Pintada'),
             ('Alumínio', 'Alumínio'),
-            ('Outro', 'Outro'),
         ],
         null=True, blank=True,
         verbose_name="Material Porta Pavimento"
     )
 
-
-    material_porta_pavimento_outro = models.CharField(
-        max_length=100, 
-        blank=True, 
-        verbose_name="Material Porta Pavimento (Outro)"
-    )
-    valor_porta_pavimento_outro = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Valor Material Porta Pavimento (Outro)"
-    )
     folhas_porta_pavimento = models.CharField(
         max_length=10,
-        choices=[('2', '2'), ('3', '3'), ('Central', 'Central')],
+        choices=[('2', '2'), ('3', '3'),  ('4', '4'),('Central', 'Central')],
         blank=True,
         verbose_name="Folhas Porta Pavimento"
     )
@@ -383,82 +328,104 @@ class Proposta(models.Model):
         verbose_name="Altura Porta Pavimento (m)"
     )
 
-    # === DADOS DA CABINE === (Step 2)
-    material_cabine = models.CharField(
-        max_length=50,
-        choices=[
-            ('Inox 430', 'Inox 430'),
-            ('Inox 304', 'Inox 304'),
-            ('Chapa Pintada', 'Chapa Pintada'),
-            ('Alumínio', 'Alumínio'),
-            ('Outro', 'Outro'),
-        ],
-        null=True, blank=True,
-        verbose_name="Material da Cabine"
+    # === ETAPA 3 - RESUMO/COMERCIAL ===
+    # RESUMO
+    vendedor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.PROTECT, 
+        related_name='propostas_vendedor',
+        verbose_name="Vendedor",
+        null=True, blank=True,  # ← ADICIONAR ESTA LINHA
+        limit_choices_to={'nivel': 'vendedor'}
     )
-    material_cabine_outro = models.CharField(
-        max_length=100, 
-        blank=True, 
-        verbose_name="Material da Cabine (Outro)"
-    )
-    valor_cabine_outro = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        blank=True, 
-        null=True,
-        verbose_name="Valor Material da Cabine (Outro)"
-    )
-    espessura_cabine = models.CharField(
-        max_length=10,
-        choices=[('1,2', '1,2 mm'), ('1,5', '1,5 mm'), ('2,0', '2,0 mm')],
-        null=True, blank=True,
-        verbose_name="Espessura"
-    )
-    saida_cabine = models.CharField(
-        max_length=20,
-        choices=[('Padrão', 'Padrão'), ('Oposta', 'Oposta')],
-        null=True, blank=True,
-        verbose_name="Saída"
-    )
-    altura_cabine = models.DecimalField(
-        max_digits=8, 
+
+    numero_contrato = models.CharField(max_length=20, blank=True, null=True)
+    data_contrato = models.DateField(blank=True, null=True)
+    documentacao_prefeitura = models.BooleanField(default=False)
+    
+    # DADOS COMERCIAIS
+    valor_proposta = models.DecimalField(
+        max_digits=12, 
         decimal_places=2,
         null=True, blank=True,
-        verbose_name="Altura da Cabine (m)"
+        verbose_name="Valor da Proposta",
+        help_text="Valor final negociado com o cliente"
     )
     
-    # Piso da Cabine
-    piso_cabine = models.CharField(
-        max_length=50,
-        choices=[
-            ('Por conta do cliente', 'Por conta do cliente'),
-            ('Por conta da empresa', 'Por conta da empresa'),
-        ],
-        null=True, blank=True,
-        verbose_name="Piso"
-    )
-    material_piso_cabine = models.CharField(
-        max_length=50,
-        choices=[
-            ('Antiderrapante', 'Antiderrapante'),
-            ('Outro', 'Outro'),
-        ],
-        blank=True,
-        verbose_name="Material do Piso"
-    )
-    material_piso_cabine_outro = models.CharField(
-        max_length=100, 
+    # Validade e Vencimento
+    data_validade = models.DateField(
         blank=True, 
-        verbose_name="Material do Piso (Outro)"
+        null=True, 
+        verbose_name="Validade da Proposta",
+        help_text="Data até quando a proposta é válida"
     )
-    valor_piso_cabine_outro = models.DecimalField(
-        max_digits=10, 
+
+    previsao_conclusao_obra = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Previsão Conclusão da Obra",
+        help_text="Data prevista para conclusão da obra civil"
+    )
+
+    prazo_entrega_dias = models.PositiveIntegerField(
+        default=45,
+        verbose_name="Prazo de Entrega (dias)",
+        help_text="Prazo em dias corridos para entrega após aprovação"
+    )
+    
+    # Forma de Pagamento
+    forma_pagamento = models.CharField(
+        max_length=20,
+        choices=FORMA_PAGAMENTO_CHOICES,
+        default='parcelado',
+        verbose_name="Forma de Pagamento"
+    )
+    
+    # Entrada (quando aplicável)
+    valor_entrada = models.DecimalField(
+        max_digits=12, 
         decimal_places=2, 
         blank=True, 
         null=True,
-        verbose_name="Valor Material do Piso (Outro)"
+        verbose_name="Valor da Entrada"
+    )
+    percentual_entrada = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        verbose_name="Percentual da Entrada (%)"
+    )
+    data_vencimento_entrada = models.DateField(
+        blank=True, 
+        null=True,
+        verbose_name="Vencimento da Entrada"
     )
     
+    # Parcelamento
+    numero_parcelas = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Número de Parcelas"
+    )
+    valor_parcela = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        verbose_name="Valor da Parcela"
+    )
+    tipo_parcela = models.CharField(
+        max_length=15,
+        choices=TIPO_PARCELA_CHOICES,
+        default='mensal',
+        verbose_name="Tipo de Parcela"
+    )
+    primeira_parcela = models.DateField(
+        blank=True, 
+        null=True,
+        verbose_name="Vencimento da 1ª Parcela"
+    )
+       
     # === DIMENSÕES CALCULADAS ===
     largura_cabine_calculada = models.DecimalField(
         max_digits=8, 
@@ -1000,6 +967,41 @@ class Proposta(models.Model):
         
         return " | ".join(resumo)
     
+
+    @property
+    def pode_agendar_vistoria(self):
+        """Verifica se a proposta pode ter vistoria agendada"""
+        return self.status == 'aprovado'
+    
+    @property
+    def status_obra_badge_class(self):
+        """Retorna classe CSS para badge de status da obra"""
+        badges = {
+            '': 'bg-secondary',
+            'medicao_ok': 'bg-success',
+            'em_vistoria': 'bg-warning',
+            'obra_ok': 'bg-primary',
+        }
+        return badges.get(self.status_obra, 'bg-secondary')
+    
+    @property
+    def proxima_vistoria_vencida(self):
+        """Verifica se a próxima vistoria está vencida"""
+        if not self.data_proxima_vistoria:
+            return False
+        from datetime import date
+        return date.today() > self.data_proxima_vistoria
+    
+    @property
+    def dias_proxima_vistoria(self):
+        """Retorna quantos dias para a próxima vistoria"""
+        if not self.data_proxima_vistoria:
+            return None
+        from datetime import date
+        delta = self.data_proxima_vistoria - date.today()
+        return delta.days
+
+    
     @property
     def percentual_conclusao(self):
         """Calcula percentual de conclusão da proposta"""
@@ -1056,127 +1058,3 @@ class Proposta(models.Model):
         
         return campos_preenchidos and valores_positivos
 
-
-# =============================================================================
-# MODELOS RELACIONADOS (mantém os existentes)
-# =============================================================================
-
-class HistoricoProposta(models.Model):
-    """
-    Modelo para rastrear mudanças de status das propostas
-    """
-    proposta = models.ForeignKey(Proposta, on_delete=models.CASCADE, related_name='historico')
-    status_anterior = models.CharField(max_length=20, blank=True)
-    status_novo = models.CharField(max_length=20)
-    observacao = models.TextField(blank=True)
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    data_mudanca = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Histórico da Proposta"
-        verbose_name_plural = "Históricos das Propostas"
-        ordering = ['-data_mudanca']
-    
-    def __str__(self):
-        return f"{self.proposta.numero} - {self.status_anterior} → {self.status_novo}"
-
-
-class AnexoProposta(models.Model):
-    """
-    Modelo para anexos das propostas (PDFs, imagens, etc.)
-    """
-    TIPO_CHOICES = [
-        ('proposta', 'Proposta Comercial'),
-        ('orcamento', 'Orçamento'),
-        ('demonstrativo', 'Demonstrativo de Cálculo'),
-        ('contrato', 'Contrato'),
-        ('projeto', 'Projeto Técnico'),
-        ('foto', 'Foto'),
-        ('documento', 'Documento'),
-        ('outro', 'Outro'),
-    ]
-    
-    proposta = models.ForeignKey(Proposta, on_delete=models.CASCADE, related_name='anexos')
-    nome = models.CharField(max_length=200, verbose_name="Nome do Arquivo")
-    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name="Tipo")
-    arquivo = models.FileField(upload_to='propostas/anexos/%Y/%m/', verbose_name="Arquivo")
-    tamanho = models.PositiveIntegerField(blank=True, null=True, verbose_name="Tamanho (bytes)")
-    observacoes = models.TextField(blank=True, verbose_name="Observações")
-    
-    # Auditoria
-    enviado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    enviado_em = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Anexo da Proposta"
-        verbose_name_plural = "Anexos das Propostas"
-        ordering = ['-enviado_em']
-    
-    def __str__(self):
-        return f"{self.proposta.numero} - {self.nome}"
-    
-    @property
-    def tamanho_formatado(self):
-        """Retorna o tamanho do arquivo formatado"""
-        if not self.tamanho:
-            return "N/A"
-        
-        if self.tamanho < 1024:
-            return f"{self.tamanho} bytes"
-        elif self.tamanho < 1024 * 1024:
-            return f"{self.tamanho / 1024:.1f} KB"
-        else:
-            return f"{self.tamanho / (1024 * 1024):.1f} MB"
-
-
-class ParcelaProposta(models.Model):
-    """
-    Modelo para controle detalhado das parcelas da proposta
-    """
-    proposta = models.ForeignKey(Proposta, on_delete=models.CASCADE, related_name='parcelas')
-    numero_parcela = models.PositiveIntegerField(verbose_name="Número da Parcela")
-    data_vencimento = models.DateField(verbose_name="Data de Vencimento")
-    valor = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor da Parcela")
-    descricao = models.CharField(
-        max_length=100, 
-        blank=True, 
-        verbose_name="Descrição",
-        help_text="Ex: Entrada, 1ª Parcela, etc."
-    )
-    
-    # Controle de pagamento (para uso futuro)
-    pago = models.BooleanField(default=False, verbose_name="Pago")
-    data_pagamento = models.DateField(blank=True, null=True, verbose_name="Data do Pagamento")
-    valor_pago = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        blank=True, 
-        null=True, 
-        verbose_name="Valor Pago"
-    )
-    
-    class Meta:
-        verbose_name = "Parcela da Proposta"
-        verbose_name_plural = "Parcelas das Propostas"
-        ordering = ['proposta', 'numero_parcela']
-        unique_together = ['proposta', 'numero_parcela']
-    
-    def __str__(self):
-        return f"{self.proposta.numero} - Parcela {self.numero_parcela}"
-    
-    @property
-    def esta_vencida(self):
-        """Verifica se a parcela está vencida"""
-        if self.pago:
-            return False
-        from datetime import date
-        return date.today() > self.data_vencimento
-    
-    @property
-    def dias_para_vencer(self):
-        """Retorna quantos dias faltam para vencer"""
-        if self.pago:
-            return None
-        from datetime import date
-        delta = self.data_vencimento - date.today()
-        return delta.days

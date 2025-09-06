@@ -1,5 +1,5 @@
 # =============================================================================
-# ARQUIVO: vendedor/utils.py (SIMPLIFICADO)
+# ARQUIVO: vendedor/utils.py 
 # =============================================================================
 
 from datetime import datetime, timedelta

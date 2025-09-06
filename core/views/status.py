@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @login_required
-def proposta_alterar_status(request, pk, redirect_view_name='pedido_list'):
+def proposta_alterar_status(request, pk, redirect_view_name='proposta_list'):
     """
     View compartilhada para alterar status da proposta
     
@@ -69,7 +69,7 @@ def proposta_alterar_status(request, pk, redirect_view_name='pedido_list'):
                 )
                 
                 # ✅ CORRIGIDO: Redirect adequado para lista vs detail
-                if redirect_view_name in ['vendedor:pedido_list', 'producao:proposta_list']:
+                if redirect_view_name in ['vendedor:proposta_list', 'producao:proposta_list']:
                     return redirect(redirect_view_name)
                 else:
                     # Para views que precisam de parâmetros (detail)
@@ -157,7 +157,7 @@ def proposta_alterar_status_ajax(request, pk):
 @login_required
 def vendedor_proposta_alterar_status(request, pk):
     """Wrapper para o vendedor - ✅ CORRIGIDO: vai para lista"""
-    return proposta_alterar_status(request, pk, 'vendedor:pedido_list')
+    return proposta_alterar_status(request, pk, 'vendedor:proposta_list')
 
 
 # Para a produção - wrapper específico  

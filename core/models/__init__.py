@@ -11,9 +11,9 @@ from .fornecedores import Fornecedor, FornecedorProduto
 from .parametros import ParametrosGerais
 from .produtos import GrupoProduto, SubgrupoProduto, Produto, EstruturaProduto
 from .compras import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
-from .propostas import Proposta, HistoricoProposta, AnexoProposta, ParcelaProposta
+from .propostas import Proposta
+from .propostas2 import HistoricoProposta, AnexoProposta, ParcelaProposta, VistoriaHistorico
 
-# === MODELS DE PRODUÇÃO ===
 from .producao import (
     ListaMateriais,
     ItemListaMateriais,
@@ -23,10 +23,7 @@ from .producao import (
     ItemOrcamentoCompra,
     HistoricoOrcamentoCompra
 )
-
 from .portas_pavimento import PortaPavimento
-
-# === MOTOR DE REGRAS ===
 from .regras_yaml import RegraYAML, TipoRegra
 
 # === LISTA ESSENCIAL ===
@@ -57,7 +54,8 @@ __all__ = [
     'HistoricoProposta',
     'AnexoProposta',
     'ParcelaProposta',
-    'PortaPavimento',
+    'PortaPavimento'
+    'VistoriaHistorico',
     
     # Produção - Fluxo Completo
     'ListaMateriais',

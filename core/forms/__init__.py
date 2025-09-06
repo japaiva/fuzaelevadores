@@ -1,10 +1,5 @@
 # core/forms/__init__.py
 
-"""
-Importações dos formulários do sistema FUZA
-Mantém imports explícitos para melhor controle e debug
-"""
-
 # === CLASSES BASE ===
 from .base import (
     BaseModelForm,
@@ -78,8 +73,17 @@ from .propostas import (
     PropostaComercialForm,
     PropostaFiltroForm,
     ClienteCreateForm as PropostaClienteCreateForm,
-    AnexoPropostaForm
+    AnexoPropostaForm,  
 )
+
+# Formulários de Vistoria
+from .vistoria import (
+    PropostaVistoriaForm,
+    VistoriaHistoricoForm,
+    VistoriaRealizadaForm,
+    VistoriaFiltroForm,
+)
+
 
 # === FORMULÁRIOS DE PARÂMETROS ===
 from .parametros import (
@@ -90,8 +94,7 @@ from .parametros import (
 )
 
 # === FORMULÁRIOS DE PRODUÇÃO ===
-from .producao import (
-    # Lista de Materiais
+from .producao import (    # Lista de Materiais
     ListaMateriaisForm,
     ItemListaMateriaisForm,
     ItemListaMateriaisFormSet,
@@ -177,6 +180,12 @@ __all__ = [
     'PropostaFiltroForm',
     'PropostaClienteCreateForm',
     'AnexoPropostaForm',
+
+    # Vistorias
+    'PropostaVistoriaForm',
+    'VistoriaHistoricoForm',
+    'VistoriaRealizadaForm',
+    'VistoriaFiltroForm',
     
     # Parâmetros
     'ParametrosGeraisForm',

@@ -1,0 +1,351 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Vistoria {{ vistoria.pk }} - {{ proposta.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-eye me-2"></i>Detalhes da Vistoria #{{ vistoria.pk }}
+    </h5>
+    <div>
+      {% if vistoria.pode_realizar %}
+        <a href="{% url 'vendedor:vistoria_realizar' vistoria.pk %}" class="btn btn-success btn-sm">
+          <i class="fas fa-check me-1"></i> Marcar como Realizada
+        </a>
+      {% endif %}
+      <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary btn-sm ms-2">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <!-- Informações da Proposta -->
+    <div class="card shadow-sm border-primary mb-4">
+      <div class="card-header bg-primary text-white">
+        <h6 class="card-title mb-0">Proposta {{ proposta.numero }}</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Cliente:</span>
+              <strong>{{ proposta.cliente.nome }}</strong>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Projeto:</span>
+              <strong>{{ proposta.nome_projeto }}</strong>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Status Obra:</span>
+              {% if proposta.status_obra %}
+                <span class="badge {{ proposta.status_obra_badge_class }}">{{ proposta.get_status_obra_display }}</span>
+              {% else %}
+                <span class="badge bg-secondary">Aguardando</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dados da Vistoria -->
+    <div class="card shadow-sm border-info mb-4">
+      <div class="card-header bg-info text-white">
+        <h6 class="card-title mb-0">Dados da Vistoria</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <div class="text-center">
+              <div class="text-muted small">Data Agendada</div>
+              <div class="h6 mb-0">{{ vistoria.data_agendada|date:"d/m/Y" }}</div>
+              {% if vistoria.dias_para_vistoria is not None and vistoria.status_vistoria == 'agendada' %}
+                <div class="small {% if vistoria.esta_vencida %}text-danger{% elif vistoria.dias_para_vistoria <= 1 %}text-warning{% else %}text-muted{% endif %}">
+                  {% if vistoria.dias_para_vistoria < 0 %}
+                    {{ vistoria.dias_para_vistoria|add:"-1"|stringformat:"d" }} dias atrás
+                  {% elif vistoria.dias_para_vistoria == 0 %}
+                    Hoje
+                  {% else %}
+                    em {{ vistoria.dias_para_vistoria }} dias
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="text-center">
+              <div class="text-muted small">Data Realizada</div>
+              {% if vistoria.data_realizada %}
+                <div class="h6 mb-0 text-success">{{ vistoria.data_realizada|date:"d/m/Y" }}</div>
+              {% else %}
+                <div class="h6 mb-0 text-muted">Não realizada</div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="text-center">
+              <div class="text-muted small">Tipo</div>
+              <span class="badge bg-outline-secondary fs-6">{{ vistoria.get_tipo_vistoria_display }}</span>
+            </div>
+          </div>
+          
+          <div class="col-md-3">
+            <div class="text-center">
+              <div class="text-muted small">Status</div>
+              <span class="badge {{ vistoria.status_badge_class }} fs-6">{{ vistoria.get_status_vistoria_display }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Responsável:</span>
+              <strong>{{ vistoria.responsavel.get_full_name|default:vistoria.responsavel.username }}</strong>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Criada em:</span>
+              <strong>{{ vistoria.criado_em|date:"d/m/Y H:i" }}</strong>
+            </div>
+          </div>
+          
+          {% if vistoria.atualizado_por %}
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Atualizada por:</span>
+              <strong>{{ vistoria.atualizado_por.get_full_name|default:vistoria.atualizado_por.username }}</strong>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Atualizada em:</span>
+              <strong>{{ vistoria.atualizado_em|date:"d/m/Y H:i" }}</strong>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Alterações de Status -->
+    {% if vistoria.status_obra_anterior or vistoria.status_obra_novo %}
+    <div class="card shadow-sm border-warning mb-4">
+      <div class="card-header bg-warning text-dark">
+        <h6 class="card-title mb-0">Alterações de Status da Obra</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="text-center">
+              <div class="text-muted small">Status Anterior</div>
+              {% if vistoria.status_obra_anterior %}
+                <span class="badge bg-secondary">{{ vistoria.status_obra_anterior }}</span>
+              {% else %}
+                <span class="text-muted">Não informado</span>
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="text-center">
+              <div class="text-muted small">Novo Status</div>
+              {% if vistoria.status_obra_novo %}
+                <span class="badge bg-success">{{ vistoria.status_obra_novo }}</span>
+              {% else %}
+                <span class="text-muted">Sem alteração</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Observações e Recomendações -->
+    <div class="card shadow-sm border-success mb-4">
+      <div class="card-header bg-success text-white">
+        <h6 class="card-title mb-0">Relatório da Vistoria</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <h6 class="text-muted">Observações</h6>
+            {% if vistoria.observacoes %}
+              <div class="bg-light p-3 rounded">
+                {{ vistoria.observacoes|linebreaks }}
+              </div>
+            {% else %}
+              <div class="text-muted fst-italic">Nenhuma observação registrada</div>
+            {% endif %}
+          </div>
+          
+          <div class="col-md-6">
+            <h6 class="text-muted">Recomendações</h6>
+            {% if vistoria.recomendacoes %}
+              <div class="bg-light p-3 rounded">
+                {{ vistoria.recomendacoes|linebreaks }}
+              </div>
+            {% else %}
+              <div class="text-muted fst-italic">Nenhuma recomendação registrada</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Próxima Vistoria -->
+    {% if vistoria.proxima_vistoria_sugerida %}
+    <div class="card shadow-sm border-info mb-4">
+      <div class="card-header bg-info text-white">
+        <h6 class="card-title mb-0">Próxima Vistoria Sugerida</h6>
+      </div>
+      <div class="card-body">
+        <div class="text-center">
+          <div class="h5 mb-2">{{ vistoria.proxima_vistoria_sugerida|date:"d/m/Y" }}</div>
+          <div class="text-muted">
+            {% with vistoria.proxima_vistoria_sugerida|timeuntil as tempo_restante %}
+              em {{ tempo_restante }}
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Dados Técnicos (JSON) -->
+    {% if vistoria.dados_tecnicos %}
+    <div class="card shadow-sm border-dark mb-4">
+      <div class="card-header bg-dark text-white">
+        <h6 class="card-title mb-0">Dados Técnicos</h6>
+      </div>
+      <div class="card-body">
+        <pre class="bg-light p-3 rounded"><code>{{ vistoria.dados_tecnicos|pprint }}</code></pre>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Fotos e Anexos -->
+    {% if vistoria.fotos_anexos %}
+    <div class="card shadow-sm border-secondary mb-4">
+      <div class="card-header bg-secondary text-white">
+        <h6 class="card-title mb-0">Fotos e Anexos</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% for anexo in vistoria.fotos_anexos %}
+            <div class="col-md-4">
+              <div class="card">
+                <div class="card-body text-center">
+                  <i class="fas fa-file fa-2x text-muted mb-2"></i>
+                  <div class="small">{{ anexo }}</div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Ações -->
+    <div class="card shadow-sm border-light">
+      <div class="card-header bg-light">
+        <h6 class="card-title mb-0">Ações Disponíveis</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-flex gap-2 justify-content-center">
+          {% if vistoria.pode_realizar %}
+            <a href="{% url 'vendedor:vistoria_realizar' vistoria.pk %}" class="btn btn-success">
+              <i class="fas fa-check me-1"></i> Marcar como Realizada
+            </a>
+          {% endif %}
+          
+          {% if vistoria.pode_cancelar %}
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelarVistoriaModal">
+              <i class="fas fa-times me-1"></i> Cancelar Vistoria
+            </button>
+          {% endif %}
+          
+          <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-primary">
+            <i class="fas fa-list me-1"></i> Ver Todas as Vistorias
+          </a>
+          
+          <a href="{% url 'vendedor:pedido_detail' proposta.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-file-alt me-1"></i> Ver Proposta Completa
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Cancelar Vistoria -->
+<div class="modal fade" id="cancelarVistoriaModal" tabindex="-1" aria-labelledby="cancelarVistoriaModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cancelarVistoriaModalLabel">
+          <i class="fas fa-times-circle me-2"></i>Cancelar Vistoria
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <form action="{% url 'vendedor:vistoria_cancelar' vistoria.pk %}" method="post">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Tem certeza que deseja cancelar esta vistoria?
+          </div>
+          
+          <div class="mb-3">
+            <label for="motivo" class="form-label">Motivo do cancelamento:</label>
+            <textarea class="form-control" id="motivo" name="motivo" rows="3" 
+                      placeholder="Informe o motivo do cancelamento..." required></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-times me-1"></i>Cancelar Vistoria
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge.bg-outline-secondary {
+  background-color: transparent !important;
+  border: 1px solid #6c757d;
+  color: #6c757d;
+}
+
+pre code {
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+.card-body .bg-light {
+  border: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}

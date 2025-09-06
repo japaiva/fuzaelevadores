@@ -4,14 +4,15 @@ from django import forms
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 
-from core.models import Proposta, Cliente, Usuario, AnexoProposta
-from .base import BaseModelForm, AuditMixin, ValidacaoComumMixin, MoneyInput, QuantityInput, PercentageInput
-
+from core.models import (
+    Proposta, Cliente, Usuario, AnexoProposta, VistoriaHistorico
+)
+from .base import (
+    BaseModelForm, AuditMixin, ValidacaoComumMixin, MoneyInput, 
+    QuantityInput, PercentageInput
+)
 
 class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
-    """
-    Formulário unificado para a Etapa 1: Cliente + Elevador + Poço + Valor Principal
-    """
     class Meta:
         model = Proposta
         fields = [
@@ -20,7 +21,6 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'nome_projeto', 
             'normas_abnt', 
             'local_instalacao',
-            'observacoes',
             'faturado_por',
                     
             # Dados do Elevador
@@ -48,16 +48,12 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
                 'class': 'form-control',
                 'required': True
             }),
-            # ✅ NOVO WIDGET
+    
             'normas_abnt': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
 
-            'observacoes': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3
-            }),
             'faturado_por': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
@@ -179,27 +175,20 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
 
 
 class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
-
     class Meta:
         model = Proposta
         fields = [
             # Dados da Cabine
             'material_cabine',
-            'material_cabine_outro',
-            'valor_cabine_outro',
             'espessura_cabine',
             'saida_cabine',
             'altura_cabine',
             'piso_cabine',
             'material_piso_cabine',
-            'material_piso_cabine_outro',
-            'valor_piso_cabine_outro',
             
             # Porta da Cabine
             'modelo_porta_cabine',
             'material_porta_cabine',
-            'material_porta_cabine_outro',
-            'valor_porta_cabine_outro',
             'folhas_porta_cabine',
             'largura_porta_cabine',
             'altura_porta_cabine',
@@ -207,8 +196,6 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             # Porta do Pavimento
             'modelo_porta_pavimento',
             'material_porta_pavimento',
-            'material_porta_pavimento_outro',
-            'valor_porta_pavimento_outro',
             'folhas_porta_pavimento',
             'largura_porta_pavimento',
             'altura_porta_pavimento',
@@ -220,15 +207,7 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
-            'material_cabine_outro': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Especifique o material'
-            }),
-            'valor_cabine_outro': MoneyInput(),
-            'espessura_cabine': forms.Select(attrs={
-                'class': 'form-select',
-                'required': True
-            }),
+
             'saida_cabine': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
@@ -244,11 +223,6 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'material_piso_cabine': forms.Select(attrs={
                 'class': 'form-select'
             }),
-            'material_piso_cabine_outro': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Especifique o material'
-            }),
-            'valor_piso_cabine_outro': MoneyInput(),
             
             # Porta Cabine
             'modelo_porta_cabine': forms.Select(attrs={
@@ -259,14 +233,7 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
-            'material_porta_cabine_outro': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Especifique o material'
-            }),
-            'valor_porta_cabine_outro': MoneyInput(),
-            'folhas_porta_cabine': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+
             'largura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
                 'placeholder': '0,00'
@@ -285,14 +252,7 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
-            'material_porta_pavimento_outro': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Especifique o material'
-            }),
-            'valor_porta_pavimento_outro': MoneyInput(),
-            'folhas_porta_pavimento': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+
             'largura_porta_pavimento': QuantityInput(attrs={
                 'step': '0.01',
                 'placeholder': '0,00'
@@ -317,7 +277,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             # Validade e Prazos
             'prazo_entrega_dias',
             'data_validade',
-            'previsao_conclusao_obra',  # ✅ ADICIONADO
+            'previsao_conclusao_obra', 
        
             # Forma de Pagamento
             'forma_pagamento',
@@ -336,7 +296,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            # ✅ ADICIONADO WIDGET
+
             'previsao_conclusao_obra': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'

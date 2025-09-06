@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
 
-{% block title %}Portal do Vendedor{% endblock %}
-
 {% block navbar_title %}
 <span class="app-title-text">Portal do Vendedor</span>
 {% endblock %}
@@ -20,22 +18,52 @@
   </a>
 </li>
 
-
-<!-- Menu de Pedidos -->
+<!-- Menu de Propostas -->
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Propostas
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_step1' %}">
-        Nova Proposta
+    <li><a class="dropdown-item" href="{% url 'vendedor:proposta_step1' %}">
+        <i class="fas fa-plus me-2"></i>Nova Proposta
     </a></li>
-    <li><a class="dropdown-item" href="{% url 'vendedor:pedido_list' %}">
-        Propostas
+    <li><a class="dropdown-item" href="{% url 'vendedor:proposta_list' %}">
+        <i class="fas fa-list me-2"></i>Todas as Propostas
     </a></li>
   </ul>
 </li>
 
-
+<!-- Menu de Vistorias -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'vistoria' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="fas fa-hard-hat me-1"></i>Vistorias
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}">
+        <i class="fas fa-clipboard-list me-2"></i>Controle de Vistorias
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_calendario' %}">
+        <i class="fas fa-calendar me-2"></i>Calendário
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header">Status da Obra</h6></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=">
+        <span class="badge bg-secondary me-2">•</span>Aguardando Medição
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=medicao_ok">
+        <span class="badge bg-success me-2">•</span>Medição OK
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=em_vistoria">
+        <span class="badge bg-warning me-2">•</span>Em Vistoria
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=obra_ok">
+        <span class="badge bg-primary me-2">•</span>Obra OK
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?periodo_vistoria=vencidas">
+        <i class="fas fa-exclamation-triangle text-danger me-2"></i>Vistorias Vencidas
+    </a></li>
+  </ul>
+</li>
 
 {% endblock %}
