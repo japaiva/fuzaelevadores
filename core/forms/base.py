@@ -79,21 +79,58 @@ class BaseFiltroForm(forms.Form):
                 field.widget.attrs.update({'class': 'form-control form-control-sm'})
 
 
-# Widgets customizados comuns
-class MoneyInput(forms.TextInput): # ALTERADO PARA forms.TextInput
-    """Widget para campos monetários"""
+# Substitua o MoneyInput no seu core/forms/base.py
+
+class MoneyInput(forms.TextInput):
+    """Widget para campos monetários com formatação brasileira"""
     
     def __init__(self, attrs=None):
         default_attrs = {
-            'class': 'form-control',
-            'inputmode': 'decimal', # Sugere teclado numérico em dispositivos móveis
-            'pattern': '[0-9]*[.,]?[0-9]*', # Validação regex básica para ponto ou vírgula
-            'placeholder': '0,00'
+            'class': 'form-control money-input',
+            'inputmode': 'decimal',
+            'pattern': '[0-9]*[.,]?[0-9]*',
+            'placeholder': '0,00',
+            'data-mask': 'currency'  # Para identificar nos scripts
         }
         if attrs:
             default_attrs.update(attrs)
         super().__init__(attrs=default_attrs)
-
+    
+    def format_value(self, value):
+        """Formatar valor para exibição no formato brasileiro"""
+        if value is None or value == '':
+            return ''
+        
+        # Se for string, tentar converter
+        if isinstance(value, str):
+            # Se já está no formato brasileiro (com vírgula), manter
+            if ',' in value and '.' not in value:
+                try:
+                    # Validar se é um número válido
+                    float(value.replace(',', '.'))
+                    return value
+                except ValueError:
+                    pass
+            
+            # Tentar converter string para float
+            try:
+                if ',' in value:
+                    value = value.replace(',', '.')
+                value = float(value)
+            except (ValueError, AttributeError):
+                return str(value) if value else ''
+        
+        # Se for número (int, float, Decimal), formatar
+        if isinstance(value, (int, float)):
+            # Formatar com 2 casas decimais e vírgula brasileira
+            return f"{float(value):.2f}".replace('.', ',')
+        
+        # Para Decimal
+        from decimal import Decimal
+        if isinstance(value, Decimal):
+            return f"{float(value):.2f}".replace('.', ',')
+        
+        return str(value) if value else ''
 
 class PercentageInput(forms.TextInput): # ALTERADO PARA forms.TextInput
     """Widget para campos de porcentagem"""

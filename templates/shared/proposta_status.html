@@ -94,20 +94,6 @@
                 {% endif %}
               </div>
               
-              <!-- Campo de Vistoria (aparece apenas quando status = aprovado) -->
-              <div class="col-md-6 mb-3" id="campo-vistoria" style="display: none;">
-                <label for="{{ form.data_vistoria_medicao_prevista.id_for_label }}" class="form-label">
-                  <strong>Data da Vistoria/Medição *</strong>
-                </label>
-                {{ form.data_vistoria_medicao_prevista }}
-                {% if form.data_vistoria_medicao_prevista.errors %}
-                  <div class="text-danger small mt-1">
-                    {{ form.data_vistoria_medicao_prevista.errors.0 }}
-                  </div>
-                {% endif %}
-                <div class="form-text">{{ form.data_vistoria_medicao_prevista.help_text }}</div>
-              </div>
-            </div>
             
             <div class="row">
               <div class="col-md-12 mb-3">

@@ -8,7 +8,7 @@
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h5 class="card-title mb-0">
-      <i class="fas fa-dollar-sign me-2"></i>Proposta {{ proposta.numero }} - Dados Comerciais
+      Editar Proposta {{ proposta.numero }} - Dados Comerciais
     </h5>
     
     <div class="d-flex gap-2">
@@ -27,7 +27,7 @@
       <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemax="100"></div>
     </div>
     <div class="d-flex justify-content-between mt-2">
-      <small class="text-success">✓ 1. Cliente/Elevador</small>
+      <small class="text-success">✓ 1. Projeto/Elevador</small>
       <small class="text-success">✓ 2. Cabine/Portas</small>
       <small class="text-success fw-bold">3. Dados Comerciais</small>
     </div>
@@ -130,6 +130,16 @@
                 </div>
               {% endif %}
             </div>
+
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.data_vistoria_medicao.id_for_label }}">Data Medição Prevista</label>
+                {{ form.data_vistoria_medicao }}
+                {% if form.data_vistoria_medicao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.data_vistoria_medicao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
 
             <div class="col-md-4">
               <label class="form-label" for="{{ form.previsao_conclusao_obra.id_for_label }}">Previsão Conclusão Obra</label>
@@ -253,22 +263,14 @@
 
 {% block extra_js %}
 <script>
-
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 STEP 3: JavaScript inicializado');
+    console.log('🎯 STEP 3: JavaScript inicializado (versão simples)');
     
     const form = document.getElementById('comercialForm');
     
     // === ELEMENTOS DO FORMULÁRIO ===
-    
-    // Campos comerciais
-    const valorCalculadoInput = document.getElementById('valorCalculado');
     const valorPropostaInput = document.getElementById('{{ form.valor_proposta.id_for_label }}');
-    const indicadorDesconto = document.getElementById('indicador-desconto');
-    const textoDesconto = document.getElementById('texto-desconto');
     const prazoEntregaDiasInput = document.getElementById('{{ form.prazo_entrega_dias.id_for_label }}');
-    
-    // Campos de data
     const dataValidadeInput = document.getElementById('{{ form.data_validade.id_for_label }}');
     const previsaoObraInput = document.getElementById('{{ form.previsao_conclusao_obra.id_for_label }}');
     const primeiraParcelaInput = document.getElementById('{{ form.primeira_parcela.id_for_label }}');
@@ -288,13 +290,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const numeroParcelasInput = document.getElementById('{{ form.numero_parcelas.id_for_label }}');
     const valorParcelaCalculado = document.getElementById('valorParcelaCalculado');
     
-    // Resumo (se ainda forem utilizados)
-    const resumoPagamento = document.getElementById('resumo-pagamento');
-    const resumoEntrada = document.getElementById('resumo-entrada');
-    const resumoParcelas = document.getElementById('resumo-parcelas');
-    const resumoTotal = document.getElementById('resumo-total');
-    const resumoImpostos = document.getElementById('resumo-impostos');
-    
     // Botão calcular
     const btnCalcular = document.getElementById('btnCalcular');
     
@@ -304,7 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const data30Dias = new Date(hoje);
         data30Dias.setDate(hoje.getDate() + 30);
         
-        // Formato YYYY-MM-DD para input date
         const ano = data30Dias.getFullYear();
         const mes = String(data30Dias.getMonth() + 1).padStart(2, '0');
         const dia = String(data30Dias.getDate()).padStart(2, '0');
@@ -312,13 +306,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${ano}-${mes}-${dia}`;
     }
 
-    // === FUNÇÃO PARA CALCULAR DATA +90 DIAS (para obra) ===
     function calcularData90Dias() {
         const hoje = new Date();
         const data90Dias = new Date(hoje);
         data90Dias.setDate(hoje.getDate() + 90);
         
-        // Formato YYYY-MM-DD para input date
         const ano = data90Dias.getFullYear();
         const mes = String(data90Dias.getMonth() + 1).padStart(2, '0');
         const dia = String(data90Dias.getDate()).padStart(2, '0');
@@ -331,126 +323,67 @@ document.addEventListener('DOMContentLoaded', function() {
         const data30Dias = calcularData30Dias();
         const data90Dias = calcularData90Dias();
         
-        // Definir data de validade se estiver vazia
         if (dataValidadeInput && !dataValidadeInput.value) {
             dataValidadeInput.value = data30Dias;
         }
         
-        // Definir previsão de conclusão da obra se estiver vazia
         if (previsaoObraInput && !previsaoObraInput.value) {
             previsaoObraInput.value = data90Dias;
         }
         
-        // Definir primeira parcela se estiver vazia
         if (primeiraParcelaInput && !primeiraParcelaInput.value) {
             primeiraParcelaInput.value = data30Dias;
         }
     }
     
-    // === FUNÇÕES DE CÁLCULO ===
-    
-    function calcularDesconto() {
-        if (!valorCalculadoInput || !valorPropostaInput) return;
-        
-        const valorCalculado = parseFloat(valorCalculadoInput.value.replace(',', '.')) || 0;
-        const valorProposta = parseFloat(valorPropostaInput.value.replace(',', '.')) || 0;
-        
-        if (valorCalculado > 0 && valorProposta > 0) {
-            const diferenca = valorProposta - valorCalculado;
-            const percentual = (diferenca / valorCalculado) * 100;
-            
-            if (Math.abs(diferenca) > 0.01) {
-                if (diferenca > 0) {
-                    textoDesconto.innerHTML = `<strong>Acréscimo:</strong> R$ ${Math.abs(diferenca).toFixed(2).replace('.', ',')} (${percentual.toFixed(1)}%)`;
-                    indicadorDesconto.className = 'row mt-3'; // Reset class
-                    indicadorDesconto.innerHTML = `
-                        <div class="col-12">
-                            <div class="alert alert-warning p-2 mb-0">
-                                <small><i class="fas fa-arrow-up me-1"></i>${textoDesconto.innerHTML}</small>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    textoDesconto.innerHTML = `<strong>Desconto:</strong> R$ ${Math.abs(diferenca).toFixed(2).replace('.', ',')} (${Math.abs(percentual).toFixed(1)}%)`;
-                    indicadorDesconto.className = 'row mt-3'; // Reset class
-                    indicadorDesconto.innerHTML = `
-                        <div class="col-12">
-                            <div class="alert alert-info p-2 mb-0">
-                                <small><i class="fas fa-arrow-down me-1"></i>${textoDesconto.innerHTML}</small>
-                            </div>
-                        </div>
-                    `;
-                }
-                indicadorDesconto.style.display = 'block';
-            } else {
-                indicadorDesconto.style.display = 'none';
-            }
-        } else {
-            indicadorDesconto.style.display = 'none';
-        }
-    }
-    
+    // === FUNÇÃO SIMPLES DE PAGAMENTO ===
     function calcularPagamento() {
         if (!valorPropostaInput) return;
         
-        const valorProposta = parseFloat(valorPropostaInput.value.replace(',', '.')) || 0;
+        const valorProposta = parseFloat(valorPropostaInput.value) || 0;
         const forma = formaPagamentoSelect ? formaPagamentoSelect.value : '';
-        const valorEntrada = parseFloat(valorEntradaInput ? valorEntradaInput.value.replace(',', '.') : 0) || 0;
+        const valorEntrada = parseFloat(valorEntradaInput ? valorEntradaInput.value : 0) || 0;
         const percentualEntrada = parseFloat(percentualEntradaInput ? percentualEntradaInput.value : 0) || 0;
         const numeroParcelas = parseInt(numeroParcelasInput ? numeroParcelasInput.value : 0) || 0;
         
         if (valorProposta <= 0) {
-            // Limpa o valor da parcela se a proposta for zero
             if (valorParcelaCalculado) valorParcelaCalculado.value = '0,00';
             return;
         }
         
-        let entradaCalculada = 0;
         let valorParcelaCalculada = 0;
-        let totalParcelas = 0;
         
         if (forma === 'vista') {
-            entradaCalculada = valorProposta;
-            totalParcelas = 0;
+            valorParcelaCalculada = 0;
         } else if (forma === 'entrada_parcelas') {
-            // Calcular entrada
+            let entradaCalculada = 0;
             if (valorEntrada > 0) {
                 entradaCalculada = valorEntrada;
             } else if (percentualEntrada > 0) {
                 entradaCalculada = valorProposta * (percentualEntrada / 100);
             }
             
-            // Calcular parcelas
             const restante = valorProposta - entradaCalculada;
             if (numeroParcelas > 0) {
                 valorParcelaCalculada = restante / numeroParcelas;
-                totalParcelas = restante;
             }
         } else if (forma === 'parcelado') {
-            entradaCalculada = 0;
             if (numeroParcelas > 0) {
                 valorParcelaCalculada = valorProposta / numeroParcelas;
-                totalParcelas = valorProposta;
             }
         }
         
-        // Atualizar campos calculados
+        // 🇧🇷 FORMATAÇÃO BRASILEIRA SIMPLES E DIRETA
         if (valorParcelaCalculado) {
-            valorParcelaCalculado.value = valorParcelaCalculada.toFixed(2).replace('.', ',');
-        }
-        
-        // Atualizar resumo (se houver elementos no DOM)
-        if (resumoEntrada) resumoEntrada.textContent = `R$ ${entradaCalculada.toFixed(2).replace('.', ',')}`;
-        if (resumoParcelas) resumoParcelas.textContent = `R$ ${totalParcelas.toFixed(2).replace('.', ',')}`;
-        if (resumoTotal) resumoTotal.textContent = `R$ ${valorProposta.toFixed(2).replace('.', ',')}`;
-        if (resumoImpostos) {
-            const impostos = valorProposta * 1.10; // 10% de impostos - exemplo, ajuste conforme sua regra
-            resumoImpostos.textContent = `R$ ${impostos.toFixed(2).replace('.', ',')}`;
-        }
-        
-        // Mostrar resumo se houver forma de pagamento selecionada
-        if (forma && resumoPagamento) {
-            resumoPagamento.style.display = 'block';
+            // Converte para formato brasileiro: 102000.00 → 102.000,00
+            const valorFormatado = valorParcelaCalculada.toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            valorParcelaCalculado.value = valorFormatado;
+            
+            console.log(`💰 Valor original: ${valorParcelaCalculada} | Formatado: ${valorFormatado}`);
         }
     }
     
@@ -468,12 +401,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (forma === 'vista') {
             // À vista - nenhum campo adicional
         } else if (forma === 'entrada_parcelas') {
-            // Entrada + Parcelas
             [entradaDiv, percentualEntradaDiv, parcelasDiv, tipoParcelaDiv, primeiraParcelaDiv, valorParcelaDiv].forEach(div => {
                 if (div) div.style.display = 'block';
             });
         } else if (forma === 'parcelado') {
-            // Parcelado
             [parcelasDiv, tipoParcelaDiv, primeiraParcelaDiv, valorParcelaDiv].forEach(div => {
                 if (div) div.style.display = 'block';
             });
@@ -483,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // === FUNÇÃO DE CALCULAR VALORES ===
-    
     function executarCalculo() {
         const pedidoId = btnCalcular ? btnCalcular.dataset.pedidoId : null;
         if (!pedidoId) return;
@@ -503,18 +433,11 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Atualizar valor calculado
-                if (valorCalculadoInput) {
-                    valorCalculadoInput.value = data.data.valorCalculado.toFixed(2).replace('.', ',');
-                }
-                
                 // Se não há valor da proposta, usar o calculado
-                if (!valorPropostaInput.value || parseFloat(valorPropostaInput.value.replace(',', '.')) === 0) {
-                    valorPropostaInput.value = data.data.valorCalculado.toFixed(2).replace('.', ',');
+                if (!valorPropostaInput.value || parseFloat(valorPropostaInput.value) === 0) {
+                    valorPropostaInput.value = data.data.valorCalculado.toFixed(2);
                 }
                 
-                // Recalcular desconto e pagamento
-                calcularDesconto();
                 calcularPagamento();
                 
                 // Mostrar mensagem de sucesso
@@ -522,7 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alertDiv.className = 'alert alert-success alert-dismissible fade show';
                 alertDiv.innerHTML = `
                     <i class="fas fa-check-circle me-2"></i>
-                    Cálculo realizado com sucesso! Valor: R$ ${data.data.valorCalculado.toFixed(2).replace('.', ',')}
+                    Cálculo realizado com sucesso! Valor: R$ ${data.data.valorCalculado.toFixed(2)}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
                 
@@ -550,45 +473,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // === EVENT LISTENERS ===
     
-    // Calcular
     if (btnCalcular) {
         btnCalcular.addEventListener('click', executarCalculo);
     }
     
-    // Valor da proposta
     if (valorPropostaInput) {
-        valorPropostaInput.addEventListener('input', function() {
-            calcularDesconto();
-            calcularPagamento();
-        });
+        valorPropostaInput.addEventListener('input', calcularPagamento);
     }
     
-    // Forma de pagamento
     if (formaPagamentoSelect) {
         formaPagamentoSelect.addEventListener('change', updateFormaPagamento);
     }
     
-    // Campos de pagamento
     [valorEntradaInput, percentualEntradaInput, numeroParcelasInput].forEach(input => {
         if (input) {
             input.addEventListener('input', calcularPagamento);
         }
     });
     
-    // Prazo de entrega
-    if (prazoEntregaDiasInput) {
-        prazoEntregaDiasInput.addEventListener('input', function() {
-            // Adicione aqui qualquer lógica de validação/cálculo em tempo real para prazo de entrega se necessário
-        });
-    }
-
     // === VALIDAÇÃO DO FORMULÁRIO ===
-    
     if (form) {
         form.addEventListener('submit', function(e) {
-            // ✅ REMOVIDO: Validação do vendedor (agora está no Step 1)
-            
-            const valorProposta = parseFloat(valorPropostaInput.value.replace(',', '.')) || 0;
+            const valorProposta = parseFloat(valorPropostaInput.value) || 0;
             
             if (valorProposta <= 0) {
                 e.preventDefault();
@@ -597,7 +503,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Validar prazo de entrega
             const prazoEntrega = parseInt(prazoEntregaDiasInput.value) || 0;
             if (prazoEntrega <= 0) {
                 e.preventDefault();
@@ -606,48 +511,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Validar data de validade
-            if (dataValidadeInput.value) {
-                const hoje = new Date();
-                hoje.setHours(0, 0, 0, 0); 
-                const validade = new Date(dataValidadeInput.value + 'T00:00:00'); 
-                
-                if (validade <= hoje) {
-                    e.preventDefault();
-                    alert('A data de validade deve ser futura.');
-                    return;
-                }
-            }
-
-            // Validar previsão de conclusão da obra
-            if (previsaoObraInput && previsaoObraInput.value) {
-                const hoje = new Date();
-                hoje.setHours(0, 0, 0, 0); 
-                const previsaoObra = new Date(previsaoObraInput.value + 'T00:00:00'); 
-                
-                if (previsaoObra <= hoje) {
-                    e.preventDefault();
-                    alert('A previsão de conclusão da obra deve ser futura.');
-                    previsaoObraInput.focus();
-                    return;
-                }
-            }
-            
             console.log('✅ Validação step 3 concluída - enviando formulário');
         });
     }
     
     // === INICIALIZAÇÃO ===
-    
-    // Definir datas padrão
     definirDatasPadrao();
-    
     updateFormaPagamento();
-    calcularDesconto();
     calcularPagamento();
     
-    console.log('✅ STEP 3: JavaScript inicializado com sucesso');
+    console.log('✅ STEP 3: JavaScript inicializado com sucesso (versão simples)');
 });
-
 </script>
 {% endblock %}

@@ -12,7 +12,7 @@
 {% endif %}
 
 {% if pedido.pode_calcular %}
-  <a href="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="btn btn-info btn-sm">
+  <a href="{% url 'vendedor:proposta_calcular' pedido.pk %}" class="btn btn-info btn-sm">
     <i class="fas fa-calculator me-1"></i> Calcular
   </a>
 {% endif %}

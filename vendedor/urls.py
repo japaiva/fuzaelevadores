@@ -1,4 +1,4 @@
-# vendedor/urls.py - SEU ARQUIVO CORRIGIDO COM AS ALTERAÇÕES
+# vendedor/urls.py - ADIÇÃO PARA COMPATIBILIDADE
 
 from django.urls import path
 from . import views
@@ -30,7 +30,6 @@ urlpatterns = [
     # =============================================================================
     
     # Criar nova proposta (SEM PK) 
- 
     path('propostas/novo/', views.proposta_step1, name='proposta_create'),
     path('propostas/novo/step1/', views.proposta_step1, name='proposta_step1'),
        
@@ -75,17 +74,20 @@ urlpatterns = [
     path('proposta/<uuid:pk>/contrato/', views.gerar_contrato_pdf, name='gerar_contrato_pdf'),
     
     # =============================================================================
-    # APIS AJAX - AMBOS OS PADRÕES
+    # APIS AJAX - AMBOS OS PADRÕES PARA COMPATIBILIDADE
     # =============================================================================
     
     # APIs padrão proposta (futuro)
     path('api/propostas/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_proposta_dados_precificacao'),
     path('api/propostas/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_proposta_salvar_preco'),
-    path('api/propostas/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_proposta_calcular_preco'), # Note 'calcular/' matching your log
+    path('api/propostas/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_proposta_calcular_preco'),
+    
+    # 🔧 COMPATIBILIDADE: APIs padrão pedido (mantém funcionando com código existente)
+    path('api/pedidos/<uuid:pk>/dados-precificacao/', views.api_dados_precificacao, name='api_pedido_dados_precificacao'),
+    path('api/pedidos/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_pedido_salvar_preco'),
+    path('api/pedidos/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_pedido_calcular_preco'),  # <-- ESTA É A QUE ESTAVA FALTANDO!
     
     # APIs de cliente (sem mudança)
     path('api/clientes/<int:cliente_id>/info/', views.api_cliente_info, name='api_cliente_info'),
     path('api/clientes/create/', views.cliente_create_ajax, name='cliente_create_ajax'),
-    
-
 ]

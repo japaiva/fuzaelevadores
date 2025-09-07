@@ -65,7 +65,6 @@ def vendedor_proposta_alterar_status(request, pk):
                 if status_novo == 'aprovado':
                     messages.success(request, 
                         f'Proposta {proposta.numero} aprovada com sucesso! '
-                        f'Vistoria agendada para {data_vistoria.strftime("%d/%m/%Y")}'
                     )
                 elif status_novo == 'rejeitado':
                     messages.success(request, 

@@ -186,7 +186,7 @@
 
                       {% if pedido.pode_calcular %}
                       <li>
-                        <form method="post" action="{% url 'vendedor:pedido_calcular' pedido.pk %}" class="d-inline w-100">
+                        <form method="post" action="{% url 'vendedor:proposta_calcular' pedido.pk %}" class="d-inline w-100">
                           {% csrf_token %}
                           <button type="submit" class="dropdown-item text-info calcular-btn" 
                                   data-pedido="{{ pedido.numero }}">

@@ -9,7 +9,7 @@ from core.models import (
 )
 from .base import (
     BaseModelForm, AuditMixin, ValidacaoComumMixin, MoneyInput, 
-    QuantityInput, PercentageInput
+    QuantityInput, PercentageInput, CustomDateInput
 )
 
 class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
@@ -56,8 +56,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             }),
             'nome_projeto': forms.TextInput(attrs={
                 'class': 'form-control',
-                'required': True,
-                'placeholder': 'Ex: Edifício Residencial Vila Nova'
+                'required': True
             }),
             'faturado_por': forms.Select(attrs={
                 'class': 'form-select',
@@ -273,27 +272,17 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'placeholder': '0,00'
             }),
         }
-
-
 class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
-    """
-    Formulário Step 3: Dados Comerciais
-    ✅ ATUALIZADO: Removido vendedor e documentacao_prefeitura (movidos para Step 1)
-    """
     class Meta:
         model = Proposta
         fields = [
-            # ✅ DADOS COMERCIAIS BÁSICOS (sem vendedor e sem documentacao_prefeitura)
             'valor_proposta', 
             'numero_contrato',
             'data_contrato', 
-
-            # Validade e Prazos
+            'data_vistoria_medicao',
             'prazo_entrega_dias',
             'data_validade',
             'previsao_conclusao_obra', 
-       
-            # Forma de Pagamento
             'forma_pagamento',
             'valor_entrada',
             'percentual_entrada',
@@ -305,107 +294,139 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         ]
         
         widgets = {
-            # ✅ VALOR DA PROPOSTA (destaque)
-            'valor_proposta': MoneyInput(attrs={
-                'required': True,
-                'placeholder': '0,00',
+            # ✅ VALOR SEM FORMATAÇÃO - widget simples
+            'valor_proposta': forms.NumberInput(attrs={
                 'class': 'form-control form-control-lg',
-                'style': 'font-weight: bold; font-size: 1.1em;'
+                'style': 'font-weight: bold; font-size: 1.1em;',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
             }),
-            
-            # Contratos
             'numero_contrato': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ex: CT-2025-001'
-            }),
-            'data_contrato': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+                'class': 'form-control'
             }),
             
-            # Validade e Prazos
+            # Datas
+            'data_contrato': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_vistoria_medicao': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_validade': CustomDateInput(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'previsao_conclusao_obra': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_vencimento_entrada': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
+            'primeira_parcela': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
+            
+            # Outros campos
             'prazo_entrega_dias': QuantityInput(attrs={
                 'min': 1,
                 'max': 365,
                 'placeholder': '45',
                 'required': True
             }),
-            'data_validade': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date',
-                'required': True
-            }),
-            'previsao_conclusao_obra': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            
-            # Forma de Pagamento
             'forma_pagamento': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
-            'valor_entrada': MoneyInput(),
-            'percentual_entrada': PercentageInput(),
-            'data_vencimento_entrada': forms.DateInput(attrs={
+            
+            # ✅ VALORES DE ENTRADA SEM FORMATAÇÃO
+            'valor_entrada': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
+            'percentual_entrada': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+                'placeholder': '0.00'
             }),
             'numero_parcelas': QuantityInput(attrs={
                 'min': '1',
                 'max': '60',
                 'placeholder': '1'
             }),
-            'valor_parcela': MoneyInput(),
+            'valor_parcela': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': '0.00'
+            }),
             'tipo_parcela': forms.Select(attrs={
                 'class': 'form-select'
-            }),
-            'primeira_parcela': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
             }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # ✅ REMOVIDO: Configuração do vendedor (agora no Step 1)
+        hoje = date.today()
+        data_30_dias = hoje + timedelta(days=30)
+        data_90_dias = hoje + timedelta(days=90)
         
-        # Definir data de contrato padrão
-        if not self.instance.pk and not self.initial.get('data_contrato'):
-            self.initial['data_contrato'] = date.today()
+        # Para NOVAS propostas (sem PK), definir valores padrão
+        if not self.instance.pk:
+            if not self.initial.get('data_contrato'):
+                self.initial['data_contrato'] = hoje.strftime('%Y-%m-%d')
+            
+            if not self.initial.get('data_validade'):
+                self.initial['data_validade'] = data_30_dias.strftime('%Y-%m-%d')
+            
+            if not self.initial.get('previsao_conclusao_obra'):
+                self.initial['previsao_conclusao_obra'] = data_90_dias.strftime('%Y-%m-%d')
+            
+            if not self.initial.get('data_vistoria_medicao'):
+                self.initial['data_vistoria_medicao'] = hoje.strftime('%Y-%m-%d')
+            
+            if not self.initial.get('primeira_parcela'):
+                self.initial['primeira_parcela'] = data_30_dias.strftime('%Y-%m-%d')
+        
+        # Para propostas EXISTENTES, usar valores do banco ou definir padrões para campos vazios
+        else:
+            if not self.instance.data_contrato:
+                self.initial['data_contrato'] = hoje.strftime('%Y-%m-%d')
+            
+            if not self.instance.data_vistoria_medicao:
+                self.initial['data_vistoria_medicao'] = hoje.strftime('%Y-%m-%d')
+            
+            if not self.instance.data_validade:
+                self.initial['data_validade'] = data_30_dias.strftime('%Y-%m-%d')
+            
+            if not self.instance.previsao_conclusao_obra:
+                self.initial['previsao_conclusao_obra'] = data_90_dias.strftime('%Y-%m-%d')
+            
+            if not self.instance.primeira_parcela:
+                self.initial['primeira_parcela'] = data_30_dias.strftime('%Y-%m-%d')
 
-        # Definir data de validade padrão se não informada
-        if not self.instance.pk and not self.initial.get('data_validade'):
-            self.initial['data_validade'] = date.today() + timedelta(days=30)
-        
-        # Definir previsão de conclusão da obra padrão (+90 dias)
-        if not self.instance.pk and not self.initial.get('previsao_conclusao_obra'):
-            self.initial['previsao_conclusao_obra'] = date.today() + timedelta(days=90)
-        
-        # Definir primeira parcela padrão
-        if not self.instance.pk and not self.initial.get('primeira_parcela'):
-            self.initial['primeira_parcela'] = date.today() + timedelta(days=30)
-        
     def clean(self):
         cleaned_data = super().clean()
         
-        # ✅ VALIDAÇÃO DO VALOR DA PROPOSTA (obrigatório no Step 3)
+        # ✅ VALIDAÇÃO SIMPLES DO VALOR DA PROPOSTA
         valor_proposta = cleaned_data.get('valor_proposta')
         if not valor_proposta or float(valor_proposta) <= 0:
             self.add_error('valor_proposta', 'O valor da proposta é obrigatório e deve ser maior que zero.')
         
-        # Validações da forma de pagamento (mantidas)
+        # Validações da forma de pagamento
         forma_pagamento = cleaned_data.get('forma_pagamento')
         
         if forma_pagamento == 'vista':
-            # Para à vista, não precisa de parcelas
             cleaned_data['numero_parcelas'] = 1
             cleaned_data['valor_entrada'] = None
             cleaned_data['percentual_entrada'] = None
             
         elif forma_pagamento == 'entrada_parcelas':
-            # Para entrada + parcelas, validar ambos
             valor_entrada = cleaned_data.get('valor_entrada')
             percentual_entrada = cleaned_data.get('percentual_entrada')
             numero_parcelas = cleaned_data.get('numero_parcelas', 0)
@@ -421,7 +442,6 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 })
                 
         elif forma_pagamento == 'parcelado':
-            # Para parcelado, não precisa de entrada
             cleaned_data['valor_entrada'] = None
             cleaned_data['percentual_entrada'] = None
             
@@ -438,18 +458,21 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'data_validade': 'A data de validade deve ser futura.'
             })
         
-        # Validação da previsão de conclusão da obra
         previsao_conclusao_obra = cleaned_data.get('previsao_conclusao_obra')
         if previsao_conclusao_obra and previsao_conclusao_obra <= date.today():
             raise ValidationError({
                 'previsao_conclusao_obra': 'A previsão de conclusão da obra deve ser futura.'
             })
         
+        data_vistoria_medicao = cleaned_data.get('data_vistoria_medicao')
+        if data_vistoria_medicao:
+            data_limite_passado = date.today() - timedelta(days=30)
+            if data_vistoria_medicao < data_limite_passado:
+                raise ValidationError({
+                    'data_vistoria_medicao': 'A data de vistoria/medição não pode ser muito antiga (máximo 30 dias no passado).'
+                })
+        
         return cleaned_data
-
-
-# ✅ MANTIDOS IGUAIS - Outros formulários sem alteração
-
 class PropostaStatusForm(forms.ModelForm):
     """Formulário para alteração de status da proposta"""
     

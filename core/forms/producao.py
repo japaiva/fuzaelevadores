@@ -19,7 +19,6 @@ from core.models import (
 from .base import BaseModelForm, BaseFiltroForm, AuditMixin, MoneyInput, QuantityInput, CustomDateInput, DateAwareModelForm
 from core.choices import get_prioridade_pedido_choices
 
-
 # =============================================================================
 # LISTA DE MATERIAIS
 # =============================================================================
