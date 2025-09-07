@@ -35,52 +35,6 @@
   
   <div class="card-body">
 
-    <div class="card shadow-sm border-info mb-4">
-      <div class="card-header bg-info text-white">
-        <h6 class="card-title mb-0">Resumo da Proposta</h6>
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Cliente:</span>
-              <strong>{{ proposta.cliente.nome }}</strong>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Projeto:</span>
-              <strong>{{ proposta.nome_projeto }}</strong>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Modelo:</span>
-              <strong>{{ proposta.get_modelo_elevador_display }}</strong>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Capacidade:</span>
-              <strong>{{ proposta.capacidade }} kg</strong>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Faturado por:</span>
-              <strong>{{ proposta.get_faturado_por_display }}</strong>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="d-flex justify-content-between">
-              <span class="text-muted">Emissão:</span>
-              <strong>{{ proposta.criado_em|date:"d/m/Y" }}</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <form id="comercialForm" method="post">
       {% csrf_token %}
 
@@ -92,70 +46,23 @@
         </div>
       {% endif %}
       
+      <!-- Box Dados da Proposta -->
       <div class="card shadow-sm border-success mb-4">
         <div class="card-header bg-success text-white">
-          <h6 class="card-title mb-0">Dados Comerciais</h6>
+          <h6 class="card-title mb-0">Dados da Proposta</h6>
         </div>
         <div class="card-body">
 
-          <div class="row g-3">
+          <!-- Primeira linha: Proposta - Valor - Status -->
+          <div class="row g-3 mb-3">
             <div class="col-md-4">
-              <label class="form-label" for="{{ form.numero_contrato.id_for_label }}">Número do Contrato</label>
-              {{ form.numero_contrato }}
-              {% if form.numero_contrato.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.numero_contrato.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+              <label class="form-label">Proposta</label>
+              <input type="text" class="form-control bg-light" 
+                     value="{{ proposta.numero }}" readonly>
             </div>
             
             <div class="col-md-4">
-              <label class="form-label" for="{{ form.data_contrato.id_for_label }}">Data do Contrato</label>
-              {{ form.data_contrato }}
-              {% if form.data_contrato.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.data_contrato.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-4">
-              <div class="form-check mt-4">
-                {{ form.documentacao_prefeitura }}
-                <label class="form-check-label" for="{{ form.documentacao_prefeitura.id_for_label }}">
-                  Documentação na Prefeitura
-                </label>
-                {% if form.documentacao_prefeitura.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.documentacao_prefeitura.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div class="row g-3">
-            <div class="col-md-4"> 
-              <label class="form-label" for="{{ form.vendedor.id_for_label }}">Vendedor*</label>
-              {{ form.vendedor }}
-              {% if form.vendedor.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.vendedor.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-4"> 
-              <label class="form-label">Valor Calculado</label>
-              <div class="input-group">
-                <span class="input-group-text">R$</span>
-                <input type="text" class="form-control text-end fw-bold bg-light text-success" id="valorCalculado" 
-                       value="{% if proposta.valor_calculado %}{{ proposta.valor_calculado|floatformat:2 }}{% else %}0,00{% endif %}" readonly>
-              </div>
-            </div>
-            
-            <div class="col-md-4"> 
-              <label class="form-label" for="{{ form.valor_proposta.id_for_label }}">Valor da Proposta*</label>
+              <label class="form-label" for="{{ form.valor_proposta.id_for_label }}">Valor*</label>
               <div class="input-group">
                 <span class="input-group-text">R$</span>
                 {{ form.valor_proposta }}
@@ -167,8 +74,55 @@
               {% endif %}
             </div>
             
-            <div class="col-md-4"> 
-              <label class="form-label" for="{{ form.prazo_entrega_dias.id_for_label }}">Prazo de Entrega (dias)*</label>
+            <div class="col-md-4">
+              <label class="form-label">Status</label>
+              <div class="form-control bg-light d-flex align-items-center">
+                <span class="badge {{ proposta.status_badge_class }}">{{ proposta.get_status_display }}</span>
+              </div>
+            </div>
+            
+          </div>
+
+          <!-- Segunda linha: Vendedor - Contrato - Data Contrato -->
+          <div class="row g-3 mb-3">
+
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.numero_contrato.id_for_label }}">Contrato</label>
+              {{ form.numero_contrato }}
+              {% if form.numero_contrato.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.numero_contrato.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.data_contrato.id_for_label }}">Data Contrato</label>
+              {{ form.data_contrato }}
+              {% if form.data_contrato.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_contrato.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.data_validade.id_for_label }}">Data Validade*</label>
+              {{ form.data_validade }}
+              {% if form.data_validade.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.data_validade.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Terceira linha: Data Validade - Prazo Entrega - Previsão Conclusão Obra -->
+          <div class="row g-3">
+
+            
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.prazo_entrega_dias.id_for_label }}">Prazo Entrega (dias)</label>
               {{ form.prazo_entrega_dias }}
               {% if form.prazo_entrega_dias.errors %}
                 <div class="text-danger small mt-1">
@@ -177,18 +131,8 @@
               {% endif %}
             </div>
 
-            <div class="col-md-4"> 
-              <label class="form-label" for="{{ form.data_validade.id_for_label }}">Validade da Proposta*</label>
-              {{ form.data_validade }}
-              {% if form.data_validade.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.data_validade.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="col-md-4"> 
-              <label class="form-label" for="{{ form.previsao_conclusao_obra.id_for_label }}">Previsão Conclusão da Obra</label>
+            <div class="col-md-4">
+              <label class="form-label" for="{{ form.previsao_conclusao_obra.id_for_label }}">Previsão Conclusão Obra</label>
               {{ form.previsao_conclusao_obra }}
               {% if form.previsao_conclusao_obra.errors %}
                 <div class="text-danger small mt-1">
@@ -196,7 +140,6 @@
                 </div>
               {% endif %}
             </div>
-
           </div>
           
           <div class="row mt-3" id="indicador-desconto" style="display: none;">
@@ -321,7 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Campos comerciais
     const valorCalculadoInput = document.getElementById('valorCalculado');
     const valorPropostaInput = document.getElementById('{{ form.valor_proposta.id_for_label }}');
-    const vendedorSelect = document.getElementById('{{ form.vendedor.id_for_label }}');
     const indicadorDesconto = document.getElementById('indicador-desconto');
     const textoDesconto = document.getElementById('texto-desconto');
     const prazoEntregaDiasInput = document.getElementById('{{ form.prazo_entrega_dias.id_for_label }}');
@@ -408,6 +350,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // === FUNÇÕES DE CÁLCULO ===
     
     function calcularDesconto() {
+        if (!valorCalculadoInput || !valorPropostaInput) return;
+        
         const valorCalculado = parseFloat(valorCalculadoInput.value.replace(',', '.')) || 0;
         const valorProposta = parseFloat(valorPropostaInput.value.replace(',', '.')) || 0;
         
@@ -447,11 +391,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function calcularPagamento() {
+        if (!valorPropostaInput) return;
+        
         const valorProposta = parseFloat(valorPropostaInput.value.replace(',', '.')) || 0;
-        const forma = formaPagamentoSelect.value;
-        const valorEntrada = parseFloat(valorEntradaInput.value.replace(',', '.')) || 0;
-        const percentualEntrada = parseFloat(percentualEntradaInput.value) || 0;
-        const numeroParcelas = parseInt(numeroParcelasInput.value) || 0;
+        const forma = formaPagamentoSelect ? formaPagamentoSelect.value : '';
+        const valorEntrada = parseFloat(valorEntradaInput ? valorEntradaInput.value.replace(',', '.') : 0) || 0;
+        const percentualEntrada = parseFloat(percentualEntradaInput ? percentualEntradaInput.value : 0) || 0;
+        const numeroParcelas = parseInt(numeroParcelasInput ? numeroParcelasInput.value : 0) || 0;
         
         if (valorProposta <= 0) {
             // Limpa o valor da parcela se a proposta for zero
@@ -539,12 +485,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // === FUNÇÃO DE CALCULAR VALORES ===
     
     function executarCalculo() {
-        const pedidoId = btnCalcular.dataset.pedidoId;
+        const pedidoId = btnCalcular ? btnCalcular.dataset.pedidoId : null;
         if (!pedidoId) return;
         
-        btnCalcular.disabled = true;
-        btnCalcular.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculando...';
-        
+        if (btnCalcular) {
+            btnCalcular.disabled = true;
+            btnCalcular.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Calculando...';
+        }
 
         fetch(`/vendedor/api/pedidos/${pedidoId}/calcular/`, {
             method: 'POST',
@@ -557,7 +504,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 // Atualizar valor calculado
-                valorCalculadoInput.value = data.data.valorCalculado.toFixed(2).replace('.', ',');
+                if (valorCalculadoInput) {
+                    valorCalculadoInput.value = data.data.valorCalculado.toFixed(2).replace('.', ',');
+                }
                 
                 // Se não há valor da proposta, usar o calculado
                 if (!valorPropostaInput.value || parseFloat(valorPropostaInput.value.replace(',', '.')) === 0) {
@@ -592,8 +541,10 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Erro ao realizar cálculo. Tente novamente.');
         })
         .finally(() => {
-            btnCalcular.disabled = false;
-            btnCalcular.innerHTML = '<i class="fas fa-calculator me-1"></i>Calcular';
+            if (btnCalcular) {
+                btnCalcular.disabled = false;
+                btnCalcular.innerHTML = '<i class="fas fa-calculator me-1"></i>Calcular';
+            }
         });
     }
     
@@ -635,14 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (form) {
         form.addEventListener('submit', function(e) {
-            // Validar vendedor
-            const vendedor = vendedorSelect ? vendedorSelect.value : '';
-            if (!vendedor) {
-                e.preventDefault();
-                alert('Por favor, selecione um vendedor.');
-                if (vendedorSelect) vendedorSelect.focus();
-                return;
-            }
+            // ✅ REMOVIDO: Validação do vendedor (agora está no Step 1)
             
             const valorProposta = parseFloat(valorPropostaInput.value.replace(',', '.')) || 0;
             
