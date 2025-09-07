@@ -60,7 +60,6 @@ from .vistoria import (
     vistoria_realizar,
     vistoria_detail,
     vistoria_cancelar,
-    vistoria_calendario,
     api_vistoria_quick_status,
 )
 
@@ -107,7 +106,6 @@ __all__ = [
     'vistoria_realizar',
     'vistoria_detail',
     'vistoria_cancelar',
-    'vistoria_calendario',
     'api_vistoria_quick_status',
 
 

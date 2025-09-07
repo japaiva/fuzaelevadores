@@ -1,167 +1,95 @@
-# core/views/status.py
-"""
-View compartilhada para alterar status de propostas
-Usada tanto pelo vendedor quanto pela produção
-✅ CORRIGIDO: Redirecionamento para lista + campo observacao_status
-"""
+# core/views/status.py - VIEW ATUALIZADA PARA ALTERAÇÃO DE STATUS
 
-import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from datetime import date, timedelta
+import logging
 
 from core.models import Proposta, HistoricoProposta
-from core.forms.propostas import PropostaStatusForm
+from core.forms import PropostaStatusForm
 
 logger = logging.getLogger(__name__)
 
+@login_required
+# vendedor/views/propostas.py - Adicionar esta view
 
 @login_required
-def proposta_alterar_status(request, pk, redirect_view_name='proposta_list'):
+def vendedor_proposta_alterar_status(request, pk):
     """
-    View compartilhada para alterar status da proposta
-    
-    Args:
-        pk: ID da proposta
-        redirect_view_name: Nome da view para redirect após sucesso
+    Alterar status da proposta - Versão simplificada
     """
     proposta = get_object_or_404(Proposta, pk=pk)
     
-    # Verificar permissões básicas
-    user_level = getattr(request.user, 'nivel', 'vendedor')
-    
     if request.method == 'POST':
-        form = PropostaStatusForm(request.POST, instance=proposta, usuario=request.user)
+        form = PropostaStatusForm(request.POST, instance=proposta)
         
         if form.is_valid():
             try:
-                # Capturar status anterior
+                # Capturar dados antes do save
                 status_anterior = proposta.status
-                
-                # Salvar nova proposta
-                proposta = form.save(commit=False)
-                proposta.atualizado_por = request.user
-                proposta.save()
-                
-                # Registrar no histórico
+                status_novo = form.cleaned_data['status']
                 observacao = form.cleaned_data.get('observacao_status', '')
-                if not observacao:
-                    observacao = f'Status alterado para {proposta.get_status_display()}'
+                data_vistoria = form.cleaned_data.get('data_vistoria_medicao_prevista')
                 
+                # Salvar proposta com novo status
+                proposta = form.save()
+                
+                # Lógica específica para status aprovado
+                if status_novo == 'aprovado' and data_vistoria:
+                    # Definir data da próxima vistoria
+                    proposta.data_proxima_vistoria = data_vistoria
+                    
+                    # Definir status da obra como aguardando medição
+                    proposta.status_obra = ''  # Empty string = "Aguardando Medição"
+                    
+                    proposta.save()
+                
+                # Criar histórico da mudança
+                from core.models import HistoricoProposta
                 HistoricoProposta.objects.create(
                     proposta=proposta,
                     status_anterior=status_anterior,
-                    status_novo=proposta.status,
-                    observacao=observacao,
+                    status_novo=status_novo,
+                    observacao=observacao or f"Status alterado para {proposta.get_status_display()}",
                     usuario=request.user
                 )
                 
-                # Log da ação
+                # Log da alteração
                 logger.info(
-                    f"Status da proposta {proposta.numero} alterado de '{status_anterior}' "
-                    f"para '{proposta.status}' pelo usuário {request.user.username}"
+                    f"Status da proposta {proposta.numero} alterado de "
+                    f"{status_anterior} para {status_novo} pelo usuário {request.user.username}"
                 )
                 
-                messages.success(request,
-                    f'Status da proposta {proposta.numero} alterado para '
-                    f'"{proposta.get_status_display()}" com sucesso!'
-                )
-                
-                # ✅ CORRIGIDO: Redirect adequado para lista vs detail
-                if redirect_view_name in ['vendedor:proposta_list', 'producao:proposta_list']:
-                    return redirect(redirect_view_name)
+                # Mensagem de sucesso personalizada
+                if status_novo == 'aprovado':
+                    messages.success(request, 
+                        f'Proposta {proposta.numero} aprovada com sucesso! '
+                        f'Vistoria agendada para {data_vistoria.strftime("%d/%m/%Y")}'
+                    )
+                elif status_novo == 'rejeitado':
+                    messages.success(request, 
+                        f'Proposta {proposta.numero} rejeitada.'
+                    )
                 else:
-                    # Para views que precisam de parâmetros (detail)
-                    return redirect(redirect_view_name, pk=proposta.pk)
+                    messages.success(request, 
+                        f'Status da proposta {proposta.numero} alterado para {proposta.get_status_display()}'
+                    )
+                
+                return redirect('vendedor:pedido_detail', pk=proposta.pk)
                 
             except Exception as e:
                 logger.error(f"Erro ao alterar status da proposta {proposta.numero}: {str(e)}")
                 messages.error(request, f'Erro ao alterar status: {str(e)}')
         else:
-            messages.error(request, 'Erro no formulário. Verifique os dados.')
+            messages.error(request, 'Erro no formulário. Verifique os dados preenchidos.')
     else:
-        form = PropostaStatusForm(instance=proposta, usuario=request.user)
+        form = PropostaStatusForm(instance=proposta)
     
-    # Preparar contexto
     context = {
-        'proposta': proposta,
-        'pedido': proposta,  # Compatibilidade
         'form': form,
-        'user_level': user_level,
-        'status_choices': Proposta.STATUS_CHOICES,
+        'proposta': proposta,
+        'base_template': 'vendedor/base_vendedor.html',
     }
     
     return render(request, 'shared/proposta_status.html', context)
-
-
-@login_required  
-def proposta_alterar_status_ajax(request, pk):
-    """
-    Versão AJAX para alterar status rapidamente
-    """
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Método não permitido'})
-    
-    proposta = get_object_or_404(Proposta, pk=pk)
-    
-    try:
-        novo_status = request.POST.get('status')
-        observacao = request.POST.get('observacao', '')
-        
-        # Validar status
-        status_validos = [choice[0] for choice in Proposta.STATUS_CHOICES]
-        if novo_status not in status_validos:
-            return JsonResponse({'success': False, 'error': 'Status inválido'})
-        
-        # Capturar status anterior
-        status_anterior = proposta.status
-        
-        # Atualizar proposta
-        proposta.status = novo_status
-        proposta.atualizado_por = request.user
-        proposta.save()
-        
-        # Registrar no histórico
-        if not observacao:
-            observacao = f'Status alterado via AJAX'
-        
-        HistoricoProposta.objects.create(
-            proposta=proposta,
-            status_anterior=status_anterior,
-            status_novo=novo_status,
-            observacao=observacao,
-            usuario=request.user
-        )
-        
-        # Log da ação
-        logger.info(
-            f"Status da proposta {proposta.numero} alterado via AJAX de '{status_anterior}' "
-            f"para '{novo_status}' pelo usuário {request.user.username}"
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Status alterado para "{proposta.get_status_display()}"',
-            'novo_status': novo_status,
-            'novo_status_display': proposta.get_status_display(),
-            'badge_class': proposta.status_badge_class,
-        })
-        
-    except Exception as e:
-        logger.error(f"Erro ao alterar status via AJAX da proposta {pk}: {str(e)}")
-        return JsonResponse({'success': False, 'error': str(e)})
-
-
-# Para o vendedor - wrapper específico
-@login_required
-def vendedor_proposta_alterar_status(request, pk):
-    """Wrapper para o vendedor - ✅ CORRIGIDO: vai para lista"""
-    return proposta_alterar_status(request, pk, 'vendedor:proposta_list')
-
-
-# Para a produção - wrapper específico  
-@login_required
-def producao_proposta_alterar_status(request, pk):
-    """Wrapper para a produção - ✅ CORRIGIDO: vai para lista"""
-    return proposta_alterar_status(request, pk, 'producao:proposta_list')

@@ -1,4 +1,4 @@
-# vendas/views/vistoria.py
+# vendedor/views/vistoria.py
 
 """
 Views para o módulo de vistoria - acompanhamento da obra
@@ -27,11 +27,13 @@ logger = logging.getLogger(__name__)
 @login_required
 def vistoria_list(request):
     """
-    Lista de propostas para vistoria - apenas propostas aprovadas
+    Lista de propostas para vistoria - apenas propostas aprovadas e não finalizadas
     """
-    # Filtrar apenas propostas aprovadas
+    # Filtrar apenas propostas aprovadas E não finalizadas
     propostas_query = Proposta.objects.filter(
         status='aprovado'
+    ).exclude(
+        status_obra='obra_ok'  # ← ÚNICA MUDANÇA: Excluir obras já finalizadas
     ).select_related('cliente', 'vendedor').order_by('-data_proxima_vistoria', '-criado_em')
     
     # Aplicar filtros do formulário
@@ -115,7 +117,7 @@ def vistoria_list(request):
         'estatisticas': estatisticas,
     }
     
-    return render(request, 'vendas/vistoria/vistoria_list.html', context)
+    return render(request, 'vendedor/vistoria/vistoria_list.html', context)
 
 
 @login_required
@@ -144,7 +146,7 @@ def vistoria_proposta_detail(request, pk):
         'pode_agendar_vistoria': proposta.pode_agendar_vistoria,
     }
     
-    return render(request, 'vendas/vistoria/vistoria_proposta_detail.html', context)
+    return render(request, 'vendedor/vistoria/vistoria_proposta_detail.html', context)
 
 
 @login_required
@@ -203,7 +205,7 @@ def vistoria_agendar_primeira(request, pk):
         'proposta': proposta,
     }
     
-    return render(request, 'vendas/vistoria/vistoria_agendar_primeira.html', context)
+    return render(request, 'vendedor/vistoria/vistoria_agendar_primeira.html', context)
 
 
 @login_required
@@ -261,7 +263,7 @@ def vistoria_create(request, proposta_pk):
         'proposta': proposta,
     }
     
-    return render(request, 'vendas/vistoria/vistoria_create.html', context)
+    return render(request, 'vendedor/vistoria/vistoria_create.html', context)
 
 
 @login_required
@@ -323,7 +325,7 @@ def vistoria_realizar(request, pk):
         'proposta': vistoria.proposta,
     }
     
-    return render(request, 'vendas/vistoria/vistoria_realizar.html', context)
+    return render(request, 'vendedor/vistoria/vistoria_realizar.html', context)
 
 
 @login_required
@@ -338,7 +340,7 @@ def vistoria_detail(request, pk):
         'proposta': vistoria.proposta,
     }
     
-    return render(request, 'vendas/vistoria/vistoria_detail.html', context)
+    return render(request, 'vendedor/vistoria/vistoria_detail.html', context)
 
 
 @login_required
@@ -373,38 +375,6 @@ def vistoria_cancelar(request, pk):
             messages.error(request, f'Erro ao cancelar vistoria: {str(e)}')
     
     return redirect('vendedor:vistoria_proposta_detail', pk=vistoria.proposta.pk)
-
-
-@login_required
-def vistoria_calendario(request):
-    """
-    Calendário de vistorias agendadas
-    """
-    # Buscar vistorias agendadas dos próximos 30 dias
-    hoje = date.today()
-    fim_periodo = hoje + timedelta(days=30)
-    
-    vistorias = VistoriaHistorico.objects.filter(
-        data_agendada__gte=hoje,
-        data_agendada__lte=fim_periodo,
-        status_vistoria='agendada'
-    ).select_related('proposta', 'responsavel').order_by('data_agendada')
-    
-    # Organizar por data
-    vistorias_por_data = {}
-    for vistoria in vistorias:
-        data_str = vistoria.data_agendada.strftime('%Y-%m-%d')
-        if data_str not in vistorias_por_data:
-            vistorias_por_data[data_str] = []
-        vistorias_por_data[data_str].append(vistoria)
-    
-    context = {
-        'vistorias_por_data': vistorias_por_data,
-        'periodo_inicio': hoje,
-        'periodo_fim': fim_periodo,
-    }
-    
-    return render(request, 'vendas/vistoria/vistoria_calendario.html', context)
 
 
 # === APIs AJAX ===

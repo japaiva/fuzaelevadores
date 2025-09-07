@@ -2,259 +2,304 @@
 
 {% block title %}
   {% if editing %}
-    Editar Proposta {{ pedido.numero }} - Cliente/Elevador | Portal do Vendedor
+    Editar Proposta {{ pedido.numero }} - Projeto/Elevador | Portal do Vendedor
   {% else %}
-    Nova Proposta - Cliente/Elevador | Portal do Vendedor
+    Nova Proposta - Projeto/Elevador | Portal do Vendedor
   {% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="card shadow">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
-    <h5 class="card-title mb-0">
-      {% if editing %}
-        <i class="fas fa-edit me-2"></i>Editar Proposta {{ pedido.numero }} - Cliente/Elevador
-      {% else %}
-        <i class="fas fa-plus-circle me-2"></i>Nova Proposta - Cliente/Elevador
-      {% endif %}
-    </h5>
+<div class="container">
+  <div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        {% if editing %}
+          <i class="fas fa-edit me-2"></i>Editar Proposta {{ pedido.numero }} - Projeto/Elevador
+        {% else %}
+          <i class="fas fa-plus-circle me-2"></i>Nova Proposta - Projeto/Elevador
+        {% endif %}
+      </h5>
 
-    <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary btn-sm">
-      <i class="fas fa-arrow-left me-1"></i> {% if editing %}Cancelar{% else %}Voltar{% endif %}
-    </a>
-  </div>
-  
-  <div class="card-header bg-white">
-    <div class="progress" style="height: 6px;">
-      <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 33%" aria-valuenow="33" aria-valuemax="100"></div>
+      <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> {% if editing %}Cancelar{% else %}Voltar{% endif %}
+      </a>
     </div>
-    <div class="d-flex justify-content-between mt-2">
-      <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">1. Cliente/Elevador</small>
-      <small class="text-muted">2. Cabine/Portas</small>
-      <small class="text-muted">3. Comercial</small>
+    
+    <div class="card-header bg-white">
+      <div class="progress" style="height: 6px;">
+        <div class="progress-bar {% if editing %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: 33%" aria-valuenow="33" aria-valuemax="100"></div>
+      </div>
+      <div class="d-flex justify-content-between mt-2">
+        <small class="{% if editing %}text-warning{% else %}text-success{% endif %} fw-bold">1. Projeto/Elevador</small>
+        <small class="text-muted">2. Cabine/Portas</small>
+        <small class="text-muted">3. Comercial</small>
+      </div>
     </div>
-  </div>
-  
-  <div class="card-body">
+    
+    <div class="card-body">
 
-    <form method="post" id="clienteElevadorForm">
-      {% csrf_token %}
+      <form method="post" id="clienteElevadorForm">
+        {% csrf_token %}
 
-      {% if form.non_field_errors %}
-        <div class="alert alert-danger">
-          {% for error in form.non_field_errors %}
-            <p class="mb-0">{{ error }}</p>
-          {% endfor %}
-        </div>
-      {% endif %}
-      
-      <!-- Seção Cliente - Alterar para incluir campo Normas ABNT -->
-      <div class="card shadow-sm border-primary mb-4">
-        <div class="card-header bg-primary text-white">
-          <h6 class="card-title mb-0">Cliente</h6>
-        </div>
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente*</label>
-              {{ form.cliente }}
-              {% if form.cliente.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.cliente.errors %}{{ error }}{% endfor %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <p class="mb-0">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- Seção PROJETO -->
+        <div class="card shadow-sm border-primary mb-4">
+          <div class="card-header bg-primary text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-project-diagram me-2"></i>Projeto
+            </h6>
+          </div>
+          <div class="card-body">
+            
+            <!-- Primeira linha: Número, Data e Vendedor -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Número da Proposta</label>
+                <input type="text" class="form-control bg-light" 
+                       value="{% if pedido.numero %}{{ pedido.numero }}{% else %}Será gerado automaticamente{% endif %}" 
+                       readonly>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Data da Proposta</label>
+                <input type="text" class="form-control bg-light" 
+                       value="{{ pedido.criado_em|date:'d/m/Y'|default:'Hoje' }}" 
+                       readonly>
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.vendedor.id_for_label }}" class="form-label">Vendedor*</label>
+                {{ form.vendedor }}
+                {% if form.vendedor.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.vendedor.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Segunda linha: Cliente e Nome do Projeto -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente*</label>
+                {{ form.cliente }}
+                {% if form.cliente.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.cliente.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+                <div class="form-text small text-muted">
+                  <a href="#" id="btnNovoCliente" class="text-decoration-none">
+                    <i class="fas fa-plus me-1"></i>Cadastrar novo cliente
+                  </a>
                 </div>
-              {% endif %}
-              <div class="form-text small text-muted">
-                <a href="#" id="btnNovoCliente" class="text-decoration-none">
-                  <i class="fas fa-plus me-1"></i>Cadastrar novo cliente
-                </a>
+              </div>
+              
+              <div class="col-md-6">
+                <label for="{{ form.nome_projeto.id_for_label }}" class="form-label">Nome do Projeto*</label>
+                {{ form.nome_projeto }}
+                {% if form.nome_projeto.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.nome_projeto.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
               </div>
             </div>
             
-            <div class="col-md-6">
-              <label for="{{ form.faturado_por.id_for_label }}" class="form-label">Faturado por*</label>
-              {{ form.faturado_por }}
-              {% if form.faturado_por.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.faturado_por.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <!-- ✅ NOVA LINHA: Nome do Projeto + Normas ABNT -->
-            <div class="col-md-6">
-              <label for="{{ form.nome_projeto.id_for_label }}" class="form-label">Nome do Projeto*</label>
-              {{ form.nome_projeto }}
-              {% if form.nome_projeto.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.nome_projeto.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-6">
-              <label for="{{ form.normas_abnt.id_for_label }}" class="form-label">Normas</label>
-              {{ form.normas_abnt }}
-              {% if form.normas_abnt.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.normas_abnt.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+            <!-- Terceira linha: Faturado por, Normas e Documentação -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label for="{{ form.faturado_por.id_for_label }}" class="form-label">Faturado por*</label>
+                {{ form.faturado_por }}
+                {% if form.faturado_por.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.faturado_por.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.normas_abnt.id_for_label }}" class="form-label">Normas ABNT*</label>
+                {{ form.normas_abnt }}
+                {% if form.normas_abnt.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.normas_abnt.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-4">
+                <label for="{{ form.documentacao_prefeitura.id_for_label }}" class="form-label">Documentação Prefeitura*</label>
+                {{ form.documentacao_prefeitura }}
+                {% if form.documentacao_prefeitura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.documentacao_prefeitura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
 
-            <div class="col-md-12">
-              <label for="{{ form.local_instalacao.id_for_label }}" class="form-label">Local de Instalação</label>
-              {{ form.local_instalacao }}
-              {% if form.local_instalacao.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.local_instalacao.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+            <!-- Quarta linha: Local de Instalação -->
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label for="{{ form.local_instalacao.id_for_label }}" class="form-label">Local de Instalação</label>
+                {{ form.local_instalacao }}
+                {% if form.local_instalacao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.local_instalacao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
 
           </div>
         </div>
-      </div>
 
-      <div class="card shadow-sm border-success mb-4">
-        <div class="card-header bg-success text-white">
-          <h6 class="card-title mb-0">
-            Elevador
-          </h6>
-        </div>
-        <div class="card-body">
-          <div class="row g-3 mb-4">
-            <div class="col-md-4">
-              <label for="{{ form.modelo_elevador.id_for_label }}" class="form-label">Modelo do Elevador*</label>
-              {{ form.modelo_elevador }}
-              {% if form.modelo_elevador.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.modelo_elevador.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+        <!-- Seção ELEVADOR -->
+        <div class="card shadow-sm border-success mb-4">
+          <div class="card-header bg-success text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-elevator me-2"></i>Especificações do Elevador
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <label for="{{ form.modelo_elevador.id_for_label }}" class="form-label">Modelo do Elevador*</label>
+                {{ form.modelo_elevador }}
+                {% if form.modelo_elevador.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.modelo_elevador.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4" id="capacidade-pessoas-div">
+                <label for="{{ form.capacidade_pessoas.id_for_label }}" class="form-label">Capacidade (Pessoas)</label>
+                {{ form.capacidade_pessoas }}
+                {% if form.capacidade_pessoas.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.capacidade_pessoas.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4">
+                <label for="{{ form.capacidade.id_for_label }}" class="form-label">Capacidade (kg)*</label>
+                {{ form.capacidade }}
+                {% if form.capacidade.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.capacidade.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
-            
-            <div class="col-md-4" id="capacidade-pessoas-div">
-              <label for="{{ form.capacidade_pessoas.id_for_label }}" class="form-label">Capacidade (Pessoas)</label>
-              {{ form.capacidade_pessoas }}
-              {% if form.capacidade_pessoas.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.capacidade_pessoas.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-4">
-              <label for="{{ form.capacidade.id_for_label }}" class="form-label">Capacidade (kg)*</label>
-              {{ form.capacidade }}
-              {% if form.capacidade.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.capacidade.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+
+            <hr>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label for="{{ form.acionamento.id_for_label }}" class="form-label">Acionamento*</label>
+                {{ form.acionamento }}
+                {% if form.acionamento.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.acionamento.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4" id="tracao-div">
+                <label for="{{ form.tracao.id_for_label }}" class="form-label">Tração</label>
+                {{ form.tracao }}
+                {% if form.tracao.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.tracao.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4" id="contrapeso-div">
+                <label for="{{ form.contrapeso.id_for_label }}" class="form-label">Contrapeso</label>
+                {{ form.contrapeso }}
+                {% if form.contrapeso.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.contrapeso.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
           </div>
+        </div>
 
-          <hr>
-          <div class="row g-3">
-            <div class="col-md-4">
-              <label for="{{ form.acionamento.id_for_label }}" class="form-label">Acionamento*</label>
-              {{ form.acionamento }}
-              {% if form.acionamento.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.acionamento.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-4" id="tracao-div">
-              <label for="{{ form.tracao.id_for_label }}" class="form-label">Tração</label>
-              {{ form.tracao }}
-              {% if form.tracao.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.tracao.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-4" id="contrapeso-div">
-              <label for="{{ form.contrapeso.id_for_label }}" class="form-label">Contrapeso</label>
-              {{ form.contrapeso }}
-              {% if form.contrapeso.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.contrapeso.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
+        <!-- Seção POÇO -->
+        <div class="card shadow-sm border-info mb-4">
+          <div class="card-header bg-info text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-ruler-combined me-2"></i>Dimensões do Poço
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label for="{{ form.largura_poco.id_for_label }}" class="form-label">Largura (m)*</label>
+                {{ form.largura_poco }}
+                {% if form.largura_poco.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.largura_poco.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <label for="{{ form.comprimento_poco.id_for_label }}" class="form-label">Profundidade (m)*</label>
+                {{ form.comprimento_poco }}
+                {% if form.comprimento_poco.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.comprimento_poco.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <label for="{{ form.altura_poco.id_for_label }}" class="form-label">Percurso Total (m)*</label>
+                {{ form.altura_poco }}
+                {% if form.altura_poco.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.altura_poco.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <label for="{{ form.pavimentos.id_for_label }}" class="form-label">Pavimentos*</label>
+                {{ form.pavimentos }}
+                {% if form.pavimentos.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.pavimentos.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="card shadow-sm border-info mb-4">
-        <div class="card-header bg-info text-white">
-          <h6 class="card-title mb-0">
-            Poço
-          </h6>
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </a>
+
+          <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
+            Próximo <i class="fas fa-arrow-right me-1"></i>
+          </button>
         </div>
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label for="{{ form.largura_poco.id_for_label }}" class="form-label">Largura (m)*</label>
-              {{ form.largura_poco }}
-              {% if form.largura_poco.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.largura_poco.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.comprimento_poco.id_for_label }}" class="form-label">Profundidade (m)*</label>
-              {{ form.comprimento_poco }}
-              {% if form.comprimento_poco.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.comprimento_poco.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.altura_poco.id_for_label }}" class="form-label">Percurso Total (m)*</label>
-              {{ form.altura_poco }}
-              {% if form.altura_poco.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.altura_poco.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-            
-            <div class="col-md-3">
-              <label for="{{ form.pavimentos.id_for_label }}" class="form-label">Pavimentos*</label>
-              {{ form.pavimentos }}
-              {% if form.pavimentos.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.pavimentos.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-between mt-4">
-
-        <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-times me-1"></i> Cancelar
-        </a>
-
-        <button type="submit" class="btn {% if editing %}btn-warning{% else %}btn-success{% endif %}">
-          Próximo <i class="fas fa-arrow-right me-1"></i>
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 
+<!-- Modal Cliente -->
 <div class="modal fade" id="clienteModal" tabindex="-1" aria-labelledby="clienteModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -296,12 +341,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('clienteElevadorForm');
     
-    // Elementos do cliente
+    // Elementos do projeto
     const clienteSelect = document.getElementById('{{ form.cliente.id_for_label }}');
     const btnNovoCliente = document.getElementById('btnNovoCliente');
+    const vendedorSelect = document.getElementById('{{ form.vendedor.id_for_label }}');
     let clienteModal;
-    const normasABNTSelect = document.getElementById('{{ form.normas_abnt.id_for_label }}');
-
     
     // Elementos do elevador
     const modeloSelect = document.getElementById('{{ form.modelo_elevador.id_for_label }}');
@@ -312,32 +356,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const tracaoDiv = document.getElementById('tracao-div');
     const contrapesoDiv = document.getElementById('contrapeso-div');
     
-    // Elementos do poço
-    const larguraInput = document.getElementById('{{ form.largura_poco.id_for_label }}');
-    const comprimentoInput = document.getElementById('{{ form.comprimento_poco.id_for_label }}');
-    const alturaInput = document.getElementById('{{ form.altura_poco.id_for_label }}');
-    const pavimentosInput = document.getElementById('{{ form.pavimentos.id_for_label }}');
-    
     // Inicializar modal
     clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
     
     // === FUNÇÕES DO CLIENTE ===
-    
-    function carregarInfoCliente(clienteId) {
-        if (!clienteId) return;
-        
-        fetch(`{% url 'vendedor:api_cliente_info' 0 %}`.replace('0', clienteId))
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Cliente carregado:', data.cliente.nome);
-                    // Aqui você poderia preencher outros campos do formulário baseados no cliente, se necessário.
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao carregar informações do cliente:', error);
-            });
-    }
     
     function abrirModalCliente() {
         const modalContent = document.getElementById('modal-form-content');
@@ -357,17 +379,11 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Erro ao carregar modal:', error);
-                modalContent.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Erro ao carregar formulário. Tente novamente.
-                    </div>
-                `;
             });
     }
     
     function salvarClienteModal(e) {
-        e.preventDefault(); // Previne o envio padrão do formulário do modal
+        e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
         const submitBtn = document.getElementById('btnSalvarCliente');
@@ -376,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
         errorDiv.style.display = 'none';
-        errorDiv.innerHTML = ''; // Limpa mensagens de erro anteriores
+        errorDiv.innerHTML = '';
         
         fetch('{% url "vendedor:cliente_create_ajax" %}', {
             method: 'POST',
@@ -391,10 +407,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const option = new Option(data.cliente.nome, data.cliente.id, true, true);
                 clienteSelect.add(option);
                 clienteSelect.value = data.cliente.id;
-                clienteSelect.dispatchEvent(new Event('change')); // Dispara o evento change para carregar info
                 clienteModal.hide();
                 
-                // Mostrar mensagem de sucesso
                 const alertDiv = document.createElement('div');
                 alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
                 alertDiv.innerHTML = `
@@ -406,7 +420,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const cardBody = document.querySelector('.card-body');
                 cardBody.insertBefore(alertDiv, cardBody.firstChild);
                 
-                // Remover a mensagem de sucesso após 5 segundos
                 setTimeout(() => {
                     if (alertDiv.parentNode) {
                         alertDiv.remove();
@@ -416,7 +429,6 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 for (const [field, errors] of Object.entries(data.errors)) {
                     errors.forEach(error => {
-                        // Formata o nome do campo para ser mais legível
                         const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                         errorDiv.innerHTML += `<p class="mb-1"><strong>${fieldName}:</strong> ${error}</p>`;
                     });
@@ -443,15 +455,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modelo === 'Passageiro') {
             capacidadePessoasDiv.style.display = 'block';
             capacidadeInput.style.backgroundColor = '#e9ecef';
-            capacidadeInput.setAttribute('readonly', true); // Define como readonly
-            capacidadeInput.setAttribute('tabindex', '-1'); // Remove da ordem de tabulação
+            capacidadeInput.setAttribute('readonly', true);
+            capacidadeInput.setAttribute('tabindex', '-1');
             updateCapacidade(); 
-        } else { // Para "Carga" ou outros modelos
+        } else {
             capacidadePessoasDiv.style.display = 'none';
             capacidadeInput.style.backgroundColor = '';
-            capacidadeInput.removeAttribute('readonly'); // Remove readonly, tornando editável
-            capacidadeInput.removeAttribute('tabindex'); // Adiciona de volta à ordem de tabulação
-            capacidadePessoasInput.value = ''; // Limpa o campo de pessoas
+            capacidadeInput.removeAttribute('readonly');
+            capacidadeInput.removeAttribute('tabindex');
+            capacidadePessoasInput.value = '';
         }
     }
     
@@ -461,11 +473,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pessoas > 0) {
                 capacidadeInput.value = pessoas * 80;
             } else {
-                capacidadeInput.value = ''; // Limpa se pessoas não for válido ou for 0
+                capacidadeInput.value = '';
             }
             capacidadeInput.style.backgroundColor = '#e9ecef';
             capacidadeInput.setAttribute('readonly', true);
-            capacidadeInput.setAttribute('tabindex', '-1'); // Garante tabindex -1
+            capacidadeInput.setAttribute('tabindex', '-1');
         }
     }
     
@@ -478,43 +490,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (acionamento === 'Hidraulico') {
             tracaoDiv.style.display = 'none';
             contrapesoDiv.style.display = 'none';
-            if (tracaoSelect) tracaoSelect.value = ''; // Limpa o valor
-            if (contrapesoSelect) contrapesoSelect.value = ''; // Limpa o valor
+            if (tracaoSelect) tracaoSelect.value = '';
+            if (contrapesoSelect) contrapesoSelect.value = '';
         } else if (acionamento === 'Motor') {
             tracaoDiv.style.display = 'block';
             contrapesoDiv.style.display = 'block';
         } else if (acionamento === 'Carretel') {
             tracaoDiv.style.display = 'block';
             contrapesoDiv.style.display = 'none';
-            if (contrapesoSelect) contrapesoSelect.value = ''; // Limpa o valor do contrapeso
+            if (contrapesoSelect) contrapesoSelect.value = '';
         }
-    }
-    
-    // === FUNÇÕES DO POÇO ===
-    
-    function updateCalculos() {
-        // Garantir que os valores sejam numéricos e usar ponto como separador decimal para parseFloat
-        const largura = parseFloat(larguraInput.value.replace(',', '.')) || 0;
-        const comprimento = parseFloat(comprimentoInput.value.replace(',', '.')) || 0;
-        const altura = parseFloat(alturaInput.value.replace(',', '.')) || 0;
-        const pavimentos = parseInt(pavimentosInput.value) || 0;
-        
-        // ... (Seu código existente para cálculos de poço) ...
     }
     
     // === EVENT LISTENERS ===
-    
-    // Cliente
-    if (clienteSelect) {
-        clienteSelect.addEventListener('change', function() {
-            carregarInfoCliente(this.value);
-        });
-        
-        // Carrega info do cliente se já houver um selecionado na carga da página (e.g., edição)
-        if (clienteSelect.value) {
-            carregarInfoCliente(clienteSelect.value);
-        }
-    }
     
     btnNovoCliente.addEventListener('click', function(e) {
         e.preventDefault();
@@ -528,38 +516,25 @@ document.addEventListener('DOMContentLoaded', function() {
     capacidadePessoasInput.addEventListener('input', updateCapacidade); 
     acionamentoSelect.addEventListener('change', updateAcionamento);
     
-    // Poço
-    larguraInput.addEventListener('input', updateCalculos);
-    comprimentoInput.addEventListener('input', updateCalculos);
-    alturaInput.addEventListener('input', updateCalculos);
-    pavimentosInput.addEventListener('input', updateCalculos);
-    
-
-
-
-
-
-
-    // === SUBMIT UNIFICADO: VALIDAÇÃO ===
+    // === VALIDAÇÃO DO FORMULÁRIO ===
     form.addEventListener('submit', function(e) {
-        console.log('🚀 SUBMIT - Validando formulário...');
-        
-        // Validar cliente e projeto
+        // Validações básicas de campos obrigatórios
+        const vendedor = vendedorSelect.value;
         const cliente = clienteSelect.value;
         const nomeProjeto = document.getElementById('{{ form.nome_projeto.id_for_label }}').value.trim();
-        const normasABNT = normasABNTSelect.value;  // ✅ NOVO
         const faturadoPor = document.getElementById('{{ form.faturado_por.id_for_label }}').value;
+        const normasABNT = document.getElementById('{{ form.normas_abnt.id_for_label }}').value;
         
+        if (!vendedor) {
+            e.preventDefault();
+            alert('Por favor, selecione um vendedor.');
+            vendedorSelect.focus();
+            return;
+        }
         if (!cliente) {
             e.preventDefault();
             alert('Por favor, selecione um cliente.');
             clienteSelect.focus();
-            return;
-        }
-        if (!faturadoPor) {
-            e.preventDefault();
-            alert('Por favor, selecione quem faturou a proposta.');
-            document.getElementById('{{ form.faturado_por.id_for_label }}').focus();
             return;
         }
         if (!nomeProjeto) {
@@ -568,17 +543,20 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('{{ form.nome_projeto.id_for_label }}').focus();
             return;
         }
-        
+        if (!faturadoPor) {
+            e.preventDefault();
+            alert('Por favor, selecione quem irá faturar.');
+            document.getElementById('{{ form.faturado_por.id_for_label }}').focus();
+            return;
+        }
         if (!normasABNT) {
             e.preventDefault();
             alert('Por favor, selecione a norma ABNT aplicável.');
-            normasABNTSelect.focus();
+            document.getElementById('{{ form.normas_abnt.id_for_label }}').focus();
             return;
         }
 
-
-
-        // Validar elevador
+        // Validações do elevador
         const modelo = modeloSelect.value;
         const pessoas = parseInt(capacidadePessoasInput.value) || 0;
         const capacidade = parseFloat(capacidadeInput.value.replace(',', '.')) || 0;
@@ -587,11 +565,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (modelo === 'Passageiro') {
             if (pessoas <= 0) {
                 e.preventDefault();
-                alert('Para elevador de passageiro, informe o número de pessoas (maior que zero).');
+                alert('Para elevador de passageiro, informe o número de pessoas.');
                 capacidadePessoasInput.focus();
                 return;
             }
-        } else { // Outros modelos
+        } else {
             if (capacidade <= 0) {
                 e.preventDefault();
                 alert('A capacidade (kg) deve ser maior que zero.');
@@ -607,73 +585,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Validações de tração/contrapeso baseado no acionamento
-        if (acionamento === 'Motor') {
-            const tracaoSelect = tracaoDiv.querySelector('select');
-            const contrapesoSelect = contrapesoDiv.querySelector('select');
-            if (tracaoSelect && !tracaoSelect.value) {
-                e.preventDefault();
-                alert('Para acionamento Motor, o tipo de tração é obrigatório.');
-                tracaoSelect.focus();
-                return;
-            }
-            if (contrapesoSelect && !contrapesoSelect.value) {
-                e.preventDefault();
-                alert('Para acionamento Motor, o tipo de contrapeso é obrigatório.');
-                contrapesoSelect.focus();
-                return;
-            }
-        } else if (acionamento === 'Carretel') {
-             const tracaoSelect = tracaoDiv.querySelector('select');
-            if (tracaoSelect && !tracaoSelect.value) {
-                e.preventDefault();
-                alert('Para acionamento Carretel, o tipo de tração é obrigatório.');
-                tracaoSelect.focus();
-                return;
-            }
-        }
-        
-        // Validar poço
-        const largura = parseFloat(larguraInput.value.replace(',', '.')) || 0;
-        const comprimento = parseFloat(comprimentoInput.value.replace(',', '.')) || 0;
-        const altura = parseFloat(alturaInput.value.replace(',', '.')) || 0;
-        const pavimentos = parseInt(pavimentosInput.value) || 0;
-        
-        //if (largura <= 0 || comprimento <= 0 || altura <= 0) {
-        //    e.preventDefault();
-        //   alert('As dimensões do poço (Largura, Comprimento e Altura) devem ser maiores que zero.');
-        //    if (largura <= 0) larguraInput.focus();
-        //   else if (comprimento <= 0) comprimentoInput.focus();
-        //   else alturaInput.focus();
-        //   return;
-        //}
-        
+        const pavimentos = parseInt(document.getElementById('{{ form.pavimentos.id_for_label }}').value) || 0;
         if (pavimentos < 2) {
             e.preventDefault();
-            alert('O número de pavimentos deve nser pelo menos 2.');
-            pavimentosInput.focus();
+            alert('O número de pavimentos deve ser pelo menos 2.');
+            document.getElementById('{{ form.pavimentos.id_for_label }}').focus();
             return;
         }
-        
-        console.log('✅ Validação concluída - enviando formulário');
     });
     
     // === INICIALIZAÇÃO ===
     
-    // Chamar as funções de atualização na carga da página para definir o estado inicial correto
-    updateModelo(); // Isso garantirá que o readonly e tabindex estejam corretos na carga
+    updateModelo();
     updateAcionamento();
-    updateCalculos(); 
     
-    if (clienteSelect) {
-        clienteSelect.focus();
+    if (vendedorSelect) {
+        vendedorSelect.focus();
     }
     
     // Limpar modal quando fechar
     document.getElementById('clienteModal').addEventListener('hidden.bs.modal', function() {
         document.getElementById('modal-form-content').innerHTML = '';
         document.getElementById('modal-errors').style.display = 'none';
-        document.getElementById('modal-errors').innerHTML = ''; // Limpa o conteúdo
+        document.getElementById('modal-errors').innerHTML = '';
     });
 });
 </script>

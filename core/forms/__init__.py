@@ -74,6 +74,7 @@ from .propostas import (
     PropostaFiltroForm,
     ClienteCreateForm as PropostaClienteCreateForm,
     AnexoPropostaForm,  
+    PropostaStatusForm,
 )
 
 # Formulários de Vistoria
@@ -180,6 +181,7 @@ __all__ = [
     'PropostaFiltroForm',
     'PropostaClienteCreateForm',
     'AnexoPropostaForm',
+    'PropostaStatusForm',
 
     # Vistorias
     'PropostaVistoriaForm',

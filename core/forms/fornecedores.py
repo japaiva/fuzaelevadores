@@ -43,8 +43,7 @@ class FornecedorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'placeholder': 'email@fornecedor.com'
             }),
             'endereco': forms.Textarea(attrs={
-                'rows': 3,
-                'placeholder': 'Endereço completo do fornecedor...'
+                'rows': 3
             }),
         }
         labels = {

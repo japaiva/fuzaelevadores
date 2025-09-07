@@ -13,15 +13,21 @@ from .base import (
 )
 
 class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
+    """
+    Formulário Step 1: Projeto + Elevador + Poço
+    ATUALIZADO: Agora inclui vendedor e documentacao_prefeitura
+    """
     class Meta:
         model = Proposta
         fields = [
-            # Dados do Cliente
+            # ✅ DADOS DO PROJETO (reorganizado)
+            'vendedor',  # ← MOVIDO do Step 3 para Step 1
             'cliente',
-            'nome_projeto', 
-            'normas_abnt', 
-            'local_instalacao',
+            'nome_projeto',
             'faturado_por',
+            'normas_abnt', 
+            'documentacao_prefeitura',  # ← MOVIDO do Step 3 para Step 1
+            'local_instalacao',
                     
             # Dados do Elevador
             'modelo_elevador',
@@ -39,22 +45,29 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         ]
         
         widgets = {
-            # Cliente
+            # ✅ PROJETO
+            'vendedor': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
             'cliente': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
             'nome_projeto': forms.TextInput(attrs={
                 'class': 'form-control',
+                'required': True,
+                'placeholder': 'Ex: Edifício Residencial Vila Nova'
+            }),
+            'faturado_por': forms.Select(attrs={
+                'class': 'form-select',
                 'required': True
             }),
-    
             'normas_abnt': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
-
-            'faturado_por': forms.Select(attrs={
+            'documentacao_prefeitura': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
@@ -119,6 +132,13 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+        # ✅ CONFIGURAR VENDEDORES
+        self.fields['vendedor'].queryset = Usuario.objects.filter(
+            nivel='vendedor', 
+            is_active=True
+        ).order_by('first_name', 'last_name')
+        self.fields['vendedor'].empty_label = "-- Selecione um vendedor --"
+        
         # Configurar queryset dos clientes
         self.fields['cliente'].queryset = Cliente.objects.filter(ativo=True).order_by('nome')
         self.fields['cliente'].empty_label = "-- Selecione um cliente --"
@@ -132,6 +152,12 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
     def clean(self):
         cleaned_data = super().clean()
 
+        # ✅ VALIDAÇÃO DO VENDEDOR (agora obrigatório no Step 1)
+        vendedor = cleaned_data.get('vendedor')
+        if not vendedor:
+            self.add_error('vendedor', 'Vendedor é obrigatório.')
+
+        # Validações do elevador (mantidas)
         modelo_elevador = cleaned_data.get('modelo_elevador')
         capacidade_pessoas = cleaned_data.get('capacidade_pessoas')
         capacidade_kg_from_post = cleaned_data.get('capacidade')
@@ -156,25 +182,13 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         elif acionamento == 'Carretel':
             cleaned_data['contrapeso'] = None
 
-        # Validações de Poço
-        largura_poco = cleaned_data.get('largura_poco')
-        comprimento_poco = cleaned_data.get('comprimento_poco')
-        altura_poco = cleaned_data.get('altura_poco')
-        pavimentos = cleaned_data.get('pavimentos')
-
-        #if not largura_poco or float(largura_poco) <= 0:
-        #    self.add_error('largura_poco', 'Largura do poço é obrigatória e deve ser maior que zero.')
-        #if not comprimento_poco or float(comprimento_poco) <= 0:
-        #    self.add_error('comprimento_poco', 'Comprimento do poço é obrigatório e deve ser maior que zero.')
-        #if not altura_poco or float(altura_poco) <= 0:
-        #    self.add_error('altura_poco', 'Altura do poço é obrigatória e deve ser maior que zero.')
-        #if not pavimentos or int(pavimentos) < 2:
-        #    self.add_error('pavimentos', 'Número de pavimentos é obrigatório e deve ser no mínimo 2.')
-
         return cleaned_data
 
 
 class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
+    """
+    Formulário Step 2: Cabine + Portas (mantido igual)
+    """
     class Meta:
         model = Proposta
         fields = [
@@ -207,7 +221,6 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
-
             'saida_cabine': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
@@ -233,7 +246,6 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
-
             'largura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
                 'placeholder': '0,00'
@@ -252,7 +264,6 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
-
             'largura_porta_pavimento': QuantityInput(attrs={
                 'step': '0.01',
                 'placeholder': '0,00'
@@ -263,16 +274,19 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
         }
 
+
 class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
+    """
+    Formulário Step 3: Dados Comerciais
+    ✅ ATUALIZADO: Removido vendedor e documentacao_prefeitura (movidos para Step 1)
+    """
     class Meta:
         model = Proposta
         fields = [
-            # Dados comerciais básicos
-            'vendedor',  
+            # ✅ DADOS COMERCIAIS BÁSICOS (sem vendedor e sem documentacao_prefeitura)
             'valor_proposta', 
             'numero_contrato',
             'data_contrato', 
-            'documentacao_prefeitura',
 
             # Validade e Prazos
             'prazo_entrega_dias',
@@ -291,25 +305,45 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         ]
         
         widgets = {
-            # Validade e Prazos
-            'data_validade': forms.DateInput(attrs={
+            # ✅ VALOR DA PROPOSTA (destaque)
+            'valor_proposta': MoneyInput(attrs={
+                'required': True,
+                'placeholder': '0,00',
+                'class': 'form-control form-control-lg',
+                'style': 'font-weight: bold; font-size: 1.1em;'
+            }),
+            
+            # Contratos
+            'numero_contrato': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: CT-2025-001'
+            }),
+            'data_contrato': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
             }),
-
+            
+            # Validade e Prazos
+            'prazo_entrega_dias': QuantityInput(attrs={
+                'min': 1,
+                'max': 365,
+                'placeholder': '45',
+                'required': True
+            }),
+            'data_validade': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+                'required': True
+            }),
             'previsao_conclusao_obra': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'prazo_entrega_dias': QuantityInput(attrs={
-                'min': 1,
-                'max': 365,
-                'placeholder': '45'
-            }),
             
             # Forma de Pagamento
             'forma_pagamento': forms.Select(attrs={
-                'class': 'form-select'
+                'class': 'form-select',
+                'required': True
             }),
             'valor_entrada': MoneyInput(),
             'percentual_entrada': PercentageInput(),
@@ -330,31 +364,14 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-control',
                 'type': 'date'
             }),
-            'numero_contrato': forms.TextInput(attrs={
-                'class': 'form-control'
-            }),
-            'data_contrato': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'documentacao_prefeitura': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
-
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Configurar queryset dos vendedores (apenas usuários com nível vendedor)
-        from core.models import Usuario
-        self.fields['vendedor'].queryset = Usuario.objects.filter(
-            nivel='vendedor', 
-            is_active=True
-        ).order_by('first_name', 'last_name')
-        self.fields['vendedor'].empty_label = "-- Selecione um vendedor --"
-
-
+        # ✅ REMOVIDO: Configuração do vendedor (agora no Step 1)
+        
+        # Definir data de contrato padrão
         if not self.instance.pk and not self.initial.get('data_contrato'):
             self.initial['data_contrato'] = date.today()
 
@@ -362,7 +379,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         if not self.instance.pk and not self.initial.get('data_validade'):
             self.initial['data_validade'] = date.today() + timedelta(days=30)
         
-        # ✅ ADICIONADO: Definir previsão de conclusão da obra padrão (+90 dias)
+        # Definir previsão de conclusão da obra padrão (+90 dias)
         if not self.instance.pk and not self.initial.get('previsao_conclusao_obra'):
             self.initial['previsao_conclusao_obra'] = date.today() + timedelta(days=90)
         
@@ -372,9 +389,15 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         
     def clean(self):
         cleaned_data = super().clean()
+        
+        # ✅ VALIDAÇÃO DO VALOR DA PROPOSTA (obrigatório no Step 3)
+        valor_proposta = cleaned_data.get('valor_proposta')
+        if not valor_proposta or float(valor_proposta) <= 0:
+            self.add_error('valor_proposta', 'O valor da proposta é obrigatório e deve ser maior que zero.')
+        
+        # Validações da forma de pagamento (mantidas)
         forma_pagamento = cleaned_data.get('forma_pagamento')
         
-        # Validações específicas por forma de pagamento
         if forma_pagamento == 'vista':
             # Para à vista, não precisa de parcelas
             cleaned_data['numero_parcelas'] = 1
@@ -415,7 +438,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'data_validade': 'A data de validade deve ser futura.'
             })
         
-        # ✅ ADICIONADO: Validação da previsão de conclusão da obra
+        # Validação da previsão de conclusão da obra
         previsao_conclusao_obra = cleaned_data.get('previsao_conclusao_obra')
         if previsao_conclusao_obra and previsao_conclusao_obra <= date.today():
             raise ValidationError({
@@ -423,6 +446,9 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             })
         
         return cleaned_data
+
+
+# ✅ MANTIDOS IGUAIS - Outros formulários sem alteração
 
 class PropostaStatusForm(forms.ModelForm):
     """Formulário para alteração de status da proposta"""
@@ -610,6 +636,7 @@ class PropostaValorForm(forms.ModelForm):
             raise ValidationError('O valor da proposta deve ser maior que zero.')
         return valor
 
+
 class PropostaFiltroForm(forms.Form):
     """Formulário para filtros na listagem de propostas"""
     
@@ -636,14 +663,14 @@ class PropostaFiltroForm(forms.Form):
     cliente = forms.ModelChoiceField(
         queryset=Cliente.objects.filter(ativo=True).order_by('nome'),
         required=False,
-        empty_label='Todos',  # ← MUDANÇA: de 'Todos os clientes' para 'Todos'
+        empty_label='Todos',
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
     )
     
     vendedor = forms.ModelChoiceField(
         queryset=Usuario.objects.filter(nivel='vendedor', is_active=True).order_by('first_name'),
         required=False,
-        empty_label='Todos',  # ← CONSISTENTE: também 'Todos'
+        empty_label='Todos',
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
     )
     

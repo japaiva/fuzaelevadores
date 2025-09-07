@@ -13,8 +13,6 @@ class Proposta(models.Model):
 
     STATUS_CHOICES = [
         ('rascunho', 'Rascunho'),
-        ('simulado', 'Simulado'),
-        ('pendente', 'Pendente'),
         ('aprovado', 'Aprovado'),
         ('rejeitado', 'Rejeitado'),
     ]
@@ -341,7 +339,16 @@ class Proposta(models.Model):
 
     numero_contrato = models.CharField(max_length=20, blank=True, null=True)
     data_contrato = models.DateField(blank=True, null=True)
-    documentacao_prefeitura = models.BooleanField(default=False)
+
+    documentacao_prefeitura = models.CharField(
+        max_length=20,
+        choices=[
+            ('cliente', 'Por conta do cliente'),
+            ('empresa', 'Por conta da empresa'),
+        ],
+        default='cliente',
+        verbose_name="Documentação Prefeitura"
+)
     
     # DADOS COMERCIAIS
     valor_proposta = models.DecimalField(

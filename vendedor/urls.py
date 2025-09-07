@@ -45,7 +45,6 @@ urlpatterns = [
     
     # Lista principal de vistorias
     path('vistorias/', views.vistoria_list, name='vistoria_list'),
-    path('vistorias/calendario/', views.vistoria_calendario, name='vistoria_calendario'),
     
     # Proposta específica para vistoria
     path('vistorias/proposta/<uuid:pk>/', views.vistoria_proposta_detail, name='vistoria_proposta_detail'),

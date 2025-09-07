@@ -1,5 +1,5 @@
 <!-- templates/shared/proposta_status.html -->
-{% extends 'vendedor/base_vendedor.html' %}
+{% extends base_template|default:'vendedor/base_vendedor.html' %}
 
 {% block title %}Alterar Status - Proposta {{ proposta.numero }}{% endblock %}
 
@@ -17,8 +17,8 @@
               Alterar Status - Proposta {{ proposta.numero }}
             </h5>
             <div>
-              <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-light btn-sm">
-                <i class="fas fa-arrow-left me-1"></i> Voltar para Lista
+              <a href="{% url 'vendedor:pedido_detail' proposta.pk %}" class="btn btn-outline-light btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Voltar
               </a>
             </div>
           </div>
@@ -80,6 +80,7 @@
           <form method="post" id="statusForm">
             {% csrf_token %}
             
+            <!-- Status Principal -->
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label for="{{ form.status.id_for_label }}" class="form-label">
@@ -93,6 +94,22 @@
                 {% endif %}
               </div>
               
+              <!-- Campo de Vistoria (aparece apenas quando status = aprovado) -->
+              <div class="col-md-6 mb-3" id="campo-vistoria" style="display: none;">
+                <label for="{{ form.data_vistoria_medicao_prevista.id_for_label }}" class="form-label">
+                  <strong>Data da Vistoria/Medição *</strong>
+                </label>
+                {{ form.data_vistoria_medicao_prevista }}
+                {% if form.data_vistoria_medicao_prevista.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ form.data_vistoria_medicao_prevista.errors.0 }}
+                  </div>
+                {% endif %}
+                <div class="form-text">{{ form.data_vistoria_medicao_prevista.help_text }}</div>
+              </div>
+            </div>
+            
+            <div class="row">
               <div class="col-md-12 mb-3">
                 <label for="{{ form.observacao_status.id_for_label }}" class="form-label">
                   <strong>Observação sobre a mudança</strong>
@@ -112,13 +129,13 @@
               <div class="col-12">
                 <div class="d-flex justify-content-between">
                   <div>
-                    <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'vendedor:pedido_detail' proposta.pk %}" class="btn btn-outline-secondary">
                       <i class="fas fa-times me-1"></i> Cancelar
                     </a>
                   </div>
                   <div>
                     <button type="submit" class="btn btn-success" id="btnSalvar">
-                      <i class="fas fa-check me-1"></i> Alterar Status
+                      <i class="fas fa-check me-1"></i> Salvar
                     </button>
                   </div>
                 </div>
@@ -269,22 +286,6 @@
   background-color: #6c757d !important;
 }
 
-/* Formulário */
-#statusForm .form-select {
-  font-size: 1.1rem;
-  padding: 0.75rem;
-}
-
-#statusForm .form-control {
-  font-size: 1rem;
-}
-
-#statusPreview {
-  font-size: 0.9rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
-}
-
 /* Botões */
 .btn {
   border-radius: 0.375rem;
@@ -325,28 +326,55 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const statusSelect = document.getElementById('id_status');
-    const btnSalvar = document.getElementById('btnSalvar');
+    const campoVistoria = document.getElementById('campo-vistoria');
+    const dataVistoriaInput = document.getElementById('id_data_vistoria_medicao_prevista');
     
-    // Mapeamento de status para classes CSS
-    const statusBadgeClasses = {
-        'rascunho': 'bg-warning',
-        'simulado': 'bg-info',
-        'pendente': 'bg-primary', 
-        'aprovado': 'bg-success',
-        'rejeitado': 'bg-danger'
-    };
+    // Função para mostrar/ocultar campo de vistoria
+    function toggleCampoVistoria() {
+        const statusSelecionado = statusSelect.value;
+        
+        if (statusSelecionado === 'aprovado') {
+            campoVistoria.style.display = 'block';
+            dataVistoriaInput.required = true;
+        } else {
+            campoVistoria.style.display = 'none';
+            dataVistoriaInput.required = false;
+        }
+    }
     
-    // Mapeamento de status para textos
-    const statusTexts = {
-        'rascunho': 'Rascunho',
-        'simulado': 'Simulado',
-        'pendente': 'Pendente',
-        'aprovado': 'Aprovado',
-        'rejeitado': 'Rejeitado'
-    };
+    // Event listener para mudança de status
+    statusSelect.addEventListener('change', toggleCampoVistoria);
     
+    // Verificar status inicial
+    toggleCampoVistoria();
     
-    console.log('✅ Formulário de status inicializado');
+    // Validação do formulário
+    document.getElementById('statusForm').addEventListener('submit', function(e) {
+        if (statusSelect.value === 'aprovado') {
+            const dataVistoria = dataVistoriaInput.value;
+            
+            if (!dataVistoria) {
+                e.preventDefault();
+                alert('A data da vistoria é obrigatória ao aprovar a proposta.');
+                dataVistoriaInput.focus();
+                return;
+            }
+            
+            // Validar se data não é muito no passado
+            const hoje = new Date();
+            const vistoria = new Date(dataVistoria);
+            const diasDiferenca = Math.ceil((hoje - vistoria) / (1000 * 60 * 60 * 24));
+            
+            if (diasDiferenca > 7) {
+                e.preventDefault();
+                alert('A data da vistoria não pode ser muito antiga (máximo 7 dias).');
+                dataVistoriaInput.focus();
+                return;
+            }
+        }
+    });
+    
+    console.log('Formulário de status simplificado inicializado');
 });
 </script>
 {% endblock %}
