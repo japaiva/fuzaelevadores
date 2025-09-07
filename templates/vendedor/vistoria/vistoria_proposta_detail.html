@@ -252,7 +252,6 @@
         {% else %}
           <!-- Estado vazio -->
           <div class="text-center py-5">
-            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
             <h5 class="text-muted">Nenhuma vistoria agendada</h5>
             <p class="text-muted">Esta proposta ainda não possui vistorias no histórico.</p>
             
@@ -270,63 +269,6 @@
       </div>
     </div>
 
-    <!-- Resumo Rápido -->
-    <div class="card shadow-sm border-light">
-      <div class="card-header bg-light">
-        <h6 class="card-title mb-0">Resumo</h6>
-      </div>
-      <div class="card-body">
-        <div class="row text-center">
-          <div class="col-md-3">
-            <div class="h4 mb-1 text-primary">{{ vistorias.count }}</div>
-            <div class="small text-muted">Total de Vistorias</div>
-          </div>
-          <div class="col-md-3">
-            <div class="h4 mb-1 text-success">
-              {% widthratio vistorias|length|floatformat:"0" vistorias.count 100 %}%
-            </div>
-            <div class="small text-muted">Realizadas</div>
-          </div>
-          <div class="col-md-3">
-            <div class="h4 mb-1 text-warning">
-              {{ vistorias|length|add:"-1" }}
-            </div>
-            <div class="small text-muted">Pendentes</div>
-          </div>
-          <div class="col-md-3">
-            <div class="h4 mb-1 {% if proposta.proxima_vistoria_vencida %}text-danger{% else %}text-info{% endif %}">
-              {% if proposta.data_proxima_vistoria %}
-                {{ proposta.dias_proxima_vistoria }}
-              {% else %}
-                -
-              {% endif %}
-            </div>
-            <div class="small text-muted">
-              {% if proposta.data_proxima_vistoria %}
-                Dias p/ próxima
-              {% else %}
-                Sem próxima
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Ações Rápidas -->
-    <div class="mt-4 text-center">
-      <div class="btn-group" role="group">
-        <a href="{% url 'vendedor:pedido_detail' proposta.pk %}" class="btn btn-outline-primary">
-          <i class="fas fa-file-alt me-1"></i> Ver Proposta Completa
-        </a>
-        <a href="{% url 'vendedor:gerar_contrato_pdf' proposta.pk %}" class="btn btn-outline-secondary" target="_blank">
-          <i class="fas fa-file-contract me-1"></i> Gerar Contrato
-        </a>
-        <a href="{% url 'vendedor:proposta_status' proposta.pk %}" class="btn btn-outline-warning">
-          <i class="fas fa-exchange-alt me-1"></i> Alterar Status
-        </a>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock %}

@@ -193,4 +193,4 @@ def proposta_delete(request, pk):
         'portas_individuais_count': PortaPavimento.objects.filter(proposta=proposta).count(),
     }
     
-    return render(request, 'vendedor/pedido_confirm_delete.html', context)
+    return render(request, 'vendedor/proposta_confirm_delete.html', context)
