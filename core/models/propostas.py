@@ -2,8 +2,9 @@
 
 from django.db import models
 from django.conf import settings
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from decimal import Decimal
+from django.utils import timezone
 import uuid
 
 import logging
@@ -41,7 +42,6 @@ class Proposta(models.Model):
         ('obra_ok', 'Obra OK'),
     ]
 
-
     # === IDENTIFICAÇÃO E STATUS ===
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     numero = models.CharField(max_length=8, unique=True, verbose_name="Número da Proposta")
@@ -77,6 +77,13 @@ class Proposta(models.Model):
         null=True,
         verbose_name="Data da Próxima Vistoria",
         help_text="Data agendada para próxima vistoria"
+    )
+
+    data_aprovacao = models.DateTimeField(
+        blank=True, 
+        null=True,
+        verbose_name="Data de Aprovação",
+        help_text="Data e hora quando a proposta foi aprovada"
     )
 
     # === ETAPA 1 - CLIENTE/ELEVADOR ===
@@ -251,8 +258,8 @@ class Proposta(models.Model):
     material_porta_cabine = models.CharField(
         max_length=50,
         choices=[
-            ('Inox 430', 'Inox 430'),      # ✅ ESPECÍFICO
-            ('Inox 304', 'Inox 304'),      # ✅ ESPECÍFICO
+            ('Inox 430', 'Inox 430'),
+            ('Inox 304', 'Inox 304'),
             ('Chapa Pintada', 'Chapa Pintada'),
             ('Alumínio', 'Alumínio'),
         ],
@@ -298,8 +305,8 @@ class Proposta(models.Model):
     material_porta_pavimento = models.CharField(
         max_length=50,
         choices=[
-            ('Inox 430', 'Inox 430'),      # ✅ ESPECÍFICO
-            ('Inox 304', 'Inox 304'),      # ✅ ESPECÍFICO
+            ('Inox 430', 'Inox 430'),
+            ('Inox 304', 'Inox 304'),
             ('Chapa Pintada', 'Chapa Pintada'),
             ('Alumínio', 'Alumínio'),
         ],
@@ -333,7 +340,7 @@ class Proposta(models.Model):
         on_delete=models.PROTECT, 
         related_name='propostas_vendedor',
         verbose_name="Vendedor",
-        null=True, blank=True,  # ← ADICIONAR ESTA LINHA
+        null=True, blank=True,
         limit_choices_to={'nivel': 'vendedor'}
     )
 
@@ -348,7 +355,7 @@ class Proposta(models.Model):
         ],
         default='cliente',
         verbose_name="Documentação Prefeitura"
-)
+    )
     
     # DADOS COMERCIAIS
     valor_proposta = models.DecimalField(
@@ -479,7 +486,6 @@ class Proposta(models.Model):
         help_text="15% dos materiais - MOD para fabricação"
     )
     
-    # ✅ NOVO CAMPO
     custo_indiretos_fabricacao = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Custos Indiretos de Fabricação",
@@ -502,7 +508,6 @@ class Proposta(models.Model):
         help_text="Materiais + MOD + Custos Indiretos (SEM instalação)"
     )
     
-    # ✅ NOVO CAMPO
     custo_total_projeto = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Custo Total do Projeto",
@@ -513,35 +518,30 @@ class Proposta(models.Model):
     # FORMAÇÃO DE PREÇO
     # =================================================================
     
-    # ✅ NOVO CAMPO
     margem_lucro = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Margem de Lucro",
         help_text="30% sobre custo total do projeto"
     )
     
-    # ✅ NOVO CAMPO
     preco_com_margem = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Preço com Margem",
         help_text="Custo Total + Margem de Lucro"
     )
     
-    # ✅ NOVO CAMPO
     comissao = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Comissão",
         help_text="3% sobre preço com margem"
     )
     
-    # ✅ NOVO CAMPO
     preco_com_comissao = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Preço com Comissão",
         help_text="Preço com Margem + Comissão"
     )
     
-    # ✅ NOVO CAMPO
     impostos = models.DecimalField(
         max_digits=12, decimal_places=2, blank=True, null=True,
         verbose_name="Impostos",
@@ -618,22 +618,31 @@ class Proposta(models.Model):
         return f"{self.numero} - {self.nome_projeto} - {valor_display}"
     
     def save(self, *args, **kwargs):
-        """Salvar com número automático formato 25.00001 e definir data de validade"""
+        """
+        Salvar com número automático formato 25.00001, definir data de validade
+        e ATUALIZAR automaticamente data_proxima_vistoria baseada em data_vistoria_medicao
+        """
+        # Verificar se há instância anterior para comparar mudanças
+        instancia_anterior = None
+        if self.pk:
+            try:
+                instancia_anterior = Proposta.objects.get(pk=self.pk)
+            except Proposta.DoesNotExist:
+                pass
+        
+        # Gerar número automático se novo
         if not self.numero:
-            # Gerar número sequencial formato YY.00001
             from datetime import datetime
             
             ano_atual = datetime.now().year
-            ano_dois_digitos = str(ano_atual)[-2:]  # Pega os dois últimos dígitos do ano
+            ano_dois_digitos = str(ano_atual)[-2:]
             
-            # Buscar último número do ano atual
             ultimo_pedido = Proposta.objects.filter(
                 numero__startswith=f'{ano_dois_digitos}.'
             ).order_by('-numero').first()
             
             if ultimo_pedido:
                 try:
-                    # Extrair número sequencial: "25.00001" -> "00001" -> 1
                     numero_parte = ultimo_pedido.numero.split('.')[1]
                     ultimo_numero = int(numero_parte)
                     novo_numero = ultimo_numero + 1
@@ -642,13 +651,38 @@ class Proposta(models.Model):
             else:
                 novo_numero = 1
             
-            # Formato: YY.00001 (ex: 25.00001)
             self.numero = f'{ano_dois_digitos}.{novo_numero:05d}'
         
         # Definir data de validade padrão se não informada
         if not self.data_validade:
-            from datetime import date, timedelta
             self.data_validade = date.today() + timedelta(days=30)
+
+        if instancia_anterior and instancia_anterior.status != 'aprovado' and self.status == 'aprovado':
+            self.data_aprovacao = timezone.now()
+
+        # ✅ NOVA FUNCIONALIDADE: Auto-update de próxima vistoria
+        if self.data_vistoria_medicao:
+            # Verificar se data_vistoria_medicao mudou ou é uma nova proposta
+            data_medicao_mudou = (
+                instancia_anterior is None or  # Nova proposta
+                instancia_anterior.data_vistoria_medicao != self.data_vistoria_medicao  # Data mudou
+            )
+            
+            if data_medicao_mudou:
+                # Calcular próxima vistoria baseada na data de medição
+                # Padrão: 15 dias após a medição
+                proxima_vistoria = self.data_vistoria_medicao
+                
+                # Só atualizar se ainda não foi definida manualmente ou se a medição mudou
+                if not self.data_proxima_vistoria or data_medicao_mudou:
+                    self.data_proxima_vistoria = proxima_vistoria
+                    
+                    # Log da atualização automática
+                    logger.info(
+                        f"Proposta {self.numero}: data_proxima_vistoria atualizada automaticamente "
+                        f"para {proxima_vistoria.strftime('%d/%m/%Y')} "
+                        f"(15 dias após medição de {self.data_vistoria_medicao.strftime('%d/%m/%Y')})"
+                    )
 
         # Se valor_proposta não foi definido pelo usuário, usar o calculado como base
         if self.preco_venda_calculado and self.valor_proposta is None:
@@ -679,7 +713,7 @@ class Proposta(models.Model):
             if anexos_count > 0:
                 logger.info(f"Serão excluídos {anexos_count} anexos")
             
-            # ✅ EXCLUSÃO MANUAL DAS PORTAS (garantir que aconteça)
+            # Exclusão manual das portas (garantir que aconteça)
             PortaPavimento.objects.filter(proposta=self).delete()
             
             # Chamar delete padrão (que já cuida do cascata automático)
@@ -694,7 +728,6 @@ class Proposta(models.Model):
     def calcular_impostos_dinamicos(self, base_calculo=None):
         """
         Calcula impostos baseado no campo 'faturado_por' e parâmetros do sistema
-        ✅ CORRIGIDO: Sempre retorna Decimal, nunca None
         """
         from core.models import ParametrosGerais
         from decimal import Decimal
@@ -702,21 +735,17 @@ class Proposta(models.Model):
         
         logger = logging.getLogger(__name__)
         
-        # ✅ USAR base_calculo se fornecida, senão usar preco_com_comissao
         valor_base = base_calculo or self.preco_com_comissao
         
-        # ✅ VALIDAÇÃO: Se não tiver base de cálculo, retornar zero
         if not valor_base:
             logger.warning(f"Proposta {self.numero}: Sem base para cálculo de impostos")
-            return Decimal('0.00')  # ← NUNCA retorna None
+            return Decimal('0.00')
         
         try:
             parametros = ParametrosGerais.objects.first()
             if not parametros:
-                # Fallback para 10% se não houver parâmetros
                 return Decimal(str(valor_base)) * Decimal('0.10')
             
-            # Mapear faturado_por para o campo correto nos parâmetros
             percentual_impostos = None
             
             if self.faturado_por == 'Elevadores':
@@ -727,23 +756,18 @@ class Proposta(models.Model):
                 percentual_impostos = parametros.faturamento_manutencao
             
             if percentual_impostos and percentual_impostos > 0:
-                # Converter percentual para decimal (ex: 10.5 -> 0.105)
                 percentual_decimal = Decimal(str(percentual_impostos)) / Decimal('100')
                 return Decimal(str(valor_base)) * percentual_decimal
             else:
-                # Fallback para 10% se não houver percentual configurado
                 return Decimal(str(valor_base)) * Decimal('0.10')
                 
         except Exception as e:
             logger.error(f"Erro no cálculo de impostos para proposta {self.numero}: {e}")
-            # ✅ SEMPRE retorna Decimal, mesmo em caso de erro
             return Decimal(str(valor_base)) * Decimal('0.10')
-
 
     def calcular_precos_completo(self):
         """
         Recalcula toda a formação de preço com impostos dinâmicos
-        MÉTODO PRINCIPAL PARA USAR NAS VIEWS
         """
         if not self.custo_total_projeto:
             return False
@@ -842,7 +866,6 @@ class Proposta(models.Model):
         """Verifica se a proposta está vencida"""
         if not self.data_validade:
             return False
-        from datetime import date
         return date.today() > self.data_validade
     
     @property
@@ -850,7 +873,6 @@ class Proposta(models.Model):
         """Retorna quantos dias faltam para vencer"""
         if not self.data_validade:
             return None
-        from datetime import date
         delta = self.data_validade - date.today()
         return delta.days
     
@@ -859,20 +881,18 @@ class Proposta(models.Model):
         if not self.primeira_parcela or not self.numero_parcelas:
             return []
         
-        from datetime import date
         from dateutil.relativedelta import relativedelta
         
         parcelas = []
         data_atual = self.primeira_parcela
         
-        # Definir incremento baseado no tipo de parcela
         incrementos = {
             'mensal': relativedelta(months=1),
             'bimestral': relativedelta(months=2),
             'trimestral': relativedelta(months=3),
             'semestral': relativedelta(months=6),
             'anual': relativedelta(years=1),
-            'personalizado': relativedelta(months=1),  # Padrão
+            'personalizado': relativedelta(months=1),
         }
         
         incremento = incrementos.get(self.tipo_parcela, relativedelta(months=1))
@@ -996,7 +1016,6 @@ class Proposta(models.Model):
         """Verifica se a próxima vistoria está vencida"""
         if not self.data_proxima_vistoria:
             return False
-        from datetime import date
         return date.today() > self.data_proxima_vistoria
     
     @property
@@ -1004,7 +1023,6 @@ class Proposta(models.Model):
         """Retorna quantos dias para a próxima vistoria"""
         if not self.data_proxima_vistoria:
             return None
-        from datetime import date
         delta = self.data_proxima_vistoria - date.today()
         return delta.days
 
@@ -1036,7 +1054,6 @@ class Proposta(models.Model):
     
     def pode_calcular(self):
         """Verifica se a proposta pode ser calculada"""
-        # Verificar campos obrigatórios básicos
         campos_obrigatorios = [
             self.cliente_id,
             self.modelo_elevador,
@@ -1050,10 +1067,8 @@ class Proposta(models.Model):
             self.altura_cabine,
         ]
         
-        # Todos os campos obrigatórios devem estar preenchidos
         campos_preenchidos = all(campo is not None and str(campo).strip() != '' for campo in campos_obrigatorios)
         
-        # Verificar valores numéricos positivos
         valores_positivos = (
             self.capacidade and float(self.capacidade) > 0 and
             self.largura_poco and float(self.largura_poco) > 0 and
@@ -1064,4 +1079,3 @@ class Proposta(models.Model):
         )
         
         return campos_preenchidos and valores_positivos
-

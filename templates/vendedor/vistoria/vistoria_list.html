@@ -16,28 +16,6 @@
       </a>
     </div>
   </div>
-
-  <!-- Estatísticas Rápidas -->
-  <div class="card-header bg-white py-2">
-    <div class="row text-center">
-      <div class="col-md-3">
-        <div class="text-muted small">Total Ativas</div>
-        <div class="h5 mb-0 text-primary">{{ estatisticas.total_propostas }}</div>
-      </div>
-      <div class="col-md-3">
-        <div class="text-muted small">Sem Vistoria</div>
-        <div class="h5 mb-0 text-warning">{{ estatisticas.sem_vistoria }}</div>
-      </div>
-      <div class="col-md-3">
-        <div class="text-muted small">Vencidas</div>
-        <div class="h5 mb-0 text-danger">{{ estatisticas.vencidas }}</div>
-      </div>
-      <div class="col-md-3">
-        <div class="text-muted small">Em Vistoria</div>
-        <div class="h5 mb-0 text-info">{{ estatisticas.em_vistoria }}</div>
-      </div>
-    </div>
-  </div>
   
   <!-- Filtros -->
   <div class="card-header bg-white py-2">
@@ -73,10 +51,11 @@
         <thead class="table-light">
           <tr>
             <th width="8%">Proposta</th>
-            <th width="15%">Cliente</th>
-            <th width="15%">Projeto</th>
+            <th width="8%">Aprovação</th>
+            <th width="20%">Cliente</th>
+            <th width="20%">Projeto</th>
             <th width="10%">Status Obra</th>
-            <th width="10%">Próxima Vistoria</th>
+            <th width="20%">Próxima Vistoria</th>
             <th width="8%">Vistorias</th>
             <th width="14%" class="text-end">Ações</th>
           </tr>
@@ -86,7 +65,15 @@
             <tr class="{% if not proposta.data_vistoria_medicao %}table-warning{% elif proposta.data_proxima_vistoria and proposta.data_proxima_vistoria < hoje %}table-danger{% endif %}">
               <td>
                 <strong class="text-primary">{{ proposta.numero }}</strong>
-                <div class="small text-muted">{{ proposta.criado_em|date:"d/m/Y" }}</div>
+              </td>
+
+
+              <td>
+                <div class="data-info text-center">
+                    <div class="data-principal">
+                      <strong class="text-success">{{ proposta.data_aprovacao|date:"d/m/Y" }}</strong>
+                    </div>
+                </div>
               </td>
 
               <td>
@@ -99,9 +86,6 @@
                 <div class="text-truncate" style="max-width: 140px;" title="{{ proposta.nome_projeto }}">
                   <strong>{{ proposta.nome_projeto }}</strong>
                 </div>
-                {% if proposta.local_instalacao %}
-                  <div class="small text-muted">{{ proposta.local_instalacao|truncatechars:30 }}</div>
-                {% endif %}
               </td>
 
               <td>
@@ -172,28 +156,7 @@
                     <i class="fas fa-eye"></i>
                   </a>
                   
-                  <!-- MENU DROPDOWN -->
-                  <div class="btn-group" role="group">
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                            data-bs-toggle="dropdown" 
-                            title="Mais ações">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
 
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:gerar_contrato_pdf' proposta.pk %}" target="_blank">
-                          <i class="fas fa-file-contract me-2"></i>Gerar Contrato
-                        </a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:proposta_status' proposta.pk %}">
-                          <i class="fas fa-exchange-alt me-2"></i>Alterar Status
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
                 </div>
               </td>
 
