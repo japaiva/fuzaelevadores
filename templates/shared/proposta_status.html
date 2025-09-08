@@ -1,5 +1,6 @@
 <!-- templates/shared/proposta_status.html -->
 {% extends base_template|default:'vendedor/base_vendedor.html' %}
+{% load formato_br %}
 
 {% block title %}Alterar Status - Proposta {{ proposta.numero }}{% endblock %}
 
@@ -55,7 +56,7 @@
               {% if proposta.valor_proposta %}
               <div class="info-item">
                 <strong>Valor:</strong> 
-                <span class="text-success fs-5">R$ {{ proposta.valor_proposta|floatformat:2 }}</span>
+                <span class="text-success fs-5">{{ proposta.valor_proposta|formato_br }}</span>
               </div>
               {% endif %}
               

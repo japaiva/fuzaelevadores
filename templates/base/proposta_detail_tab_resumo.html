@@ -1,25 +1,35 @@
-<!-- TAB RESUMO CORRIGIDO -->
+<!-- TAB RESUMO REORGANIZADO POR ETAPAS -->
 {% load formato_br %}
 {% load pedido_filters %}
 
 <div class="tab-pane fade show active" id="resumo" role="tabpanel">
   <div class="card-body">
     
-    <!-- Dados da Proposta (mantém igual) -->
+    <!-- ETAPA 1: PROJETO -->
     <div class="card shadow-sm border-primary mb-4">
       <div class="card-header bg-primary text-white">
         <div class="d-flex justify-content-between align-items-center">
-          <h6 class="card-title mb-0">Dados da Proposta</h6>
+          <h6 class="card-title mb-0">Projeto</h6>
           <span class="badge bg-light text-primary fs-6">{{ pedido.numero }}</span>
         </div>
       </div>
       <div class="card-body">
-        <!-- Conteúdo igual ao atual -->
         <div class="row g-3">
           <div class="col-md-6">
             <div class="mb-3">
+              <label class="form-label text-muted small">Número da Proposta</label>
+              <div class="form-control-plaintext"><strong class="text-primary fs-5">{{ pedido.numero }}</strong></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label text-muted small">Data da Proposta</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.criado_em|date:"d/m/Y H:i" }}</strong></div>
+            </div>
+            <div class="mb-3">
               <label class="form-label text-muted small">Cliente</label>
               <div class="form-control-plaintext"><strong>{{ pedido.cliente.nome }}</strong></div>
+              {% if pedido.cliente.nome_fantasia %}
+                <small class="text-muted">{{ pedido.cliente.nome_fantasia }}</small>
+              {% endif %}
             </div>
             <div class="mb-3">
               <label class="form-label text-muted small">Vendedor</label>
@@ -32,23 +42,144 @@
           </div>
           <div class="col-md-6">
             <div class="mb-3">
-              <label class="form-label text-muted small">Data de Criação</label>
-              <div class="form-control-plaintext">{{ pedido.criado_em|date:"d/m/Y H:i" }}</div>
+              <label class="form-label text-muted small">Faturado por</label>
+              <div class="form-control-plaintext">{{ pedido.get_faturado_por_display }}</div>
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted small">Modelo do Elevador</label>
-              <div class="form-control-plaintext"><strong>{{ pedido.get_modelo_elevador_display }}</strong></div>
+              <label class="form-label text-muted small">Normas ABNT</label>
+              <div class="form-control-plaintext">{{ pedido.get_normas_abnt_display }}</div>
             </div>
             <div class="mb-3">
-              <label class="form-label text-muted small">Capacidade</label>
-              <div class="form-control-plaintext"><strong>{{ pedido.capacidade }} kg</strong></div>
+              <label class="form-label text-muted small">Documentação Prefeitura</label>
+              <div class="form-control-plaintext">{{ pedido.get_documentacao_prefeitura_display }}</div>
             </div>
+            {% if pedido.local_instalacao %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Local de Instalação</label>
+              <div class="form-control-plaintext">{{ pedido.local_instalacao }}</div>
+            </div>
+            {% endif %}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ NOVA SEÇÃO: FORMAÇÃO DE PREÇO LINEAR -->
+    <!-- ETAPA 3: DADOS DA PROPOSTA -->
+    <div class="card shadow-sm border-success mb-4">
+      <div class="card-header bg-success text-white">
+        <h6 class="card-title mb-0">Dados da Proposta</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Valor da Proposta</label>
+              <div class="form-control-plaintext">
+                {% if pedido.valor_proposta %}
+                  <strong class="text-success fs-5">{{ pedido.valor_proposta|formato_br }}</strong>
+                {% else %}
+                  <span class="text-muted">A definir</span>
+                {% endif %}
+              </div>
+            </div>
+            {% if pedido.numero_contrato %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Número do Contrato</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.numero_contrato }}</strong></div>
+            </div>
+            {% endif %}
+            {% if pedido.data_contrato %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Data do Contrato</label>
+              <div class="form-control-plaintext">{{ pedido.data_contrato|date:"d/m/Y" }}</div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {% if pedido.data_validade %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Validade da Proposta</label>
+              <div class="form-control-plaintext">
+                {{ pedido.data_validade|date:"d/m/Y" }}
+                {% if pedido.esta_vencida %}
+                  <small class="text-danger">(Vencida)</small>
+                {% elif pedido.dias_para_vencer <= 7 %}
+                  <small class="text-warning">({{ pedido.dias_para_vencer }} dias)</small>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+            {% if pedido.prazo_entrega_dias %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Prazo de Entrega</label>
+              <div class="form-control-plaintext">{{ pedido.prazo_entrega_dias }} dias</div>
+            </div>
+            {% endif %}
+            {% if pedido.previsao_conclusao_obra %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Previsão Conclusão da Obra</label>
+              <div class="form-control-plaintext">{{ pedido.previsao_conclusao_obra|date:"d/m/Y" }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ETAPA 3: FORMAS DE PAGAMENTO -->
+    <div class="card shadow-sm border-warning mb-4">
+      <div class="card-header bg-warning text-dark">
+        <h6 class="card-title mb-0">Formas de Pagamento</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            {% if pedido.forma_pagamento %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Forma de Pagamento</label>
+              <div class="form-control-plaintext">
+                <strong>{{ pedido.get_forma_pagamento_display_detalhado }}</strong>
+              </div>
+            </div>
+            {% endif %}
+            {% if pedido.valor_entrada %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Valor da Entrada</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.valor_entrada|formato_br }}</strong></div>
+            </div>
+            {% endif %}
+            {% if pedido.percentual_entrada %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Percentual da Entrada</label>
+              <div class="form-control-plaintext">{{ pedido.percentual_entrada }}%</div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {% if pedido.numero_parcelas and pedido.numero_parcelas > 1 %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Número de Parcelas</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.numero_parcelas }}x</strong></div>
+            </div>
+            {% endif %}
+            {% if pedido.valor_parcela %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Valor da Parcela</label>
+              <div class="form-control-plaintext">{{ pedido.valor_parcela|formato_br }}</div>
+            </div>
+            {% endif %}
+            {% if pedido.primeira_parcela %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Vencimento 1ª Parcela</label>
+              <div class="form-control-plaintext">{{ pedido.primeira_parcela|date:"d/m/Y" }}</div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMAÇÃO DE PREÇO (mantém igual se existir) -->
     {% if pedido.custo_total_projeto or pedido.preco_venda_calculado %}
     <div class="card shadow-sm border-info mb-4">
       <div class="card-header bg-info text-white">
@@ -134,7 +265,7 @@
           </div>
           {% endif %}
 
-<!-- ✅ + IMPOSTOS DINÂMICO -->
+          <!-- + IMPOSTOS DINÂMICO -->
           {% if pedido.impostos %}
           <div class="col-md-3 mb-3">
             <div class="card border-warning h-100">
@@ -160,7 +291,6 @@
             </div>
           </div>
           {% endif %}
-
 
           <!-- = RESULTADO -->
           <div class="col-md-3 mb-3">
@@ -245,113 +375,6 @@
         </div>
         {% endif %}
         
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Valores e Comercial (Simplificado) -->
-    <div class="card shadow-sm border-success mb-4">
-      <div class="card-header bg-success text-white">
-        <h6 class="card-title mb-0">Informações Comerciais</h6>
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            {% if pedido.prazo_entrega_dias %}
-            <div class="mb-3">
-              <label class="form-label text-muted small">Prazo de Entrega</label>
-              <div class="form-control-plaintext">{{ pedido.prazo_entrega_dias }} dias</div>
-            </div>
-            {% endif %}
-            {% if pedido.forma_pagamento %}
-            <div class="mb-3">
-              <label class="form-label text-muted small">Forma de Pagamento</label>
-              <div class="form-control-plaintext">
-                <strong>{{ pedido.get_forma_pagamento_display_detalhado }}</strong>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-          
-          <div class="col-md-6">
-            {% if pedido.data_validade %}
-            <div class="mb-3">
-              <label class="form-label text-muted small">Validade da Proposta</label>
-              <div class="form-control-plaintext">
-                {{ pedido.data_validade|date:"d/m/Y" }}
-                {% if pedido.esta_vencida %}
-                  <small class="text-danger">(Vencida)</small>
-                {% elif pedido.dias_para_vencer <= 7 %}
-                  <small class="text-warning">({{ pedido.dias_para_vencer }} dias)</small>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-
-
-            {% if pedido.data_validade %}
-            <div class="mb-3">
-              <label class="form-label text-muted small">Validade da Proposta</label>
-              <div class="form-control-plaintext">
-                {{ pedido.data_validade|date:"d/m/Y" }}
-                {% if pedido.esta_vencida %}
-                  <small class="text-danger">(Vencida)</small>
-                {% elif pedido.dias_para_vencer <= 7 %}
-                  <small class="text-warning">({{ pedido.dias_para_vencer }} dias)</small>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-            
-            {% if pedido.previsao_conclusao_obra %}
-            <div class="mb-3">
-              <label class="form-label text-muted small">Previsão Conclusão da Obra</label>
-              <div class="form-control-plaintext">{{ pedido.previsao_conclusao_obra|date:"d/m/Y" }}</div>
-            </div>
-            {% endif %}
-            
-            {% if pedido.valor_entrada %}
-            <div class="mb-3">
-              <label class="form-label text-muted small">Valor da Entrada</label>
-              <div class="form-control-plaintext">R$ {{ pedido.valor_entrada|formato_br }}</div>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Parcelamento (se houver) -->
-    {% if pedido.numero_parcelas and pedido.numero_parcelas > 1 %}
-    <div class="card shadow-sm border-warning mb-4">
-      <div class="card-header bg-warning text-dark">
-        <h6 class="card-title mb-0">Parcelamento</h6>
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label text-muted small">Número de Parcelas</label>
-            <div class="form-control-plaintext"><strong>{{ pedido.numero_parcelas }}x</strong></div>
-          </div>
-          {% if pedido.valor_parcela %}
-          <div class="col-md-3">
-            <label class="form-label text-muted small">Valor da Parcela</label>
-            <div class="form-control-plaintext">R$ {{ pedido.valor_parcela|formato_br }}</div>
-          </div>
-          {% endif %}
-          {% if pedido.tipo_parcela %}
-          <div class="col-md-3">
-            <label class="form-label text-muted small">Tipo de Parcela</label>
-            <div class="form-control-plaintext">{{ pedido.get_tipo_parcela_display }}</div>
-          </div>
-          {% endif %}
-          {% if pedido.primeira_parcela %}
-          <div class="col-md-3">
-            <label class="form-label text-muted small">1ª Parcela</label>
-            <div class="form-control-plaintext">{{ pedido.primeira_parcela|date:"d/m/Y" }}</div>
-          </div>
-          {% endif %}
-        </div>
       </div>
     </div>
     {% endif %}
