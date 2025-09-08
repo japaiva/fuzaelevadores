@@ -1,4 +1,4 @@
-# vendedor/views/vistoria.py
+# vendedor/views/vistoria.py - VERSÃO CORRIGIDA
 
 """
 Views para o módulo de vistoria - acompanhamento da obra
@@ -17,7 +17,6 @@ from core.models import Proposta, VistoriaHistorico
 from core.forms import (
     PropostaVistoriaForm, 
     VistoriaHistoricoForm, 
-    VistoriaRealizadaForm,
     VistoriaFiltroForm
 )
 
@@ -35,7 +34,6 @@ def vistoria_list(request):
     ).exclude(
         status_obra='obra_ok'
     ).select_related('cliente', 'vendedor').order_by('data_proxima_vistoria', '-criado_em')
-
 
     # Aplicar filtros do formulário
     form = VistoriaFiltroForm(request.GET)
@@ -116,6 +114,7 @@ def vistoria_list(request):
         'propostas': propostas,
         'form': form,
         'estatisticas': estatisticas,
+        'hoje': date.today(),  # Para comparações no template
     }
     
     return render(request, 'vendedor/vistoria/vistoria_list.html', context)
@@ -151,68 +150,10 @@ def vistoria_proposta_detail(request, pk):
 
 
 @login_required
-def vistoria_agendar_primeira(request, pk):
-    """
-    Agendar primeira vistoria - altera dados da proposta
-    """
-    proposta = get_object_or_404(Proposta, pk=pk)
-    
-    if not proposta.pode_agendar_vistoria:
-        messages.error(request, 'Esta proposta não pode ter vistoria agendada.')
-        return redirect('vendedor:vistoria_list')
-    
-    if request.method == 'POST':
-        form = PropostaVistoriaForm(request.POST, instance=proposta)
-        
-        if form.is_valid():
-            try:
-                proposta = form.save()
-                
-                # Criar primeiro registro no histórico se data foi informada
-                if proposta.data_vistoria_medicao:
-                    VistoriaHistorico.objects.create(
-                        proposta=proposta,
-                        responsavel=request.user,
-                        data_agendada=proposta.data_vistoria_medicao,
-                        tipo_vistoria='medicao',
-                        observacoes='Primeira vistoria para medição',
-                        status_obra_anterior='',
-                        status_obra_novo=proposta.status_obra or '',
-                        proxima_vistoria_sugerida=proposta.data_proxima_vistoria,
-                        status_vistoria='realizada' if proposta.status_obra else 'agendada'
-                    )
-                
-                logger.info(
-                    f"Primeira vistoria agendada para proposta {proposta.numero} "
-                    f"pelo usuário {request.user.username}"
-                )
-                
-                messages.success(request, 
-                    f'Vistoria agendada para proposta {proposta.numero}!'
-                )
-                
-                return redirect('vendedor:vistoria_proposta_detail', pk=proposta.pk)
-                
-            except Exception as e:
-                logger.error(f"Erro ao agendar vistoria: {str(e)}")
-                messages.error(request, f'Erro ao agendar vistoria: {str(e)}')
-        else:
-            messages.error(request, 'Erro no formulário. Verifique os dados.')
-    else:
-        form = PropostaVistoriaForm(instance=proposta)
-    
-    context = {
-        'form': form,
-        'proposta': proposta,
-    }
-    
-    return render(request, 'vendedor/vistoria/vistoria_agendar_primeira.html', context)
-
-
-@login_required
 def vistoria_create(request, proposta_pk):
     """
-    Criar nova vistoria no histórico
+    Criar nova vistoria no histórico - VERSÃO SIMPLIFICADA
+    Como o lançamento já indica que aconteceu, não precisamos de vistoria_realizar separada
     """
     proposta = get_object_or_404(Proposta, pk=proposta_pk)
     
@@ -225,30 +166,48 @@ def vistoria_create(request, proposta_pk):
                 vistoria.proposta = proposta
                 vistoria.responsavel = request.user
                 vistoria.status_obra_anterior = proposta.status_obra
+                
+                # SEMPRE marcar como realizada, pois o lançamento indica que aconteceu
+                vistoria.status_vistoria = 'realizada'
+                vistoria.data_realizada = vistoria.data_agendada  # Data da vistoria é quando aconteceu
+                
+                # Salvar vistoria primeiro
                 vistoria.save()
                 
-                # Atualizar status da obra se informado
-                novo_status = form.cleaned_data.get('status_obra_novo')
-                if novo_status:
-                    from core.models import atualizar_status_obra_proposta
-                    atualizar_status_obra_proposta(
-                        proposta, 
-                        novo_status, 
-                        request.user,
-                        f"Alterado via vistoria de {vistoria.data_agendada.strftime('%d/%m/%Y')}"
-                    )
+                # ATUALIZAR DADOS NA PROPOSTA conforme solicitado
                 
-                # Atualizar próxima vistoria na proposta
+                # 1. Atualizar status da obra se informado
+                novo_status = request.POST.get('status_obra_novo', '')
+                if novo_status:
+                    # Atualizar status da obra diretamente
+                    status_anterior = proposta.status_obra
+                    proposta.status_obra = novo_status
+                    vistoria.status_obra_novo = novo_status  # Salvar no registro da vistoria também
+                
+                # 2. Atualizar próxima vistoria na proposta
                 if vistoria.proxima_vistoria_sugerida:
                     proposta.data_proxima_vistoria = vistoria.proxima_vistoria_sugerida
-                    proposta.save()
+                else:
+                    proposta.data_proxima_vistoria = None
+                
+                # 3. Atualizar previsão de conclusão da obra se informado
+                previsao_entrega = request.POST.get('previsao_entrega_obra')
+                if previsao_entrega:
+                    from datetime import datetime
+                    try:
+                        proposta.previsao_conclusao_obra = datetime.strptime(previsao_entrega, '%Y-%m-%d').date()
+                    except ValueError:
+                        pass  # Ignora se data inválida
+                
+                # 4. Salvar todas as alterações na proposta
+                proposta.save()
                 
                 logger.info(
-                    f"Vistoria criada para proposta {proposta.numero} "
+                    f"Vistoria criada e marcada como realizada para proposta {proposta.numero} "
                     f"pelo usuário {request.user.username}"
                 )
                 
-                messages.success(request, 'Vistoria agendada com sucesso!')
+                messages.success(request, 'Vistoria registrada com sucesso!')
                 return redirect('vendedor:vistoria_proposta_detail', pk=proposta.pk)
                 
             except Exception as e:
@@ -265,68 +224,6 @@ def vistoria_create(request, proposta_pk):
     }
     
     return render(request, 'vendedor/vistoria/vistoria_create.html', context)
-
-
-@login_required
-def vistoria_realizar(request, pk):
-    """
-    Marcar vistoria como realizada
-    """
-    vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
-    
-    if not vistoria.pode_realizar():
-        messages.error(request, 'Esta vistoria não pode ser marcada como realizada.')
-        return redirect('vendedor:vistoria_proposta_detail', pk=vistoria.proposta.pk)
-    
-    if request.method == 'POST':
-        form = VistoriaRealizadaForm(request.POST, instance=vistoria)
-        
-        if form.is_valid():
-            try:
-                vistoria = form.save(commit=False)
-                vistoria.status_vistoria = 'realizada'
-                vistoria.atualizado_por = request.user
-                vistoria.save()
-                
-                # Atualizar status da obra se informado
-                novo_status = form.cleaned_data.get('status_obra_novo')
-                if novo_status:
-                    from core.models import atualizar_status_obra_proposta
-                    atualizar_status_obra_proposta(
-                        vistoria.proposta, 
-                        novo_status, 
-                        request.user,
-                        f"Alterado via vistoria realizada em {vistoria.data_realizada.strftime('%d/%m/%Y')}"
-                    )
-                
-                # Atualizar próxima vistoria na proposta
-                if vistoria.proxima_vistoria_sugerida:
-                    vistoria.proposta.data_proxima_vistoria = vistoria.proxima_vistoria_sugerida
-                    vistoria.proposta.save()
-                
-                logger.info(
-                    f"Vistoria {vistoria.pk} marcada como realizada "
-                    f"pelo usuário {request.user.username}"
-                )
-                
-                messages.success(request, 'Vistoria marcada como realizada!')
-                return redirect('vendedor:vistoria_proposta_detail', pk=vistoria.proposta.pk)
-                
-            except Exception as e:
-                logger.error(f"Erro ao realizar vistoria: {str(e)}")
-                messages.error(request, f'Erro ao realizar vistoria: {str(e)}')
-        else:
-            messages.error(request, 'Erro no formulário. Verifique os dados.')
-    else:
-        form = VistoriaRealizadaForm(instance=vistoria)
-    
-    context = {
-        'form': form,
-        'vistoria': vistoria,
-        'proposta': vistoria.proposta,
-    }
-    
-    return render(request, 'vendedor/vistoria/vistoria_realizar.html', context)
 
 
 @login_required
@@ -400,12 +297,13 @@ def api_vistoria_quick_status(request, proposta_pk):
         proposta.save()
         
         # Criar entrada no histórico
-        from core.models import atualizar_status_obra_proposta
-        atualizar_status_obra_proposta(
-            proposta, 
-            novo_status, 
-            request.user,
-            "Alteração rápida via interface de vistoria"
+        from core.models import HistoricoProposta
+        HistoricoProposta.objects.create(
+            proposta=proposta,
+            status_anterior=f"Obra: {status_anterior or 'Aguardando'}",
+            status_novo=f"Obra: {novo_status}",
+            observacao="Alteração rápida via interface de vistoria",
+            usuario=request.user
         )
         
         return JsonResponse({

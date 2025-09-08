@@ -55,9 +55,7 @@ from .contrato import (
 from .vistoria import (
     vistoria_list,
     vistoria_proposta_detail,
-    vistoria_agendar_primeira,
     vistoria_create,
-    vistoria_realizar,
     vistoria_detail,
     vistoria_cancelar,
     api_vistoria_quick_status,
@@ -101,9 +99,7 @@ __all__ = [
     # Vistorias
     'vistoria_list',
     'vistoria_proposta_detail',
-    'vistoria_agendar_primeira',
     'vistoria_create',
-    'vistoria_realizar',
     'vistoria_detail',
     'vistoria_cancelar',
     'api_vistoria_quick_status',

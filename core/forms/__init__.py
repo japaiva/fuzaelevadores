@@ -81,7 +81,6 @@ from .propostas import (
 from .vistoria import (
     PropostaVistoriaForm,
     VistoriaHistoricoForm,
-    VistoriaRealizadaForm,
     VistoriaFiltroForm,
 )
 
@@ -186,7 +185,6 @@ __all__ = [
     # Vistorias
     'PropostaVistoriaForm',
     'VistoriaHistoricoForm',
-    'VistoriaRealizadaForm',
     'VistoriaFiltroForm',
     
     # Parâmetros

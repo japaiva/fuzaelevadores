@@ -47,12 +47,10 @@ urlpatterns = [
     
     # Proposta específica para vistoria
     path('vistorias/proposta/<uuid:pk>/', views.vistoria_proposta_detail, name='vistoria_proposta_detail'),
-    path('vistorias/proposta/<uuid:pk>/agendar-primeira/', views.vistoria_agendar_primeira, name='vistoria_agendar_primeira'),
     
     # CRUD de vistorias
     path('vistorias/proposta/<uuid:proposta_pk>/nova/', views.vistoria_create, name='vistoria_create'),
     path('vistorias/<int:pk>/', views.vistoria_detail, name='vistoria_detail'),
-    path('vistorias/<int:pk>/realizar/', views.vistoria_realizar, name='vistoria_realizar'),
     path('vistorias/<int:pk>/cancelar/', views.vistoria_cancelar, name='vistoria_cancelar'),
     
     # APIs AJAX

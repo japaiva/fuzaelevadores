@@ -15,39 +15,55 @@
     </div>
     
     <div class="card-body">
-      <!-- Informações da Proposta -->
+      <!-- Informações da Proposta - AJUSTADO com duas linhas -->
       <div class="card shadow-sm border-primary mb-4">
         <div class="card-header bg-primary text-white">
           <h6 class="card-title mb-0">Informações da Proposta</h6>
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-3">
-              <div class="d-flex justify-content-between">
-                <span class="text-muted">Número:</span>
-                <strong>{{ proposta.numero }}</strong>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Número:</div>
+                <div class="campo-valor"><strong>{{ proposta.numero }}</strong></div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="d-flex justify-content-between">
-                <span class="text-muted">Cliente:</span>
-                <strong>{{ proposta.cliente.nome }}</strong>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Cliente:</div>
+                <div class="campo-valor"><strong>{{ proposta.cliente.nome }}</strong></div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="d-flex justify-content-between">
-                <span class="text-muted">Projeto:</span>
-                <strong>{{ proposta.nome_projeto }}</strong>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Projeto:</div>
+                <div class="campo-valor"><strong>{{ proposta.nome_projeto }}</strong></div>
               </div>
             </div>
-            <div class="col-md-3">
-              <div class="d-flex justify-content-between">
-                <span class="text-muted">Status Obra:</span>
-                {% if proposta.status_obra %}
-                  <span class="badge {{ proposta.status_obra_badge_class }}">{{ proposta.get_status_obra_display }}</span>
-                {% else %}
-                  <span class="badge bg-secondary">Aguardando</span>
-                {% endif %}
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Status Obra:</div>
+                <div class="campo-valor">
+                  {% if proposta.status_obra %}
+                    <span class="badge {{ proposta.status_obra_badge_class }}">{{ proposta.get_status_obra_display }}</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Aguardando</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Próxima Vistoria:</div>
+                <div class="campo-valor">
+                  {% if proposta.data_proxima_vistoria %}
+                    <strong class="{% if proposta.proxima_vistoria_vencida %}text-danger{% else %}text-primary{% endif %}">
+                      {{ proposta.data_proxima_vistoria|date:"d/m/Y" }}
+                    </strong>
+                  {% else %}
+                    <span class="text-muted">Não agendada</span>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
@@ -159,7 +175,7 @@
           </div>
         </div>
 
-        <!-- Próxima Vistoria -->
+        <!-- Próxima Vistoria - REMOVIDO checkbox e CORRIGIDO input -->
         <div class="card shadow-sm border-success mb-4">
           <div class="card-header bg-success text-white">
             <h6 class="card-title mb-0">Próxima Vistoria</h6>
@@ -176,17 +192,6 @@
                     {% for error in form.proxima_vistoria_sugerida.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
-              </div>
-              
-              <div class="col-md-6">
-                <div class="mt-4">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="marcarComoRealizada">
-                    <label class="form-check-label" for="marcarComoRealizada">
-                      <strong>Marcar como realizada agora</strong>
-                    </label>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -214,7 +219,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const tipoVistoriaSelect = document.getElementById('{{ form.tipo_vistoria.id_for_label }}');
     const statusObraSelect = document.getElementById('{{ form.status_obra_novo.id_for_label }}');
     const proximaVistoriaInput = document.getElementById('{{ form.proxima_vistoria_sugerida.id_for_label }}');
-    const marcarRealizadaCheck = document.getElementById('marcarComoRealizada');
     const previsaoEntregaInput = document.getElementById('previsao_entrega_obra');
     const mudancasTextarea = document.getElementById('mudancas_automaticas');
     
@@ -222,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusOriginal = '{{ proposta.status_obra|default:"Aguardando" }}';
     const previsaoOriginal = '{{ proposta.previsao_conclusao_obra|date:"d/m/Y"|default:"Não definida" }}';
     
-    // Função para atualizar o campo de mudanças
+    // Função para atualizar o campo de mudanças - CORRIGIDA para não somar um dia
     function atualizarMudancas() {
         let mudancas = [];
         
@@ -233,10 +237,14 @@ document.addEventListener('DOMContentLoaded', function() {
             mudancas.push(`Status da obra: ${statusOriginal} → ${statusDisplay}`);
         }
         
-        // Verificar mudança de previsão
+        // Verificar mudança de previsão - CORRIGIDO
         const novaPrevisao = previsaoEntregaInput.value;
         if (novaPrevisao) {
-            const previsaoFormatada = new Date(novaPrevisao).toLocaleDateString('pt-BR');
+            // Criar data sem conversão UTC para evitar problema de fuso horário
+            const [ano, mes, dia] = novaPrevisao.split('-');
+            const dataObj = new Date(ano, mes - 1, dia); // mes-1 porque Date usa 0-11
+            const previsaoFormatada = dataObj.toLocaleDateString('pt-BR');
+            
             if (previsaoFormatada !== previsaoOriginal) {
                 mudancas.push(`Previsão de entrega: ${previsaoOriginal} → ${previsaoFormatada}`);
             }
@@ -245,14 +253,16 @@ document.addEventListener('DOMContentLoaded', function() {
         mudancasTextarea.value = mudancas.length > 0 ? mudancas.join('\n') : '';
     }
     
-    // Função para sugerir próxima vistoria baseada no tipo
+    // Função para sugerir próxima vistoria baseada no tipo - CORRIGIDA
     function sugerirProximaVistoria() {
         const tipo = tipoVistoriaSelect.value;
         const dataAtual = dataAgendadaInput.value;
         
         if (!dataAtual) return;
         
-        const dataBase = new Date(dataAtual);
+        // Criar data sem conversão UTC
+        const [ano, mes, dia] = dataAtual.split('-');
+        const dataBase = new Date(ano, mes - 1, dia);
         let diasParaProxima;
         
         switch(tipo) {
@@ -274,11 +284,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const proximaData = new Date(dataBase);
             proximaData.setDate(dataBase.getDate() + diasParaProxima);
             
-            const ano = proximaData.getFullYear();
-            const mes = String(proximaData.getMonth() + 1).padStart(2, '0');
-            const dia = String(proximaData.getDate()).padStart(2, '0');
+            const anoProx = proximaData.getFullYear();
+            const mesProx = String(proximaData.getMonth() + 1).padStart(2, '0');
+            const diaProx = String(proximaData.getDate()).padStart(2, '0');
             
-            proximaVistoriaInput.value = `${ano}-${mes}-${dia}`;
+            proximaVistoriaInput.value = `${anoProx}-${mesProx}-${diaProx}`;
         } else {
             proximaVistoriaInput.value = '';
         }
@@ -328,38 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
         previsaoEntregaInput.addEventListener('change', atualizarMudancas);
     }
     
-    // Marcar como realizada
-    if (marcarRealizadaCheck) {
-        marcarRealizadaCheck.addEventListener('change', function() {
-            if (this.checked) {
-                const hoje = new Date();
-                const ano = hoje.getFullYear();
-                const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-                const dia = String(hoje.getDate()).padStart(2, '0');
-                
-                dataAgendadaInput.value = `${ano}-${mes}-${dia}`;
-                
-                let hiddenInput = document.getElementById('marcar_realizada_hidden');
-                if (!hiddenInput) {
-                    hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.id = 'marcar_realizada_hidden';
-                    hiddenInput.name = 'marcar_realizada';
-                    form.appendChild(hiddenInput);
-                }
-                hiddenInput.value = 'true';
-                
-                sugerirProximaVistoria();
-                sugerirStatus();
-            } else {
-                const hiddenInput = document.getElementById('marcar_realizada_hidden');
-                if (hiddenInput) {
-                    hiddenInput.remove();
-                }
-            }
-        });
-    }
-    
     // Validação do formulário
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -373,7 +351,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const hoje = new Date();
-            const vistoria = new Date(dataAgendada);
+            const [ano, mes, dia] = dataAgendada.split('-');
+            const vistoria = new Date(ano, mes - 1, dia);
             const diasDiferenca = Math.ceil((hoje - vistoria) / (1000 * 60 * 60 * 24));
             
             if (diasDiferenca > 30) {
@@ -433,37 +412,40 @@ textarea.form-control {
     color: #495057;
 }
 
-.btn-group .btn {
-    border-radius: 0;
+/* ESTILO PARA CAMPOS COM DUAS LINHAS */
+.campo-info {
+    margin-bottom: 1rem;
 }
 
-.btn-group .btn:first-child {
-    border-top-left-radius: 0.375rem;
-    border-bottom-left-radius: 0.375rem;
+.campo-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
 }
 
-.btn-group .btn:last-child {
-    border-top-right-radius: 0.375rem;
-    border-bottom-right-radius: 0.375rem;
+.campo-valor {
+    font-size: 1rem;
+    min-height: 1.5rem;
+}
+
+/* Grid customizado para 5 colunas */
+.col-md-2-4 {
+    flex: 0 0 auto;
+    width: 20%;
 }
 
 @media (max-width: 768px) {
+    .col-md-2-4 {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
     .container-fluid {
         padding: 0.5rem;
     }
     
     .card-body {
         padding: 1rem;
-    }
-    
-    .btn-group {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .btn-group .btn {
-        border-radius: 0.375rem !important;
-        margin-bottom: 0.25rem;
     }
 }
 </style>
