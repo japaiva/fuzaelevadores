@@ -148,12 +148,12 @@ def vistoria_proposta_detail(request, pk):
     
     return render(request, 'vendedor/vistoria/vistoria_proposta_detail.html', context)
 
+# vendedor/views/vistoria.py - ATUALIZAR a função vistoria_create
 
 @login_required
 def vistoria_create(request, proposta_pk):
     """
-    Criar nova vistoria no histórico - VERSÃO SIMPLIFICADA
-    Como o lançamento já indica que aconteceu, não precisamos de vistoria_realizar separada
+    Criar nova vistoria no histórico - VERSÃO ATUALIZADA
     """
     proposta = get_object_or_404(Proposta, pk=proposta_pk)
     
@@ -167,43 +167,44 @@ def vistoria_create(request, proposta_pk):
                 vistoria.responsavel = request.user
                 vistoria.status_obra_anterior = proposta.status_obra
                 
-                # SEMPRE marcar como realizada, pois o lançamento indica que aconteceu
+                # SEMPRE marcar como realizada
                 vistoria.status_vistoria = 'realizada'
-                vistoria.data_realizada = vistoria.data_agendada  # Data da vistoria é quando aconteceu
+                vistoria.data_realizada = vistoria.data_agendada
+                
+                # ✅ NOVO: Capturar e salvar as alterações realizadas
+                alteracoes_realizadas = request.POST.get('mudancas_automaticas', '')
+                if alteracoes_realizadas:
+                    vistoria.alteracoes_realizadas = alteracoes_realizadas
                 
                 # Salvar vistoria primeiro
                 vistoria.save()
                 
-                # ATUALIZAR DADOS NA PROPOSTA conforme solicitado
-                
-                # 1. Atualizar status da obra se informado
+                # ATUALIZAR DADOS NA PROPOSTA
                 novo_status = request.POST.get('status_obra_novo', '')
                 if novo_status:
-                    # Atualizar status da obra diretamente
-                    status_anterior = proposta.status_obra
                     proposta.status_obra = novo_status
-                    vistoria.status_obra_novo = novo_status  # Salvar no registro da vistoria também
+                    vistoria.status_obra_novo = novo_status
                 
-                # 2. Atualizar próxima vistoria na proposta
+                # Atualizar próxima vistoria na proposta
                 if vistoria.proxima_vistoria_sugerida:
                     proposta.data_proxima_vistoria = vistoria.proxima_vistoria_sugerida
                 else:
                     proposta.data_proxima_vistoria = None
                 
-                # 3. Atualizar previsão de conclusão da obra se informado
+                # Atualizar previsão de conclusão da obra
                 previsao_entrega = request.POST.get('previsao_entrega_obra')
                 if previsao_entrega:
                     from datetime import datetime
                     try:
                         proposta.previsao_conclusao_obra = datetime.strptime(previsao_entrega, '%Y-%m-%d').date()
                     except ValueError:
-                        pass  # Ignora se data inválida
+                        pass
                 
-                # 4. Salvar todas as alterações na proposta
+                # Salvar todas as alterações na proposta
                 proposta.save()
                 
                 logger.info(
-                    f"Vistoria criada e marcada como realizada para proposta {proposta.numero} "
+                    f"Vistoria criada para proposta {proposta.numero} "
                     f"pelo usuário {request.user.username}"
                 )
                 
@@ -229,7 +230,7 @@ def vistoria_create(request, proposta_pk):
 @login_required
 def vistoria_detail(request, pk):
     """
-    Detalhes de uma vistoria específica
+    ✅ CORRIGIDO: Detalhes de uma vistoria específica - VIEW IMPLEMENTADA
     """
     vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
     
@@ -240,40 +241,47 @@ def vistoria_detail(request, pk):
     
     return render(request, 'vendedor/vistoria/vistoria_detail.html', context)
 
-
 @login_required
-def vistoria_cancelar(request, pk):
+def vistoria_inativar(request, pk):
     """
-    Cancelar vistoria agendada
+    ✅ NOVA: Inativar vistoria realizada (diferente de cancelar)
+    Mantém o registro mas marca como inativo para correções/ajustes
     """
     vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
     
-    if not vistoria.pode_cancelar():
-        messages.error(request, 'Esta vistoria não pode ser cancelada.')
+    # Só pode inativar vistorias realizadas
+    if vistoria.status_vistoria != 'realizada':
+        messages.error(request, 'Apenas vistorias realizadas podem ser inativadas.')
         return redirect('vendedor:vistoria_proposta_detail', pk=vistoria.proposta.pk)
     
     if request.method == 'POST':
         motivo = request.POST.get('motivo', '')
         
+        if not motivo.strip():
+            messages.error(request, 'O motivo da inativação é obrigatório.')
+            return redirect('vendedor:vistoria_detail', pk=vistoria.pk)
+        
         try:
-            vistoria.status_vistoria = 'cancelada'
-            vistoria.observacoes += f"\n\nCANCELADA: {motivo}" if motivo else "\n\nVistoria cancelada"
+            # Criar campo inativa no modelo se não existir, ou usar observações
+            # Por enquanto, vamos adicionar nas observações
+            status_anterior = vistoria.status_vistoria
+            vistoria.status_vistoria = 'cancelada'  # Usar cancelada para indicar inativa
+            vistoria.observacoes += f"\n\n🚫 INATIVADA em {date.today().strftime('%d/%m/%Y')}: {motivo}"
             vistoria.atualizado_por = request.user
             vistoria.save()
             
             logger.info(
-                f"Vistoria {vistoria.pk} cancelada pelo usuário {request.user.username}. "
-                f"Motivo: {motivo}"
+                f"Vistoria {vistoria.pk} inativada pelo usuário {request.user.username}. "
+                f"Status anterior: {status_anterior}. Motivo: {motivo}"
             )
             
-            messages.success(request, 'Vistoria cancelada com sucesso!')
+            messages.warning(request, 'Vistoria inativada com sucesso. Ela permanece no histórico mas foi marcada como inativa.')
             
         except Exception as e:
-            logger.error(f"Erro ao cancelar vistoria: {str(e)}")
-            messages.error(request, f'Erro ao cancelar vistoria: {str(e)}')
+            logger.error(f"Erro ao inativar vistoria: {str(e)}")
+            messages.error(request, f'Erro ao inativar vistoria: {str(e)}')
     
     return redirect('vendedor:vistoria_proposta_detail', pk=vistoria.proposta.pk)
-
 
 # === APIs AJAX ===
 

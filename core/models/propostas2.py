@@ -83,6 +83,12 @@ class VistoriaHistorico(models.Model):
         verbose_name="Recomendações",
         help_text="Recomendações técnicas e pendências"
     )
+
+    alteracoes_realizadas = models.TextField(
+        blank=True,
+        verbose_name="Alterações Realizadas", 
+        help_text="Resumo das alterações feitas durante esta vistoria"
+    )
     
     # Data da próxima vistoria (se aplicável)
     proxima_vistoria_sugerida = models.DateField(

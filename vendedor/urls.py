@@ -38,23 +38,20 @@ urlpatterns = [
     path('propostas/<uuid:pk>/step2/', views.proposta_step2, name='proposta_step2'),
     path('propostas/<uuid:pk>/step3/', views.proposta_step3, name='proposta_step3'),
     
+    
     # =============================================================================
     # MÓDULO DE VISTORIA
     # =============================================================================
-    
-    # Lista principal de vistorias
+        
+    # === VISTORIA ===
     path('vistorias/', views.vistoria_list, name='vistoria_list'),
-    
-    # Proposta específica para vistoria
     path('vistorias/proposta/<uuid:pk>/', views.vistoria_proposta_detail, name='vistoria_proposta_detail'),
-    
-    # CRUD de vistorias
     path('vistorias/proposta/<uuid:proposta_pk>/nova/', views.vistoria_create, name='vistoria_create'),
-    path('vistorias/<int:pk>/', views.vistoria_detail, name='vistoria_detail'),
-    path('vistorias/<int:pk>/cancelar/', views.vistoria_cancelar, name='vistoria_cancelar'),
+    path('vistorias/<int:pk>/', views.vistoria_detail, name='vistoria_detail'),  # ✅ CORRIGIDO
+    path('vistorias/<int:pk>/inativar/', views.vistoria_inativar, name='vistoria_inativar'),  # ✅ NOVA
     
-    # APIs AJAX
-    path('api/vistorias/proposta/<uuid:proposta_pk>/quick-status/', views.api_vistoria_quick_status, name='api_vistoria_quick_status'),
+    # API Ajax
+    path('api/proposta/<uuid:proposta_pk>/quick-status/', views.api_vistoria_quick_status, name='api_vistoria_quick_status'),
     
     # =============================================================================
     # AÇÕES DAS PROPOSTAS - AMBOS OS PADRÕES
