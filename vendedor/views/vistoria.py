@@ -31,8 +31,6 @@ def vistoria_list(request):
     # Filtrar apenas propostas aprovadas E não finalizadas    
     propostas_query = Proposta.objects.filter(
         status='aprovado'
-    ).exclude(
-        status_obra='obra_ok'
     ).select_related('cliente', 'vendedor').order_by('data_proxima_vistoria', '-criado_em')
 
     # Aplicar filtros do formulário

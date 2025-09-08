@@ -23,6 +23,7 @@ class VistoriaHistorico(models.Model):
         ('entrega', 'Entrega'),
     ]
     
+
     # Relacionamentos
     proposta = models.ForeignKey(
         'Proposta', 
