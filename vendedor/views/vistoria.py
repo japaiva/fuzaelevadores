@@ -162,14 +162,15 @@ def vistoria_create(request, proposta_pk):
         
         if form.is_valid():
             try:
+                data_que_estava_planejada = proposta.data_proxima_vistoria                
                 vistoria = form.save(commit=False)
                 vistoria.proposta = proposta
                 vistoria.responsavel = request.user
                 vistoria.status_obra_anterior = proposta.status_obra
+                vistoria.data_agendada = data_que_estava_planejada 
                 
                 # SEMPRE marcar como realizada
                 vistoria.status_vistoria = 'realizada'
-                vistoria.data_realizada = vistoria.data_agendada
                 
                 # ✅ NOVO: Capturar e salvar as alterações realizadas
                 alteracoes_realizadas = request.POST.get('mudancas_automaticas', '')

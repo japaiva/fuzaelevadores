@@ -89,13 +89,13 @@
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-3">
-                <label class="form-label" for="{{ form.data_agendada.id_for_label }}">
+                <label class="form-label" for="{{ form.data_realizada.id_for_label }}">
                   Data da Vistoria*
                 </label>
-                {{ form.data_agendada }}
-                {% if form.data_agendada.errors %}
+                {{ form.data_realizada }}
+                {% if form.data_realizada.errors %}
                   <div class="text-danger small mt-1">
-                    {% for error in form.data_agendada.errors %}{{ error }}{% endfor %}
+                    {% for error in form.data_realizada.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
               </div>

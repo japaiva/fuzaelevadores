@@ -221,51 +221,11 @@
             </div>
           </div>
           
-          {% if vistoria.proposta.data_proxima_vistoria %}
-          <hr>
-          <div class="small text-muted">
-            <strong>Status atual na proposta:</strong> 
-            {% if vistoria.proposta.data_proxima_vistoria == vistoria.proxima_vistoria_sugerida %}
-              <span class="text-success">Sincronizada</span>
-            {% else %}
-              <span class="text-warning">Proposta: {{ vistoria.proposta.data_proxima_vistoria|date:"d/m/Y" }}</span>
-            {% endif %}
-          </div>
-          {% endif %}
+
         </div>
       </div>
       {% endif %}
 
-      <!-- Auditoria -->
-      <div class="card shadow-sm border-light">
-        <div class="card-header bg-light">
-          <h6 class="card-title mb-0">Informações de Auditoria</h6>
-        </div>
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <div class="campo-info">
-                <div class="campo-label text-muted">Criado em:</div>
-                <div class="campo-valor">{{ vistoria.criado_em|date:"d/m/Y H:i" }}</div>
-              </div>
-            </div>
-            <div class="col-md-3">
-              <div class="campo-info">
-                <div class="campo-label text-muted">Atualizado em:</div>
-                <div class="campo-valor">{{ vistoria.atualizado_em|date:"d/m/Y H:i" }}</div>
-              </div>
-            </div>
-            {% if vistoria.atualizado_por %}
-            <div class="col-md-6">
-              <div class="campo-info">
-                <div class="campo-label text-muted">Última alteração por:</div>
-                <div class="campo-valor">{{ vistoria.atualizado_por.get_full_name|default:vistoria.atualizado_por.username }}</div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
 
     </div>
   </div>

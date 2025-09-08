@@ -7,7 +7,6 @@ from datetime import date, timedelta
 from core.models import Proposta, VistoriaHistorico, Usuario
 from .base import BaseModelForm, AuditMixin, ValidacaoComumMixin, CustomDateInput
 
-
 class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     """
     Formulário para criar/editar registro de vistoria
@@ -23,7 +22,7 @@ class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     class Meta:
         model = VistoriaHistorico
         fields = [
-            'data_agendada',
+            'data_realizada',
             'tipo_vistoria',
             'observacoes',
             'recomendacoes',
@@ -31,8 +30,7 @@ class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         ]
         
         widgets = {
-            # ✅ USANDO CustomDateInput como no step3
-            'data_agendada': CustomDateInput(attrs={
+            'data_realizada': CustomDateInput(attrs={
                 'class': 'form-control',
                 'required': True
             }),
@@ -41,15 +39,12 @@ class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Observações gerais da vistoria...'
+                'rows': 4
             }),
             'recomendacoes': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 4,
-                'placeholder': 'Recomendações técnicas e pendências...'
+                'rows': 4
             }),
-            # ✅ USANDO CustomDateInput para próxima vistoria
             'proxima_vistoria_sugerida': CustomDateInput(attrs={
                 'class': 'form-control'
             }),
@@ -59,9 +54,9 @@ class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         self.proposta = kwargs.pop('proposta', None)
         super().__init__(*args, **kwargs)
         
-        # Definir data padrão para hoje
-        if not self.instance.pk and not self.initial.get('data_agendada'):
-            self.initial['data_agendada'] = date.today()
+        # ✅ CORRIGIDO: Definir data_realizada padrão para hoje
+        if not self.instance.pk and not self.initial.get('data_realizada'):
+            self.initial['data_realizada'] = date.today()
         
         # Definir próxima vistoria para 15 dias
         if not self.instance.pk and not self.initial.get('proxima_vistoria_sugerida'):
@@ -70,13 +65,14 @@ class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     def clean(self):
         cleaned_data = super().clean()
         
-        data_agendada = cleaned_data.get('data_agendada')
+        # ✅ CORRIGIDO: Usar data_realizada ao invés de data_agendada
+        data_realizada = cleaned_data.get('data_realizada')
         proxima_vistoria = cleaned_data.get('proxima_vistoria_sugerida')
         
         # Validar datas
-        if data_agendada and data_agendada < date.today() - timedelta(days=30):
+        if data_realizada and data_realizada < date.today() - timedelta(days=30):
             raise ValidationError({
-                'data_agendada': 'Data da vistoria não pode ser muito antiga (máximo 30 dias).'
+                'data_realizada': 'Data da vistoria não pode ser muito antiga (máximo 30 dias).'
             })
         
         if proxima_vistoria and proxima_vistoria <= date.today():
