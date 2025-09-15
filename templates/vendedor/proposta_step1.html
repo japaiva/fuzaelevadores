@@ -199,8 +199,9 @@
             </div>
 
             <hr>
+            <!-- LINHA ATUALIZADA: 4 campos em vez de 3 -->
             <div class="row g-3">
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label for="{{ form.acionamento.id_for_label }}" class="form-label">Acionamento*</label>
                 {{ form.acionamento }}
                 {% if form.acionamento.errors %}
@@ -210,7 +211,18 @@
                 {% endif %}
               </div>
               
-              <div class="col-md-4" id="tracao-div">
+              <!-- NOVO CAMPO: Tipo Motor -->
+              <div class="col-md-3" id="tipo-motor-div" style="display: none;">
+                <label for="{{ form.tipo_motor.id_for_label }}" class="form-label">Tipo Motor*</label>
+                {{ form.tipo_motor }}
+                {% if form.tipo_motor.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.tipo_motor.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3" id="tracao-div">
                 <label for="{{ form.tracao.id_for_label }}" class="form-label">Tração</label>
                 {{ form.tracao }}
                 {% if form.tracao.errors %}
@@ -220,7 +232,7 @@
                 {% endif %}
               </div>
               
-              <div class="col-md-4" id="contrapeso-div">
+              <div class="col-md-3" id="contrapeso-div">
                 <label for="{{ form.contrapeso.id_for_label }}" class="form-label">Contrapeso</label>
                 {{ form.contrapeso }}
                 {% if form.contrapeso.errors %}
@@ -339,6 +351,8 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 STEP 1: JavaScript inicializado - VERSÃO ATUALIZADA com Tipo Motor');
+    
     const form = document.getElementById('clienteElevadorForm');
     
     // Elementos do projeto
@@ -355,6 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const acionamentoSelect = document.getElementById('{{ form.acionamento.id_for_label }}');
     const tracaoDiv = document.getElementById('tracao-div');
     const contrapesoDiv = document.getElementById('contrapeso-div');
+    const tipoMotorDiv = document.getElementById('tipo-motor-div'); // ← NOVO ELEMENTO
     
     // Inicializar modal
     clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
@@ -465,6 +480,8 @@ document.addEventListener('DOMContentLoaded', function() {
             capacidadeInput.removeAttribute('tabindex');
             capacidadePessoasInput.value = '';
         }
+        
+        console.log('✅ Modelo atualizado:', modelo);
     }
     
     function updateCapacidade() {
@@ -479,26 +496,59 @@ document.addEventListener('DOMContentLoaded', function() {
             capacidadeInput.setAttribute('readonly', true);
             capacidadeInput.setAttribute('tabindex', '-1');
         }
+        
+        console.log('✅ Capacidade atualizada');
     }
     
+    // ✅ FUNÇÃO ATUALIZADA: updateAcionamento com controle do Tipo Motor
     function updateAcionamento() {
         const acionamento = acionamentoSelect.value;
         
         const tracaoSelect = tracaoDiv.querySelector('select');
         const contrapesoSelect = contrapesoDiv.querySelector('select');
+        const tipoMotorSelect = tipoMotorDiv ? tipoMotorDiv.querySelector('select') : null;
+
+        console.log('🔧 Acionamento selecionado:', acionamento);
 
         if (acionamento === 'Hidraulico') {
+            // Hidráulico: esconder tração, contrapeso e tipo motor
             tracaoDiv.style.display = 'none';
             contrapesoDiv.style.display = 'none';
+            tipoMotorDiv.style.display = 'none';
+            
+            // Limpar valores
             if (tracaoSelect) tracaoSelect.value = '';
             if (contrapesoSelect) contrapesoSelect.value = '';
+            if (tipoMotorSelect) tipoMotorSelect.value = '';
+            
+            console.log('🔹 Hidráulico: todos campos opcionais escondidos');
+            
         } else if (acionamento === 'Motor') {
+            // Motor: mostrar tração, contrapeso E tipo motor
             tracaoDiv.style.display = 'block';
             contrapesoDiv.style.display = 'block';
+            tipoMotorDiv.style.display = 'block';
+            
+            console.log('🔹 Motor: mostrando tração, contrapeso E tipo motor');
+            
         } else if (acionamento === 'Carretel') {
+            // Carretel: mostrar tração, esconder contrapeso e tipo motor
             tracaoDiv.style.display = 'block';
             contrapesoDiv.style.display = 'none';
+            tipoMotorDiv.style.display = 'none';
+            
+            // Limpar valores dos campos escondidos
             if (contrapesoSelect) contrapesoSelect.value = '';
+            if (tipoMotorSelect) tipoMotorSelect.value = '';
+            
+            console.log('🔹 Carretel: mostrando tração, escondendo contrapeso e tipo motor');
+        } else {
+            // Estado padrão: esconder todos os opcionais
+            tracaoDiv.style.display = 'none';
+            contrapesoDiv.style.display = 'none';
+            tipoMotorDiv.style.display = 'none';
+            
+            console.log('🔹 Estado padrão: todos campos opcionais escondidos');
         }
     }
     
@@ -518,6 +568,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // === VALIDAÇÃO DO FORMULÁRIO ===
     form.addEventListener('submit', function(e) {
+        console.log('🚀 Validando formulário step 1...');
+        
         // Validações básicas de campos obrigatórios
         const vendedor = vendedorSelect.value;
         const cliente = clienteSelect.value;
@@ -585,6 +637,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
+        // ✅ NOVA VALIDAÇÃO: Tipo Motor
+        if (acionamento === 'Motor') {
+            const tipoMotorSelect = document.getElementById('{{ form.tipo_motor.id_for_label }}');
+            const tipoMotor = tipoMotorSelect ? tipoMotorSelect.value : '';
+            
+            if (!tipoMotor) {
+                e.preventDefault();
+                alert('Para acionamento Motor, selecione o tipo do motor.');
+                tipoMotorSelect.focus();
+                return;
+            }
+            
+            console.log('✅ Tipo Motor validado:', tipoMotor);
+        }
+        
         const pavimentos = parseInt(document.getElementById('{{ form.pavimentos.id_for_label }}').value) || 0;
         if (pavimentos < 2) {
             e.preventDefault();
@@ -592,6 +659,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('{{ form.pavimentos.id_for_label }}').focus();
             return;
         }
+        
+        console.log('✅ Validação step 1 concluída - enviando formulário');
     });
     
     // === INICIALIZAÇÃO ===
@@ -609,6 +678,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-errors').style.display = 'none';
         document.getElementById('modal-errors').innerHTML = '';
     });
+    
+    console.log('✅ STEP 1: JavaScript inicializado com sucesso - VERSÃO COM TIPO MOTOR');
 });
 </script>
 {% endblock %}

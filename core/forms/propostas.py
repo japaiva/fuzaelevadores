@@ -15,18 +15,18 @@ from .base import (
 class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     """
     Formulário Step 1: Projeto + Elevador + Poço
-    ATUALIZADO: Agora inclui vendedor e documentacao_prefeitura
+    ATUALIZADO: Agora inclui vendedor, documentacao_prefeitura e tipo_motor
     """
     class Meta:
         model = Proposta
         fields = [
-            # ✅ DADOS DO PROJETO (reorganizado)
-            'vendedor',  # ← MOVIDO do Step 3 para Step 1
+            # DADOS DO PROJETO (reorganizado)
+            'vendedor',  # Movido do Step 3 para Step 1
             'cliente',
             'nome_projeto',
             'faturado_por',
             'normas_abnt', 
-            'documentacao_prefeitura',  # ← MOVIDO do Step 3 para Step 1
+            'documentacao_prefeitura',  # Movido do Step 3 para Step 1
             'local_instalacao',
                     
             # Dados do Elevador
@@ -36,6 +36,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'acionamento',
             'tracao',
             'contrapeso',
+            'tipo_motor',  # NOVO CAMPO
             
             # Dados do Poço
             'largura_poco',
@@ -45,7 +46,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         ]
         
         widgets = {
-            # ✅ PROJETO
+            # PROJETO
             'vendedor': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
@@ -102,6 +103,10 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
             'contrapeso': forms.Select(attrs={
                 'class': 'form-select'
             }),
+            # NOVO WIDGET: Tipo Motor
+            'tipo_motor': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             
             # Poço
             'largura_poco': QuantityInput(attrs={
@@ -131,7 +136,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # ✅ CONFIGURAR VENDEDORES
+        # CONFIGURAR VENDEDORES
         self.fields['vendedor'].queryset = Usuario.objects.filter(
             nivel='vendedor', 
             is_active=True
@@ -147,11 +152,12 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
         self.fields['capacidade'].required = False  # Será calculado automaticamente
         self.fields['tracao'].required = False
         self.fields['contrapeso'].required = False
+        self.fields['tipo_motor'].required = False  # NOVO: Será validado condicionalmente
 
     def clean(self):
         cleaned_data = super().clean()
 
-        # ✅ VALIDAÇÃO DO VENDEDOR (agora obrigatório no Step 1)
+        # VALIDAÇÃO DO VENDEDOR (agora obrigatório no Step 1)
         vendedor = cleaned_data.get('vendedor')
         if not vendedor:
             self.add_error('vendedor', 'Vendedor é obrigatório.')
@@ -173,13 +179,25 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
                 self.add_error('capacidade', 'Para este modelo de elevador, a capacidade em kg é obrigatória e deve ser maior que zero.')
                 cleaned_data['capacidade'] = None
 
-        # Lógica para Acionamento, Tração e Contrapeso
+        # NOVA VALIDAÇÃO: Tipo Motor
         acionamento = cleaned_data.get('acionamento')
+        tipo_motor = cleaned_data.get('tipo_motor')
+        
+        if acionamento == 'Motor':
+            if not tipo_motor:
+                self.add_error('tipo_motor', 'Para acionamento Motor, o tipo do motor é obrigatório.')
+        else:
+            # Se não for Motor, limpar o campo tipo_motor
+            cleaned_data['tipo_motor'] = None
+
+        # Lógica para Acionamento, Tração e Contrapeso (ATUALIZADA)
         if acionamento == 'Hidraulico':
             cleaned_data['tracao'] = None
             cleaned_data['contrapeso'] = None
+            cleaned_data['tipo_motor'] = None  # ADICIONADO
         elif acionamento == 'Carretel':
             cleaned_data['contrapeso'] = None
+            cleaned_data['tipo_motor'] = None  # ADICIONADO
 
         return cleaned_data
 
@@ -187,7 +205,7 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
 class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     """
     Formulário Step 2: Cabine + Portas
-    ATUALIZADO: Remove campos genéricos de "Porta do Pavimento" e trabalha com pavimentos individuais
+    ATUALIZADO: Inclui novo campo abertura_cabine e remove campos genéricos de "Porta do Pavimento"
     """
     class Meta:
         model = Proposta
@@ -196,6 +214,7 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'material_cabine',
             'espessura_cabine',
             'saida_cabine',
+            'abertura_cabine',  # NOVO CAMPO
             'altura_cabine',
             'piso_cabine',
             'material_piso_cabine',
@@ -207,8 +226,8 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'largura_porta_cabine',
             'altura_porta_cabine',
             
-            # ❌ REMOVIDOS - Campos genéricos de "Porta do Pavimento"
-            # Os pavimentos serão processados individualmente na view
+            # REMOVIDOS - Campos genéricos de "Porta do Pavimento"
+            # Os pavimentos são processados individualmente na view
         ]
         
         widgets = {
@@ -221,6 +240,11 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select'
             }),
             'saida_cabine': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            # NOVO WIDGET: Abertura da Cabine
+            'abertura_cabine': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
@@ -282,6 +306,21 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         elif modelo_porta != 'Automática':
             cleaned_data['folhas_porta_cabine'] = ''
         
+        # Validação das dimensões
+        altura_cabine = cleaned_data.get('altura_cabine')
+        largura_porta = cleaned_data.get('largura_porta_cabine')
+        altura_porta = cleaned_data.get('altura_porta_cabine')
+        
+        if altura_cabine and altura_porta:
+            if float(altura_porta) >= float(altura_cabine):
+                self.add_error('altura_porta_cabine', 'A altura da porta não pode ser maior ou igual à altura da cabine.')
+        
+        if largura_porta and (float(largura_porta) <= 0 or float(largura_porta) > 5):
+            self.add_error('largura_porta_cabine', 'A largura da porta deve estar entre 0.1 e 5 metros.')
+            
+        if altura_porta and (float(altura_porta) <= 0 or float(altura_porta) > 4):
+            self.add_error('altura_porta_cabine', 'A altura da porta deve estar entre 0.1 e 4 metros.')
+        
         return cleaned_data
 
 
@@ -307,7 +346,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         ]
         
         widgets = {
-            # ✅ VALOR SEM FORMATAÇÃO - widget simples
+            # VALOR SEM FORMATAÇÃO - widget simples
             'valor_proposta': forms.NumberInput(attrs={
                 'class': 'form-control form-control-lg',
                 'style': 'font-weight: bold; font-size: 1.1em;',
@@ -352,7 +391,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'required': True
             }),
             
-            # ✅ VALORES DE ENTRADA SEM FORMATAÇÃO
+            # VALORES DE ENTRADA SEM FORMATAÇÃO
             'valor_entrada': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
@@ -426,7 +465,7 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     def clean(self):
         cleaned_data = super().clean()
         
-        # ✅ VALIDAÇÃO SIMPLES DO VALOR DA PROPOSTA
+        # VALIDAÇÃO SIMPLES DO VALOR DA PROPOSTA
         valor_proposta = cleaned_data.get('valor_proposta')
         if not valor_proposta or float(valor_proposta) <= 0:
             self.add_error('valor_proposta', 'O valor da proposta é obrigatório e deve ser maior que zero.')

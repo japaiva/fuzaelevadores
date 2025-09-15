@@ -156,6 +156,35 @@ class Proposta(models.Model):
         blank=True, null=True,
         verbose_name="Tração"
     )
+
+
+    # NOVO CAMPO: Tipo Motor (condicional para acionamento Motor)
+    tipo_motor = models.CharField(
+        max_length=20,
+        choices=[
+            ('com_engrenagem', 'Com Engrenagem'),
+            ('sem_engrenagem', 'Sem Engrenagem'),
+        ],
+        blank=True, null=True,
+        verbose_name="Tipo Motor",
+        help_text="Aplicável apenas para acionamento tipo Motor"
+    )
+
+# No modelo Proposta, adicionar após o campo 'saida_cabine':
+
+    # NOVO CAMPO: Abertura da Cabine
+    abertura_cabine = models.CharField(
+        max_length=10,
+        choices=[
+            ('direita', 'Direita'),
+            ('esquerda', 'Esquerda'),
+        ],
+        default='direita',
+        verbose_name="Abertura da Cabine"
+    )
+
+
+
     contrapeso = models.CharField(
         max_length=20,
         choices=[('Traseiro', 'Traseiro'), ('Lateral', 'Lateral')],

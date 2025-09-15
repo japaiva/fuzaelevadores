@@ -134,40 +134,76 @@ def preparar_portas_pavimento(proposta):
     """
     portas_existentes = PortaPavimento.objects.filter(proposta=proposta).order_by('andar')
     
+    # Debug: Log inicial
+    logger.debug(f"preparar_portas_pavimento: proposta {proposta.numero}, pavimentos: {proposta.pavimentos}")
+    logger.debug(f"Portas existentes no banco: {portas_existentes.count()}")
+    
     # Se já existem portas cadastradas, usar elas
     if portas_existentes.exists():
-        return list(portas_existentes)
+        logger.debug("Carregando portas existentes do banco...")
+        
+        # Debug: Mostrar o que está no banco
+        for porta in portas_existentes:
+            logger.debug(f"Banco - Andar {porta.andar}: {porta.largura}x{porta.altura} - {porta.modelo} {porta.material}")
+        
+        # Criar lista garantindo que temos todas as portas (caso algum andar esteja faltando)
+        portas_dict = {porta.andar: porta for porta in portas_existentes}
+        portas_ordenadas = []
+        
+        for andar in range(proposta.pavimentos):
+            if andar in portas_dict:
+                porta_existente = portas_dict[andar]
+                portas_ordenadas.append(porta_existente)
+                logger.debug(f"Retornando andar {andar}: {porta_existente.largura}x{porta_existente.altura}")
+            else:
+                # Criar porta temporária para andar faltante
+                porta_temp = criar_porta_temporaria(proposta, andar)
+                portas_ordenadas.append(porta_temp)
+                logger.debug(f"Criando temporário andar {andar}: {porta_temp.largura}x{porta_temp.altura}")
+        
+        logger.debug(f"Total portas retornadas: {len(portas_ordenadas)}")
+        return portas_ordenadas
     
     # Se não existem, criar estrutura padrão baseada na proposta
+    logger.debug("Criando portas temporárias (não existem no banco)")
     portas_padrao = []
     
     for andar in range(proposta.pavimentos):
-        # Gerar nome do andar
-        if andar == 0:
-            nome_andar = "Térreo"
-        elif andar < 0:
-            nome_andar = f"Subsolo {abs(andar)}" if abs(andar) > 1 else "Subsolo"
-        else:
-            nome_andar = f"{andar}º Andar"
-        
-        # Criar objeto temporário (não salvo no banco ainda)
-        porta = PortaPavimento(
-            proposta=proposta,
-            andar=andar,
-            nome_andar=nome_andar,
-            ativo=True,
-            saida='normal',
-            abertura_porta='direita',
-            modelo=proposta.modelo_porta_pavimento or 'Automática',
-            material=proposta.material_porta_pavimento or 'Inox 430',
-            largura=proposta.largura_porta_pavimento or Decimal('0.80'),
-            altura=proposta.altura_porta_pavimento or Decimal('2.10'),
-            folhas=proposta.folhas_porta_pavimento or '2',
-        )
-        
+        porta = criar_porta_temporaria(proposta, andar)
         portas_padrao.append(porta)
+        logger.debug(f"Criando padrão andar {andar}: {porta.largura}x{porta.altura}")
     
     return portas_padrao
+
+
+def criar_porta_temporaria(proposta, andar):
+    """
+    Cria uma porta temporária (não salva no banco) com valores padrão
+    """
+    # Gerar nome do andar
+    if andar == 0:
+        nome_andar = "Térreo"
+    elif andar < 0:
+        nome_andar = f"Subsolo {abs(andar)}" if abs(andar) > 1 else "Subsolo"
+    else:
+        nome_andar = f"{andar}º Andar"
+    
+    # Criar objeto temporário (não salvo no banco ainda)
+    porta = PortaPavimento(
+        proposta=proposta,
+        andar=andar,
+        nome_andar=nome_andar,
+        ativo=True,
+        saida='normal',
+        abertura_porta='direita',
+        modelo=proposta.modelo_porta_pavimento or 'Automática',
+        material=proposta.material_porta_pavimento or 'Inox 430',
+        largura=proposta.largura_porta_pavimento or Decimal('0.80'),
+        altura=proposta.altura_porta_pavimento or Decimal('2.10'),
+        folhas=proposta.folhas_porta_pavimento or '2',
+    )
+    
+    return porta
 
 
 def processar_portas_pavimento(proposta, post_data):
