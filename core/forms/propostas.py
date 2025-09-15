@@ -186,7 +186,8 @@ class PropostaClienteElevadorForm(BaseModelForm, AuditMixin, ValidacaoComumMixin
 
 class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     """
-    Formulário Step 2: Cabine + Portas (mantido igual)
+    Formulário Step 2: Cabine + Portas
+    ATUALIZADO: Remove campos genéricos de "Porta do Pavimento" e trabalha com pavimentos individuais
     """
     class Meta:
         model = Proposta
@@ -206,12 +207,8 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'largura_porta_cabine',
             'altura_porta_cabine',
             
-            # Porta do Pavimento
-            'modelo_porta_pavimento',
-            'material_porta_pavimento',
-            'folhas_porta_pavimento',
-            'largura_porta_pavimento',
-            'altura_porta_pavimento',
+            # ❌ REMOVIDOS - Campos genéricos de "Porta do Pavimento"
+            # Os pavimentos serão processados individualmente na view
         ]
         
         widgets = {
@@ -220,13 +217,17 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
+            'espessura_cabine': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'saida_cabine': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True
             }),
             'altura_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00'
+                'placeholder': '2.40',
+                'required': True
             }),
             'piso_cabine': forms.Select(attrs={
                 'class': 'form-select',
@@ -245,33 +246,45 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'class': 'form-select',
                 'required': True
             }),
+            'folhas_porta_cabine': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'largura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00'
+                'placeholder': '0.80',
+                'required': True
             }),
             'altura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0,00'
-            }),
-            
-            # Porta Pavimento
-            'modelo_porta_pavimento': forms.Select(attrs={
-                'class': 'form-select',
+                'placeholder': '2.10',
                 'required': True
-            }),
-            'material_porta_pavimento': forms.Select(attrs={
-                'class': 'form-select',
-                'required': True
-            }),
-            'largura_porta_pavimento': QuantityInput(attrs={
-                'step': '0.01',
-                'placeholder': '0,00'
-            }),
-            'altura_porta_pavimento': QuantityInput(attrs={
-                'step': '0.01',
-                'placeholder': '0,00'
             }),
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # Validação do piso da cabine
+        piso_cabine = cleaned_data.get('piso_cabine')
+        material_piso = cleaned_data.get('material_piso_cabine')
+        
+        if piso_cabine == 'Por conta da empresa' and not material_piso:
+            self.add_error('material_piso_cabine', 'Selecione o material do piso.')
+        elif piso_cabine == 'Por conta do cliente':
+            cleaned_data['material_piso_cabine'] = ''
+        
+        # Validação da porta da cabine
+        modelo_porta = cleaned_data.get('modelo_porta_cabine')
+        folhas = cleaned_data.get('folhas_porta_cabine')
+        
+        if modelo_porta == 'Automática' and not folhas:
+            self.add_error('folhas_porta_cabine', 'Selecione o número de folhas para porta automática.')
+        elif modelo_porta != 'Automática':
+            cleaned_data['folhas_porta_cabine'] = ''
+        
+        return cleaned_data
+
+
 class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     class Meta:
         model = Proposta
@@ -473,6 +486,8 @@ class PropostaComercialForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 })
         
         return cleaned_data
+
+
 class PropostaStatusForm(forms.ModelForm):
     """Formulário para alteração de status da proposta"""
     

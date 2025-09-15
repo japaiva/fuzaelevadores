@@ -1,8 +1,8 @@
-# vendedor/views/workflow.py
+# vendedor/views/workflow.py - STEP 2 ATUALIZADO
 
 """
 Views para o workflow de criação/edição de propostas em 3 etapas
-NOVA FUNCIONALIDADE: Campos valor_calculado, valor_base, valor_proposta
+NOVA FUNCIONALIDADE: Portas detalhadas por pavimento como padrão
 """
 
 import logging
@@ -18,9 +18,6 @@ from core.forms.propostas import (
     PropostaCabinePortasForm,
     PropostaComercialForm
 )
-
-# ❌ REMOVIDO: Import que não existe
-# from core.services.porta_pavimento import PortaPavimentoService
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +82,8 @@ def proposta_step1(request, pk=None):
 @login_required
 def proposta_step2(request, pk):
     """
-    Etapa 2: Cabine + Portas + Portas Diferenciadas
+    Etapa 2: Cabine + Portas + Detalhamento por Pavimento (PADRÃO)
+    NOVA LÓGICA: Sempre trabalha com portas individuais por pavimento
     """
     proposta = get_object_or_404(Proposta, pk=pk)
     
@@ -100,21 +98,8 @@ def proposta_step2(request, pk):
             try:
                 proposta = form.save()
                 
-                # === LÓGICA CLEAN: Gerenciar portas diferenciadas ===
-                portas_diferenciadas = request.POST.get('portas_diferenciadas') == 'on'
-                tem_portas_individuais = PortaPavimento.objects.filter(proposta=proposta).exists()
-                
-                if portas_diferenciadas and not tem_portas_individuais:
-                    # CRIAR registros individuais
-                    criar_portas_individuais(proposta)
-                
-                elif not portas_diferenciadas and tem_portas_individuais:
-                    # APAGAR registros individuais
-                    PortaPavimento.objects.filter(proposta=proposta).delete()
-                
-                elif portas_diferenciadas and tem_portas_individuais:
-                    # ATUALIZAR registros existentes
-                    atualizar_portas_individuais(proposta, request.POST)
+                # ✅ NOVA LÓGICA: Sempre gerenciar portas por pavimento
+                processar_portas_pavimento(proposta, request.POST)
                 
                 logger.info(f"Etapa 2 da proposta {proposta.numero} salva pelo usuário {request.user.username}")
                 return redirect('vendedor:proposta_step3', pk=proposta.pk)
@@ -127,20 +112,134 @@ def proposta_step2(request, pk):
     else:
         form = PropostaCabinePortasForm(instance=proposta)
     
-    # Dados para o template
-    tem_portas_individuais = PortaPavimento.objects.filter(proposta=proposta).exists()
-    portas_individuais = PortaPavimento.objects.filter(proposta=proposta).order_by('andar') if tem_portas_individuais else []
+    # ✅ SEMPRE preparar dados de portas por pavimento
+    portas_pavimento = preparar_portas_pavimento(proposta)
     
     context = {
         'form': form,
         'proposta': proposta,
         'pedido': proposta,  # Compatibilidade
         'editing': True,
-        'tem_portas_individuais': tem_portas_individuais,
-        'portas_individuais': portas_individuais,
+        'portas_pavimento': portas_pavimento,
+        'total_pavimentos': proposta.pavimentos,
     }
     
     return render(request, 'vendedor/proposta_step2.html', context)
+
+
+def preparar_portas_pavimento(proposta):
+    """
+    Prepara dados das portas por pavimento
+    Se não existem, cria com base nos padrões da proposta
+    """
+    portas_existentes = PortaPavimento.objects.filter(proposta=proposta).order_by('andar')
+    
+    # Se já existem portas cadastradas, usar elas
+    if portas_existentes.exists():
+        return list(portas_existentes)
+    
+    # Se não existem, criar estrutura padrão baseada na proposta
+    portas_padrao = []
+    
+    for andar in range(proposta.pavimentos):
+        # Gerar nome do andar
+        if andar == 0:
+            nome_andar = "Térreo"
+        elif andar < 0:
+            nome_andar = f"Subsolo {abs(andar)}" if abs(andar) > 1 else "Subsolo"
+        else:
+            nome_andar = f"{andar}º Andar"
+        
+        # Criar objeto temporário (não salvo no banco ainda)
+        porta = PortaPavimento(
+            proposta=proposta,
+            andar=andar,
+            nome_andar=nome_andar,
+            ativo=True,
+            saida='normal',
+            abertura_porta='direita',
+            modelo=proposta.modelo_porta_pavimento or 'Automática',
+            material=proposta.material_porta_pavimento or 'Inox 430',
+            largura=proposta.largura_porta_pavimento or Decimal('0.80'),
+            altura=proposta.altura_porta_pavimento or Decimal('2.10'),
+            folhas=proposta.folhas_porta_pavimento or '2',
+        )
+        
+        portas_padrao.append(porta)
+    
+    return portas_padrao
+
+
+def processar_portas_pavimento(proposta, post_data):
+    """
+    Processa e salva as portas individuais por pavimento
+    """
+    # Remover portas existentes para recriar
+    PortaPavimento.objects.filter(proposta=proposta).delete()
+    
+    # Criar portas baseadas nos dados do POST
+    for andar in range(proposta.pavimentos):
+        # Extrair dados do POST para este andar
+        nome_andar = post_data.get(f'porta_nome_{andar}', '')
+        ativo = post_data.get(f'porta_ativo_{andar}') == 'on'
+        saida = post_data.get(f'porta_saida_{andar}', 'normal')
+        abertura_porta = post_data.get(f'porta_abertura_{andar}', 'direita')
+        modelo = post_data.get(f'porta_modelo_{andar}', proposta.modelo_porta_pavimento)
+        material = post_data.get(f'porta_material_{andar}', proposta.material_porta_pavimento)
+        largura_raw = post_data.get(f'porta_largura_{andar}')
+        altura_raw = post_data.get(f'porta_altura_{andar}')
+        folhas = post_data.get(f'porta_folhas_{andar}', proposta.folhas_porta_pavimento)
+        observacoes = post_data.get(f'porta_observacoes_{andar}', '')
+        
+        # Gerar nome padrão se não informado
+        if not nome_andar:
+            if andar == 0:
+                nome_andar = "Térreo"
+            else:
+                nome_andar = f"{andar}º Andar"
+        
+        # Processar largura
+        try:
+            largura = Decimal(str(largura_raw)) if largura_raw and largura_raw.strip() else None
+        except (ValueError, TypeError):
+            largura = None
+        
+        if not largura:
+            largura = proposta.largura_porta_pavimento or Decimal('0.80')
+        
+        # Processar altura
+        try:
+            altura = Decimal(str(altura_raw)) if altura_raw and altura_raw.strip() else None
+        except (ValueError, TypeError):
+            altura = None
+            
+        if not altura:
+            altura = proposta.altura_porta_pavimento or Decimal('2.10')
+        
+        # Criar registro no banco
+        PortaPavimento.objects.create(
+            proposta=proposta,
+            andar=andar,
+            nome_andar=nome_andar,
+            ativo=ativo,
+            saida=saida,
+            abertura_porta=abertura_porta,
+            modelo=modelo,
+            material=material,
+            largura=largura,
+            altura=altura,
+            folhas=folhas if folhas else proposta.folhas_porta_pavimento,
+            observacoes=observacoes,
+        )
+    
+    logger.info(f"Processadas {proposta.pavimentos} portas individuais para proposta {proposta.numero}")
+    
+    # Debug: Log dos valores processados
+    logger.debug(f"Valores POST processados para proposta {proposta.numero}:")
+    for andar in range(proposta.pavimentos):
+        largura_debug = post_data.get(f'porta_largura_{andar}')
+        altura_debug = post_data.get(f'porta_altura_{andar}')
+        logger.debug(f"Andar {andar}: largura={largura_debug}, altura={altura_debug}")
 
 
 @login_required
@@ -188,49 +287,3 @@ def proposta_step3(request, pk):
     }
 
     return render(request, 'vendedor/proposta_step3.html', context)
-
-
-# === FUNÇÕES AUXILIARES ===
-
-def criar_portas_individuais(proposta):
-    """
-    Criar registros individuais baseados na proposta
-    ✅ CORRIGIDO: Só modelo e material
-    """
-    for andar in range(proposta.pavimentos):
-        PortaPavimento.objects.create(
-            proposta=proposta,
-            andar=andar,
-            modelo=proposta.modelo_porta_pavimento,
-            material=proposta.material_porta_pavimento,
-            # ✅ REMOVIDO: largura e altura (não existem mais no modelo)
-        )
-
-def atualizar_portas_individuais(proposta, post_data):
-    """
-    Atualizar registros individuais com dados do POST
-    ✅ CORRIGIDO: Só modelo e material
-    """
-    portas = PortaPavimento.objects.filter(proposta=proposta)
-    
-    for porta in portas:
-        porta.modelo = post_data.get(f'porta_modelo_{porta.andar}', porta.modelo)
-        porta.material = post_data.get(f'porta_material_{porta.andar}', porta.material)
-        porta.save()
-
-# === FUNÇÕES LEGADAS (não usadas mais, podem ser removidas) ===
-
-def criar_portas_padrao_para_todos_pavimentos(proposta):
-    """
-    ❌ FUNÇÃO LEGADA - não é mais usada
-    Pode ser removida
-    """
-    PortaPavimento.objects.filter(proposta=proposta).delete()
-    
-    for andar in range(proposta.pavimentos):
-        PortaPavimento.objects.create(
-            proposta=proposta,
-            andar=andar,
-            modelo=proposta.modelo_porta_pavimento,
-            material=proposta.material_porta_pavimento,
-        )
