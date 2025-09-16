@@ -250,7 +250,6 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             'altura_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '2.40',
                 'required': True
             }),
             'piso_cabine': forms.Select(attrs={
@@ -275,12 +274,10 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             }),
             'largura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '0.80',
                 'required': True
             }),
             'altura_porta_cabine': QuantityInput(attrs={
                 'step': '0.01',
-                'placeholder': '2.10',
                 'required': True
             }),
         }

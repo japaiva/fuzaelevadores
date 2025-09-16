@@ -274,17 +274,13 @@
                     <div class="row g-2 mb-3">
                       <div class="col-4">
                         <label class="form-label small">Largura (m)</label>
-                        <input type="number" step="0.01" min="0.5" max="5" 
-                               class="form-control form-control-sm" 
-                               name="porta_largura_{{ porta.andar }}" 
-                               value="{{ porta.largura|floatformat:2 }}">
+                        <input type="number" step="0.01" min="1.8" max="4" 
+                              class="form-control form-control-sm" 
+                              name="porta_altura_{{ porta.andar }}" 
+                              value="{% if porta.altura %}{{ porta.altura|stringformat:'f' }}{% endif %}">
                       </div>
                       <div class="col-4">
                         <label class="form-label small">Altura (m)</label>
-                        <input type="number" step="0.01" min="1.8" max="4" 
-                               class="form-control form-control-sm" 
-                               name="porta_altura_{{ porta.andar }}" 
-                               value="{{ porta.altura|floatformat:2 }}">
                       </div>
                       <div class="col-4 folhas-container" {% if porta.modelo != 'Automática' %}style="display: none;"{% endif %}>
                         <label class="form-label small">Folhas</label>
