@@ -84,6 +84,11 @@ from .vistoria import (
     VistoriaFiltroForm,
 )
 
+# Formulários de Medição
+from .vistoria_medicao import (
+    VistoriaMedicaoForm,
+    VaoPortaFormSet,
+)
 
 # === FORMULÁRIOS DE PARÂMETROS ===
 from .parametros import (
@@ -186,6 +191,10 @@ __all__ = [
     'PropostaVistoriaForm',
     'VistoriaHistoricoForm',
     'VistoriaFiltroForm',
+    
+    # Medição
+    'VistoriaMedicaoForm',
+    'VaoPortaFormSet',
     
     # Parâmetros
     'ParametrosGeraisForm',

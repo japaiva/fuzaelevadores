@@ -82,6 +82,24 @@ urlpatterns = [
     path('api/pedidos/<uuid:pk>/salvar-preco/', views.api_salvar_preco_negociado, name='api_pedido_salvar_preco'),
     path('api/pedidos/<uuid:pk>/calcular/', views.api_calcular_preco, name='api_pedido_calcular_preco'),  # <-- ESTA É A QUE ESTAVA FALTANDO!
     
+    # === URLs DE MEDIÇÃO ===
+    path('vistoria/medicao/<uuid:proposta_pk>/', 
+         views.vistoria_medicao_create, 
+         name='vistoria_medicao_create'),
+         
+    path('vistoria/medicao/detail/<int:pk>/', 
+         views.vistoria_medicao_detail, 
+         name='vistoria_medicao_detail'),
+         
+    path('vistoria/medicao/edit/<int:pk>/', 
+         views.vistoria_medicao_edit, 
+         name='vistoria_medicao_edit'),
+         
+    path('vistoria/primeira-medicao/<uuid:proposta_pk>/', 
+         views.vistoria_primeira_medicao, 
+         name='vistoria_agendar_primeira'),
+
+
     # APIs de cliente (sem mudança)
     path('api/clientes/<int:cliente_id>/info/', views.api_cliente_info, name='api_cliente_info'),
     path('api/clientes/create/', views.cliente_create_ajax, name='cliente_create_ajax'),

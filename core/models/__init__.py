@@ -12,7 +12,14 @@ from .parametros import ParametrosGerais
 from .produtos import GrupoProduto, SubgrupoProduto, Produto, EstruturaProduto
 from .compras import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
 from .propostas import Proposta
-from .propostas2 import HistoricoProposta, AnexoProposta, ParcelaProposta, VistoriaHistorico
+from .propostas2 import (
+    HistoricoProposta, 
+    AnexoProposta, 
+    ParcelaProposta, 
+    VistoriaHistorico,
+    VaoPortaVistoria,
+    criar_vaos_porta_automaticos
+)
 
 from .producao import (
     ListaMateriais,
@@ -54,8 +61,12 @@ __all__ = [
     'HistoricoProposta',
     'AnexoProposta',
     'ParcelaProposta',
-    'PortaPavimento'
+    'PortaPavimento',
     'VistoriaHistorico',
+    
+    # Medição
+    'VaoPortaVistoria',
+    'criar_vaos_porta_automaticos',
     
     # Produção - Fluxo Completo
     'ListaMateriais',

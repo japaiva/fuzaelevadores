@@ -1,13 +1,15 @@
-# Adicionar no core/models/propostas.py
+# core/models/propostas2.py - VERSÃO COMPLETA CORRIGIDA
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from datetime import date, timedelta
 from .propostas import Proposta
 
 class VistoriaHistorico(models.Model):
     """
     Histórico de todas as vistorias realizadas na proposta
+    ATUALIZADO: Agora inclui campos de medição técnica
     """
     STATUS_VISTORIA_CHOICES = [
         ('agendada', 'Agendada'),
@@ -23,7 +25,6 @@ class VistoriaHistorico(models.Model):
         ('entrega', 'Entrega'),
     ]
     
-
     # Relacionamentos
     proposta = models.ForeignKey(
         'Proposta', 
@@ -72,7 +73,7 @@ class VistoriaHistorico(models.Model):
         verbose_name="Novo Status da Obra"
     )
     
-    # Observações e recomendações
+    # Observações e recomendações (para todos os tipos)
     observacoes = models.TextField(
         blank=True,
         verbose_name="Observações",
@@ -96,6 +97,75 @@ class VistoriaHistorico(models.Model):
         blank=True, 
         null=True,
         verbose_name="Próxima Vistoria Sugerida"
+    )
+    
+    # === CAMPOS DE MEDIÇÃO TÉCNICA ===
+    # (Preenchidos apenas quando tipo_vistoria = 'medicao')
+    
+    # FOSSO
+    fosso_altura = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Altura do Fosso (m)",
+        help_text="Altura medida do fosso"
+    )
+    fosso_largura = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Largura do Fosso (m)"
+    )
+    fosso_profundidade = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Profundidade do Fosso (m)"
+    )
+    fosso_obs = models.TextField(
+        blank=True,
+        verbose_name="Observações do Fosso",
+        help_text="Condições, problemas ou observações específicas"
+    )
+    
+    # POÇO
+    poco_largura = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Largura do Poço (m)"
+    )
+    poco_profundidade = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Profundidade do Poço (m)"
+    )
+    poco_obs = models.TextField(
+        blank=True,
+        verbose_name="Observações do Poço"
+    )
+    
+    # CINTAS
+    cintas_largura = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Largura das Cintas (m)"
+    )
+    cintas_distancia = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Distância entre Cintas (m)"
+    )
+    cintas_obs = models.TextField(
+        blank=True,
+        verbose_name="Observações das Cintas"
+    )
+    
+    # CASA DE MÁQUINA
+    casa_maquina_altura = models.DecimalField(
+        max_digits=8, decimal_places=3, blank=True, null=True,
+        verbose_name="Altura Casa de Máquina (m)"
+    )
+    casa_maquina_gancho = models.BooleanField(
+        default=False,
+        verbose_name="Gancho Instalado"
+    )
+    casa_maquina_energia = models.BooleanField(
+        default=False,
+        verbose_name="Ponto de Energia"
+    )
+    casa_maquina_obs = models.TextField(
+        blank=True,
+        verbose_name="Observações Casa de Máquina"
     )
     
     # Fotos e anexos (JSON para flexibilidade)
@@ -155,7 +225,6 @@ class VistoriaHistorico(models.Model):
         """Verifica se a vistoria está vencida"""
         if self.status_vistoria in ['realizada', 'cancelada']:
             return False
-        from datetime import date
         return date.today() > self.data_agendada
     
     @property
@@ -163,9 +232,23 @@ class VistoriaHistorico(models.Model):
         """Retorna quantos dias para a vistoria"""
         if self.status_vistoria in ['realizada', 'cancelada']:
             return None
-        from datetime import date
         delta = self.data_agendada - date.today()
         return delta.days
+    
+    @property
+    def eh_medicao(self):
+        """Verifica se é uma vistoria de medição"""
+        return self.tipo_vistoria == 'medicao'
+    
+    @property
+    def tem_dados_medicao(self):
+        """Verifica se tem dados de medição preenchidos"""
+        return any([
+            self.fosso_altura, self.fosso_largura, self.fosso_profundidade,
+            self.poco_largura, self.poco_profundidade,
+            self.cintas_largura, self.cintas_distancia,
+            self.casa_maquina_altura
+        ])
     
     def pode_realizar(self):
         """Verifica se a vistoria pode ser marcada como realizada"""
@@ -180,7 +263,78 @@ class VistoriaHistorico(models.Model):
         return self.status_vistoria in ['agendada', 'cancelada']
 
 
-# ===== FUNÇÃO PARA ATUALIZAR STATUS DA OBRA =====
+# === MODELO PARA VÃOS DE PORTA POR PAVIMENTO ===
+
+class VaoPortaVistoria(models.Model):
+    """
+    Medições específicas dos vãos de porta por pavimento
+    """
+    vistoria = models.ForeignKey(
+        VistoriaHistorico,
+        on_delete=models.CASCADE,
+        related_name='vaos_porta'
+    )
+    
+    pavimento = models.CharField(
+        max_length=20,
+        verbose_name="Pavimento",
+        help_text="Ex: Térreo, 1º Andar, 2º Andar, etc."
+    )
+    
+    largura = models.DecimalField(
+        max_digits=8, decimal_places=3,
+        verbose_name="Largura do Vão (m)"
+    )
+    
+    altura = models.DecimalField(
+        max_digits=8, decimal_places=3,
+        verbose_name="Altura do Vão (m)"
+    )
+    
+    observacoes = models.TextField(
+        blank=True,
+        verbose_name="Observações",
+        help_text="Condições específicas deste pavimento"
+    )
+    
+    class Meta:
+        verbose_name = "Vão de Porta"
+        verbose_name_plural = "Vãos de Porta"
+        ordering = ['pavimento']
+        unique_together = ['vistoria', 'pavimento']
+    
+    def __str__(self):
+        return f"{self.pavimento} - {self.largura}m x {self.altura}m"
+
+
+# === FUNÇÃO HELPER PARA CRIAR VÃOS AUTOMATICAMENTE ===
+
+def criar_vaos_porta_automaticos(vistoria, numero_pavimentos):
+    """
+    Cria vãos de porta baseado no número de pavimentos da proposta
+    """
+    nomes_pavimentos = [
+        "Térreo", "1º Andar", "2º Andar", "3º Andar", "4º Andar",
+        "5º Andar", "6º Andar", "7º Andar", "8º Andar", "9º Andar", "10º Andar"
+    ]
+    
+    for i in range(numero_pavimentos):
+        nome = nomes_pavimentos[i] if i < len(nomes_pavimentos) else f"{i+1}º Andar"
+        
+        VaoPortaVistoria.objects.get_or_create(
+            vistoria=vistoria,
+            pavimento=nome,
+            defaults={
+                'largura': 0.80,  # Valor padrão
+                'altura': 2.10,   # Valor padrão
+                'observacoes': ''
+            }
+        )
+
+
+# =============================================================================
+# FUNÇÃO PARA ATUALIZAR STATUS DA OBRA (mantida do código original)
+# =============================================================================
 
 def atualizar_status_obra_proposta(proposta, novo_status, usuario, observacao=""):
     """
@@ -201,6 +355,7 @@ def atualizar_status_obra_proposta(proposta, novo_status, usuario, observacao=""
     )
     
     return proposta
+
 
 # =============================================================================
 # MODELOS RELACIONADOS (mantém os existentes)
@@ -314,7 +469,6 @@ class ParcelaProposta(models.Model):
         """Verifica se a parcela está vencida"""
         if self.pago:
             return False
-        from datetime import date
         return date.today() > self.data_vencimento
     
     @property
@@ -322,6 +476,5 @@ class ParcelaProposta(models.Model):
         """Retorna quantos dias faltam para vencer"""
         if self.pago:
             return None
-        from datetime import date
         delta = self.data_vencimento - date.today()
         return delta.days

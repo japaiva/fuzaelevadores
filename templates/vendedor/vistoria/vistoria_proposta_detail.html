@@ -20,7 +20,7 @@
     </div>
     
     <div class="card-body">
-      <!-- Informações da Proposta - EXPANDIDO igual vistoria_create -->
+      <!-- Informações da Proposta -->
       <div class="card shadow-sm border-primary mb-4">
         <div class="card-header bg-primary text-white">
           <h6 class="card-title mb-0">Informações da Proposta</h6>
@@ -72,7 +72,6 @@
               </div>
             </div>
           </div>
-          
         </div>
       </div>
 
@@ -165,13 +164,26 @@
                           {% endif %}
                         </div>
                         
-                        <!-- Ações -->
+                        <!-- Ações CORRIGIDAS -->
                         <div class="mt-2">
                           <div class="btn-group btn-group-sm" role="group">
-                            <a href="{% url 'vendedor:vistoria_detail' vistoria.pk %}" 
-                               class="btn btn-outline-primary btn-sm">
-                              <i class="fas fa-eye me-1"></i> Ver Detalhes
-                            </a>
+                            {% if vistoria.tipo_vistoria == 'medicao' %}
+                              <a href="{% url 'vendedor:vistoria_medicao_detail' vistoria.pk %}" 
+                                 class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-ruler me-1"></i> Ver Medição
+                              </a>
+                              {% if vistoria.status_vistoria == 'realizada' %}
+                                <a href="{% url 'vendedor:vistoria_medicao_edit' vistoria.pk %}" 
+                                   class="btn btn-outline-warning btn-sm">
+                                  <i class="fas fa-edit me-1"></i> Editar Medição
+                                </a>
+                              {% endif %}
+                            {% else %}
+                              <a href="{% url 'vendedor:vistoria_detail' vistoria.pk %}" 
+                                 class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i> Ver Detalhes
+                              </a>
+                            {% endif %}
                             
                             {% if vistoria.status_vistoria == 'realizada' %}
                               <button type="button" 
@@ -396,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    console.log('✅ Página de vistorias da proposta inicializada');
+    console.log('Página de vistorias da proposta inicializada');
 });
 </script>
 {% endblock %}

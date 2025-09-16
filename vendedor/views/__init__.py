@@ -49,7 +49,7 @@ from .contrato import (
     gerar_contrato_pdf,
 )
 
-# Views de Vistoria
+# Views de Vistoria (geral)
 from .vistoria import (
     vistoria_list,
     vistoria_proposta_detail,
@@ -57,6 +57,14 @@ from .vistoria import (
     vistoria_detail,
     vistoria_inativar,
     api_vistoria_quick_status,
+)
+
+# Views de Medição (especializada)
+from .vistoria_medicao import (
+    vistoria_medicao_create,
+    vistoria_medicao_detail,
+    vistoria_medicao_edit,
+    vistoria_primeira_medicao,
 )
 
 # Exports para compatibilidade
@@ -90,11 +98,17 @@ __all__ = [
     'cliente_create_ajax',
     'api_calcular_preco',
 
-    # Vistorias
+    # Vistorias (geral)
     'vistoria_list',
     'vistoria_proposta_detail',
     'vistoria_create',
     'vistoria_detail',
     'vistoria_inativar',
     'api_vistoria_quick_status',
+    
+    # Medição (especializada)
+    'vistoria_medicao_create',
+    'vistoria_medicao_detail', 
+    'vistoria_medicao_edit',
+    'vistoria_primeira_medicao',
 ]

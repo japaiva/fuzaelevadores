@@ -1,0 +1,655 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}{% if is_edit %}Editar Medição{% else %}Nova Medição{% endif %} - {{ proposta.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-ruler me-2"></i>
+        {% if is_edit %}Editar Medição{% else %}Nova Medição Inicial{% endif %} - {{ proposta.numero }}
+      </h5>
+      <div>
+        {% if is_edit %}
+          <a href="{% url 'vendedor:vistoria_medicao_detail' vistoria.pk %}" class="btn btn-outline-info btn-sm">
+            <i class="fas fa-eye me-1"></i> Ver Medição
+          </a>
+        {% endif %}
+        <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary btn-sm ms-2">
+          <i class="fas fa-arrow-left me-1"></i> Voltar
+        </a>
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <!-- Informações da Proposta -->
+      <div class="card shadow-sm border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <h6 class="card-title mb-0">Informações da Proposta</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Número:</div>
+                <div class="campo-valor"><strong>{{ proposta.numero }}</strong></div>
+              </div>
+            </div>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Cliente:</div>
+                <div class="campo-valor"><strong>{{ proposta.cliente.nome }}</strong></div>
+              </div>
+            </div>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Projeto:</div>
+                <div class="campo-valor"><strong>{{ proposta.nome_projeto }}</strong></div>
+              </div>
+            </div>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Modelo Elevador:</div>
+                <div class="campo-valor">{{ proposta.modelo_elevador }} - {{ proposta.capacidade }}kg</div>
+              </div>
+            </div>
+            <div class="col-md-2-4">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Pavimentos:</div>
+                <div class="campo-valor"><strong>{{ proposta.pavimentos }}</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form method="post" id="medicaoForm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <p class="mb-0">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- Dados Básicos da Medição -->
+        <div class="card shadow-sm border-success mb-4">
+          <div class="card-header bg-success text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-calendar-check me-2"></i>Dados Básicos
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.data_realizada.id_for_label }}">
+                  Data da Medição*
+                </label>
+                {{ form.data_realizada }}
+                {% if form.data_realizada.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.data_realizada.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <label class="form-label" for="status_obra_novo">
+                  Novo Status da Obra
+                </label>
+                <select class="form-select" id="status_obra_novo" name="status_obra_novo">
+                  <option value="">Manter status atual</option>
+                  <option value="medicao_ok" selected>Medição OK</option>
+                  <option value="em_vistoria">Em Vistoria</option>
+                  <option value="obra_ok">Obra OK</option>
+                </select>
+              </div>
+              
+              <div class="col-md-3">
+                <label class="form-label" for="previsao_entrega_obra">
+                  Previsão Entrega Obra
+                </label>
+                <input type="date" class="form-control" id="previsao_entrega_obra" name="previsao_entrega_obra" 
+                       value="{{ proposta.previsao_conclusao_obra|date:'Y-m-d' }}">
+              </div>
+              
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.proxima_vistoria_sugerida.id_for_label }}">
+                  Próxima Vistoria
+                </label>
+                {{ form.proxima_vistoria_sugerida }}
+                {% if form.proxima_vistoria_sugerida.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.proxima_vistoria_sugerida.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <!-- Observações e Recomendações -->
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.observacoes.id_for_label }}">
+                  Observações Gerais
+                </label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.recomendacoes.id_for_label }}">
+                  Recomendações Técnicas
+                </label>
+                {{ form.recomendacoes }}
+                {% if form.recomendacoes.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.recomendacoes.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOSSO -->
+        <div class="card shadow-sm border-warning mb-4">
+          <div class="card-header bg-warning text-dark">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-arrows-alt-v me-2"></i>Medições do Fosso
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.fosso_altura.id_for_label }}">
+                  Altura (m)
+                </label>
+                {{ form.fosso_altura }}
+                {% if form.fosso_altura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.fosso_altura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.fosso_largura.id_for_label }}">
+                  Largura (m)
+                </label>
+                {{ form.fosso_largura }}
+                {% if form.fosso_largura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.fosso_largura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <label class="form-label" for="{{ form.fosso_profundidade.id_for_label }}">
+                  Profundidade (m)
+                </label>
+                {{ form.fosso_profundidade }}
+                {% if form.fosso_profundidade.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.fosso_profundidade.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-3">
+                <div class="fosso-info bg-light p-2 rounded mt-4">
+                  <small class="text-muted">Volume Calculado:</small>
+                  <div class="fw-bold" id="volume-fosso">-</div>
+                </div>
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label" for="{{ form.fosso_obs.id_for_label }}">
+                  Observações do Fosso
+                </label>
+                {{ form.fosso_obs }}
+                {% if form.fosso_obs.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.fosso_obs.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- POÇO -->
+        <div class="card shadow-sm border-info mb-4">
+          <div class="card-header bg-info text-dark">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-square me-2"></i>Medições do Poço
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.poco_largura.id_for_label }}">
+                  Largura (m)
+                </label>
+                {{ form.poco_largura }}
+                {% if form.poco_largura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.poco_largura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.poco_profundidade.id_for_label }}">
+                  Profundidade (m)
+                </label>
+                {{ form.poco_profundidade }}
+                {% if form.poco_profundidade.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.poco_profundidade.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4">
+                <div class="poco-info bg-light p-2 rounded mt-4">
+                  <small class="text-muted">Área Calculada:</small>
+                  <div class="fw-bold" id="area-poco">-</div>
+                </div>
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label" for="{{ form.poco_obs.id_for_label }}">
+                  Observações do Poço
+                </label>
+                {{ form.poco_obs }}
+                {% if form.poco_obs.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.poco_obs.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CINTAS -->
+        <div class="card shadow-sm border-secondary mb-4">
+          <div class="card-header bg-secondary text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-grip-lines me-2"></i>Medições das Cintas
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.cintas_largura.id_for_label }}">
+                  Largura das Cintas (m)
+                </label>
+                {{ form.cintas_largura }}
+                {% if form.cintas_largura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.cintas_largura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label" for="{{ form.cintas_distancia.id_for_label }}">
+                  Distância entre Cintas (m)
+                </label>
+                {{ form.cintas_distancia }}
+                {% if form.cintas_distancia.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.cintas_distancia.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label" for="{{ form.cintas_obs.id_for_label }}">
+                  Observações das Cintas
+                </label>
+                {{ form.cintas_obs }}
+                {% if form.cintas_obs.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.cintas_obs.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VÃOS DE PORTA POR PAVIMENTO -->
+        <div class="card shadow-sm border-primary mb-4">
+          <div class="card-header bg-primary text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-door-open me-2"></i>Vãos de Porta por Pavimento
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row" id="vaos-porta-container">
+              <!-- Os vãos serão gerados via JavaScript baseado no número de pavimentos -->
+            </div>
+          </div>
+        </div>
+
+        <!-- CASA DE MÁQUINA -->
+        <div class="card shadow-sm border-dark mb-4">
+          <div class="card-header bg-dark text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-cog me-2"></i>Casa de Máquina
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.casa_maquina_altura.id_for_label }}">
+                  Altura (m)
+                </label>
+                {{ form.casa_maquina_altura }}
+                {% if form.casa_maquina_altura.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.casa_maquina_altura.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.casa_maquina_gancho.id_for_label }}">
+                  Gancho Instalado
+                </label>
+                {{ form.casa_maquina_gancho }}
+                {% if form.casa_maquina_gancho.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.casa_maquina_gancho.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.casa_maquina_energia.id_for_label }}">
+                  Ponto de Energia
+                </label>
+                {{ form.casa_maquina_energia }}
+                {% if form.casa_maquina_energia.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.casa_maquina_energia.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label" for="{{ form.casa_maquina_obs.id_for_label }}">
+                  Observações da Casa de Máquina
+                </label>
+                {{ form.casa_maquina_obs }}
+                {% if form.casa_maquina_obs.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.casa_maquina_obs.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões de ação -->
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="fas fa-save me-1"></i> {% if is_edit %}Salvar Alterações{% else %}Registrar Medição{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const numeroPavimentos = {{ numero_pavimentos|default:0 }};
+    
+    // Função para gerar vãos de porta
+    function gerarVaosPorta() {
+        const container = document.getElementById('vaos-porta-container');
+        const nomesPavimentos = [
+            "Térreo", "1º Andar", "2º Andar", "3º Andar", "4º Andar",
+            "5º Andar", "6º Andar", "7º Andar", "8º Andar", "9º Andar", "10º Andar"
+        ];
+        
+        for (let i = 0; i < numeroPavimentos; i++) {
+            const nome = nomesPavimentos[i] || `${i+1}º Andar`;
+            
+            const vaoHtml = `
+                <div class="col-md-4 mb-3">
+                    <div class="card border-light">
+                        <div class="card-header py-2 bg-light">
+                            <h6 class="mb-0 text-center">${nome}</h6>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small">Largura (m)</label>
+                                    <input type="number" class="form-control form-control-sm medida-input vao-largura" 
+                                           step="0.01" min="0" placeholder="0.80" 
+                                           name="vao_largura_${i}" data-pavimento="${nome}">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Altura (m)</label>
+                                    <input type="number" class="form-control form-control-sm medida-input vao-altura" 
+                                           step="0.01" min="0" placeholder="2.10" 
+                                           name="vao_altura_${i}" data-pavimento="${nome}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small">Observações</label>
+                                    <textarea class="form-control form-control-sm" rows="2" 
+                                              placeholder="Obs. específicas..." 
+                                              name="vao_obs_${i}" data-pavimento="${nome}"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML += vaoHtml;
+        }
+    }
+    
+    // Função para calcular volume do fosso
+    function calcularVolumeFosso() {
+        const altura = parseFloat(document.getElementById('{{ form.fosso_altura.id_for_label }}').value) || 0;
+        const largura = parseFloat(document.getElementById('{{ form.fosso_largura.id_for_label }}').value) || 0;
+        const profundidade = parseFloat(document.getElementById('{{ form.fosso_profundidade.id_for_label }}').value) || 0;
+        
+        const volume = altura * largura * profundidade;
+        document.getElementById('volume-fosso').textContent = volume > 0 ? `${volume.toFixed(2)} m³` : '-';
+    }
+    
+    // Função para calcular área do poço
+    function calcularAreaPoco() {
+        const largura = parseFloat(document.getElementById('{{ form.poco_largura.id_for_label }}').value) || 0;
+        const profundidade = parseFloat(document.getElementById('{{ form.poco_profundidade.id_for_label }}').value) || 0;
+        
+        const area = largura * profundidade;
+        document.getElementById('area-poco').textContent = area > 0 ? `${area.toFixed(2)} m²` : '-';
+    }
+    
+    // Gerar vãos de porta
+    if (numeroPavimentos > 0) {
+        gerarVaosPorta();
+    }
+    
+    // Event listeners para cálculos automáticos
+    ['{{ form.fosso_altura.id_for_label }}', '{{ form.fosso_largura.id_for_label }}', '{{ form.fosso_profundidade.id_for_label }}'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', calcularVolumeFosso);
+        }
+    });
+    
+    ['{{ form.poco_largura.id_for_label }}', '{{ form.poco_profundidade.id_for_label }}'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', calcularAreaPoco);
+        }
+    });
+    
+    // Calcular valores iniciais
+    calcularVolumeFosso();
+    calcularAreaPoco();
+    
+    // Validação do formulário
+    const form = document.getElementById('medicaoForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const dataRealizada = document.getElementById('{{ form.data_realizada.id_for_label }}').value;
+            
+            if (!dataRealizada) {
+                e.preventDefault();
+                alert('A data da medição é obrigatória.');
+                return;
+            }
+            
+            // Coletar dados dos vãos de porta
+            const vaosData = [];
+            for (let i = 0; i < numeroPavimentos; i++) {
+                const largura = document.querySelector(`input[name="vao_largura_${i}"]`);
+                const altura = document.querySelector(`input[name="vao_altura_${i}"]`);
+                const obs = document.querySelector(`textarea[name="vao_obs_${i}"]`);
+                
+                if (largura && altura) {
+                    vaosData.push({
+                        pavimento: largura.dataset.pavimento,
+                        largura: largura.value,
+                        altura: altura.value,
+                        observacoes: obs ? obs.value : ''
+                    });
+                }
+            }
+            
+            // Adicionar dados dos vãos como campo hidden
+            const vaosInput = document.createElement('input');
+            vaosInput.type = 'hidden';
+            vaosInput.name = 'vaos_porta_data';
+            vaosInput.value = JSON.stringify(vaosData);
+            form.appendChild(vaosInput);
+            
+            console.log('Formulário de medição enviado');
+        });
+    }
+    
+    console.log('Formulário de medição inicializado');
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.container-fluid {
+    max-width: 1400px;
+}
+
+/* ESTILO PARA CAMPOS COM DUAS LINHAS */
+.campo-info {
+    margin-bottom: 1rem;
+}
+
+.campo-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.campo-valor {
+    font-size: 1rem;
+    min-height: 1.5rem;
+}
+
+/* Grid customizado para 5 colunas */
+.col-md-2-4 {
+    flex: 0 0 auto;
+    width: 20%;
+}
+
+/* Inputs de medida com destaque */
+.medida-input {
+    font-weight: 500;
+    text-align: center;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+}
+
+.medida-input:focus {
+    background-color: white;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Cards de informação calculada */
+.fosso-info, .poco-info {
+    text-align: center;
+    border: 2px dashed #dee2e6;
+}
+
+/* Cards dos vãos de porta */
+.card.border-light {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card.border-light:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+/* Formulários responsivos */
+@media (max-width: 768px) {
+    .col-md-2-4 {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .container-fluid {
+        padding: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .medida-input {
+        font-size: 0.9rem;
+    }
+}
+
+/* Labels mais destacados */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* Botões de ação */
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* Textarea responsivo */
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+</style>
+{% endblock %}

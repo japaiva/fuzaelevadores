@@ -1,0 +1,395 @@
+{% extends 'vendedor/base_vendedor.html' %}
+
+{% block title %}Medição - {{ vistoria.proposta.numero }} | Portal do Vendedor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-ruler me-2"></i>Medição - {{ vistoria.proposta.numero }}
+      </h5>
+      <div>
+        {% if vistoria.status_vistoria == 'realizada' %}
+          <a href="{% url 'vendedor:vistoria_medicao_edit' vistoria.pk %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-edit me-1"></i> Editar
+          </a>
+        {% endif %}
+        <a href="{% url 'vendedor:vistoria_proposta_detail' vistoria.proposta.pk %}" class="btn btn-outline-secondary btn-sm ms-2">
+          <i class="fas fa-arrow-left me-1"></i> Voltar
+        </a>
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <!-- Informações Básicas -->
+      <div class="card shadow-sm border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <h6 class="card-title mb-0">Informações da Medição</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Proposta:</div>
+                <div class="campo-valor"><strong>{{ proposta.numero }}</strong> - {{ proposta.cliente.nome }}</div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Data Medição:</div>
+                <div class="campo-valor"><strong class="text-success">{{ vistoria.data_realizada|date:"d/m/Y" }}</strong></div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Responsável:</div>
+                <div class="campo-valor"><strong>{{ vistoria.responsavel.get_full_name|default:vistoria.responsavel.username }}</strong></div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="campo-info">
+                <div class="campo-label text-muted">Pavimentos:</div>
+                <div class="campo-valor"><strong>{{ proposta.pavimentos }}</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados Técnicos -->
+      <div class="row g-4">
+        <!-- Fosso e Poço -->
+        <div class="col-lg-6">
+          {% if vistoria.fosso_altura or vistoria.fosso_largura or vistoria.fosso_profundidade %}
+          <div class="card shadow-sm border-warning mb-4">
+            <div class="card-header bg-warning text-dark">
+              <h6 class="card-title mb-0"><i class="fas fa-arrows-alt-v me-2"></i>Fosso</h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                {% if vistoria.fosso_altura %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Altura</div>
+                    <div class="medida-valor">{{ vistoria.fosso_altura|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+                {% if vistoria.fosso_largura %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Largura</div>
+                    <div class="medida-valor">{{ vistoria.fosso_largura|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+                {% if vistoria.fosso_profundidade %}
+                <div class="col-12">
+                  <div class="medida-item">
+                    <div class="medida-label">Profundidade</div>
+                    <div class="medida-valor">{{ vistoria.fosso_profundidade|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+              {% if vistoria.fosso_obs %}
+              <div class="obs-box mt-3">
+                <small class="text-muted fw-bold">Obs:</small>
+                <div class="obs-text">{{ vistoria.fosso_obs }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if vistoria.poco_largura or vistoria.poco_profundidade %}
+          <div class="card shadow-sm border-info mb-4">
+            <div class="card-header bg-info text-dark">
+              <h6 class="card-title mb-0"><i class="fas fa-square me-2"></i>Poço</h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                {% if vistoria.poco_largura %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Largura</div>
+                    <div class="medida-valor">{{ vistoria.poco_largura|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+                {% if vistoria.poco_profundidade %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Profundidade</div>
+                    <div class="medida-valor">{{ vistoria.poco_profundidade|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+              {% if vistoria.poco_obs %}
+              <div class="obs-box mt-3">
+                <small class="text-muted fw-bold">Obs:</small>
+                <div class="obs-text">{{ vistoria.poco_obs }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Cintas e Casa de Máquina -->
+        <div class="col-lg-6">
+          {% if vistoria.cintas_largura or vistoria.cintas_distancia %}
+          <div class="card shadow-sm border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
+              <h6 class="card-title mb-0"><i class="fas fa-grip-lines me-2"></i>Cintas</h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                {% if vistoria.cintas_largura %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Largura</div>
+                    <div class="medida-valor">{{ vistoria.cintas_largura|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+                {% if vistoria.cintas_distancia %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Distância</div>
+                    <div class="medida-valor">{{ vistoria.cintas_distancia|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+              {% if vistoria.cintas_obs %}
+              <div class="obs-box mt-3">
+                <small class="text-muted fw-bold">Obs:</small>
+                <div class="obs-text">{{ vistoria.cintas_obs }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if vistoria.casa_maquina_altura or vistoria.casa_maquina_gancho or vistoria.casa_maquina_energia %}
+          <div class="card shadow-sm border-dark mb-4">
+            <div class="card-header bg-dark text-white">
+              <h6 class="card-title mb-0"><i class="fas fa-cog me-2"></i>Casa de Máquina</h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-3">
+                {% if vistoria.casa_maquina_altura %}
+                <div class="col-12">
+                  <div class="medida-item">
+                    <div class="medida-label">Altura</div>
+                    <div class="medida-valor">{{ vistoria.casa_maquina_altura|floatformat:2 }} m</div>
+                  </div>
+                </div>
+                {% endif %}
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Gancho</div>
+                    <div class="medida-valor">
+                      <span class="badge {% if vistoria.casa_maquina_gancho %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if vistoria.casa_maquina_gancho %}Sim{% else %}Não{% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="medida-item">
+                    <div class="medida-label">Energia</div>
+                    <div class="medida-valor">
+                      <span class="badge {% if vistoria.casa_maquina_energia %}bg-success{% else %}bg-danger{% endif %}">
+                        {% if vistoria.casa_maquina_energia %}Sim{% else %}Não{% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% if vistoria.casa_maquina_obs %}
+              <div class="obs-box mt-3">
+                <small class="text-muted fw-bold">Obs:</small>
+                <div class="obs-text">{{ vistoria.casa_maquina_obs }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Vãos de Porta -->
+      {% if vaos_porta %}
+      <div class="card shadow-sm border-primary">
+        <div class="card-header bg-primary text-white">
+          <h6 class="card-title mb-0"><i class="fas fa-door-open me-2"></i>Vãos de Porta</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% for vao in vaos_porta %}
+            <div class="col-md-4 col-lg-3">
+              <div class="vao-card">
+                <div class="vao-header">{{ vao.pavimento }}</div>
+                <div class="vao-body">
+                  <div class="row">
+                    <div class="col-6">
+                      <div class="vao-medida">
+                        <div class="vao-label">Largura</div>
+                        <div class="vao-valor">{{ vao.largura|floatformat:2 }}m</div>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <div class="vao-medida">
+                        <div class="vao-label">Altura</div>
+                        <div class="vao-valor">{{ vao.altura|floatformat:2 }}m</div>
+                      </div>
+                    </div>
+                  </div>
+                  {% if vao.observacoes %}
+                  <div class="vao-obs">{{ vao.observacoes|truncatewords:6 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.container-fluid {
+    max-width: 1400px;
+}
+
+.campo-info {
+    margin-bottom: 0.75rem;
+}
+
+.campo-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: #6c757d;
+}
+
+.campo-valor {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.medida-item {
+    text-align: center;
+    padding: 0.75rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    height: 100%;
+}
+
+.medida-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.medida-valor {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.obs-box {
+    background-color: #f1f3f4;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.obs-text {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    color: #495057;
+}
+
+.vao-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background-color: white;
+    height: 100%;
+}
+
+.vao-header {
+    background-color: #e9ecef;
+    padding: 0.5rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.vao-body {
+    padding: 0.75rem;
+}
+
+.vao-medida {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.vao-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.vao-valor {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.vao-obs {
+    border-top: 1px solid #dee2e6;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: left;
+}
+
+.card {
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0.5rem;
+    }
+    
+    .medida-valor {
+        font-size: 1rem;
+    }
+    
+    .vao-valor {
+        font-size: 0.9rem;
+    }
+}
+</style>
+{% endblock %}
