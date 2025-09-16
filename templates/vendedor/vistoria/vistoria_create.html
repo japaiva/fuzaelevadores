@@ -1,6 +1,6 @@
 {% extends 'vendedor/base_vendedor.html' %}
 
-{% block title %}Nova Vistoria - {{ proposta.numero }} | Portal do Vendedor{% endblock %}
+{% block title %}{% if is_edit %}Editar Vistoria{% else %}Nova Vistoria{% endif %} - {{ proposta.numero }} | Portal do Vendedor{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -105,6 +105,13 @@
                   Tipo de Vistoria*
                 </label>
                 {{ form.tipo_vistoria }}
+                
+                <!-- NOVO: Alerta para medição -->
+                <div class="alert alert-info alert-sm mt-2" id="alerta-medicao" style="display:none; font-size:0.8rem;">
+                  <i class="fas fa-info-circle me-1"></i>
+                  <strong>Medição Inicial:</strong> Será redirecionado para formulário especializado com campos técnicos.
+                </div>
+                
                 {% if form.tipo_vistoria.errors %}
                   <div class="text-danger small mt-1">
                     {% for error in form.tipo_vistoria.errors %}{{ error }}{% endfor %}
@@ -113,21 +120,16 @@
               </div>
               
               <div class="col-md-3">
-                <label class="form-label" for="{{ form.status_obra_novo.id_for_label }}">
+                <label class="form-label" for="status_obra_novo">
                   Novo Status da Obra
                 </label>
-                <select class="form-select" id="{{ form.status_obra_novo.id_for_label }}" name="status_obra_novo">
+                <select class="form-select" id="status_obra_novo" name="status_obra_novo">
                   <option value="">Manter status atual</option>
                   <option value="medicao_ok">Medição OK</option>
                   <option value="em_vistoria">Em Vistoria</option>
                   <option value="obra_ok">Obra OK</option>
                   <option value="projeto_entregue">Projeto Entregue</option>
                 </select>
-                {% if form.status_obra_novo.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.status_obra_novo.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
               </div>
               
               <div class="col-md-3">
@@ -175,7 +177,7 @@
           </div>
         </div>
 
-        <!-- Próxima Vistoria - REMOVIDO checkbox e CORRIGIDO input -->
+        <!-- Próxima Vistoria -->
         <div class="card shadow-sm border-success mb-4">
           <div class="card-header bg-success text-white">
             <h6 class="card-title mb-0">Próxima Vistoria</h6>
@@ -215,16 +217,55 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('vistoriaForm');
-    const dataAgendadaInput = document.getElementById('{{ form.data_agendada.id_for_label }}');
+    const dataRealizadaInput = document.getElementById('{{ form.data_realizada.id_for_label }}');
     const tipoVistoriaSelect = document.getElementById('{{ form.tipo_vistoria.id_for_label }}');
-    const statusObraSelect = document.getElementById('{{ form.status_obra_novo.id_for_label }}');
+    const statusObraSelect = document.getElementById('status_obra_novo');
     const proximaVistoriaInput = document.getElementById('{{ form.proxima_vistoria_sugerida.id_for_label }}');
     const previsaoEntregaInput = document.getElementById('previsao_entrega_obra');
     const mudancasTextarea = document.getElementById('mudancas_automaticas');
+    const alertaMedicao = document.getElementById('alerta-medicao');
     
     // Status e previsão originais para comparação
     const statusOriginal = '{{ proposta.status_obra|default:"Aguardando" }}';
     const previsaoOriginal = '{{ proposta.previsao_conclusao_obra|date:"d/m/Y"|default:"Não definida" }}';
+    
+    // FUNÇÃO PRINCIPAL: Verificar e redirecionar para medição
+    function verificarRedirecionamentoMedicao() {
+        if (tipoVistoriaSelect.value === 'medicao') {
+            const confirmacao = confirm(
+                'Medição inicial requer formulário especializado com campos técnicos de medição:\n\n' +
+                '• Medições do fosso, poço e cintas\n' +
+                '• Vãos de porta por pavimento\n' +
+                '• Casa de máquina\n\n' +
+                'Deseja ir para o formulário de medição agora?'
+            );
+            
+            if (confirmacao) {
+                // Redirecionar para formulário de medição
+                window.location.href = `{% url 'vendedor:vistoria_medicao_create' proposta.pk %}`;
+                return true; // Indica que foi redirecionado
+            } else {
+                // Voltar para acompanhamento se cancelou
+                tipoVistoriaSelect.value = 'acompanhamento';
+                mostrarOcultarAlertaMedicao();
+                sugerirProximaVistoria();
+                sugerirStatus();
+                atualizarMudancas();
+            }
+        }
+        return false; // Não foi redirecionado
+    }
+    
+    // Função para mostrar/ocultar alerta de medição
+    function mostrarOcultarAlertaMedicao() {
+        if (alertaMedicao) {
+            if (tipoVistoriaSelect.value === 'medicao') {
+                alertaMedicao.style.display = 'block';
+            } else {
+                alertaMedicao.style.display = 'none';
+            }
+        }
+    }
     
     // Função para atualizar o campo de mudanças - CORRIGIDA para não somar um dia
     function atualizarMudancas() {
@@ -256,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Função para sugerir próxima vistoria baseada no tipo - CORRIGIDA
     function sugerirProximaVistoria() {
         const tipo = tipoVistoriaSelect.value;
-        const dataAtual = dataAgendadaInput.value;
+        const dataAtual = dataRealizadaInput.value;
         
         if (!dataAtual) return;
         
@@ -298,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function sugerirStatus() {
         const tipo = tipoVistoriaSelect.value;
         
-        if (statusObraSelect.value) return;
+        if (statusObraSelect.value) return; // Não sobrescrever se usuário já escolheu
         
         switch(tipo) {
             case 'medicao':
@@ -318,16 +359,29 @@ document.addEventListener('DOMContentLoaded', function() {
         atualizarMudancas();
     }
     
-    // Event listeners
+    // EVENT LISTENERS
     if (tipoVistoriaSelect) {
         tipoVistoriaSelect.addEventListener('change', function() {
-            sugerirProximaVistoria();
-            sugerirStatus();
+            mostrarOcultarAlertaMedicao();
+            
+            // Se não redirecionou, executar outras funções
+            if (!verificarRedirecionamentoMedicao()) {
+                sugerirProximaVistoria();
+                sugerirStatus();
+            }
         });
+        
+        // Verificar no carregamento da página se já está como medição
+        if (tipoVistoriaSelect.value === 'medicao') {
+            setTimeout(function() {
+                mostrarOcultarAlertaMedicao();
+                verificarRedirecionamentoMedicao();
+            }, 100);
+        }
     }
     
-    if (dataAgendadaInput) {
-        dataAgendadaInput.addEventListener('change', sugerirProximaVistoria);
+    if (dataRealizadaInput) {
+        dataRealizadaInput.addEventListener('change', sugerirProximaVistoria);
     }
     
     if (statusObraSelect) {
@@ -338,27 +392,38 @@ document.addEventListener('DOMContentLoaded', function() {
         previsaoEntregaInput.addEventListener('change', atualizarMudancas);
     }
     
-    // Validação do formulário
+    // INTERCEPTAR SUBMIT PARA MEDIÇÃO
     if (form) {
         form.addEventListener('submit', function(e) {
-            const dataAgendada = dataAgendadaInput.value;
+            const tipoSelecionado = tipoVistoriaSelect.value;
             
-            if (!dataAgendada) {
+            // Bloquear submit se for medição
+            if (tipoSelecionado === 'medicao') {
+                e.preventDefault();
+                alert('Para medição inicial, use o formulário especializado.\nRedirecionando agora...');
+                window.location.href = `{% url 'vendedor:vistoria_medicao_create' proposta.pk %}`;
+                return false;
+            }
+            
+            // Validação normal para outros tipos
+            const dataRealizada = dataRealizadaInput.value;
+            
+            if (!dataRealizada) {
                 e.preventDefault();
                 alert('A data da vistoria é obrigatória.');
-                dataAgendadaInput.focus();
+                dataRealizadaInput.focus();
                 return;
             }
             
             const hoje = new Date();
-            const [ano, mes, dia] = dataAgendada.split('-');
+            const [ano, mes, dia] = dataRealizada.split('-');
             const vistoria = new Date(ano, mes - 1, dia);
             const diasDiferenca = Math.ceil((hoje - vistoria) / (1000 * 60 * 60 * 24));
             
             if (diasDiferenca > 30) {
                 e.preventDefault();
                 alert('A data da vistoria não pode ser muito antiga (máximo 30 dias).');
-                dataAgendadaInput.focus();
+                dataRealizadaInput.focus();
                 return;
             }
             
@@ -367,11 +432,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Inicializar sugestões
+    mostrarOcultarAlertaMedicao();
     sugerirProximaVistoria();
     sugerirStatus();
     atualizarMudancas();
     
-    console.log('✅ Formulário de nova vistoria inicializado');
+    console.log('✅ Formulário de nova vistoria inicializado com redirecionamento automático para medição');
 });
 </script>
 {% endblock %}
@@ -410,6 +476,23 @@ textarea.form-control {
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
     color: #495057;
+}
+
+/* NOVO: Estilos para alerta de medição */
+.alert-sm {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+#alerta-medicao {
+    border-color: #0dcaf0;
+    background-color: rgba(13, 202, 240, 0.1);
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ESTILO PARA CAMPOS COM DUAS LINHAS */

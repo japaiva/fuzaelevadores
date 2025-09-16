@@ -1,4 +1,4 @@
-# vendedor/views/vistoria.py - VERSÃO CORRIGIDA
+# vendedor/views/vistoria.py - VERSÃO COMPLETA CORRIGIDA
 
 """
 Views para o módulo de vistoria - acompanhamento da obra
@@ -146,16 +146,33 @@ def vistoria_proposta_detail(request, pk):
     
     return render(request, 'vendedor/vistoria/vistoria_proposta_detail.html', context)
 
-# vendedor/views/vistoria.py - ATUALIZAR a função vistoria_create
 
 @login_required
 def vistoria_create(request, proposta_pk):
     """
-    Criar nova vistoria no histórico - VERSÃO ATUALIZADA
+    Criar nova vistoria no histórico - VERSÃO CORRIGIDA
+    NOVO: Detecção robusta de medição e redirecionamento automático
     """
     proposta = get_object_or_404(Proposta, pk=proposta_pk)
     
+    # Verificar se pode fazer vistoria
+    if proposta.status != 'aprovado':
+        messages.error(request, 
+            f'Apenas propostas aprovadas podem ter vistorias. '
+            f'Status atual: {proposta.get_status_display()}'
+        )
+        return redirect('vendedor:vistoria_list')
+    
     if request.method == 'POST':
+        # ✅ CORREÇÃO PRINCIPAL: Detectar medição no POST
+        tipo_vistoria_post = request.POST.get('tipo_vistoria', '')
+        logger.info(f"Tipo de vistoria recebido via POST: '{tipo_vistoria_post}'")
+        
+        if tipo_vistoria_post == 'medicao':
+            logger.info(f"Redirecionando medição para proposta {proposta.numero}")
+            messages.info(request, 'Redirecionando para formulário de medição especializada.')
+            return redirect('vendedor:vistoria_medicao_create', proposta_pk=proposta.pk)
+            
         form = VistoriaHistoricoForm(request.POST, proposta=proposta)
         
         if form.is_valid():
@@ -165,12 +182,12 @@ def vistoria_create(request, proposta_pk):
                 vistoria.proposta = proposta
                 vistoria.responsavel = request.user
                 vistoria.status_obra_anterior = proposta.status_obra
-                vistoria.data_agendada = data_que_estava_planejada 
+                vistoria.data_agendada = data_que_estava_planejada or date.today()
                 
                 # SEMPRE marcar como realizada
                 vistoria.status_vistoria = 'realizada'
                 
-                # ✅ NOVO: Capturar e salvar as alterações realizadas
+                # Capturar e salvar as alterações realizadas
                 alteracoes_realizadas = request.POST.get('mudancas_automaticas', '')
                 if alteracoes_realizadas:
                     vistoria.alteracoes_realizadas = alteracoes_realizadas
@@ -215,7 +232,17 @@ def vistoria_create(request, proposta_pk):
                 messages.error(request, f'Erro ao criar vistoria: {str(e)}')
         else:
             messages.error(request, 'Erro no formulário. Verifique os dados.')
+            logger.warning(f"Erros no formulário de vistoria: {form.errors}")
     else:
+        # ✅ VERIFICAÇÃO NO GET: Detectar se veio com tipo=medição na URL
+        tipo_vistoria_get = request.GET.get('tipo_vistoria', '')
+        logger.info(f"Tipo de vistoria recebido via GET: '{tipo_vistoria_get}'")
+        
+        if tipo_vistoria_get == 'medicao':
+            logger.info(f"Redirecionando medição (GET) para proposta {proposta.numero}")
+            messages.info(request, 'Redirecionando para formulário de medição especializada.')
+            return redirect('vendedor:vistoria_medicao_create', proposta_pk=proposta.pk)
+        
         form = VistoriaHistoricoForm(proposta=proposta)
     
     context = {
@@ -229,9 +256,15 @@ def vistoria_create(request, proposta_pk):
 @login_required
 def vistoria_detail(request, pk):
     """
-    ✅ CORRIGIDO: Detalhes de uma vistoria específica - VIEW IMPLEMENTADA
+    Detalhes de uma vistoria específica - VIEW IMPLEMENTADA
+    CORRIGIDO: Redireciona medições automaticamente
     """
     vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
+    
+    # NOVO: Se for medição, redirecionar para view específica
+    if vistoria.tipo_vistoria == 'medicao':
+        messages.info(request, 'Redirecionando para visualização de medição especializada.')
+        return redirect('vendedor:vistoria_medicao_detail', pk=pk)
     
     context = {
         'vistoria': vistoria,
@@ -240,10 +273,11 @@ def vistoria_detail(request, pk):
     
     return render(request, 'vendedor/vistoria/vistoria_detail.html', context)
 
+
 @login_required
 def vistoria_inativar(request, pk):
     """
-    ✅ NOVA: Inativar vistoria realizada (diferente de cancelar)
+    Inativar vistoria realizada (diferente de cancelar)
     Mantém o registro mas marca como inativo para correções/ajustes
     """
     vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
@@ -281,6 +315,40 @@ def vistoria_inativar(request, pk):
             messages.error(request, f'Erro ao inativar vistoria: {str(e)}')
     
     return redirect('vendedor:vistoria_proposta_detail', pk=vistoria.proposta.pk)
+
+
+@login_required 
+def vistoria_agendar_primeira(request, proposta_pk):
+    """
+    Agendar primeira vistoria/medição
+    NOVO: Redireciona automaticamente para medição se não tem data_vistoria_medicao
+    """
+    proposta = get_object_or_404(Proposta, pk=proposta_pk)
+    
+    # Verificar se pode fazer vistoria
+    if proposta.status != 'aprovado':
+        messages.error(request,
+            f'Apenas propostas aprovadas podem ter vistoria. '
+            f'Status atual: {proposta.get_status_display()}'
+        )
+        return redirect('vendedor:vistoria_list')
+    
+    # Se não tem medição inicial, vai direto para medição
+    if not proposta.data_vistoria_medicao:
+        logger.info(f"Proposta {proposta.numero} sem medição inicial - redirecionando para medição")
+        messages.info(request,
+            'Esta proposta precisa de medição inicial. '
+            'Redirecionando para formulário de medição.'
+        )
+        return redirect('vendedor:vistoria_medicao_create', proposta_pk=proposta.pk)
+    
+    # Se já tem medição, vai para vistoria normal
+    messages.info(request,
+        'Esta proposta já possui medição inicial. '
+        'Criando vistoria de acompanhamento.'
+    )
+    return redirect('vendedor:vistoria_create', proposta_pk=proposta.pk)
+
 
 # === APIs AJAX ===
 

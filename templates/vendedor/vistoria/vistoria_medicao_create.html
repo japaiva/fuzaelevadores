@@ -127,31 +127,7 @@
                   </div>
                 {% endif %}
               </div>
-              
-              <!-- Observações e Recomendações -->
-              <div class="col-md-6">
-                <label class="form-label" for="{{ form.observacoes.id_for_label }}">
-                  Observações Gerais
-                </label>
-                {{ form.observacoes }}
-                {% if form.observacoes.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-              
-              <div class="col-md-6">
-                <label class="form-label" for="{{ form.recomendacoes.id_for_label }}">
-                  Recomendações Técnicas
-                </label>
-                {{ form.recomendacoes }}
-                {% if form.recomendacoes.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.recomendacoes.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
+
             </div>
           </div>
         </div>
