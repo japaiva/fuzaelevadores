@@ -306,6 +306,10 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         elif modelo_porta != 'Automática':
             cleaned_data['folhas_porta_cabine'] = ''
         
+        # REMOVIDO: Validações problemáticas das dimensões
+        # Essas validações estavam causando o bloqueio do formulário
+        # As portas individuais por pavimento são validadas na view
+        """
         # Validação das dimensões
         altura_cabine = cleaned_data.get('altura_cabine')
         largura_porta = cleaned_data.get('largura_porta_cabine')
@@ -320,6 +324,7 @@ class PropostaCabinePortasForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             
         if altura_porta and (float(altura_porta) <= 0 or float(altura_porta) > 4):
             self.add_error('altura_porta_cabine', 'A altura da porta deve estar entre 0.1 e 4 metros.')
+        """
         
         return cleaned_data
 

@@ -1,18 +1,80 @@
-<!-- TAB ESPECIFICAÇÕES - REORGANIZADO POR ETAPAS -->
+<!-- TAB ESPECIFICAÇÕES - VERSÃO MELHORADA COM DADOS TÉCNICOS COMPLETOS -->
 {% load formato_br %}
 {% load pedido_filters %}
 
 <div class="tab-pane fade" id="especificacoes" role="tabpanel">
   <div class="card-body">
     
-    <!-- ETAPA 1: ESPECIFICAÇÕES DO ELEVADOR -->
-    <div class="card shadow-sm border-success mb-4">
-      <div class="card-header bg-success text-white">
-        <h6 class="card-title mb-0">Especificações do Elevador</h6>
+    <!-- ETAPA 1: ESPECIFICAÇÕES GERAIS DO PROJETO -->
+    <div class="card shadow-sm border-primary mb-4">
+      <div class="card-header bg-primary text-white">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-info-circle me-2"></i>Dados Gerais do Projeto
+        </h6>
       </div>
       <div class="card-body">
         <div class="row g-3">
-          <div class="col-md-6">
+          <div class="col-md-3">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Proposta</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.numero }}</strong></div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Cliente</label>
+              <div class="form-control-plaintext">{{ pedido.cliente.nome }}</div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Projeto</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.nome_projeto }}</strong></div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Vendedor</label>
+              <div class="form-control-plaintext">{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <hr class="my-3">
+        
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Faturado por</label>
+              <div class="form-control-plaintext">{{ pedido.get_faturado_por_display }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Normas ABNT</label>
+              <div class="form-control-plaintext">{{ pedido.get_normas_abnt_display }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Documentação Prefeitura</label>
+              <div class="form-control-plaintext">{{ pedido.get_documentacao_prefeitura_display }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ETAPA 1: ESPECIFICAÇÕES DO ELEVADOR -->
+    <div class="card shadow-sm border-success mb-4">
+      <div class="card-header bg-success text-white">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-elevator me-2"></i>Especificações do Elevador
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
             <div class="mb-3">
               <label class="form-label text-muted small">Modelo do Elevador</label>
               <div class="form-control-plaintext"><strong>{{ pedido.get_modelo_elevador_display }}</strong></div>
@@ -20,31 +82,49 @@
             {% if pedido.capacidade_pessoas %}
             <div class="mb-3">
               <label class="form-label text-muted small">Capacidade (Pessoas)</label>
-              <div class="form-control-plaintext">{{ pedido.capacidade_pessoas }} pessoas</div>
+              <div class="form-control-plaintext"><strong>{{ pedido.capacidade_pessoas }} pessoas</strong></div>
             </div>
             {% endif %}
             <div class="mb-3">
               <label class="form-label text-muted small">Capacidade (kg)</label>
-              <div class="form-control-plaintext"><strong>{{ pedido.capacidade }} kg</strong></div>
+              <div class="form-control-plaintext text-success fs-5"><strong>{{ pedido.capacidade|formato_br }} kg</strong></div>
             </div>
           </div>
-          <div class="col-md-6">
+          
+          <div class="col-md-4">
             <div class="mb-3">
-              <label class="form-label text-muted small">Acionamento</label>
-              <div class="form-control-plaintext">{{ pedido.get_acionamento_display }}</div>
+              <label class="form-label text-muted small">Tipo de Acionamento</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.get_acionamento_display }}</strong></div>
             </div>
+            {% if pedido.tipo_motor %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Tipo do Motor</label>
+              <div class="form-control-plaintext">{{ pedido.get_tipo_motor_display }}</div>
+            </div>
+            {% endif %}
             {% if pedido.tracao %}
             <div class="mb-3">
               <label class="form-label text-muted small">Tração</label>
               <div class="form-control-plaintext">{{ pedido.get_tracao_display }}</div>
             </div>
             {% endif %}
+          </div>
+          
+          <div class="col-md-4">
+            <div class="mb-3">
+              <label class="form-label text-muted small">Velocidade Calculada</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.velocidade_calculada }} m/s</strong></div>
+            </div>
             {% if pedido.contrapeso %}
             <div class="mb-3">
               <label class="form-label text-muted small">Contrapeso</label>
               <div class="form-control-plaintext">{{ pedido.get_contrapeso_display }}</div>
             </div>
             {% endif %}
+            <div class="mb-3">
+              <label class="form-label text-muted small">Pavimentos</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.pavimentos }} pavimentos</strong></div>
+            </div>
           </div>
         </div>
       </div>
@@ -53,43 +133,45 @@
     <!-- ETAPA 1: DIMENSÕES DO POÇO -->
     <div class="card shadow-sm border-info mb-4">
       <div class="card-header bg-info text-white">
-        <h6 class="card-title mb-0">Dimensões do Poço</h6>
+        <h6 class="card-title mb-0">
+          <i class="fas fa-arrows-alt me-2"></i>Dimensões do Poço
+        </h6>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label text-muted small">Largura</label>
-            <div class="form-control-plaintext"><strong>{{ pedido.largura_poco }} m</strong></div>
+            <div class="form-control-plaintext"><strong>{{ pedido.largura_poco|formato_br }} m</strong></div>
           </div>
           <div class="col-md-3">
             <label class="form-label text-muted small">Profundidade</label>
-            <div class="form-control-plaintext"><strong>{{ pedido.comprimento_poco }} m</strong></div>
+            <div class="form-control-plaintext"><strong>{{ pedido.comprimento_poco|formato_br }} m</strong></div>
           </div>
           <div class="col-md-3">
             <label class="form-label text-muted small">Percurso Total</label>
-            <div class="form-control-plaintext"><strong>{{ pedido.altura_poco }} m</strong></div>
+            <div class="form-control-plaintext"><strong>{{ pedido.altura_poco|formato_br }} m</strong></div>
           </div>
           <div class="col-md-3">
-            <label class="form-label text-muted small">Pavimentos</label>
-            <div class="form-control-plaintext"><strong>{{ pedido.pavimentos }}</strong></div>
+            <label class="form-label text-muted small">Área do Poço</label>
+            <div class="form-control-plaintext text-primary"><strong>{{ pedido.area_poco|floatformat:2 }} m²</strong></div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ETAPA 2: CABINE -->
-    <div class="card shadow-sm border-primary mb-4">
-      <div class="card-header bg-primary text-white">
-        <h6 class="card-title mb-0">Cabine</h6>
+    <div class="card shadow-sm border-warning mb-4">
+      <div class="card-header bg-warning text-dark">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-cube me-2"></i>Especificações da Cabine
+        </h6>
       </div>
       <div class="card-body">
         <div class="row g-3">
+          <!-- Linha 1: Material e Acabamento -->
           <div class="col-md-3">
             <label class="form-label text-muted small">Material</label>
-            <div class="form-control-plaintext">{{ pedido.get_material_cabine_display }}</div>
-            {% if pedido.material_cabine == 'Outro' and pedido.material_cabine_outro %}
-              <small class="text-muted">{{ pedido.material_cabine_outro }} - {{ pedido.valor_cabine_outro|formato_br }}</small>
-            {% endif %}
+            <div class="form-control-plaintext"><strong>{{ pedido.get_material_cabine_display }}</strong></div>
           </div>
           <div class="col-md-3">
             <label class="form-label text-muted small">Espessura</label>
@@ -100,118 +182,236 @@
             <div class="form-control-plaintext">{{ pedido.get_saida_cabine_display }}</div>
           </div>
           <div class="col-md-3">
-            <label class="form-label text-muted small">Altura</label>
-            <div class="form-control-plaintext"><strong>{{ pedido.altura_cabine }} m</strong></div>
+            <label class="form-label text-muted small">Abertura</label>
+            <div class="form-control-plaintext">{{ pedido.get_abertura_cabine_display }}</div>
           </div>
+        </div>
+        
+        <hr class="my-3">
+        
+        <!-- Linha 2: Dimensões -->
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label text-muted small">Altura Especificada</label>
+            <div class="form-control-plaintext"><strong>{{ pedido.altura_cabine|formato_br }} m</strong></div>
+          </div>
+          {% if pedido.largura_cabine_calculada %}
+          <div class="col-md-3">
+            <label class="form-label text-muted small">Largura Calculada</label>
+            <div class="form-control-plaintext text-primary"><strong>{{ pedido.largura_cabine_calculada|formato_br }} m</strong></div>
+          </div>
+          {% endif %}
+          {% if pedido.comprimento_cabine_calculado %}
+          <div class="col-md-3">
+            <label class="form-label text-muted small">Comprimento Calculado</label>
+            <div class="form-control-plaintext text-primary"><strong>{{ pedido.comprimento_cabine_calculado|formato_br }} m</strong></div>
+          </div>
+          {% endif %}
+          {% if pedido.area_cabine_calculada %}
+          <div class="col-md-3">
+            <label class="form-label text-muted small">Área da Cabine</label>
+            <div class="form-control-plaintext text-success"><strong>{{ pedido.area_cabine_calculada|floatformat:2 }} m²</strong></div>
+          </div>
+          {% endif %}
+        </div>
+        
+        <hr class="my-3">
+        
+        <!-- Linha 3: Piso -->
+        <div class="row g-3">
           <div class="col-md-6">
-            <label class="form-label text-muted small">Piso da Cabine</label>
+            <label class="form-label text-muted small">Responsável pelo Piso</label>
             <div class="form-control-plaintext">{{ pedido.get_piso_cabine_display }}</div>
             {% if pedido.piso_cabine == 'Por conta da empresa' and pedido.material_piso_cabine %}
               <small class="text-muted">
                 Material: {{ pedido.get_material_piso_cabine_display }}
-                {% if pedido.material_piso_cabine == 'Outro' and pedido.material_piso_cabine_outro %}
-                  - {{ pedido.material_piso_cabine_outro }} - {{ pedido.valor_piso_cabine_outro|formato_br }}
-                {% endif %}
               </small>
             {% endif %}
           </div>
         </div>
-
-        {% if pedido.largura_cabine_calculada and pedido.comprimento_cabine_calculado %}
-        <hr class="my-3">
-        <div class="row text-center">
-          <div class="col-md-4">
-            <div class="border rounded p-3 bg-light">
-              <strong class="d-block text-dark fs-5">{{ pedido.largura_cabine_calculada|formato_br }} m</strong>
-              <small class="text-muted">Largura da Cabine</small>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="border rounded p-3 bg-light">
-              <strong class="d-block text-dark fs-5">{{ pedido.comprimento_cabine_calculado|formato_br }} m</strong>
-              <small class="text-muted">Comprimento da Cabine</small>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="border rounded p-3 bg-light">
-              <strong class="d-block text-dark fs-5">{{ pedido.altura_cabine|formato_br }} m</strong>
-              <small class="text-muted">Altura da Cabine</small>
-            </div>
-          </div>
-        </div>
-        {% endif %}
       </div>
     </div>
 
     <!-- ETAPA 2: PORTAS -->
-    <div class="card shadow-sm border-warning mb-4">
-      <div class="card-header bg-warning text-dark">
-        <h6 class="card-title mb-0">Portas</h6>
+    <div class="card shadow-sm border-secondary mb-4">
+      <div class="card-header bg-secondary text-white">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-door-open me-2"></i>Sistema de Portas
+        </h6>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <!-- Porta da Cabine -->
           <div class="col-md-6">
-            <h6 class="text-muted mb-3">Porta da Cabine</h6>
+            <h6 class="text-secondary mb-3 border-bottom pb-2">Porta da Cabine</h6>
             
-            <!-- Especificação em uma linha -->
-            <div class="mb-3">
-              <label class="form-label text-muted small">Especificação</label>
-              <div class="form-control-plaintext">
-                <strong>
-                  {{ pedido.get_modelo_porta_cabine_display|default:"—" }}, 
-                  {{ pedido.get_material_porta_cabine_display|default:"—" }}{% if pedido.folhas_porta_cabine %}, 
-                  {{ pedido.get_folhas_porta_cabine_display }} folhas{% endif %}
-                </strong>
-                {% if pedido.material_porta_cabine == 'Outro' and pedido.material_porta_cabine_outro %}
-                  <br><small class="text-muted">{{ pedido.material_porta_cabine_outro }} - {{ pedido.valor_porta_cabine_outro|formato_br }}</small>
-                {% endif %}
-              </div>
+            <div class="mb-2">
+              <label class="form-label text-muted small">Modelo</label>
+              <div class="form-control-plaintext"><strong>{{ pedido.get_modelo_porta_cabine_display|default:"—" }}</strong></div>
             </div>
             
-            <!-- Dimensões -->
+            <div class="mb-2">
+              <label class="form-label text-muted small">Material</label>
+              <div class="form-control-plaintext">{{ pedido.get_material_porta_cabine_display|default:"—" }}</div>
+            </div>
+            
+            {% if pedido.folhas_porta_cabine %}
+            <div class="mb-2">
+              <label class="form-label text-muted small">Folhas</label>
+              <div class="form-control-plaintext">{{ pedido.get_folhas_porta_cabine_display }}</div>
+            </div>
+            {% endif %}
+            
             <div class="mb-2">
               <label class="form-label text-muted small">Dimensões</label>
-              <div class="form-control-plaintext"><strong>{{ pedido.largura_porta_cabine }} x {{ pedido.altura_porta_cabine }} m</strong></div>
+              <div class="form-control-plaintext">
+                <strong>{{ pedido.largura_porta_cabine|formato_br }} × {{ pedido.altura_porta_cabine|formato_br }} m</strong>
+              </div>
             </div>
           </div>
           
-          <!-- Porta do Pavimento -->
+          <!-- Portas dos Pavimentos - SEMPRE DETALHADAS -->
           <div class="col-md-6">
-            <h6 class="text-muted mb-3">Porta do Pavimento</h6>
+            <h6 class="text-secondary mb-3 border-bottom pb-2">Portas dos Pavimentos</h6>
             
-            <!-- Especificação com variações por pavimento -->
-            <div class="mb-3">
-              <label class="form-label text-muted small">Especificação</label>
-              <div class="form-control-plaintext">
-                {% if pedido.portas_pavimento.all %}
-                  <!-- TEM DADOS NA TABELA: Listar todas as portas -->
-                  {% for porta in pedido.portas_pavimento.all %}
-                    <strong>
-                      • {{ porta.modelo }}, {{ porta.material }}{% if porta.modelo == 'Automática' %}, 2 folhas{% endif %} - {{ porta.nome_andar }}
-                    </strong>
-                    {% if not forloop.last %}<br>{% endif %}
-                  {% endfor %}
-                  <br><small class="text-muted">({{ pedido.portas_pavimento.all|length }} porta{{ pedido.portas_pavimento.all|length|pluralize:"s" }} total)</small>
-                {% else %}
-                  <!-- SEM DADOS NA TABELA: Usar especificação padrão -->
-                  <strong>
-                    {{ pedido.get_modelo_porta_pavimento_display|default:"—" }}, 
-                    {{ pedido.get_material_porta_pavimento_display|default:"—" }}{% if pedido.modelo_porta_pavimento == 'Automática' and pedido.folhas_porta_pavimento %}, 
-                    {{ pedido.get_folhas_porta_pavimento_display }} folhas{% endif %} ({{ pedido.pavimentos }})
-                  </strong>
-                {% endif %}
+            {% if pedido.portas_pavimento.all %}
+              <!-- CONFIGURAÇÃO INDIVIDUAL POR PAVIMENTO -->
+              <div class="mb-3">
+                <label class="form-label text-muted small">Configuração Individual por Pavimento</label>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                      <tr>
+                        <th class="small">Pavimento</th>
+                        <th class="small">Modelo</th>
+                        <th class="small">Material</th>
+                        <th class="small">Saída</th>
+                        <th class="small">Dim. (m)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for porta in pedido.portas_pavimento.all %}
+                      {% if porta.ativo %}
+                      <tr>
+                        <td class="small fw-bold">{{ porta.nome_andar }}</td>
+                        <td class="small">{{ porta.modelo }}</td>
+                        <td class="small">{{ porta.material }}</td>
+                        <td class="small">{{ porta.saida|title|default:"Normal" }}</td>
+                        <td class="small">{{ porta.largura|floatformat:2 }}×{{ porta.altura|floatformat:2 }}</td>
+                      </tr>
+                      {% endif %}
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
                 
-                {% if pedido.material_porta_pavimento == 'Outro' and pedido.material_porta_pavimento_outro %}
-                  <br><small class="text-muted">{{ pedido.material_porta_pavimento_outro }} - {{ pedido.valor_porta_pavimento_outro|formato_br }}</small>
-                {% endif %}
+                <!-- Resumo de especificações -->
+                <div class="mt-2 p-2 bg-light rounded">
+                  <small class="text-muted">
+                    <strong>Total:</strong> {{ pedido.portas_pavimento.all|length }} pavimento{{ pedido.portas_pavimento.all|length|pluralize:"s" }} configurado{{ pedido.portas_pavimento.all|length|pluralize:"s" }}<br>
+                    
+                    <!-- Contar modelos diferentes -->
+                    {% regroup pedido.portas_pavimento.all by modelo as modelos_agrupados %}
+                    <strong>Modelos:</strong> 
+                    {% for modelo_group in modelos_agrupados %}
+                      {{ modelo_group.grouper }} ({{ modelo_group.list|length }}){% if not forloop.last %}, {% endif %}
+                    {% endfor %}<br>
+                    
+                    <!-- Contar materiais diferentes -->
+                    {% regroup pedido.portas_pavimento.all by material as materiais_agrupados %}
+                    <strong>Materiais:</strong>
+                    {% for material_group in materiais_agrupados %}
+                      {{ material_group.grouper }} ({{ material_group.list|length }}){% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  </small>
+                </div>
+                
+                <!-- Observações especiais -->
+                {% for porta in pedido.portas_pavimento.all %}
+                  {% if porta.observacoes %}
+                    <div class="mt-2 p-2 border-start border-warning border-3 bg-light">
+                      <small class="text-muted">
+                        <strong>{{ porta.nome_andar }}:</strong> {{ porta.observacoes }}
+                      </small>
+                    </div>
+                  {% endif %}
+                {% endfor %}
               </div>
-            </div>
-            
-            <!-- Dimensões -->
-            <div class="mb-2">
-              <label class="form-label text-muted small">Dimensões</label>
-              <div class="form-control-plaintext"><strong>{{ pedido.largura_porta_pavimento }} x {{ pedido.altura_porta_pavimento }} m</strong></div>
+            {% else %}
+              <!-- ALERTA: DADOS INDIVIDUAIS NÃO ENCONTRADOS -->
+              <div class="alert alert-warning p-3">
+                <h6 class="alert-heading mb-2">
+                  <i class="fas fa-exclamation-triangle me-2"></i>Configuração Individual Necessária
+                </h6>
+                <p class="mb-2">
+                  Este sistema requer configuração individual de portas por pavimento. 
+                  Os dados básicos disponíveis são:
+                </p>
+                
+                <div class="mb-2">
+                  <strong>Modelo Base:</strong> {{ pedido.get_modelo_porta_pavimento_display|default:"Não especificado" }}<br>
+                  <strong>Material Base:</strong> {{ pedido.get_material_porta_pavimento_display|default:"Não especificado" }}<br>
+                  <strong>Dimensões Base:</strong> {{ pedido.largura_porta_pavimento|formato_br|default:"N/A" }} × {{ pedido.altura_porta_pavimento|formato_br|default:"N/A" }} m<br>
+                  <strong>Pavimentos:</strong> {{ pedido.pavimentos }} pavimentos
+                </p>
+                
+                <small class="text-muted">
+                  <i class="fas fa-info-circle me-1"></i>
+                  Complete a configuração individual no formulário de edição para obter especificações detalhadas.
+                </small>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESUMO TÉCNICO -->
+    <div class="card shadow-sm border-dark mb-4">
+      <div class="card-header bg-dark text-white">
+        <h6 class="card-title mb-0">
+          <i class="fas fa-clipboard-list me-2"></i>Resumo das Especificações
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-12">
+            <div class="alert alert-info p-3 mb-0">
+              <h6 class="alert-heading mb-2">
+                <i class="fas fa-info-circle me-2"></i>Descrição Técnica Completa
+              </h6>
+              <p class="mb-2">
+                <strong>{{ pedido.get_modelo_elevador_display }}</strong> com capacidade de 
+                <strong>{{ pedido.capacidade|formato_br }} kg</strong>
+                {% if pedido.capacidade_pessoas %}({{ pedido.capacidade_pessoas }} pessoas){% endif %}, 
+                acionamento <strong>{{ pedido.get_acionamento_display }}</strong>
+                {% if pedido.tipo_motor %}, motor {{ pedido.get_tipo_motor_display|lower }}{% endif %}
+                {% if pedido.tracao %}, tração {{ pedido.get_tracao_display }}{% endif %}.
+              </p>
+              
+              <p class="mb-2">
+                <strong>Poço:</strong> {{ pedido.largura_poco|formato_br }} × {{ pedido.comprimento_poco|formato_br }} × {{ pedido.altura_poco|formato_br }} m 
+                ({{ pedido.area_poco|floatformat:2 }} m²), servindo {{ pedido.pavimentos }} pavimentos.
+              </p>
+              
+              <p class="mb-2">
+                <strong>Cabine:</strong> {{ pedido.get_material_cabine_display|default:"Material não especificado" }}
+                {% if pedido.espessura_cabine %}{{ pedido.get_espessura_cabine_display }}{% endif %}, 
+                altura {{ pedido.altura_cabine|formato_br }} m
+                {% if pedido.largura_cabine_calculada and pedido.comprimento_cabine_calculado %}, 
+                dimensões {{ pedido.largura_cabine_calculada|formato_br }} × {{ pedido.comprimento_cabine_calculado|formato_br }} m{% endif %}.
+              </p>
+              
+              <p class="mb-0">
+                <strong>Portas:</strong> Cabine {{ pedido.get_modelo_porta_cabine_display|default:"não especificada" }} 
+                em {{ pedido.get_material_porta_cabine_display|default:"material não especificado" }}, 
+                {{ pedido.largura_porta_cabine|formato_br }} × {{ pedido.altura_porta_cabine|formato_br }} m. 
+                {% if pedido.portas_pavimento.all %}
+                  Pavimentos com configuração individual ({{ pedido.portas_pavimento.all|length }} portas configuradas).
+                {% else %}
+                  Pavimentos: configuração individual necessária para {{ pedido.pavimentos }} pavimentos.
+                {% endif %}
+              </p>
             </div>
           </div>
         </div>

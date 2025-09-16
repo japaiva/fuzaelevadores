@@ -334,7 +334,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 STEP 2: JavaScript inicializado - VERSÃO ATUALIZADA com Abertura Cabine');
+    console.log('🎯 STEP 2: JavaScript inicializado - VERSÃO LIMPA');
     
     const form = document.getElementById('cabinePortasForm');
     
@@ -509,35 +509,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // === VALIDAÇÃO DO FORMULÁRIO ===
-    
+    // === VALIDAÇÃO MÍNIMA ===
     if (form) {
         form.addEventListener('submit', function(e) {
-            console.log('🚀 Validando formulário step 2...');
+            console.log('🚀 Enviando formulário step 2...');
             
-            // Validações básicas
-            const camposObrigatorios = [
-                document.getElementById('{{ form.material_cabine.id_for_label }}'),
-                document.getElementById('{{ form.saida_cabine.id_for_label }}'),
-                document.getElementById('{{ form.abertura_cabine.id_for_label }}'), // ← NOVA VALIDAÇÃO
-                document.getElementById('{{ form.altura_cabine.id_for_label }}'),
-                document.getElementById('{{ form.modelo_porta_cabine.id_for_label }}'),
-                document.getElementById('{{ form.material_porta_cabine.id_for_label }}'),
-                document.getElementById('{{ form.largura_porta_cabine.id_for_label }}'),
-                document.getElementById('{{ form.altura_porta_cabine.id_for_label }}')
-            ];
-            
-            for (const campo of camposObrigatorios) {
-                if (campo && (!campo.value || campo.value.trim() === '')) {
-                    e.preventDefault();
-                    const label = campo.previousElementSibling?.textContent || 'Campo obrigatório';
-                    alert(`Preencha o campo: ${label}`);
-                    campo.focus();
-                    return false;
-                }
-            }
-            
-            // Validar folhas para portas automáticas
+            // Validar apenas porta automática da cabine (essencial)
             if (modeloPortaCabineSelect && modeloPortaCabineSelect.value === 'Automática') {
                 const folhasCabine = document.getElementById('{{ form.folhas_porta_cabine.id_for_label }}');
                 if (folhasCabine && !folhasCabine.value) {
@@ -548,32 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Validar valores numéricos
-            const alturaInput = document.getElementById('{{ form.altura_cabine.id_for_label }}');
-            if (alturaInput && parseFloat(alturaInput.value) <= 0) {
-                e.preventDefault();
-                alert('A altura da cabine deve ser maior que zero.');
-                alturaInput.focus();
-                return false;
-            }
-            
-            const larguraPortaInput = document.getElementById('{{ form.largura_porta_cabine.id_for_label }}');
-            if (larguraPortaInput && parseFloat(larguraPortaInput.value) <= 0) {
-                e.preventDefault();
-                alert('A largura da porta deve ser maior que zero.');
-                larguraPortaInput.focus();
-                return false;
-            }
-            
-            const alturaPortaInput = document.getElementById('{{ form.altura_porta_cabine.id_for_label }}');
-            if (alturaPortaInput && parseFloat(alturaPortaInput.value) <= 0) {
-                e.preventDefault();
-                alert('A altura da porta deve ser maior que zero.');
-                alturaPortaInput.focus();
-                return false;
-            }
-            
-            console.log('✅ Validação step 2 concluída - enviando formulário');
+            console.log('✅ Validação mínima concluída - enviando formulário');
             return true;
         });
     }
@@ -585,7 +537,7 @@ document.addEventListener('DOMContentLoaded', function() {
     togglePortaCabine();
     toggleFolhasPortasIndividuais();
     
-    console.log('✅ STEP 2: JavaScript inicializado com sucesso - VERSÃO COM ABERTURA CABINE');
+    console.log('✅ STEP 2: JavaScript inicializado com sucesso - VERSÃO LIMPA');
 });
 </script>
 {% endblock %}

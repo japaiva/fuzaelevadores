@@ -1,4 +1,4 @@
-<!-- templates/contratos/contrato_template.html -->
+<!-- templates/contratos/contrato_template.html - VERSÃO CORRIGIDA PARA PORTAS DETALHADAS -->
 {% load formato_br %}
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -123,6 +123,26 @@
             width: 40%;
         }
         
+        .doors-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 9px;
+        }
+        
+        .doors-table th,
+        .doors-table td {
+            border: 1px solid #ccc;
+            padding: 4px 6px;
+            text-align: left;
+        }
+        
+        .doors-table th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            font-size: 9px;
+        }
+        
         .value-box {
             text-align: center;
             font-size: 16px;
@@ -200,6 +220,14 @@
         
         /* Quebras de página */
         .page-break { page-break-before: always; }
+        
+        /* Estilos para motor */
+        .motor-highlight {
+            background-color: #fff3cd;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -265,9 +293,12 @@
                     <tr><td class="spec-label">Capacidade</td><td>{{ proposta.capacidade }} kg {% if proposta.capacidade_pessoas %}({{ proposta.capacidade_pessoas }} pessoas){% endif %}</td></tr>
                     <tr><td class="spec-label">Total de Paradas</td><td>{{ proposta.pavimentos }} pavimentos</td></tr>
                     <tr><td class="spec-label">Acionamento</td><td>{{ proposta.get_acionamento_display }}</td></tr>
+                    {% if proposta.tipo_motor %}
+                    <tr><td class="spec-label">Tipo do Motor</td><td>{{ proposta.get_tipo_motor_display }}</td></tr>
+                    {% endif %}
                     {% if proposta.tracao %}<tr><td class="spec-label">Tração</td><td>{{ proposta.tracao }}</td></tr>{% endif %}
                     <tr><td class="spec-label">Velocidade</td><td>{{ proposta.velocidade_calculada|default:"0.5" }} m/s</td></tr>
-                    <tr><td class="spec-label">Potência do Motor</td><td>{{ proposta.potencia_motor_calculada|floatformat:1|default:"25.0" }} cv</td></tr>
+                    <tr><td class="spec-label">Potência do Motor</td><td><span class="motor-highlight">{{ proposta.potencia_motor_calculada|floatformat:1|default:"25.0" }} CV</span></td></tr>
                     {% if proposta.normas_abnt %}<tr><td class="spec-label">Norma Técnica</td><td>{{ proposta.get_normas_abnt_display }}</td></tr>{% endif %}
                 </table>
             </div>
@@ -278,6 +309,7 @@
                     <tr><td class="spec-label">Largura</td><td>{{ proposta.largura_poco }} m</td></tr>
                     <tr><td class="spec-label">Comprimento</td><td>{{ proposta.comprimento_poco }} m</td></tr>
                     <tr><td class="spec-label">Altura (Percurso)</td><td>{{ proposta.altura_poco }} m</td></tr>
+                    <tr><td class="spec-label">Área Total</td><td>{{ proposta.area_poco|floatformat:2 }} m²</td></tr>
                 </table>
             </div>
 
@@ -287,15 +319,19 @@
                     <tr><td class="spec-label">Material</td><td>{{ proposta.get_material_cabine_display }}</td></tr>
                     {% if proposta.espessura_cabine %}<tr><td class="spec-label">Espessura</td><td>{{ proposta.espessura_cabine }} mm</td></tr>{% endif %}
                     <tr><td class="spec-label">Altura</td><td>{{ proposta.altura_cabine }} m</td></tr>
+                    {% if proposta.saida_cabine %}<tr><td class="spec-label">Saída</td><td>{{ proposta.get_saida_cabine_display }}</td></tr>{% endif %}
+                    {% if proposta.abertura_cabine %}<tr><td class="spec-label">Abertura</td><td>{{ proposta.get_abertura_cabine_display }}</td></tr>{% endif %}
                     {% if proposta.largura_cabine_calculada and proposta.comprimento_cabine_calculado %}
                     <tr><td class="spec-label">Dimensões Calculadas</td><td>{{ proposta.largura_cabine_calculada }} x {{ proposta.comprimento_cabine_calculado }} m</td></tr>
                     {% endif %}
-                    {% if proposta.material_piso_cabine %}<tr><td class="spec-label">Piso</td><td>{{ proposta.get_material_piso_cabine_display }}</td></tr>{% endif %}
+                    <tr><td class="spec-label">Piso</td><td>{{ proposta.get_piso_cabine_display }}{% if proposta.material_piso_cabine %} - {{ proposta.get_material_piso_cabine_display }}{% endif %}</td></tr>
                 </table>
             </div>
 
             <div class="subcclause">
-                <div class="subcclause-title">1.4 PORTAS</div>
+                <div class="subcclause-title">1.4 SISTEMA DE PORTAS</div>
+                
+                <!-- Porta da Cabine -->
                 <table class="specs-table">
                     <tr>
                         <td class="spec-label">Porta da Cabine</td>
@@ -308,15 +344,73 @@
                             {% endif %}
                         </td>
                     </tr>
-                    <tr>
-                        <td class="spec-label">Portas de Pavimento</td>
-                        <td>
-                            {{ proposta.get_modelo_porta_pavimento_display|default:"Automática" }}, 
-                            {{ proposta.get_material_porta_pavimento_display|default:"Inox" }}
-                            <br>Quantidade: {{ proposta.pavimentos }} unidades
-                        </td>
-                    </tr>
                 </table>
+
+                <!-- Portas de Pavimento - SEÇÃO ATUALIZADA -->
+                <strong>Portas de Pavimento - Configuração Individual:</strong>
+                {% if proposta.portas_pavimento.all %}
+                    <!-- TEM CONFIGURAÇÃO INDIVIDUAL -->
+                    <table class="doors-table">
+                        <thead>
+                            <tr>
+                                <th>Pavimento</th>
+                                <th>Modelo</th>
+                                <th>Material</th>
+                                <th>Saída</th>
+                                <th>Abertura</th>
+                                <th>Dimensões (m)</th>
+                                {% comment %}<th>Obs.</th>{% endcomment %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for porta in proposta.portas_pavimento.all %}
+                            {% if porta.ativo %}
+                            <tr>
+                                <td>{{ porta.nome_andar }}</td>
+                                <td>{{ porta.modelo }}</td>
+                                <td>{{ porta.material }}</td>
+                                <td>{{ porta.saida|title|default:"Normal" }}</td>
+                                <td>{{ porta.abertura_porta|title|default:"Direita" }}</td>
+                                <td>{{ porta.largura|floatformat:2 }} x {{ porta.altura|floatformat:2 }}</td>
+                                {% comment %}<td>{{ porta.observacoes|truncatechars:20|default:"-" }}</td>{% endcomment %}
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 10px; font-size: 9px; color: #666;">
+                        <strong>Resumo:</strong> {{ proposta.portas_pavimento.all|length }} porta{{ proposta.portas_pavimento.all|length|pluralize:"s" }} configurada{{ proposta.portas_pavimento.all|length|pluralize:"s" }} individualmente conforme especificações acima.
+                        
+                        <!-- Contar variações por modelo -->
+                        {% regroup proposta.portas_pavimento.all by modelo as modelos_grupo %}
+                        {% if modelos_grupo|length > 1 %}
+                            <br><strong>Modelos:</strong> 
+                            {% for modelo in modelos_grupo %}
+                                {{ modelo.grouper }} ({{ modelo.list|length }}){% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Contar variações por material -->  
+                        {% regroup proposta.portas_pavimento.all by material as materiais_grupo %}
+                        {% if materiais_grupo|length > 1 %}
+                            <br><strong>Materiais:</strong>
+                            {% for material in materiais_grupo %}
+                                {{ material.grouper }} ({{ material.list|length }}){% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <!-- FALLBACK: DADOS BÁSICOS QUANDO NÃO TEM CONFIGURAÇÃO INDIVIDUAL -->
+                    <div style="margin-top: 10px; padding: 10px; background-color: #fff3cd; border-radius: 5px; font-size: 10px;">
+                        <strong>⚠️ CONFIGURAÇÃO BÁSICA:</strong><br>
+                        Modelo: {{ proposta.get_modelo_porta_pavimento_display|default:"A definir" }}<br>
+                        Material: {{ proposta.get_material_porta_pavimento_display|default:"A definir" }}<br>
+                        Dimensões: {{ proposta.largura_porta_pavimento|formato_br|default:"A definir" }} x {{ proposta.altura_porta_pavimento|formato_br|default:"A definir" }} m<br>
+                        Quantidade: {{ proposta.pavimentos }} unidades<br>
+                        <em>Obs.: Configuração individual deve ser detalhada antes da instalação.</em>
+                    </div>
+                {% endif %}
             </div>
 
             <div class="subcclause">
@@ -324,7 +418,11 @@
                 <table class="specs-table">
                     <tr><td class="spec-label">Painel de Comando</td><td>Painel elétrico trifásico 220V</td></tr>
                     <tr><td class="spec-label">Finais de Curso</td><td>Em todas as paradas e portas de pavimento</td></tr>
-                    <tr><td class="spec-label">Contrapeso</td><td>{{ proposta.get_contrapeso_display|default:"Em roldana, chapas e polia" }}</td></tr>
+                    {% if proposta.contrapeso %}
+                    <tr><td class="spec-label">Contrapeso</td><td>{{ proposta.get_contrapeso_display }}</td></tr>
+                    {% else %}
+                    <tr><td class="spec-label">Contrapeso</td><td>Sistema padrão conforme acionamento</td></tr>
+                    {% endif %}
                     <tr><td class="spec-label">Mola de Segurança</td><td>Mola de sustentação da cabine no poço</td></tr>
                     <tr><td class="spec-label">Freio de Emergência</td><td>Freio instantâneo na cabine</td></tr>
                     <tr><td class="spec-label">Sistema de Segurança</td><td>Elevador não funciona com portas abertas</td></tr>
@@ -339,7 +437,9 @@
         <div class="clause-content">
             <div class="value-box">
                 R$ {{ proposta.valor_proposta|formato_br|default:"0,00" }}
-                ({{ proposta.valor_proposta|floatformat:2 }})
+                <div style="font-size: 11px; margin-top: 5px; color: #666;">
+                    ({{ proposta.valor_proposta|floatformat:2 }})
+                </div>
             </div>
         </div>
     </div>
@@ -389,6 +489,13 @@
                 <p>Conforme informado pela CONTRATANTE: {{ proposta.previsao_conclusao_obra|date:"d/m/Y" }}</p>
             </div>
             {% endif %}
+            
+            {% if proposta.data_vistoria_medicao %}
+            <div class="subcclause">
+                <div class="subcclause-title">4.3 MEDIÇÃO E VISTORIA TÉCNICA</div>
+                <p>Data prevista para medição inicial: {{ proposta.data_vistoria_medicao|date:"d/m/Y" }}</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -401,23 +508,28 @@
         <div class="clause-content">
             <div class="subcclause">
                 <div class="subcclause-title">5.1 DA CONTRATADA</div>
-                <p>a) Fornecer e instalar o elevador conforme especificações técnicas;</p>
+                <p>a) Fornecer e instalar o elevador conforme especificações técnicas detalhadas;</p>
                 <p>b) Executar os serviços com materiais de primeira qualidade;</p>
                 <p>c) Responsabilizar-se pela instalação elétrica do equipamento;</p>
                 <p>d) Fornecer projeto técnico e memorial descritivo;</p>
-                {% if proposta.documentacao_prefeitura %}
-                <p>e) Providenciar documentação e regularização junto à Prefeitura;</p>
+                <p>e) Realizar medições e vistorias técnicas conforme cronograma;</p>
+                {% if proposta.documentacao_prefeitura == 'empresa' %}
+                <p>f) Providenciar documentação e regularização junto à Prefeitura;</p>
                 {% endif %}
-                <p>f) Conceder garantia conforme cláusula específica.</p>
+                <p>g) Conceder garantia conforme cláusula específica.</p>
             </div>
 
             <div class="subcclause">
                 <div class="subcclause-title">5.2 DA CONTRATANTE</div>
-                <p>a) Preparar o poço conforme dimensões especificadas;</p>
-                <p>b) Fornecer energia elétrica no local (220V trifásico);</p>
+                <p>a) Preparar o poço conforme dimensões especificadas ({{ proposta.largura_poco }} x {{ proposta.comprimento_poco }} x {{ proposta.altura_poco }} m);</p>
+                <p>b) Fornecer energia elétrica no local (220V trifásico, {{ proposta.potencia_motor_calculada|floatformat:1|default:"25" }} CV);</p>
                 <p>c) Garantir acesso livre ao local da instalação;</p>
-                <p>d) Efetuar os pagamentos nos prazos estabelecidos;</p>
-                <p>e) Aceitar o equipamento mediante vistoria técnica.</p>
+                <p>d) Preparar os vãos de porta conforme configuração individual especificada;</p>
+                <p>e) Efetuar os pagamentos nos prazos estabelecidos;</p>
+                {% if proposta.documentacao_prefeitura == 'cliente' %}
+                <p>f) Responsabilizar-se pela documentação junto à Prefeitura;</p>
+                {% endif %}
+                <p>g) Aceitar o equipamento mediante vistoria técnica.</p>
             </div>
         </div>
     </div>
@@ -436,7 +548,8 @@
                 <p>a) Defeitos de fabricação e instalação;</p>
                 <p>b) Funcionamento inadequado por falha técnica;</p>
                 <p>c) Peças e componentes originais;</p>
-                <p>d) Mão de obra para reparos cobertos.</p>
+                <p>d) Mão de obra para reparos cobertos;</p>
+                <p>e) Sistema completo de portas e comandos.</p>
             </div>
 
             <div class="subcclause">
@@ -444,7 +557,8 @@
                 <p>a) Danos por uso inadequado ou sobrecarga;</p>
                 <p>b) Manutenção por terceiros não autorizados;</p>
                 <p>c) Desgaste natural dos componentes;</p>
-                <p>d) Danos elétricos por oscilações na rede.</p>
+                <p>d) Danos elétricos por oscilações na rede;</p>
+                <p>e) Alterações não autorizadas no sistema.</p>
             </div>
         </div>
     </div>
@@ -464,8 +578,8 @@
         <div class="clause-title">Cláusula 8ª - Disposições Gerais</div>
         <div class="clause-content">
             <div class="subcclause">
-                <div class="subcclause-title">8.1 ALTERAÇÕES</div>
-                <p>Alterações neste contrato somente terão validade se formalizadas por escrito e assinadas por ambas as partes.</p>
+                <div class="subcclause-title">8.1 ALTERAÇÕES TÉCNICAS</div>
+                <p>Alterações nas especificações técnicas somente terão validade se formalizadas por escrito e assinadas por ambas as partes, podendo implicar em ajuste de valores.</p>
             </div>
 
             <div class="subcclause">
