@@ -1,4 +1,4 @@
-# core/models/portas_pavimento.py - VERSÃO EXPANDIDA
+# core/models/portas_pavimento.py - VERSÃO ATUALIZADA COM MEZANINO
 
 from django.db import models
 from decimal import Decimal
@@ -114,10 +114,15 @@ class PortaPavimento(models.Model):
         if not self.nome_andar:
             if self.andar == 0:
                 self.nome_andar = "Térreo"
+            elif self.andar == 1:
+                # ✅ NOVO: Andar 1 agora é Mezanino
+                self.nome_andar = "Mezanino"
             elif self.andar < 0:
                 self.nome_andar = f"Subsolo {abs(self.andar)}" if abs(self.andar) > 1 else "Subsolo"
             else:
-                self.nome_andar = f"{self.andar}º Andar"
+                # ✅ AJUSTADO: Andares 2+ agora são numerados corretamente
+                # Andar 2 = 1º Andar, Andar 3 = 2º Andar, etc.
+                self.nome_andar = f"{self.andar - 1}º Andar"
         
         super().save(*args, **kwargs)
     

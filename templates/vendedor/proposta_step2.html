@@ -54,9 +54,12 @@
             <h6 class="card-title mb-0">Cabine</h6>
           </div>
           <div class="card-body">
+
+
+
             <!-- Material, Acabamento, Saída e Abertura da Cabine -->
             <div class="row g-3 mb-4">
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.material_cabine.id_for_label }}">Material da Cabine*</label>
                 {{ form.material_cabine }}
                 {% if form.material_cabine.errors %}
@@ -65,7 +68,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.espessura_cabine.id_for_label }}">Espessura*</label>
                 {{ form.espessura_cabine }}
                 {% if form.espessura_cabine.errors %}
@@ -74,7 +77,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.saida_cabine.id_for_label }}">Saída*</label>
                 {{ form.saida_cabine }}
                 {% if form.saida_cabine.errors %}
@@ -83,21 +86,11 @@
                   </div>
                 {% endif %}
               </div>
-              <!-- NOVO CAMPO: Abertura da Cabine -->
-              <div class="col-md-3">
-                <label class="form-label" for="{{ form.abertura_cabine.id_for_label }}">Abertura*</label>
-                {{ form.abertura_cabine }}
-                {% if form.abertura_cabine.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in form.abertura_cabine.errors %}{{ error }}{% endfor %}
-                  </div>
-                {% endif %}
-              </div>
             </div>
 
             <!-- Segunda linha: Altura da Cabine -->
             <div class="row g-3 mb-4">
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.altura_cabine.id_for_label }}">Altura da Cabine (m)*</label>
                 {{ form.altura_cabine }}
                 {% if form.altura_cabine.errors %}
@@ -107,7 +100,7 @@
                 {% endif %}
               </div>
 
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.piso_cabine.id_for_label }}">Responsável pelo Piso*</label>
                 {{ form.piso_cabine }}
                 {% if form.piso_cabine.errors %}
@@ -116,7 +109,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3" id="material-piso-div" style="display: none;">
+              <div class="col-md-4" id="material-piso-div" style="display: none;">
                 <label class="form-label" for="{{ form.material_piso_cabine.id_for_label }}">Material do Piso</label>
                 {{ form.material_piso_cabine }}
                 {% if form.material_piso_cabine.errors %}
@@ -136,7 +129,7 @@
           </div>
           <div class="card-body">
             <div class="row g-3">
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.modelo_porta_cabine.id_for_label }}">Modelo*</label>
                 {{ form.modelo_porta_cabine }}
                 {% if form.modelo_porta_cabine.errors %}
@@ -145,7 +138,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.material_porta_cabine.id_for_label }}">Material*</label>
                 {{ form.material_porta_cabine }}
                 {% if form.material_porta_cabine.errors %}
@@ -154,7 +147,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3" id="folhas-cabine-div" style="display: none;">
+              <div class="col-md-4" id="folhas-cabine-div" style="display: none;">
                 <label class="form-label" for="{{ form.folhas_porta_cabine.id_for_label }}">Folhas</label>
                 {{ form.folhas_porta_cabine }}
                 {% if form.folhas_porta_cabine.errors %}
@@ -163,9 +156,20 @@
                   </div>
                 {% endif %}
               </div>
+
+              <!-- NOVO CAMPO: Abertura da Cabine -->
+              <div class="col-md-4">
+                <label class="form-label" for="{{ form.abertura_cabine.id_for_label }}">Abertura*</label>
+                {{ form.abertura_cabine }}
+                {% if form.abertura_cabine.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.abertura_cabine.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
               
               <!-- Dimensões -->
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.largura_porta_cabine.id_for_label }}">Largura (m)*</label>
                 {{ form.largura_porta_cabine }}
                 {% if form.largura_porta_cabine.errors %}
@@ -174,7 +178,7 @@
                   </div>
                 {% endif %}
               </div>
-              <div class="col-md-3">
+              <div class="col-md-4">
                 <label class="form-label" for="{{ form.altura_porta_cabine.id_for_label }}">Altura (m)*</label>
                 {{ form.altura_porta_cabine }}
                 {% if form.altura_porta_cabine.errors %}
@@ -272,16 +276,23 @@
                     
                     <!-- Dimensões -->
                     <div class="row g-2 mb-3">
+
                       <div class="col-4">
                         <label class="form-label small">Largura (m)</label>
-                        <input type="number" step="0.01" min="1.8" max="4" 
+                        <input type="number" step="0.01" min="0.6" max="4" 
+                              class="form-control form-control-sm" 
+                              name="porta_largura_{{ porta.andar }}" 
+                              value="{% if porta.largura %}{{ porta.largura|stringformat:'f' }}{% endif %}">
+                      </div>
+                      <div class="col-4">
+                        <label class="form-label small">Altura (m)</label>
+                        <input type="number" step="0.01" min="1.8" max="3" 
                               class="form-control form-control-sm" 
                               name="porta_altura_{{ porta.andar }}" 
                               value="{% if porta.altura %}{{ porta.altura|stringformat:'f' }}{% endif %}">
                       </div>
-                      <div class="col-4">
-                        <label class="form-label small">Altura (m)</label>
-                      </div>
+
+                    
                       <div class="col-4 folhas-container" {% if porta.modelo != 'Automática' %}style="display: none;"{% endif %}>
                         <label class="form-label small">Folhas</label>
                         <select name="porta_folhas_{{ porta.andar }}" class="form-select form-select-sm">
