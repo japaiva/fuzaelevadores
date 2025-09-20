@@ -134,8 +134,8 @@
               </td>
 
               <td class="text-end">
-                <!-- Versão Desktop: todos os botões -->
-                <div class="btn-group d-none d-md-inline-flex" role="group">
+                <!-- Botões unificados para Desktop e Mobile -->
+                <div class="btn-group" role="group">
                   <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
                     class="btn btn-sm btn-outline-primary" 
                     title="Ver Proposta"
@@ -153,7 +153,7 @@
                   {% endif %}
                   
                   <a href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" 
-                    class="btn btn-sm btn-outline-info" 
+                    class="btn btn-sm btn-outline-info d-none d-md-inline-block" 
                     title="Gerar Minuta do Contrato"
                     target="_blank"
                     data-bs-toggle="tooltip">
@@ -161,7 +161,7 @@
                   </a>
 
                   <a href="{% url 'vendedor:proposta_status' pedido.pk %}" 
-                    class="btn btn-sm btn-outline-secondary" 
+                    class="btn btn-sm btn-outline-secondary d-none d-md-inline-block" 
                     title="Alterar Status"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-exchange-alt"></i>
@@ -176,6 +176,17 @@
                     </button>
 
                     <ul class="dropdown-menu dropdown-menu-end">
+                      <li class="d-md-none">
+                        <a class="dropdown-item" href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" target="_blank">
+                          <i class="fas fa-file-contract me-2"></i>Minuta
+                        </a>
+                      </li>
+                      <li class="d-md-none">
+                        <a class="dropdown-item" href="{% url 'vendedor:proposta_status' pedido.pk %}">
+                          <i class="fas fa-exchange-alt me-2"></i>Alterar Status
+                        </a>
+                      </li>
+                      <li class="d-md-none"><hr class="dropdown-divider"></li>
                       <li>
                         <a class="dropdown-item" href="{% url 'vendedor:proposta_duplicar' pedido.pk %}">
                           <i class="fas fa-copy me-2"></i>Duplicar Proposta
@@ -200,56 +211,6 @@
                         <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" 
                           class="dropdown-item text-danger">
                           <i class="fas fa-trash me-2"></i>Excluir Proposta
-                        </a>
-                      </li>
-                      {% endif %}
-                    </ul>
-                  </div>
-                </div>
-
-                <!-- Versão Mobile: botões essenciais + dropdown -->
-                <div class="d-md-none">
-                  <div class="btn-group" role="group">
-                    <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
-                      class="btn btn-sm btn-outline-primary">
-                      <i class="fas fa-eye"></i>
-                    </a>
-                    
-                    {% if pedido.pode_editar %}
-                    <a href="{% url 'vendedor:proposta_step1_edit' pedido.pk %}" 
-                      class="btn btn-sm btn-outline-warning">
-                      <i class="fas fa-edit"></i>
-                    </a>
-                    {% endif %}
-                    
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                            data-bs-toggle="dropdown">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" target="_blank">
-                          <i class="fas fa-file-contract me-2"></i>Minuta
-                        </a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:proposta_status' pedido.pk %}">
-                          <i class="fas fa-exchange-alt me-2"></i>Status
-                        </a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:proposta_duplicar' pedido.pk %}">
-                          <i class="fas fa-copy me-2"></i>Duplicar
-                        </a>
-                      </li>
-                      {% if pedido.pode_excluir %}
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" 
-                          class="dropdown-item text-danger">
-                          <i class="fas fa-trash me-2"></i>Excluir
                         </a>
                       </li>
                       {% endif %}
