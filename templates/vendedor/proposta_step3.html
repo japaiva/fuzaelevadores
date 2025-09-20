@@ -264,7 +264,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 STEP 3: JavaScript inicializado (versão simples)');
+    console.log('🎯 STEP 3: JavaScript inicializado');
     
     const form = document.getElementById('comercialForm');
     
@@ -336,18 +336,72 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // === FUNÇÃO SIMPLES DE PAGAMENTO ===
+    // === FORMATAÇÃO EM TEMPO REAL DO VALOR DA PROPOSTA ===
+    function formatarValorEmTempoReal() {
+        // Criar elemento de exibição se não existir
+        let displayFormatado = document.getElementById('valor-formatado-display');
+        
+        if (!displayFormatado) {
+            // Criar o elemento de exibição
+            displayFormatado = document.createElement('div');
+            displayFormatado.id = 'valor-formatado-display';
+            displayFormatado.className = 'form-text text-success fw-bold';
+            displayFormatado.style.fontSize = '1.1em';
+            
+            // Inserir após o campo de valor
+            const valorGroup = valorPropostaInput.closest('.input-group') || valorPropostaInput.parentElement;
+            valorGroup.parentElement.insertBefore(displayFormatado, valorGroup.nextSibling);
+        }
+        
+        // Pegar o valor digitado
+        let valor = valorPropostaInput.value;
+        
+        // Remover caracteres não numéricos exceto vírgula e ponto
+        valor = valor.replace(/[^\d.,]/g, '');
+        
+        // Substituir vírgula por ponto para cálculo
+        valor = valor.replace(',', '.');
+        
+        // Converter para número
+        const valorNumerico = parseFloat(valor) || 0;
+        
+        if (valorNumerico > 0) {
+            // Formatar com separadores de milhar e decimal brasileiro
+            const valorFormatado = valorNumerico.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            
+            displayFormatado.innerHTML = `<i class="fas fa-check-circle me-1"></i>${valorFormatado}`;
+            displayFormatado.style.color = '#28a745';
+        } else if (valor.length > 0) {
+            displayFormatado.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Digite um valor válido';
+            displayFormatado.style.color = '#dc3545';
+        } else {
+            displayFormatado.innerHTML = '';
+        }
+        
+        // Também atualizar o cálculo das parcelas
+        calcularPagamento();
+    }
+    
+    // === FUNÇÃO DE CÁLCULO DE PAGAMENTO ===
     function calcularPagamento() {
         if (!valorPropostaInput) return;
         
-        const valorProposta = parseFloat(valorPropostaInput.value) || 0;
+        // Aceitar vírgula no valor
+        let valorStr = valorPropostaInput.value.replace(',', '.');
+        const valorProposta = parseFloat(valorStr) || 0;
+        
         const forma = formaPagamentoSelect ? formaPagamentoSelect.value : '';
         const valorEntrada = parseFloat(valorEntradaInput ? valorEntradaInput.value : 0) || 0;
         const percentualEntrada = parseFloat(percentualEntradaInput ? percentualEntradaInput.value : 0) || 0;
         const numeroParcelas = parseInt(numeroParcelasInput ? numeroParcelasInput.value : 0) || 0;
         
         if (valorProposta <= 0) {
-            if (valorParcelaCalculado) valorParcelaCalculado.value = '0,00';
+            if (valorParcelaCalculado) valorParcelaCalculado.value = 'R$ 0,00';
             return;
         }
         
@@ -373,20 +427,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 🇧🇷 FORMATAÇÃO BRASILEIRA SIMPLES E DIRETA
-        if (valorParcelaCalculado) {
-            // Converte para formato brasileiro: 102000.00 → 102.000,00
+        // Formatação melhorada
+        if (valorParcelaCalculado && valorParcelaCalculada > 0) {
             const valorFormatado = valorParcelaCalculada.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             });
             
             valorParcelaCalculado.value = valorFormatado;
-            
-            console.log(`💰 Valor original: ${valorParcelaCalculada} | Formatado: ${valorFormatado}`);
+        } else {
+            valorParcelaCalculado.value = 'R$ 0,00';
         }
     }
     
+    // === FUNÇÃO PARA ATUALIZAR FORMA DE PAGAMENTO ===
     function updateFormaPagamento() {
         if (!formaPagamentoSelect) return;
         
@@ -413,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
         calcularPagamento();
     }
     
-    // === FUNÇÃO DE CALCULAR VALORES ===
+    // === FUNÇÃO DE CALCULAR VALORES VIA API ===
     function executarCalculo() {
         const pedidoId = btnCalcular ? btnCalcular.dataset.pedidoId : null;
         if (!pedidoId) return;
@@ -436,6 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Se não há valor da proposta, usar o calculado
                 if (!valorPropostaInput.value || parseFloat(valorPropostaInput.value) === 0) {
                     valorPropostaInput.value = data.data.valorCalculado.toFixed(2);
+                    formatarValorEmTempoReal(); // Formatar o novo valor
                 }
                 
                 calcularPagamento();
@@ -478,7 +535,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (valorPropostaInput) {
-        valorPropostaInput.addEventListener('input', calcularPagamento);
+        // Formatação em tempo real enquanto digita
+        valorPropostaInput.addEventListener('input', function() {
+            formatarValorEmTempoReal();
+        });
+        
+        // Formatar também quando o campo recebe foco
+        valorPropostaInput.addEventListener('focus', formatarValorEmTempoReal);
+        
+        // Formatar valor inicial se houver
+        if (valorPropostaInput.value) {
+            formatarValorEmTempoReal();
+        }
     }
     
     if (formaPagamentoSelect) {
@@ -494,6 +562,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // === VALIDAÇÃO DO FORMULÁRIO ===
     if (form) {
         form.addEventListener('submit', function(e) {
+            // Converter vírgula para ponto antes de enviar
+            if (valorPropostaInput && valorPropostaInput.value) {
+                valorPropostaInput.value = valorPropostaInput.value.replace(',', '.');
+            }
+            
             const valorProposta = parseFloat(valorPropostaInput.value) || 0;
             
             if (valorProposta <= 0) {
@@ -510,8 +583,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 prazoEntregaDiasInput.focus();
                 return;
             }
-            
-            console.log('✅ Validação step 3 concluída - enviando formulário');
         });
     }
     
@@ -520,7 +591,11 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFormaPagamento();
     calcularPagamento();
     
-    console.log('✅ STEP 3: JavaScript inicializado com sucesso (versão simples)');
+    // Formatar valor inicial se existir
+    if (valorPropostaInput && valorPropostaInput.value) {
+        formatarValorEmTempoReal();
+    }
 });
+
 </script>
 {% endblock %}

@@ -276,33 +276,35 @@
                     
                     <!-- Dimensões -->
                     <div class="row g-2 mb-3">
-
-                      <div class="col-4">
-                        <label class="form-label small">Largura (m)</label>
-                        <input type="number" step="0.01" min="0.6" max="4" 
-                              class="form-control form-control-sm" 
-                              name="porta_largura_{{ porta.andar }}" 
-                              value="{% if porta.largura %}{{ porta.largura|stringformat:'f' }}{% endif %}">
-                      </div>
-                      <div class="col-4">
-                        <label class="form-label small">Altura (m)</label>
-                        <input type="number" step="0.01" min="1.8" max="3" 
-                              class="form-control form-control-sm" 
-                              name="porta_altura_{{ porta.andar }}" 
-                              value="{% if porta.altura %}{{ porta.altura|stringformat:'f' }}{% endif %}">
-                      </div>
-
-                    
-                      <div class="col-4 folhas-container" {% if porta.modelo != 'Automática' %}style="display: none;"{% endif %}>
-                        <label class="form-label small">Folhas</label>
-                        <select name="porta_folhas_{{ porta.andar }}" class="form-select form-select-sm">
-                          <option value="2" {% if porta.folhas == '2' %}selected{% endif %}>2 Folhas</option>
-                          <option value="3" {% if porta.folhas == '3' %}selected{% endif %}>3 Folhas</option>
-                          <option value="4" {% if porta.folhas == '4' %}selected{% endif %}>4 Folhas</option>
-                          <option value="Central" {% if porta.folhas == 'Central' %}selected{% endif %}>Central</option>
-                        </select>
-                      </div>
+                        <div class="col-4">
+                            <label class="form-label small">Largura (m)</label>
+                            <input type="text" 
+                                  class="form-control form-control-sm" 
+                                  name="porta_largura_{{ porta.andar }}" 
+                                  value="{% if porta.largura %}{{ porta.largura }}{% endif %}"
+                                  placeholder="0,00">
+                        </div>
+                        
+                        <div class="col-4">
+                            <label class="form-label small">Altura (m)</label>
+                            <input type="text" 
+                                  class="form-control form-control-sm" 
+                                  name="porta_altura_{{ porta.andar }}" 
+                                  value="{% if porta.altura %}{{ porta.altura }}{% endif %}"
+                                  placeholder="0,00">
+                        </div>
+                        
+                        <div class="col-4 folhas-container" {% if porta.modelo != 'Automática' %}style="display: none;"{% endif %}>
+                            <label class="form-label small">Folhas</label>
+                            <select name="porta_folhas_{{ porta.andar }}" class="form-select form-select-sm">
+                                <option value="2" {% if porta.folhas == '2' %}selected{% endif %}>2 Folhas</option>
+                                <option value="3" {% if porta.folhas == '3' %}selected{% endif %}>3 Folhas</option>
+                                <option value="4" {% if porta.folhas == '4' %}selected{% endif %}>4 Folhas</option>
+                                <option value="Central" {% if porta.folhas == 'Central' %}selected{% endif %}>Central</option>
+                            </select>
+                        </div>
                     </div>
+
                     
                     <!-- Observações -->
                     <div class="row g-2">
@@ -341,7 +343,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 STEP 2: JavaScript inicializado - VERSÃO LIMPA');
+    console.log('🎯 STEP 2: JavaScript inicializado');
     
     const form = document.getElementById('cabinePortasForm');
     
@@ -358,6 +360,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Botão replicar do térreo
     const replicarTerreoBtn = document.getElementById('replicar-terreo-btn');
     
+    // === FORMATAÇÃO DECIMAL COM VÍRGULA ===
+    
+    // Formatar campos decimais na inicialização
+    function formatarCamposDecimais() {
+        const camposDecimais = [
+            '{{ form.altura_cabine.id_for_label }}',
+            '{{ form.largura_porta_cabine.id_for_label }}',
+            '{{ form.altura_porta_cabine.id_for_label }}'
+        ];
+        
+        camposDecimais.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo && campo.value && campo.value.includes('.')) {
+                campo.value = campo.value.replace('.', ',');
+            }
+        });
+        
+        // Também formatar campos das portas individuais
+        document.querySelectorAll('input[name^="porta_largura_"], input[name^="porta_altura_"]').forEach(campo => {
+            if (campo.value && campo.value.includes('.')) {
+                campo.value = campo.value.replace('.', ',');
+            }
+        });
+    }
+    
     // === FUNÇÕES ===
     
     function togglePisoCabine() {
@@ -365,20 +392,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const isPorContaEmpresa = pisoCabineSelect.value === 'Por conta da empresa';
         materialPisoDiv.style.display = isPorContaEmpresa ? 'block' : 'none';
-        
-        console.log('Piso cabine:', pisoCabineSelect.value, '| Mostrar material:', isPorContaEmpresa);
     }
     
     function togglePortaCabine() {
         if (modeloPortaCabineSelect && folhasCabineDiv) {
             const isAutomatica = modeloPortaCabineSelect.value === 'Automática';
             folhasCabineDiv.style.display = isAutomatica ? 'block' : 'none';
-            console.log('Modelo porta cabine:', modeloPortaCabineSelect.value, '| Mostrar folhas:', isAutomatica);
         }
     }
     
     function toggleFolhasPortasIndividuais() {
-        // Controlar folhas nas portas individuais
         const modeloSelects = document.querySelectorAll('.modelo-porta-select');
         
         modeloSelects.forEach(function(select) {
@@ -393,7 +416,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function replicarConfiguracao() {
-        // Obter valores do térreo (andar 0)
         const terreoCard = document.querySelector('[data-andar="0"]');
         if (!terreoCard) {
             alert('Não foi possível encontrar a configuração do térreo.');
@@ -408,63 +430,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const alturaTerreo = terreoCard.querySelector('input[name="porta_altura_0"]')?.value;
         const folhasTerreo = terreoCard.querySelector('select[name="porta_folhas_0"]')?.value;
         
-        console.log('🔄 Replicando configuração do térreo:', {
-            modelo: modeloTerreo,
-            material: materialTerreo,
-            saida: saidaTerreo,
-            abertura: aberturaTerreo,
-            largura: larguraTerreo,
-            altura: alturaTerreo,
-            folhas: folhasTerreo
-        });
-        
-        // Aplicar a todos os outros pavimentos (exceto térreo)
         const portasCards = document.querySelectorAll('[data-andar]');
         let pavimentosAtualizados = 0;
         
         portasCards.forEach(function(card) {
             const andar = card.getAttribute('data-andar');
             
-            // Pular o térreo
             if (andar === '0') return;
             
-            // Modelo
             const selectModelo = card.querySelector(`select[name="porta_modelo_${andar}"]`);
             if (selectModelo && modeloTerreo) {
                 selectModelo.value = modeloTerreo;
             }
             
-            // Material
             const selectMaterial = card.querySelector(`select[name="porta_material_${andar}"]`);
             if (selectMaterial && materialTerreo) {
                 selectMaterial.value = materialTerreo;
             }
             
-            // Saída
             const selectSaida = card.querySelector(`select[name="porta_saida_${andar}"]`);
             if (selectSaida && saidaTerreo) {
                 selectSaida.value = saidaTerreo;
             }
             
-            // Abertura
             const selectAbertura = card.querySelector(`select[name="porta_abertura_${andar}"]`);
             if (selectAbertura && aberturaTerreo) {
                 selectAbertura.value = aberturaTerreo;
             }
             
-            // Folhas
             const selectFolhas = card.querySelector(`select[name="porta_folhas_${andar}"]`);
             if (selectFolhas && folhasTerreo) {
                 selectFolhas.value = folhasTerreo;
             }
             
-            // Largura
             const inputLargura = card.querySelector(`input[name="porta_largura_${andar}"]`);
             if (inputLargura && larguraTerreo) {
                 inputLargura.value = larguraTerreo;
             }
             
-            // Altura
             const inputAltura = card.querySelector(`input[name="porta_altura_${andar}"]`);
             if (inputAltura && alturaTerreo) {
                 inputAltura.value = alturaTerreo;
@@ -473,12 +476,8 @@ document.addEventListener('DOMContentLoaded', function() {
             pavimentosAtualizados++;
         });
         
-        // Atualizar exibição das folhas
         toggleFolhasPortasIndividuais();
         
-        console.log(`✅ Configuração do térreo replicada para ${pavimentosAtualizados} pavimentos`);
-        
-        // Mostrar feedback visual
         const btn = document.getElementById('replicar-terreo-btn');
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-check me-1"></i>Replicado!';
@@ -494,34 +493,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // === EVENT LISTENERS ===
     
-    // Piso
     if (pisoCabineSelect) {
         pisoCabineSelect.addEventListener('change', togglePisoCabine);
     }
     
-    // Portas - Modelo (controla folhas)
     if (modeloPortaCabineSelect) {
         modeloPortaCabineSelect.addEventListener('change', togglePortaCabine);
     }
     
-    // Botão replicar do térreo
     if (replicarTerreoBtn) {
         replicarTerreoBtn.addEventListener('click', replicarConfiguracao);
     }
     
-    // Controlar folhas nas portas individuais
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('modelo-porta-select')) {
             toggleFolhasPortasIndividuais();
         }
     });
     
-    // === VALIDAÇÃO MÍNIMA ===
+    // === CONVERSÃO DE VÍRGULA PARA PONTO NO SUBMIT ===
     if (form) {
         form.addEventListener('submit', function(e) {
-            console.log('🚀 Enviando formulário step 2...');
+            // Converter vírgulas para pontos nos campos decimais principais
+            const camposDecimais = [
+                '{{ form.altura_cabine.id_for_label }}',
+                '{{ form.largura_porta_cabine.id_for_label }}',
+                '{{ form.altura_porta_cabine.id_for_label }}'
+            ];
             
-            // Validar apenas porta automática da cabine (essencial)
+            camposDecimais.forEach(id => {
+                const campo = document.getElementById(id);
+                if (campo && campo.value) {
+                    campo.value = campo.value.replace(',', '.');
+                }
+            });
+            
+            // Converter também nos campos das portas individuais
+            document.querySelectorAll('input[name^="porta_largura_"], input[name^="porta_altura_"]').forEach(campo => {
+                if (campo.value) {
+                    campo.value = campo.value.replace(',', '.');
+                }
+            });
+            
+            // Validação mínima
             if (modeloPortaCabineSelect && modeloPortaCabineSelect.value === 'Automática') {
                 const folhasCabine = document.getElementById('{{ form.folhas_porta_cabine.id_for_label }}');
                 if (folhasCabine && !folhasCabine.value) {
@@ -531,20 +545,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     return false;
                 }
             }
-            
-            console.log('✅ Validação mínima concluída - enviando formulário');
-            return true;
         });
     }
     
     // === INICIALIZAÇÃO ===
     
-    // Executar todas as funções de toggle na inicialização
+    formatarCamposDecimais();
     togglePisoCabine();
     togglePortaCabine();
     toggleFolhasPortasIndividuais();
-    
-    console.log('✅ STEP 2: JavaScript inicializado com sucesso - VERSÃO LIMPA');
 });
 </script>
 {% endblock %}

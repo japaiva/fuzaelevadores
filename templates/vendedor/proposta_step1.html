@@ -351,7 +351,7 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 STEP 1: JavaScript inicializado - VERSÃO ATUALIZADA com Tipo Motor');
+    console.log('🎯 STEP 1: JavaScript inicializado');
     
     const form = document.getElementById('clienteElevadorForm');
     
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const acionamentoSelect = document.getElementById('{{ form.acionamento.id_for_label }}');
     const tracaoDiv = document.getElementById('tracao-div');
     const contrapesoDiv = document.getElementById('contrapeso-div');
-    const tipoMotorDiv = document.getElementById('tipo-motor-div'); // ← NOVO ELEMENTO
+    const tipoMotorDiv = document.getElementById('tipo-motor-div');
     
     // Inicializar modal
     clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
@@ -480,8 +480,6 @@ document.addEventListener('DOMContentLoaded', function() {
             capacidadeInput.removeAttribute('tabindex');
             capacidadePessoasInput.value = '';
         }
-        
-        console.log('✅ Modelo atualizado:', modelo);
     }
     
     function updateCapacidade() {
@@ -496,11 +494,8 @@ document.addEventListener('DOMContentLoaded', function() {
             capacidadeInput.setAttribute('readonly', true);
             capacidadeInput.setAttribute('tabindex', '-1');
         }
-        
-        console.log('✅ Capacidade atualizada');
     }
     
-    // ✅ FUNÇÃO ATUALIZADA: updateAcionamento com controle do Tipo Motor
     function updateAcionamento() {
         const acionamento = acionamentoSelect.value;
         
@@ -508,47 +503,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const contrapesoSelect = contrapesoDiv.querySelector('select');
         const tipoMotorSelect = tipoMotorDiv ? tipoMotorDiv.querySelector('select') : null;
 
-        console.log('🔧 Acionamento selecionado:', acionamento);
-
         if (acionamento === 'Hidraulico') {
-            // Hidráulico: esconder tração, contrapeso e tipo motor
             tracaoDiv.style.display = 'none';
             contrapesoDiv.style.display = 'none';
             tipoMotorDiv.style.display = 'none';
             
-            // Limpar valores
             if (tracaoSelect) tracaoSelect.value = '';
             if (contrapesoSelect) contrapesoSelect.value = '';
             if (tipoMotorSelect) tipoMotorSelect.value = '';
             
-            console.log('🔹 Hidráulico: todos campos opcionais escondidos');
-            
         } else if (acionamento === 'Motor') {
-            // Motor: mostrar tração, contrapeso E tipo motor
             tracaoDiv.style.display = 'block';
             contrapesoDiv.style.display = 'block';
             tipoMotorDiv.style.display = 'block';
             
-            console.log('🔹 Motor: mostrando tração, contrapeso E tipo motor');
-            
         } else if (acionamento === 'Carretel') {
-            // Carretel: mostrar tração, esconder contrapeso e tipo motor
             tracaoDiv.style.display = 'block';
             contrapesoDiv.style.display = 'none';
             tipoMotorDiv.style.display = 'none';
             
-            // Limpar valores dos campos escondidos
             if (contrapesoSelect) contrapesoSelect.value = '';
             if (tipoMotorSelect) tipoMotorSelect.value = '';
-            
-            console.log('🔹 Carretel: mostrando tração, escondendo contrapeso e tipo motor');
         } else {
-            // Estado padrão: esconder todos os opcionais
             tracaoDiv.style.display = 'none';
             contrapesoDiv.style.display = 'none';
             tipoMotorDiv.style.display = 'none';
-            
-            console.log('🔹 Estado padrão: todos campos opcionais escondidos');
         }
     }
     
@@ -561,21 +540,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('clienteModalForm').addEventListener('submit', salvarClienteModal);
     
-    // Elevador
     modeloSelect.addEventListener('change', updateModelo);
     capacidadePessoasInput.addEventListener('input', updateCapacidade); 
     acionamentoSelect.addEventListener('change', updateAcionamento);
     
-    // === VALIDAÇÃO DO FORMULÁRIO ===
+    // === CONVERSÃO DE VÍRGULA PARA PONTO ===
     form.addEventListener('submit', function(e) {
-        console.log('🚀 Validando formulário step 1...');
+        // Converter vírgulas para pontos nos campos decimais
+        const camposDecimais = [
+            '{{ form.largura_poco.id_for_label }}',
+            '{{ form.comprimento_poco.id_for_label }}',
+            '{{ form.altura_poco.id_for_label }}',
+            '{{ form.capacidade.id_for_label }}'
+        ];
         
-        // Validações básicas de campos obrigatórios
+        camposDecimais.forEach(id => {
+            const campo = document.getElementById(id);
+            if (campo && campo.value) {
+                campo.value = campo.value.replace(',', '.');
+            }
+        });
+        
+        // Validações básicas
         const vendedor = vendedorSelect.value;
         const cliente = clienteSelect.value;
         const nomeProjeto = document.getElementById('{{ form.nome_projeto.id_for_label }}').value.trim();
-        const faturadoPor = document.getElementById('{{ form.faturado_por.id_for_label }}').value;
-        const normasABNT = document.getElementById('{{ form.normas_abnt.id_for_label }}').value;
+        const modelo = modeloSelect.value;
+        const pessoas = parseInt(capacidadePessoasInput.value) || 0;
+        const capacidade = parseFloat(capacidadeInput.value) || 0;
+        const acionamento = acionamentoSelect.value;
+        const pavimentos = parseInt(document.getElementById('{{ form.pavimentos.id_for_label }}').value) || 0;
         
         if (!vendedor) {
             e.preventDefault();
@@ -583,87 +577,73 @@ document.addEventListener('DOMContentLoaded', function() {
             vendedorSelect.focus();
             return;
         }
+        
         if (!cliente) {
             e.preventDefault();
             alert('Por favor, selecione um cliente.');
             clienteSelect.focus();
             return;
         }
+        
         if (!nomeProjeto) {
             e.preventDefault();
             alert('Por favor, informe o nome do projeto.');
             document.getElementById('{{ form.nome_projeto.id_for_label }}').focus();
             return;
         }
-        if (!faturadoPor) {
-            e.preventDefault();
-            alert('Por favor, selecione quem irá faturar.');
-            document.getElementById('{{ form.faturado_por.id_for_label }}').focus();
-            return;
-        }
-        if (!normasABNT) {
-            e.preventDefault();
-            alert('Por favor, selecione a norma ABNT aplicável.');
-            document.getElementById('{{ form.normas_abnt.id_for_label }}').focus();
-            return;
-        }
-
-        // Validações do elevador
-        const modelo = modeloSelect.value;
-        const pessoas = parseInt(capacidadePessoasInput.value) || 0;
-        const capacidade = parseFloat(capacidadeInput.value.replace(',', '.')) || 0;
-        const acionamento = acionamentoSelect.value;
         
-        if (modelo === 'Passageiro') {
-            if (pessoas <= 0) {
-                e.preventDefault();
-                alert('Para elevador de passageiro, informe o número de pessoas.');
-                capacidadePessoasInput.focus();
-                return;
-            }
-        } else {
-            if (capacidade <= 0) {
-                e.preventDefault();
-                alert('A capacidade (kg) deve ser maior que zero.');
-                capacidadeInput.focus();
-                return;
-            }
-        }
-
-        if (!acionamento) {
+        if (modelo === 'Passageiro' && pessoas <= 0) {
             e.preventDefault();
-            alert('Por favor, selecione o tipo de acionamento.');
-            acionamentoSelect.focus();
+            alert('Para elevador de passageiro, informe o número de pessoas.');
+            capacidadePessoasInput.focus();
             return;
         }
         
-        // ✅ NOVA VALIDAÇÃO: Tipo Motor
+        if (modelo !== 'Passageiro' && capacidade <= 0) {
+            e.preventDefault();
+            alert('A capacidade (kg) deve ser maior que zero.');
+            capacidadeInput.focus();
+            return;
+        }
+        
         if (acionamento === 'Motor') {
             const tipoMotorSelect = document.getElementById('{{ form.tipo_motor.id_for_label }}');
-            const tipoMotor = tipoMotorSelect ? tipoMotorSelect.value : '';
-            
-            if (!tipoMotor) {
+            if (tipoMotorSelect && !tipoMotorSelect.value) {
                 e.preventDefault();
                 alert('Para acionamento Motor, selecione o tipo do motor.');
                 tipoMotorSelect.focus();
                 return;
             }
-            
-            console.log('✅ Tipo Motor validado:', tipoMotor);
         }
         
-        const pavimentos = parseInt(document.getElementById('{{ form.pavimentos.id_for_label }}').value) || 0;
         if (pavimentos < 2) {
             e.preventDefault();
             alert('O número de pavimentos deve ser pelo menos 2.');
             document.getElementById('{{ form.pavimentos.id_for_label }}').focus();
             return;
         }
-        
-        console.log('✅ Validação step 1 concluída - enviando formulário');
     });
     
     // === INICIALIZAÇÃO ===
+    
+    // Formatar campos decimais para exibição com vírgula
+    const camposDecimais = [
+        '{{ form.largura_poco.id_for_label }}',
+        '{{ form.comprimento_poco.id_for_label }}',
+        '{{ form.altura_poco.id_for_label }}',
+        '{{ form.capacidade.id_for_label }}'
+    ];
+    
+    // Formatar valores existentes de ponto para vírgula na visualização
+    camposDecimais.forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo && campo.value) {
+            // Se tem ponto decimal, converter para vírgula
+            if (campo.value.includes('.')) {
+                campo.value = campo.value.replace('.', ',');
+            }
+        }
+    });
     
     updateModelo();
     updateAcionamento();
@@ -678,8 +658,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal-errors').style.display = 'none';
         document.getElementById('modal-errors').innerHTML = '';
     });
-    
-    console.log('✅ STEP 1: JavaScript inicializado com sucesso - VERSÃO COM TIPO MOTOR');
 });
 </script>
 {% endblock %}
