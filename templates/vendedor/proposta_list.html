@@ -68,12 +68,12 @@
         <tbody>
           {% for pedido in pedidos %}
             <tr>
-              <td data-label="Número">
+              <td>
                 <strong class="text-primary">{{ pedido.numero }}</strong>
                 <small class="d-block d-md-none text-muted">{{ pedido.criado_em|date:"d/m/y" }}</small>
               </td>
 
-              <td class="d-none d-md-table-cell" data-label="Data">
+              <td class="d-none d-md-table-cell">
                 <div class="data-info text-center">
                   <div class="data-principal">
                     <strong>{{ pedido.criado_em|date:"d/m/Y" }}</strong>
@@ -89,7 +89,7 @@
                 </div>
               </td>
 
-              <td data-label="Projeto">
+              <td>
                 <div class="d-flex align-items-start">
                   <div class="flex-grow-1">
                     <div class="text-truncate" style="max-width: 140px;" title="{{ pedido.nome_projeto }}">
@@ -99,7 +99,7 @@
                 </div>
               </td>
 
-              <td class="d-none d-lg-table-cell" data-label="Vendedor">
+              <td class="d-none d-lg-table-cell">
                 <div class="vendedor-info">
                   {% if pedido.vendedor %}
                     <div class="text-truncate" style="max-width: 120px;" title="{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}">
@@ -134,10 +134,10 @@
               </td>
 
               <td class="text-end">
-                <!-- Botões unificados para Desktop e Mobile -->
+                <!-- Botões unificados - todos visíveis -->
                 <div class="btn-group" role="group">
                   <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
-                    class="btn btn-sm btn-outline-primary" 
+                    class="btn btn-sm btn-outline-primary"
                     title="Ver Proposta"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
@@ -145,7 +145,7 @@
                   
                   {% if pedido.pode_editar %}
                   <a href="{% url 'vendedor:proposta_step1_edit' pedido.pk %}" 
-                    class="btn btn-sm btn-outline-warning" 
+                    class="btn btn-sm btn-outline-warning"
                     title="Editar Proposta"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-edit"></i>
@@ -153,69 +153,56 @@
                   {% endif %}
                   
                   <a href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" 
-                    class="btn btn-sm btn-outline-info d-none d-md-inline-block" 
-                    title="Gerar Minuta do Contrato"
+                    class="btn btn-sm btn-outline-info"
+                    title="Gerar Minuta"
                     target="_blank"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-file-contract"></i>
                   </a>
 
                   <a href="{% url 'vendedor:proposta_status' pedido.pk %}" 
-                    class="btn btn-sm btn-outline-secondary d-none d-md-inline-block" 
+                    class="btn btn-sm btn-outline-secondary"
                     title="Alterar Status"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-exchange-alt"></i>
                   </a>
                   
-                  <div class="btn-group" role="group">
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                            data-bs-toggle="dropdown" 
-                            title="Mais ações">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
+                  <!-- Dropdown com opções extras -->
+                  <button type="button" 
+                          class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                          data-bs-toggle="dropdown"
+                          title="Mais ações">
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
 
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li class="d-md-none">
-                        <a class="dropdown-item" href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" target="_blank">
-                          <i class="fas fa-file-contract me-2"></i>Minuta
-                        </a>
-                      </li>
-                      <li class="d-md-none">
-                        <a class="dropdown-item" href="{% url 'vendedor:proposta_status' pedido.pk %}">
-                          <i class="fas fa-exchange-alt me-2"></i>Alterar Status
-                        </a>
-                      </li>
-                      <li class="d-md-none"><hr class="dropdown-divider"></li>
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:proposta_duplicar' pedido.pk %}">
-                          <i class="fas fa-copy me-2"></i>Duplicar Proposta
-                        </a>
-                      </li>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="{% url 'vendedor:proposta_duplicar' pedido.pk %}">
+                        <i class="fas fa-copy me-2"></i>Duplicar
+                      </a>
+                    </li>
 
-                      {% if pedido.pode_calcular %}
-                      <li>
-                        <form method="post" action="{% url 'vendedor:proposta_calcular' pedido.pk %}" class="d-inline w-100">
-                          {% csrf_token %}
-                          <button type="submit" class="dropdown-item text-info calcular-btn" 
-                                  data-pedido="{{ pedido.numero }}">
-                            <i class="fas fa-calculator me-2"></i>Executar Cálculos
-                          </button>
-                        </form>
-                      </li>
-                      {% endif %}
+                    {% if pedido.pode_calcular %}
+                    <li>
+                      <form method="post" action="{% url 'vendedor:proposta_calcular' pedido.pk %}" class="d-inline w-100">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item text-info">
+                          <i class="fas fa-calculator me-2"></i>Calcular
+                        </button>
+                      </form>
+                    </li>
+                    {% endif %}
 
-                      {% if pedido.pode_excluir %}
-                      <li><hr class="dropdown-divider"></li>
-                      <li>
-                        <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" 
-                          class="dropdown-item text-danger">
-                          <i class="fas fa-trash me-2"></i>Excluir Proposta
-                        </a>
-                      </li>
-                      {% endif %}
-                    </ul>
-                  </div>
+                    {% if pedido.pode_excluir %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" 
+                        class="dropdown-item text-danger">
+                        <i class="fas fa-trash me-2"></i>Excluir
+                      </a>
+                    </li>
+                    {% endif %}
+                  </ul>
                 </div>
               </td>
             </tr>
@@ -341,6 +328,11 @@
     min-height: 24px !important;
   }
   
+  /* ESCONDER TD DE DATA COMPLETAMENTE NO MOBILE */
+  .table tbody td:nth-child(2) {
+    display: none !important;
+  }
+  
   /* Labels para cada campo MAIS COMPACTO */
   .table tbody td[data-label]:before {
     content: attr(data-label) ": " !important;
@@ -386,17 +378,25 @@
     padding: 0.35rem 0.65rem !important;
   }
   
-  /* Botões menores mas tocáveis */
+  /* Botões MAIORES e mais espaçados no mobile */
   .btn-sm {
-    padding: 0.375rem 0.75rem !important;
-    font-size: 0.875rem !important;
-    min-height: 36px !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    min-height: 40px !important;
   }
   
-  /* Grupo de botões */
+  /* Grupo de botões com mais espaço */
   .btn-group {
-    display: inline-flex !important;
-    gap: 4px !important;
+    display: flex !important;
+    gap: 6px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  /* Fazer botões ocuparem mais espaço horizontal */
+  .table tbody td:last-child .btn-group .btn {
+    flex: 1 !important;
+    max-width: 100px !important;
   }
   
   /* Filtros responsivos */

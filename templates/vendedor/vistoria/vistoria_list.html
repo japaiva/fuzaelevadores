@@ -64,12 +64,12 @@
           {% for proposta in propostas %}
             <tr class="{% if not proposta.data_vistoria_medicao %}table-warning{% elif proposta.data_proxima_vistoria and proposta.data_proxima_vistoria < hoje %}table-danger{% endif %}">
               
-              <td data-label="Proposta">
+              <td>
                 <strong class="text-primary">{{ proposta.numero }}</strong>
                 <small class="d-block d-md-none text-muted">{{ proposta.data_aprovacao|date:"d/m/y" }}</small>
               </td>
 
-              <td class="d-none d-md-table-cell" data-label="Aprovação">
+              <td class="d-none d-md-table-cell">
                 <div class="data-info text-center">
                     <div class="data-principal">
                       <strong class="text-success">{{ proposta.data_aprovacao|date:"d/m/Y" }}</strong>
@@ -83,7 +83,7 @@
                 </div>
               </td>
 
-              <td class="d-none d-lg-table-cell" data-label="Projeto">
+              <td class="d-none d-lg-table-cell">
                 <div class="text-truncate" style="max-width: 140px;" title="{{ proposta.nome_projeto }}">
                   <strong>{{ proposta.nome_projeto }}</strong>
                 </div>
@@ -123,18 +123,18 @@
               </td>
 
               <td class="text-end">
-                <!-- Versão Desktop -->
-                <div class="btn-group d-none d-md-inline-flex" role="group">
+                <!-- Botões unificados - todos visíveis -->
+                <div class="btn-group" role="group">
                   {% if not proposta.data_vistoria_medicao %}
                     <a href="{% url 'vendedor:vistoria_agendar_primeira' proposta.pk %}" 
-                      class="btn btn-sm btn-danger" 
+                      class="btn btn-sm btn-danger"
                       title="Agendar 1ª Vistoria"
                       data-bs-toggle="tooltip">
                       <i class="fas fa-calendar-plus"></i>
                     </a>
                   {% else %}
                     <a href="{% url 'vendedor:vistoria_create' proposta.pk %}" 
-                      class="btn btn-sm {% if proposta.data_proxima_vistoria and proposta.data_proxima_vistoria < hoje %}btn-danger{% elif proposta.data_proxima_vistoria == hoje %}btn-warning{% else %}btn-success{% endif %}" 
+                      class="btn btn-sm {% if proposta.data_proxima_vistoria and proposta.data_proxima_vistoria < hoje %}btn-danger{% elif proposta.data_proxima_vistoria == hoje %}btn-warning{% else %}btn-success{% endif %}"
                       title="Nova Vistoria"
                       data-bs-toggle="tooltip">
                       <i class="fas fa-plus"></i>
@@ -142,54 +142,18 @@
                   {% endif %}
                   
                   <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" 
-                    class="btn btn-sm btn-outline-info" 
+                    class="btn btn-sm btn-outline-info"
                     title="Ver Vistorias ({{ proposta.total_vistorias }})"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-history"></i>
                   </a>
                   
                   <a href="{% url 'vendedor:pedido_detail' proposta.pk %}" 
-                    class="btn btn-sm btn-outline-primary" 
+                    class="btn btn-sm btn-outline-primary"
                     title="Ver Proposta"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
                   </a>
-                </div>
-
-                <!-- Versão Mobile -->
-                <div class="d-md-none">
-                  <div class="btn-group" role="group">
-                    {% if not proposta.data_vistoria_medicao %}
-                      <a href="{% url 'vendedor:vistoria_agendar_primeira' proposta.pk %}" 
-                        class="btn btn-sm btn-danger">
-                        <i class="fas fa-calendar-plus"></i>
-                      </a>
-                    {% else %}
-                      <a href="{% url 'vendedor:vistoria_create' proposta.pk %}" 
-                        class="btn btn-sm {% if proposta.data_proxima_vistoria and proposta.data_proxima_vistoria < hoje %}btn-danger{% elif proposta.data_proxima_vistoria == hoje %}btn-warning{% else %}btn-success{% endif %}">
-                        <i class="fas fa-plus"></i>
-                      </a>
-                    {% endif %}
-                    
-                    <button type="button" 
-                            class="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                            data-bs-toggle="dropdown">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}">
-                          <i class="fas fa-history me-2"></i>Histórico ({{ proposta.total_vistorias }})
-                        </a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="{% url 'vendedor:pedido_detail' proposta.pk %}">
-                          <i class="fas fa-eye me-2"></i>Ver Proposta
-                        </a>
-                      </li>
-                    </ul>
-                  </div>
                 </div>
               </td>
 
@@ -323,6 +287,11 @@
     min-height: 24px !important;
   }
   
+  /* ESCONDER TD DE DATA (APROVAÇÃO) COMPLETAMENTE NO MOBILE */
+  .table tbody td:nth-child(2) {
+    display: none !important;
+  }
+  
   /* Labels para cada campo COMPACTO */
   .table tbody td[data-label]:before {
     content: attr(data-label) ": " !important;
@@ -357,33 +326,25 @@
     content: none !important;
   }
   
-  /* Status de urgência destacado */
-  .table-warning {
-    background-color: rgba(255, 193, 7, 0.15) !important;
-  }
-  
-  .table-danger {
-    background-color: rgba(220, 53, 69, 0.15) !important;
-    border-color: #dc3545 !important;
-  }
-  
-  /* Badge de status mais visível */
-  .badge {
-    font-size: 0.7rem !important;
-    padding: 0.25rem 0.5rem !important;
-  }
-  
-  /* Botões menores mas tocáveis */
+  /* Botões MAIORES e mais espaçados no mobile */
   .btn-sm {
-    padding: 0.3rem 0.6rem !important;
-    font-size: 0.85rem !important;
-    min-height: 32px !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    min-height: 40px !important;
   }
   
-  /* Grupo de botões */
+  /* Grupo de botões com mais espaço */
   .btn-group {
-    display: inline-flex !important;
-    gap: 3px !important;
+    display: flex !important;
+    gap: 6px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  
+  /* Fazer botões ocuparem mais espaço horizontal */
+  .table tbody td:last-child .btn-group .btn {
+    flex: 1 !important;
+    max-width: 100px !important;
   }
   
   /* Filtros responsivos */

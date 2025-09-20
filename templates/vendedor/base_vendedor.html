@@ -11,13 +11,6 @@
   <span class="nav-link" style="border-left: 2px solid #28a745; height: 24px; margin: 8px 15px;"></span>
 </li>
 
-<!-- Menu de Cadastros-->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Cadastros
-  </a>
-</li>
-
 <!-- Menu de Propostas -->
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -41,20 +34,6 @@
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}">
         Controle de Vistorias
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header">Status da Obra</h6></li>
-    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=">
-        Aguardando Medição
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=medicao_ok">
-        Medição OK
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=em_vistoria">
-        Em Vistoria
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'vendedor:vistoria_list' %}?status_obra=obra_ok">
-        Obra OK
     </a></li>
   </ul>
 </li>
