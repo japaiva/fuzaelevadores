@@ -359,43 +359,43 @@
     display: none !important;
   }
   
-  /* Cada linha vira um card */
+  /* Cada linha vira um card COMPACTO */
   .table tbody tr {
     display: block !important;
-    margin-bottom: 12px !important;
+    margin-bottom: 8px !important;
     background: white !important;
     border: 1px solid #dee2e6 !important;
-    border-radius: 8px !important;
-    padding: 10px !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
+    border-radius: 6px !important;
+    padding: 8px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
   }
   
-  /* Células viram blocos */
+  /* Células viram blocos MENORES */
   .table tbody td {
     display: block !important;
     text-align: left !important;
-    padding: 6px 8px !important;
+    padding: 4px 6px !important;
     border: none !important;
     position: relative !important;
-    min-height: 30px !important;
+    min-height: 24px !important;
   }
   
-  /* Labels para cada campo (usando data-label) */
+  /* Labels para cada campo MAIS COMPACTO */
   .table tbody td[data-label]:before {
     content: attr(data-label) ": " !important;
     font-weight: 600 !important;
     color: #6c757d !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     display: inline-block !important;
-    min-width: 70px !important;
+    min-width: 50px !important;
   }
   
-  /* Primeira célula (número) sem label e destacada */
+  /* Primeira célula (número) sem label e MENOR */
   .table tbody td:first-child {
-    padding-bottom: 8px !important;
+    padding-bottom: 6px !important;
     border-bottom: 1px solid #f0f0f0 !important;
-    margin-bottom: 6px !important;
-    font-size: 1rem !important;
+    margin-bottom: 4px !important;
+    font-size: 0.95rem !important;
   }
   
   .table tbody td:first-child:before {
