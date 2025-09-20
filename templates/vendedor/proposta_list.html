@@ -7,13 +7,13 @@
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
     <h5 class="card-title mb-0">
-      <i class="fas fa-clipboard-list me-2"></i>Propostas
+      <i class="fas fa-clipboard-list me-2"></i><span class="d-none d-sm-inline">Propostas</span><span class="d-inline d-sm-none">Props</span>
     </h5>
     <div>
       <a href="{% url 'vendedor:proposta_step1' %}" class="btn btn-success btn-sm">
-        <i class="fas fa-plus me-1"></i> Nova Proposta
+        <i class="fas fa-plus me-1"></i><span class="d-none d-sm-inline">Nova Proposta</span><span class="d-inline d-sm-none">Nova</span>
       </a>
-      <a href="{% url 'vendedor:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
+      <a href="{% url 'vendedor:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2 d-none d-md-inline-block">
         <i class="fas fa-arrow-left me-1"></i> Voltar
       </a>
     </div>
@@ -21,28 +21,28 @@
   
   <div class="card-header bg-white py-2">
     <form method="get" class="row g-2 align-items-center">
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Clientes</label>
+      <div class="col-6 col-md-2">
+        <label class="form-label text-muted mb-1 d-none d-md-block" style="font-size: 0.8rem;">Clientes</label>
         {{ form.cliente }}
       </div>
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Modelos</label>
+      <div class="col-6 col-md-2">
+        <label class="form-label text-muted mb-1 d-none d-md-block" style="font-size: 0.8rem;">Modelos</label>
         {{ form.modelo_elevador }}
       </div>
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Período</label>
+      <div class="col-6 col-md-2">
+        <label class="form-label text-muted mb-1 d-none d-md-block" style="font-size: 0.8rem;">Período</label>
         {{ form.periodo }}
       </div>
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Status</label>
+      <div class="col-6 col-md-2">
+        <label class="form-label text-muted mb-1 d-none d-md-block" style="font-size: 0.8rem;">Status</label>
         {{ form.status }}
       </div>
-      <div class="col-md-3">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Buscar</label>
+      <div class="col-9 col-md-3">
+        <label class="form-label text-muted mb-1 d-none d-md-block" style="font-size: 0.8rem;">Buscar</label>
         {{ form.q }}
       </div>
-      <div class="col-md-1">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">&nbsp;</label>
+      <div class="col-3 col-md-1">
+        <label class="form-label text-muted mb-1 d-none d-md-block" style="font-size: 0.8rem;">&nbsp;</label>
         <button type="submit" class="btn btn-sm btn-primary w-100">
           <i class="fas fa-search"></i>
         </button>
@@ -56,10 +56,10 @@
         <thead class="table-light">
           <tr>
             <th width="8%">Número</th>
-            <th width="8%">Data</th>
+            <th width="8%" class="d-none d-md-table-cell">Data</th>
             <th width="15%">Cliente</th>
             <th width="15%">Projeto</th>
-            <th width="12%">Vendedor</th>
+            <th width="12%" class="d-none d-lg-table-cell">Vendedor</th>
             <th width="8%">Status</th>
             <th width="18%">Valor</th>
             <th width="11%" class="text-end">Ações</th>
@@ -68,11 +68,12 @@
         <tbody>
           {% for pedido in pedidos %}
             <tr>
-              <td>
+              <td data-label="Número">
                 <strong class="text-primary">{{ pedido.numero }}</strong>
+                <small class="d-block d-md-none text-muted">{{ pedido.criado_em|date:"d/m/y" }}</small>
               </td>
 
-              <td>
+              <td class="d-none d-md-table-cell" data-label="Data">
                 <div class="data-info text-center">
                   <div class="data-principal">
                     <strong>{{ pedido.criado_em|date:"d/m/Y" }}</strong>
@@ -80,7 +81,7 @@
                 </div>
               </td>
 
-              <td>
+              <td data-label="Cliente">
                 <div class="client-info">
                   <div class="text-truncate" style="max-width: 140px;" title="{{ pedido.cliente.nome }}">
                     <strong>{{ pedido.cliente.nome }}</strong>
@@ -88,7 +89,7 @@
                 </div>
               </td>
 
-              <td>
+              <td data-label="Projeto">
                 <div class="d-flex align-items-start">
                   <div class="flex-grow-1">
                     <div class="text-truncate" style="max-width: 140px;" title="{{ pedido.nome_projeto }}">
@@ -98,7 +99,7 @@
                 </div>
               </td>
 
-              <td>
+              <td class="d-none d-lg-table-cell" data-label="Vendedor">
                 <div class="vendedor-info">
                   {% if pedido.vendedor %}
                     <div class="text-truncate" style="max-width: 120px;" title="{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}">
@@ -110,13 +111,13 @@
                 </div>
               </td>
 
-              <td>
+              <td data-label="Status">
                 <span class="badge {{ pedido.status_badge_class }}">
                   {{ pedido.get_status_display }}
                 </span>
               </td>
 
-             <td class="text-end">
+              <td data-label="Valor" class="text-end">
                 <div class="valor-info">
                   {% if pedido.valor_proposta %}
                     <div class="valor-principal">
@@ -132,10 +133,9 @@
                 </div>
               </td>
 
-
-
               <td class="text-end">
-                <div class="btn-group" role="group">
+                <!-- Versão Desktop: todos os botões -->
+                <div class="btn-group d-none d-md-inline-flex" role="group">
                   <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
                     class="btn btn-sm btn-outline-primary" 
                     title="Ver Proposta"
@@ -152,7 +152,6 @@
                   </a>
                   {% endif %}
                   
-                  <!-- Minuta do Contrato sempre visível -->
                   <a href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" 
                     class="btn btn-sm btn-outline-info" 
                     title="Gerar Minuta do Contrato"
@@ -161,7 +160,6 @@
                     <i class="fas fa-file-contract"></i>
                   </a>
 
-                  <!-- Alterar Status sempre visível -->
                   <a href="{% url 'vendedor:proposta_status' pedido.pk %}" 
                     class="btn btn-sm btn-outline-secondary" 
                     title="Alterar Status"
@@ -196,7 +194,6 @@
                       </li>
                       {% endif %}
 
-                      <!-- Exclusão direto para página de confirmação -->
                       {% if pedido.pode_excluir %}
                       <li><hr class="dropdown-divider"></li>
                       <li>
@@ -209,8 +206,57 @@
                     </ul>
                   </div>
                 </div>
-              </td>
 
+                <!-- Versão Mobile: botões essenciais + dropdown -->
+                <div class="d-md-none">
+                  <div class="btn-group" role="group">
+                    <a href="{% url 'vendedor:pedido_detail' pedido.pk %}" 
+                      class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    
+                    {% if pedido.pode_editar %}
+                    <a href="{% url 'vendedor:proposta_step1_edit' pedido.pk %}" 
+                      class="btn btn-sm btn-outline-warning">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    {% endif %}
+                    
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                            data-bs-toggle="dropdown">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:gerar_contrato_pdf' pedido.pk %}" target="_blank">
+                          <i class="fas fa-file-contract me-2"></i>Minuta
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:proposta_status' pedido.pk %}">
+                          <i class="fas fa-exchange-alt me-2"></i>Status
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="{% url 'vendedor:proposta_duplicar' pedido.pk %}">
+                          <i class="fas fa-copy me-2"></i>Duplicar
+                        </a>
+                      </li>
+                      {% if pedido.pode_excluir %}
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <a href="{% url 'vendedor:proposta_delete' pedido.pk %}" 
+                          class="dropdown-item text-danger">
+                          <i class="fas fa-trash me-2"></i>Excluir
+                        </a>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </div>
+              </td>
             </tr>
           {% empty %}
             <tr>
@@ -233,9 +279,12 @@
   <div class="card-footer bg-white py-3">
     <div class="d-flex justify-content-between align-items-center">
       <div class="pagination-info">
-        <small class="text-muted">
+        <small class="text-muted d-none d-sm-inline">
           <i class="fas fa-info-circle me-1"></i>
           Mostrando {{ pedidos.start_index }}-{{ pedidos.end_index }} de {{ pedidos.paginator.count }} propostas
+        </small>
+        <small class="text-muted d-sm-none">
+          {{ pedidos.paginator.count }} items
         </small>
       </div>
       <nav aria-label="Navegação de página">
@@ -243,48 +292,44 @@
           {% if pedidos.has_previous %}
             <li class="page-item">
               <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
-                <span aria-hidden="true">&laquo;&laquo;</span>
+                <span aria-hidden="true" class="d-none d-sm-inline">&laquo;&laquo;</span>
+                <span aria-hidden="true" class="d-sm-none">&laquo;</span>
               </a>
             </li>
-            <li class="page-item">
+            <li class="page-item d-none d-sm-inline">
               <a class="page-link" href="?page={{ pedidos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
                 <span aria-hidden="true">&laquo;</span>
               </a>
             </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">&laquo;&laquo;</span>
-            </li>
-            <li class="page-item disabled">
-              <span class="page-link">&laquo;</span>
-            </li>
           {% endif %}
           
-          {% for i in pedidos.paginator.page_range %}
-            {% if pedidos.number == i %}
-              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-            {% elif i > pedidos.number|add:'-3' and i < pedidos.number|add:'3' %}
-              <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
-            {% endif %}
-          {% endfor %}
+          <!-- Desktop: mostra várias páginas -->
+          <div class="d-none d-sm-inline">
+            {% for i in pedidos.paginator.page_range %}
+              {% if pedidos.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+              {% elif i > pedidos.number|add:'-3' and i < pedidos.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+              {% endif %}
+            {% endfor %}
+          </div>
+          
+          <!-- Mobile: mostra apenas página atual -->
+          <li class="page-item active d-sm-none">
+            <span class="page-link">{{ pedidos.number }}/{{ pedidos.paginator.num_pages }}</span>
+          </li>
           
           {% if pedidos.has_next %}
-            <li class="page-item">
+            <li class="page-item d-none d-sm-inline">
               <a class="page-link" href="?page={{ pedidos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
                 <span aria-hidden="true">&raquo;</span>
               </a>
             </li>
             <li class="page-item">
               <a class="page-link" href="?page={{ pedidos.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
-                <span aria-hidden="true">&raquo;&raquo;</span>
+                <span aria-hidden="true" class="d-none d-sm-inline">&raquo;&raquo;</span>
+                <span aria-hidden="true" class="d-sm-none">&raquo;</span>
               </a>
-            </li>
-          {% else %}
-            <li class="page-item disabled">
-              <span class="page-link">&raquo;</span>
-            </li>
-            <li class="page-item disabled">
-              <span class="page-link">&raquo;&raquo;</span>
             </li>
           {% endif %}
         </ul>
@@ -293,131 +338,160 @@
   </div>
   {% endif %}
 </div>
-
-<!-- Resumo dos Filtros -->
-{% if form.data %}
-<div class="card mt-3">
-  <div class="card-body py-2">
-    <div class="d-flex justify-content-between align-items-center">
-      <div>
-        <small class="text-muted">
-          <i class="fas fa-filter me-1"></i>
-          Mostrando {{ pedidos.start_index }}-{{ pedidos.end_index }} de {{ pedidos.paginator.count }} pedidos
-        </small>
-      </div>
-      <div>
-        <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-sm btn-outline-secondary">
-          <i class="fas fa-times me-1"></i>Limpar Filtros
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-
 {% endblock %}
 
 {% block extra_css %}
 <style>
-.table-sm td, .table-sm th {
-  padding: 0.75rem 0.5rem;
-  vertical-align: middle;
+/* ===================================
+   ESTILOS RESPONSIVOS PARA MOBILE
+   =================================== */
+
+/* Transformar tabela em cards no mobile */
+@media screen and (max-width: 768px) {
+  
+  /* Container com menos padding */
+  .card-body {
+    padding: 0.5rem !important;
+  }
+  
+  /* Esconder cabeçalho da tabela */
+  .table thead {
+    display: none !important;
+  }
+  
+  /* Cada linha vira um card */
+  .table tbody tr {
+    display: block !important;
+    margin-bottom: 12px !important;
+    background: white !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    padding: 10px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
+  }
+  
+  /* Células viram blocos */
+  .table tbody td {
+    display: block !important;
+    text-align: left !important;
+    padding: 6px 8px !important;
+    border: none !important;
+    position: relative !important;
+    min-height: 30px !important;
+  }
+  
+  /* Labels para cada campo (usando data-label) */
+  .table tbody td[data-label]:before {
+    content: attr(data-label) ": " !important;
+    font-weight: 600 !important;
+    color: #6c757d !important;
+    font-size: 0.8rem !important;
+    display: inline-block !important;
+    min-width: 70px !important;
+  }
+  
+  /* Primeira célula (número) sem label e destacada */
+  .table tbody td:first-child {
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    margin-bottom: 6px !important;
+    font-size: 1rem !important;
+  }
+  
+  .table tbody td:first-child:before {
+    content: none !important;
+  }
+  
+  /* Última célula (ações) centralizada */
+  .table tbody td:last-child {
+    text-align: center !important;
+    padding-top: 10px !important;
+    border-top: 1px solid #f0f0f0 !important;
+    margin-top: 8px !important;
+  }
+  
+  .table tbody td:last-child:before {
+    content: none !important;
+  }
+  
+  /* Ajustar valor para destaque */
+  .table tbody td[data-label="Valor"] {
+    font-size: 1.1rem !important;
+  }
+  
+  /* Badge de status mais visível */
+  .badge {
+    font-size: 0.75rem !important;
+    padding: 0.35rem 0.65rem !important;
+  }
+  
+  /* Botões menores mas tocáveis */
+  .btn-sm {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    min-height: 36px !important;
+  }
+  
+  /* Grupo de botões */
+  .btn-group {
+    display: inline-flex !important;
+    gap: 4px !important;
+  }
+  
+  /* Filtros responsivos */
+  .form-select-sm, .form-control-sm {
+    font-size: 14px !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+  
+  /* Paginação compacta */
+  .pagination-sm .page-link {
+    padding: 0.375rem 0.5rem !important;
+    min-width: 36px !important;
+  }
 }
 
+/* Ajustes para telas muito pequenas */
+@media screen and (max-width: 576px) {
+  
+  /* Título do card menor */
+  .card-title {
+    font-size: 1rem !important;
+  }
+  
+  /* Esconder texto dos botões, mostrar só ícones */
+  .btn-sm span {
+    font-size: 0.8rem !important;
+  }
+  
+  /* Campos de filtro ocupam metade da tela */
+  .col-6 {
+    padding: 0 4px !important;
+  }
+  
+  /* Dropdown menu maior para toque */
+  .dropdown-menu {
+    min-width: 160px !important;
+  }
+  
+  .dropdown-item {
+    padding: 0.5rem 1rem !important;
+    min-height: 40px !important;
+  }
+}
+
+/* Melhorias visuais gerais */
 .text-truncate {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.project-info {
-  margin-top: 0.25rem;
-}
-
-.project-info .badge {
-  font-size: 0.7rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.client-info {
-  max-width: 160px;
-}
-
-.vendedor-info {
-  max-width: 120px;
-}
-
 .valor-info {
-  text-align: right;
-  width: 100%;
-  white-space: nowrap; /* Evita quebra de linha */
+  white-space: nowrap;
 }
 
-.valor-principal {
-  font-size: 1.05rem;
-  margin-bottom: 0.25rem;
-  white-space: nowrap; /* Garante que o valor não quebre */
-}
-
-.data-info {
-  min-width: 80px;
-}
-
-.data-principal {
-  font-size: 0.95rem;
-  margin-bottom: 0.25rem;
-}
-
-.btn-group .btn {
-  border-radius: 0;
-}
-
-.btn-group .btn:first-child {
-  border-top-left-radius: 0.375rem;
-  border-bottom-left-radius: 0.375rem;
-}
-
-.btn-group .btn:last-child {
-  border-top-right-radius: 0.375rem;
-  border-bottom-right-radius: 0.375rem;
-}
-
-.empty-state {
-  padding: 3rem 1rem;
-}
-
-.pagination-info {
-  flex-grow: 1;
-}
-
-.dropdown-menu {
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.dropdown-item {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-}
-
-.dropdown-item:hover {
-  background-color: #f8f9fa;
-}
-
-.card-header form .form-select,
-.card-header form .form-control {
-  font-size: 0.9rem;
-  padding: 0.375rem 0.75rem;
-}
-
-/* Labels dos filtros */
-.card-header .form-label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 2px;
-}
-
-/* Cores dos badges de status */
+/* Cores dos badges */
 .badge.bg-warning {
   background-color: #ffc107 !important;
   color: #000 !important;
@@ -431,92 +505,63 @@
   background-color: #dc3545 !important;
 }
 
-/* Tooltips */
-[data-bs-toggle="tooltip"] {
-  cursor: pointer;
+/* Prevenir zoom no iOS */
+input, select, textarea {
+  font-size: 16px !important;
 }
 
-/* Estilo para valor zerado */
-.text-warning strong {
-  color: #f57c00 !important;
-  font-weight: 600;
-}
-
-/* Responsividade para mobile */
-@media (max-width: 768px) {
-  .table-responsive {
-    font-size: 0.8rem;
-  }
-  
-  .project-info .badge {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.4rem;
-  }
-  
-  .btn-group .btn {
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .empty-state {
-    padding: 2rem 0.5rem;
-  }
-  
-  .empty-state .fa-4x {
-    font-size: 2.5rem !important;
-  }
-  
-  /* Ocultar colunas menos importantes em mobile */
-  .table th:nth-child(2),
-  .table td:nth-child(2),
-  .table th:nth-child(5),
-  .table td:nth-child(5) {
-    display: none;
+/* Hover effects apenas em desktop */
+@media (hover: hover) {
+  .table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
   }
 }
 
-/* Hover effects */
-.table-hover tbody tr:hover {
-  background-color: rgba(0, 123, 255, 0.05);
-}
-
-/* Status visual indicators */
-.valor-info .text-success {
-  font-weight: 600;
-}
-
-.text-warning {
-  font-weight: 500;
+/* Safe area para iPhones com notch */
+@supports (padding: max(0px)) {
+  .card-body {
+    padding-left: max(0.5rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right)) !important;
+  }
 }
 </style>
 {% endblock %}
 
-
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    // Inicializar tooltips (apenas desktop)
+    if (window.innerWidth > 768) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Auto-submit do formulário quando filtros mudarem
+        const selects = document.querySelectorAll('select[name="cliente"], select[name="modelo_elevador"], select[name="periodo"], select[name="status"]');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                this.form.submit();
+            });
+        });
+    }
     
-    // Auto-submit do formulário quando filtros mudarem
-    const selects = document.querySelectorAll('select[name="cliente"], select[name="modelo_elevador"], select[name="periodo"], select[name="status"]');
-    selects.forEach(select => {
-        select.addEventListener('change', function() {
-            this.form.submit();
+    // Prevenir duplo clique em botões
+    document.querySelectorAll('.btn').forEach(btn => {
+        let clicking = false;
+        btn.addEventListener('click', function(e) {
+            if (clicking && !this.classList.contains('dropdown-toggle')) {
+                e.preventDefault();
+                return false;
+            }
+            clicking = true;
+            setTimeout(() => { clicking = false; }, 1000);
         });
     });
     
-    // Melhorar UX dos dropdowns
-    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-    dropdownToggles.forEach(toggle => {
-        toggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-    
-    console.log('✅ Lista de pedidos inicializada');
+    // Log de confirmação
+    console.log('✅ Lista de propostas responsiva carregada');
+    console.log('📱 Largura da tela:', window.innerWidth, 'px');
 });
 </script>
 {% endblock %}
