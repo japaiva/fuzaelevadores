@@ -220,8 +220,7 @@ def api_buscar_produtos(request):
             models.Q(codigo__icontains=termo) |
             models.Q(nome__icontains=termo) |
             models.Q(descricao__icontains=termo),
-            status='ATIVO',
-            disponivel=True
+            status='ATIVO'
         ).select_related('grupo', 'subgrupo').order_by('codigo')[:20]  # Limitar a 20 resultados
         
         produtos_data = []
