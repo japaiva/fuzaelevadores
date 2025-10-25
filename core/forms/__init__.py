@@ -107,6 +107,8 @@ from .producao import (    # Lista de Materiais
     # Requisição de Compra
     RequisicaoCompraForm,
     RequisicaoCompraFiltroForm,
+    ItemRequisicaoCompraForm,
+    ItemRequisicaoCompraFormSet,
     
     # Orçamento de Compra
     OrcamentoCompraForm,
@@ -208,6 +210,8 @@ __all__ = [
     'ItemListaMateriaisFormSet',
     'RequisicaoCompraForm',
     'RequisicaoCompraFiltroForm',
+    'ItemRequisicaoCompraForm',
+    'ItemRequisicaoCompraFormSet',
     'OrcamentoCompraForm',
     'ItemOrcamentoCompraForm',
     'ItemOrcamentoCompraFormSet',

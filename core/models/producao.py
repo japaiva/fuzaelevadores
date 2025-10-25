@@ -208,7 +208,10 @@ class RequisicaoCompra(models.Model):
         ListaMateriais,
         on_delete=models.PROTECT,
         related_name='requisicoes',
-        verbose_name="Lista de Materiais"
+        verbose_name="Lista de Materiais",
+        blank=True,
+        null=True,
+        help_text="Opcional - Se não informada, adicione itens manualmente"
     )
     
     # Status e prioridade
@@ -296,7 +299,9 @@ class RequisicaoCompra(models.Model):
         ]
     
     def __str__(self):
-        return f"REQ {self.numero} - {self.lista_materiais.proposta.numero}"
+        if self.lista_materiais:
+            return f"REQ {self.numero} - {self.lista_materiais.proposta.numero}"
+        return f"REQ {self.numero}"
     
     def save(self, *args, **kwargs):
         """Override para gerar número automático"""

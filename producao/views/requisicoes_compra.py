@@ -24,7 +24,8 @@ from core.models import (
     ListaMateriais, Produto
 )
 from core.forms import (
-    RequisicaoCompraForm, RequisicaoCompraFiltroForm
+    RequisicaoCompraForm, RequisicaoCompraFiltroForm,
+    ItemRequisicaoCompraFormSet
 )
 
 logger = logging.getLogger(__name__)
@@ -89,11 +90,12 @@ def requisicao_compra_create(request):
     """Criar nova requisição de compra"""
     # Pegar lista_materiais_id da URL se vier da lista de materiais
     lista_materiais_id = request.GET.get('lista_materiais')
-    
+
     if request.method == 'POST':
         form = RequisicaoCompraForm(request.POST)
+        formset = ItemRequisicaoCompraFormSet(request.POST)
 
-        if form.is_valid():
+        if form.is_valid() and formset.is_valid():
             try:
                 with transaction.atomic():
                     # Criar requisição
@@ -102,18 +104,9 @@ def requisicao_compra_create(request):
                     requisicao.atualizado_por = request.user
                     requisicao.save()
 
-                    # Copiar itens da lista de materiais se houver
-                    lista_materiais = requisicao.lista_materiais
-                    if lista_materiais and lista_materiais.itens.exists():
-                        for item_lista in lista_materiais.itens.all():
-                            ItemRequisicaoCompra.objects.create(
-                                requisicao=requisicao,
-                                produto=item_lista.produto,
-                                quantidade=item_lista.quantidade,
-                                unidade=item_lista.unidade,
-                                valor_unitario_estimado=item_lista.valor_unitario_estimado,
-                                observacoes=item_lista.observacoes
-                            )
+                    # Salvar itens do formset
+                    formset.instance = requisicao
+                    formset.save()
 
                     messages.success(request, f'Requisição {requisicao.numero} criada com sucesso!')
                     return redirect('producao:requisicao_compra_detail', pk=requisicao.pk)
@@ -122,9 +115,29 @@ def requisicao_compra_create(request):
                 logger.error(f"Erro ao criar requisição: {str(e)}")
                 messages.error(request, f'Erro ao criar requisição: {str(e)}')
         else:
+            # Mostrar erros específicos
+            if not form.is_valid():
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+                        logger.error(f"Erro no campo {field}: {error}")
+
+            if not formset.is_valid():
+                for i, form_item in enumerate(formset):
+                    if form_item.errors:
+                        for field, errors in form_item.errors.items():
+                            for error in errors:
+                                messages.error(request, f'Item {i+1} - {field}: {error}')
+                                logger.error(f"Erro no item {i+1}, campo {field}: {error}")
+
+                if formset.non_form_errors():
+                    for error in formset.non_form_errors():
+                        messages.error(request, f'Erro geral: {error}')
+                        logger.error(f"Erro geral do formset: {error}")
+
             messages.error(request, 'Erro ao criar requisição. Verifique os dados informados.')
     else:
-        # Inicializar form
+        # Inicializar form e formset
         initial = {}
         if lista_materiais_id:
             try:
@@ -133,11 +146,30 @@ def requisicao_compra_create(request):
                 initial['data_necessidade'] = lista_materiais.proposta.prazo_entrega_dias
             except ListaMateriais.DoesNotExist:
                 pass
-        
+
         form = RequisicaoCompraForm(initial=initial)
+
+        # Se tem lista de materiais, inicializar formset com os itens
+        formset_initial = []
+        if lista_materiais_id:
+            try:
+                lista_materiais = ListaMateriais.objects.get(pk=lista_materiais_id)
+                for item in lista_materiais.itens.all():
+                    formset_initial.append({
+                        'produto': item.produto,
+                        'produto_search': f"{item.produto.codigo} - {item.produto.nome}",
+                        'quantidade': item.quantidade,
+                        'valor_unitario_estimado': item.valor_unitario_estimado,
+                        'observacoes': item.observacoes
+                    })
+            except ListaMateriais.DoesNotExist:
+                pass
+
+        formset = ItemRequisicaoCompraFormSet(initial=formset_initial)
 
     context = {
         'form': form,
+        'formset': formset,
         'title': 'Nova Requisição de Compra'
     }
 
@@ -174,26 +206,53 @@ def requisicao_compra_update(request, pk):
 
     if request.method == 'POST':
         form = RequisicaoCompraForm(request.POST, instance=requisicao)
+        formset = ItemRequisicaoCompraFormSet(request.POST, instance=requisicao)
 
-        if form.is_valid():
+        if form.is_valid() and formset.is_valid():
             try:
-                requisicao = form.save(commit=False)
-                requisicao.atualizado_por = request.user
-                requisicao.save()
+                with transaction.atomic():
+                    requisicao = form.save(commit=False)
+                    requisicao.atualizado_por = request.user
+                    requisicao.save()
 
-                messages.success(request, f'Requisição {requisicao.numero} atualizada com sucesso!')
-                return redirect('producao:requisicao_compra_detail', pk=requisicao.pk)
+                    # Salvar itens do formset
+                    formset.save()
+
+                    messages.success(request, f'Requisição {requisicao.numero} atualizada com sucesso!')
+                    return redirect('producao:requisicao_compra_detail', pk=requisicao.pk)
 
             except Exception as e:
                 logger.error(f"Erro ao atualizar requisição: {str(e)}")
                 messages.error(request, f'Erro ao atualizar requisição: {str(e)}')
         else:
+            # Mostrar erros específicos
+            if not form.is_valid():
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'{field}: {error}')
+                        logger.error(f"Erro no campo {field}: {error}")
+
+            if not formset.is_valid():
+                for i, form_item in enumerate(formset):
+                    if form_item.errors:
+                        for field, errors in form_item.errors.items():
+                            for error in errors:
+                                messages.error(request, f'Item {i+1} - {field}: {error}')
+                                logger.error(f"Erro no item {i+1}, campo {field}: {error}")
+
+                if formset.non_form_errors():
+                    for error in formset.non_form_errors():
+                        messages.error(request, f'Erro geral: {error}')
+                        logger.error(f"Erro geral do formset: {error}")
+
             messages.error(request, 'Erro ao atualizar requisição. Verifique os dados informados.')
     else:
         form = RequisicaoCompraForm(instance=requisicao)
+        formset = ItemRequisicaoCompraFormSet(instance=requisicao)
 
     context = {
         'form': form,
+        'formset': formset,
         'requisicao': requisicao,
         'title': f'Editar Requisição {requisicao.numero}'
     }

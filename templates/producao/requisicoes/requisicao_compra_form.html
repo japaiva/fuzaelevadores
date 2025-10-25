@@ -1,7 +1,12 @@
 <!-- templates/producao/requisicao_compra_form.html -->
 {% extends 'producao/base_producao.html' %}
+{% load static %}
 
 {% block title %}{{ title }} | Portal Produção{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/produto-search.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="card shadow">
@@ -19,6 +24,10 @@
     <form method="post">
       {% csrf_token %}
 
+      <!-- Campos hidden obrigatórios -->
+      <input type="hidden" name="status" value="rascunho">
+      <input type="hidden" name="prioridade" value="NORMAL">
+
       {% if form.non_field_errors %}
         <div class="alert alert-danger">
           {% for error in form.non_field_errors %}
@@ -27,7 +36,7 @@
         </div>
       {% endif %}
 
-      <div class="card shadow-sm">
+      <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
             <i class="fas fa-file-alt me-2"></i>
@@ -35,7 +44,7 @@
           </h5>
         </div>
         <div class="card-body">
-          <div class="row g-3">
+          <div class="row g-3 mb-3">
             {% if requisicao %}
               <div class="col-md-4">
                 <label class="form-label">Número</label>
@@ -52,71 +61,76 @@
               <div class="col-md-12">
             {% endif %}
                 <label for="{{ form.lista_materiais.id_for_label }}" class="form-label">
-                  Lista de Materiais <span class="text-danger">*</span>
+                  Lista de Materiais <small class="text-muted">(Opcional)</small>
                 </label>
-                {{ form.lista_materiais }}
+                <div class="mt-1">
+                  {{ form.lista_materiais }}
+                </div>
                 {% if form.lista_materiais.errors %}
                   <div class="text-danger small mt-1">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
                     {% for error in form.lista_materiais.errors %}{{ error }}{% endfor %}
                   </div>
                 {% endif %}
               </div>
           </div>
-          
-          <div class="row g-3 mt-2">
+
+          <div class="row g-3">
             <div class="col-md-3">
               <label for="{{ form.data_requisicao.id_for_label }}" class="form-label">
                 Data da Requisição <span class="text-danger">*</span>
               </label>
-              {{ form.data_requisicao }}
+              <div class="mt-1">
+                {{ form.data_requisicao }}
+              </div>
               {% if form.data_requisicao.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.data_requisicao.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-3">
               <label for="{{ form.data_necessidade.id_for_label }}" class="form-label">
                 Data de Necessidade
               </label>
-              {{ form.data_necessidade }}
+              <div class="mt-1">
+                {{ form.data_necessidade }}
+              </div>
               {% if form.data_necessidade.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.data_necessidade.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
 
-            <div class="col-md-3">
-              <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
-              {{ form.prioridade }}
-              {% if form.prioridade.errors %}
-                <div class="text-danger small mt-1">
-                  {% for error in form.prioridade.errors %}{{ error }}{% endfor %}
-                </div>
-              {% endif %}
-            </div>
-
-            <div class="col-md-3">
+            <div class="col-md-6">
               <label for="{{ form.departamento.id_for_label }}" class="form-label">Departamento</label>
-              {{ form.departamento }}
+              <div class="mt-1">
+                {{ form.departamento }}
+              </div>
               {% if form.departamento.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.departamento.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
           </div>
-          
+
           <div class="row g-3 mt-2">
             <div class="col-md-6">
               <label for="{{ form.solicitante.id_for_label }}" class="form-label">
                 Solicitante <span class="text-danger">*</span>
               </label>
-              {{ form.solicitante }}
+              <div class="mt-1">
+                {{ form.solicitante }}
+              </div>
               {% if form.solicitante.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.solicitante.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
@@ -125,8 +139,153 @@
         </div>
       </div>
 
+      <!-- Itens da Requisição -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>
+            Itens da Requisição
+          </h5>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-adicionar-item">
+            <i class="fas fa-plus me-1"></i> Adicionar Item
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0" id="itens-table">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 5%" class="text-center">#</th>
+                  <th style="width: 40%">Produto <span class="text-danger">*</span></th>
+                  <th style="width: 15%" class="text-center">Qtd <span class="text-danger">*</span></th>
+                  <th style="width: 35%">Observações</th>
+                  <th style="width: 5%" class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="itens-tbody">
+                {% for form_item in formset %}
+                  {% if not form_item.DELETE.value %}
+                    <tr class="item-row {% if form_item.instance.pk %}existing-item{% else %}new-item{% endif %}"
+                        id="{{ form_item.prefix }}-row">
+                      {% for hidden in form_item.hidden_fields %}
+                        {{ hidden }}
+                      {% endfor %}
+
+                      <td class="text-center align-middle">
+                        <span class="fw-bold text-muted item-numero">{{ forloop.counter }}</span>
+                      </td>
+
+                      <td class="align-middle">
+                        <!-- Campo de busca visível -->
+                        {{ form_item.produto_search }}
+
+                        <!-- Campo hidden do produto -->
+                        {{ form_item.produto }}
+
+                        <!-- Container para mostrar produto selecionado -->
+                        <div class="produto-selecionado mt-1" style="display: none;">
+                          <small class="text-success">
+                            <i class="fas fa-check-circle me-1"></i>
+                            <span class="produto-texto"></span>
+                          </small>
+                        </div>
+
+                        {% if form_item.produto.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.produto.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+
+                      <td class="align-middle">
+                        {{ form_item.quantidade }}
+                        {% if form_item.quantidade.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.quantidade.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+
+                      <td class="align-middle">
+                        <!-- Campo valor_unitario_estimado hidden (aceita vazio) -->
+                        {{ form_item.valor_unitario_estimado }}
+
+                        {{ form_item.observacoes }}
+                        {% if form_item.observacoes.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.observacoes.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+
+                      <td class="text-center align-middle">
+                        {{ form_item.DELETE }}
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+
+                <!-- Template row hidden para clonagem -->
+                <tr id="empty-form-template" class="item-row d-none">
+                  {% for hidden in formset.empty_form.hidden_fields %}
+                    {{ hidden }}
+                  {% endfor %}
+
+                  <td class="text-center align-middle">
+                    <span class="fw-bold text-muted item-numero"></span>
+                  </td>
+
+                  <td class="align-middle">
+                    {{ formset.empty_form.produto_search }}
+                    {{ formset.empty_form.produto }}
+                    <div class="produto-selecionado mt-1" style="display: none;">
+                      <small class="text-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        <span class="produto-texto"></span>
+                      </small>
+                    </div>
+                  </td>
+
+                  <td class="align-middle">
+                    {{ formset.empty_form.quantidade }}
+                  </td>
+
+                  <td class="align-middle">
+                    <!-- Campo valor_unitario_estimado hidden (aceita vazio) -->
+                    {{ formset.empty_form.valor_unitario_estimado }}
+
+                    {{ formset.empty_form.observacoes }}
+                  </td>
+
+                  <td class="text-center align-middle">
+                    {{ formset.empty_form.DELETE }}
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" title="Remover Item">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="sem-itens" class="text-center py-5" style="display: none;">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <div class="text-muted h5">Nenhum item adicionado</div>
+            <small class="text-muted">Clique em "Adicionar Item" para começar</small>
+          </div>
+        </div>
+      </div>
+
       <!-- Observações -->
-      <div class="card shadow-sm mt-4">
+      <div class="card shadow mt-4">
         <div class="card-header bg-light">
           <h5 class="card-title mb-0">
             <i class="fas fa-comment me-2"></i>
@@ -142,12 +301,13 @@
               {{ form.justificativa }}
               {% if form.justificativa.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.justificativa.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
           </div>
-          
+
           <div class="row g-3 mt-2">
             <div class="col-md-6">
               <label for="{{ form.observacoes.id_for_label }}" class="form-label">
@@ -156,11 +316,12 @@
               {{ form.observacoes }}
               {% if form.observacoes.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.observacoes.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
             </div>
-            
+
             <div class="col-md-6">
               <label for="{{ form.observacoes_compras.id_for_label }}" class="form-label">
                 Observações de Compras
@@ -168,6 +329,7 @@
               {{ form.observacoes_compras }}
               {% if form.observacoes_compras.errors %}
                 <div class="text-danger small mt-1">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
                   {% for error in form.observacoes_compras.errors %}{{ error }}{% endfor %}
                 </div>
               {% endif %}
@@ -186,4 +348,158 @@
     </form>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/produto-search.js' %}"></script>
+<script>
+// ===========================================================================
+// GERENCIAMENTO DE ITENS DA REQUISIÇÃO
+// ===========================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Requisição form carregado - inicializando...');
+
+    // Inicializar produto-search para todos os itens existentes
+    inicializarProdutoSearchExistentes();
+
+    // Event listener para adicionar item
+    const btnAdicionar = document.getElementById('btn-adicionar-item');
+    if (btnAdicionar) {
+        btnAdicionar.addEventListener('click', adicionarItem);
+    }
+
+    // Event listener para remover itens
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remover-item')) {
+            e.preventDefault();
+            removerItem(e.target.closest('.btn-remover-item'));
+        }
+    });
+
+    // Verificar itens vazios no início
+    verificarItensVazios();
+    atualizarNumeracaoItens();
+});
+
+function inicializarProdutoSearchExistentes() {
+    console.log('🔧 Inicializando produto-search para itens existentes...');
+    const searchInputs = document.querySelectorAll('.produto-search-input');
+
+    searchInputs.forEach(input => {
+        new ProdutoSearch(input);
+    });
+}
+
+function adicionarItem() {
+    console.log('➕ Adicionando novo item...');
+
+    const tbody = document.getElementById('itens-tbody');
+    const emptyFormTemplate = document.getElementById('empty-form-template');
+    const totalFormsInput = document.querySelector('input[name$="TOTAL_FORMS"]');
+
+    if (!tbody || !emptyFormTemplate || !totalFormsInput) {
+        console.error('❌ Elementos necessários não encontrados');
+        return;
+    }
+
+    try {
+        const currentForms = parseInt(totalFormsInput.value);
+
+        // Clonar o template
+        const newRow = emptyFormTemplate.cloneNode(true);
+        newRow.id = `form-${currentForms}-row`;
+        newRow.classList.remove('d-none');
+        newRow.classList.add('new-item');
+
+        // Substituir __prefix__ por índice atual
+        const html = newRow.innerHTML.replace(/__prefix__/g, currentForms);
+        newRow.innerHTML = html;
+
+        // Inserir antes do template (que deve estar sempre no final)
+        tbody.insertBefore(newRow, emptyFormTemplate);
+
+        // Inicializar produto-search
+        const searchInput = newRow.querySelector('.produto-search-input');
+        if (searchInput) {
+            new ProdutoSearch(searchInput);
+        }
+
+        // Atualizar contador total de forms
+        totalFormsInput.value = currentForms + 1;
+
+        // Atualizar interface
+        atualizarNumeracaoItens();
+        verificarItensVazios();
+
+        // Focar no input de busca
+        if (searchInput) {
+            searchInput.focus();
+        }
+
+        console.log(`✅ Novo item adicionado (form-${currentForms})`);
+    } catch (error) {
+        console.error('❌ Erro ao adicionar item:', error);
+        alert('Erro ao adicionar item. Tente novamente.');
+    }
+}
+
+function removerItem(btn) {
+    console.log('🗑️ Removendo item...');
+
+    try {
+        const row = btn.closest('.item-row');
+        const deleteCheckbox = row.querySelector('[name$="-DELETE"]');
+
+        if (deleteCheckbox) {
+            if (row.querySelector('[name$="-id"]').value) {
+                // Item existente - marcar para deleção
+                deleteCheckbox.checked = true;
+                row.style.display = 'none';
+                console.log('✅ Item marcado para deleção');
+            } else {
+                // Item novo - remover da DOM
+                row.remove();
+                console.log('✅ Item removido');
+            }
+        } else {
+            // Sem checkbox DELETE - item novo
+            row.remove();
+            console.log('✅ Item removido');
+        }
+
+        // Atualizar interface
+        atualizarNumeracaoItens();
+        verificarItensVazios();
+
+    } catch (error) {
+        console.error('❌ Erro ao remover item:', error);
+    }
+}
+
+function atualizarNumeracaoItens() {
+    let contador = 1;
+    document.querySelectorAll('.item-row:not([style*="display: none"]):not(#empty-form-template)').forEach(function(row) {
+        const numeroSpan = row.querySelector('.item-numero');
+        if (numeroSpan) {
+            numeroSpan.textContent = contador;
+        }
+        contador++;
+    });
+}
+
+function verificarItensVazios() {
+    const tbody = document.getElementById('itens-tbody');
+    const semItens = document.getElementById('sem-itens');
+    const itensVisiveis = tbody.querySelectorAll('.item-row:not([style*="display: none"]):not(#empty-form-template)');
+
+    if (itensVisiveis.length === 0) {
+        if (semItens) semItens.style.display = 'block';
+        tbody.style.display = 'none';
+    } else {
+        if (semItens) semItens.style.display = 'none';
+        tbody.style.display = '';
+    }
+}
+</script>
 {% endblock %}

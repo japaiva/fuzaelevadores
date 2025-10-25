@@ -70,7 +70,7 @@
               <th>Data</th>
               <th>Necessidade</th>
               <th>Status</th>
-              <th class="text-end">Valor Est.</th>
+              <th class="text-center">Itens</th>
               <th class="text-center">Ações</th>
             </tr>
           </thead>
@@ -84,8 +84,12 @@
                 </td>
                 
                 <td>
-                  <div class="fw-semibold">{{ requisicao.lista_materiais.proposta.numero }}</div>
-                  <small class="text-muted">{{ requisicao.lista_materiais.proposta.nome_projeto|truncatechars:30 }}</small>
+                  {% if requisicao.lista_materiais %}
+                    <div class="fw-semibold">{{ requisicao.lista_materiais.proposta.numero }}</div>
+                    <small class="text-muted">{{ requisicao.lista_materiais.proposta.nome_projeto|truncatechars:30 }}</small>
+                  {% else %}
+                    <span class="text-muted">Sem lista</span>
+                  {% endif %}
                 </td>
                 
                 <td>
@@ -114,13 +118,8 @@
                   {% endif %}
                 </td>
                 
-                <td class="text-end">
-                  {% if requisicao.get_valor_total_estimado > 0 %}
-                    <div class="fw-bold">R$ {{ requisicao.get_valor_total_estimado|floatformat:2 }}</div>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                  <small class="text-muted">{{ requisicao.get_total_itens }} itens</small>
+                <td class="text-center">
+                  <span class="badge bg-info">{{ requisicao.get_total_itens }}</span>
                 </td>
               
                 <td class="text-center">

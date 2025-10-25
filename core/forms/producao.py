@@ -115,8 +115,7 @@ class RequisicaoCompraForm(DateAwareModelForm, AuditMixin):
         ]
         widgets = {
             'lista_materiais': forms.Select(attrs={
-                'class': 'form-control',
-                'required': True
+                'class': 'form-control'
             }),
             'status': forms.Select(attrs={
                 'class': 'form-control'
@@ -179,7 +178,7 @@ class RequisicaoCompraForm(DateAwareModelForm, AuditMixin):
         ).order_by('first_name', 'last_name')
         
         # Campos obrigatórios
-        self.fields['lista_materiais'].required = True
+        self.fields['lista_materiais'].required = False  # OPCIONAL - pode criar requisição sem lista
         self.fields['data_requisicao'].required = True
         self.fields['solicitante'].required = True
         
@@ -236,6 +235,109 @@ class RequisicaoCompraFiltroForm(BaseFiltroForm):
         super().__init__(*args, **kwargs)
         self.fields['prioridade'].choices = [('', 'Todas as Prioridades')] + get_prioridade_pedido_choices()
         self.fields['q'].widget.attrs['placeholder'] = 'Buscar por número, proposta...'
+
+
+# =============================================================================
+# ITENS DA REQUISIÇÃO DE COMPRA
+# =============================================================================
+
+class ItemRequisicaoCompraForm(BaseModelForm):
+    """Formulário para itens da requisição de compra - COM BUSCA DE PRODUTOS"""
+
+    # Campo adicional para busca de produtos
+    produto_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control produto-search-input',
+            'placeholder': 'Digite código ou nome do produto...',
+            'autocomplete': 'off',
+        }),
+        label='Buscar Produto'
+    )
+
+    class Meta:
+        model = ItemRequisicaoCompra
+        fields = ['produto', 'quantidade', 'valor_unitario_estimado', 'observacoes']
+        widgets = {
+            'produto': forms.HiddenInput(),  # Campo hidden, será preenchido via JS
+            'quantidade': QuantityInput(attrs={
+                'class': 'form-control'
+            }),
+            'valor_unitario_estimado': forms.HiddenInput(),  # Hidden - não obrigatório na requisição
+            'observacoes': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Observações do item...'
+            }),
+        }
+        labels = {
+            'produto': 'Produto Selecionado',
+            'quantidade': 'Quantidade',
+            'valor_unitario_estimado': 'Valor Unitário Estimado',
+            'observacoes': 'Observações',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Se já tem produto selecionado, mostrar no campo de busca
+        if self.instance.pk and self.instance.produto:
+            produto = self.instance.produto
+            self.fields['produto_search'].initial = f"{produto.codigo} - {produto.nome}"
+
+        # Definir queryset para aceitar qualquer produto ativo
+        self.fields['produto'].queryset = Produto.objects.filter(
+            status='ATIVO'
+        )
+
+        # Campos obrigatórios
+        self.fields['produto'].required = True
+        self.fields['quantidade'].required = True
+        self.fields['valor_unitario_estimado'].required = False  # NÃO OBRIGATÓRIO
+
+    def clean_produto(self):
+        """Validar produto selecionado"""
+        produto = self.cleaned_data.get('produto')
+
+        if not produto:
+            raise ValidationError('Selecione um produto.')
+
+        # Se recebeu UUID como string, buscar o produto
+        if isinstance(produto, str):
+            try:
+                import uuid
+                produto_uuid = uuid.UUID(produto)
+                produto_obj = Produto.objects.get(pk=produto_uuid)
+            except (ValueError, Produto.DoesNotExist) as e:
+                raise ValidationError(f'Produto não encontrado: {produto}')
+        else:
+            produto_obj = produto
+
+        # Verificar se produto está ativo
+        if produto_obj.status != 'ATIVO':
+            raise ValidationError('Produto selecionado não está ativo.')
+
+        return produto_obj
+
+    def clean_valor_unitario_estimado(self):
+        """Permitir valor vazio (não obrigatório na requisição)"""
+        valor = self.cleaned_data.get('valor_unitario_estimado')
+        # Se vazio, retornar None
+        if valor == '' or valor is None:
+            return None
+        return valor
+
+
+# FORMSET PARA ITENS DA REQUISIÇÃO
+ItemRequisicaoCompraFormSet = inlineformset_factory(
+    RequisicaoCompra,
+    ItemRequisicaoCompra,
+    form=ItemRequisicaoCompraForm,
+    extra=1,
+    can_delete=True,
+    min_num=0,
+    validate_min=False,
+    fields=['produto', 'quantidade', 'valor_unitario_estimado', 'observacoes']
+)
 
 
 # =============================================================================
