@@ -919,5 +919,123 @@ def dashboard_analytics(request):
         'produtos_caros': produtos_caros,
         'fornecedores_top': fornecedores_top,
     }
-    
+
     return render(request, 'gestor/dashboard_analytics.html', context)
+
+
+# =============================================================================
+# GERENCIAMENTO DE PERMISSÕES
+# =============================================================================
+
+@login_required
+def usuario_permissoes(request, pk):
+    """
+    View para gerenciar permissões de um usuário específico
+    """
+    from django.contrib.auth.models import Group, Permission
+    from django.contrib.contenttypes.models import ContentType
+
+    usuario = get_object_or_404(Usuario, pk=pk)
+
+    if request.method == 'POST':
+        # Atualizar grupos
+        grupos_ids = request.POST.getlist('grupos')
+        usuario.groups.set(Group.objects.filter(id__in=grupos_ids))
+
+        # Atualizar permissões individuais
+        permissoes_ids = request.POST.getlist('permissoes')
+        usuario.user_permissions.set(Permission.objects.filter(id__in=permissoes_ids))
+
+        messages.success(request, f'Permissões do usuário {usuario.username} atualizadas com sucesso.')
+        return redirect('gestor:usuario_list')
+
+    # Obter todos os grupos disponíveis
+    todos_grupos = Group.objects.all().order_by('name')
+
+    # Obter permissões customizadas (do nosso sistema)
+    permissoes_proposta = Permission.objects.filter(
+        content_type__app_label='core',
+        content_type__model='proposta'
+    ).order_by('name')
+
+    permissoes_producao = Permission.objects.filter(
+        content_type__app_label='core',
+        content_type__model__in=['listamateriais', 'requisicaocompra', 'orcamentocompra']
+    ).order_by('content_type__model', 'name')
+
+    # Grupos que o usuário pertence
+    grupos_usuario = usuario.groups.all()
+
+    # Permissões que o usuário tem individualmente
+    permissoes_usuario = usuario.user_permissions.all()
+
+    context = {
+        'usuario': usuario,
+        'todos_grupos': todos_grupos,
+        'grupos_usuario': grupos_usuario,
+        'permissoes_usuario': permissoes_usuario,
+        'permissoes_proposta': permissoes_proposta,
+        'permissoes_producao': permissoes_producao,
+    }
+
+    return render(request, 'gestor/usuario_permissoes.html', context)
+
+
+@login_required
+def grupos_permissoes_list(request):
+    """
+    Lista todos os grupos com suas permissões
+    """
+    from django.contrib.auth.models import Group
+
+    grupos = Group.objects.all().prefetch_related('permissions').order_by('name')
+
+    context = {
+        'grupos': grupos,
+    }
+
+    return render(request, 'gestor/grupos_permissoes_list.html', context)
+
+
+@login_required
+def grupo_permissoes_edit(request, pk):
+    """
+    Editar permissões de um grupo
+    """
+    from django.contrib.auth.models import Group, Permission
+
+    grupo = get_object_or_404(Group, pk=pk)
+
+    if request.method == 'POST':
+        # Atualizar permissões do grupo
+        permissoes_ids = request.POST.getlist('permissoes')
+        grupo.permissions.set(Permission.objects.filter(id__in=permissoes_ids))
+
+        messages.success(request, f'Permissões do grupo {grupo.name} atualizadas com sucesso.')
+        return redirect('gestor:grupos_permissoes_list')
+
+    # Obter todas as permissões disponíveis organizadas por app/model
+    todas_permissoes = Permission.objects.select_related('content_type').order_by(
+        'content_type__app_label',
+        'content_type__model',
+        'codename'
+    )
+
+    # Permissões que o grupo já tem
+    permissoes_grupo = grupo.permissions.all()
+
+    # Organizar permissões por app
+    permissoes_por_app = {}
+    for perm in todas_permissoes:
+        app_label = perm.content_type.app_label
+        if app_label not in permissoes_por_app:
+            permissoes_por_app[app_label] = []
+        permissoes_por_app[app_label].append(perm)
+
+    context = {
+        'grupo': grupo,
+        'permissoes_grupo': permissoes_grupo,
+        'permissoes_por_app': permissoes_por_app,
+    }
+
+    return render(request, 'gestor/grupo_permissoes_edit.html', context)

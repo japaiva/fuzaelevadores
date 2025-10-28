@@ -1,0 +1,132 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Grupos de Permissões | Portal do Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-users-cog me-2"></i> Grupos de Permissões
+    </h5>
+    <div>
+      <a href="{% url 'gestor:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="alert alert-info">
+      <i class="fas fa-info-circle me-2"></i>
+      <strong>Grupos de Permissões:</strong> Grupos definem conjuntos de permissões padrão que podem ser atribuídos a múltiplos usuários.
+      Quando um usuário é criado com um determinado nível, ele é automaticamente adicionado ao grupo correspondente.
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 25%;">Grupo</th>
+            <th style="width: 15%;" class="text-center">Nº Permissões</th>
+            <th style="width: 15%;" class="text-center">Nº Usuários</th>
+            <th>Principais Permissões</th>
+            <th class="text-center" style="width: 120px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grupo in grupos %}
+          <tr>
+            <td>
+              <strong>{{ grupo.name }}</strong>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-primary">{{ grupo.permissions.count }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-info">{{ grupo.user_set.count }}</span>
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {% for perm in grupo.permissions.all|slice:":5" %}
+                  <span class="badge bg-secondary" style="font-size: 0.75rem;"
+                        title="{{ perm.name }}">
+                    {{ perm.codename|truncatechars:20 }}
+                  </span>
+                {% empty %}
+                  <span class="text-muted small">Nenhuma permissão atribuída</span>
+                {% endfor %}
+                {% if grupo.permissions.count > 5 %}
+                  <span class="badge bg-dark" style="font-size: 0.75rem;">
+                    +{{ grupo.permissions.count|add:"-5" }} mais
+                  </span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="text-center">
+              <a href="{% url 'gestor:grupo_permissoes_edit' grupo.id %}"
+                 class="btn btn-outline-primary btn-sm"
+                 title="Editar Permissões">
+                <i class="fas fa-edit"></i> Editar
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="text-center py-3 text-muted">
+              Nenhum grupo de permissões cadastrado.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card-footer bg-white">
+    <div class="row">
+      <div class="col-md-6">
+        <p class="text-muted small mb-0">
+          <i class="fas fa-lightbulb me-1"></i>
+          <strong>Dica:</strong> Execute <code>python manage.py setup_permissoes</code> para recriar grupos padrão.
+        </p>
+      </div>
+      <div class="col-md-6 text-end">
+        <p class="text-muted small mb-0">
+          Total de grupos: <strong>{{ grupos.count }}</strong>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card explicativo -->
+<div class="card shadow mt-4">
+  <div class="card-header bg-light">
+    <h6 class="card-title mb-0">
+      <i class="fas fa-question-circle me-2"></i> Entendendo os Grupos
+    </h6>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="text-primary">Como funcionam?</h6>
+        <ul class="small">
+          <li><strong>Admin:</strong> Acesso total ao sistema</li>
+          <li><strong>Gestor:</strong> Gerenciamento e configurações</li>
+          <li><strong>Vendedor:</strong> Criação e edição de propostas próprias</li>
+          <li><strong>Financeiro:</strong> Visualização de custos e aprovação financeira</li>
+        </ul>
+      </div>
+      <div class="col-md-6">
+        <h6 class="text-primary">Mais grupos disponíveis:</h6>
+        <ul class="small">
+          <li><strong>Vistoria:</strong> Realizar vistorias e medições</li>
+          <li><strong>Produção:</strong> Gerenciar listas de materiais</li>
+          <li><strong>Compras:</strong> Gerenciar orçamentos e requisições</li>
+          <li><strong>Engenharia:</strong> Acesso técnico e custos</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,178 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Permissões de {{ usuario.username }} | Portal do Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-key me-2"></i> Gerenciar Permissões: {{ usuario.username }}
+    </h5>
+    <div>
+      <a href="{% url 'gestor:usuario_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Informações do Usuário -->
+    <div class="alert alert-info mb-4">
+      <div class="row">
+        <div class="col-md-4">
+          <strong>Nome:</strong> {{ usuario.first_name }} {{ usuario.last_name }}
+        </div>
+        <div class="col-md-4">
+          <strong>Email:</strong> {{ usuario.email|default:"-" }}
+        </div>
+        <div class="col-md-4">
+          <strong>Nível:</strong> <span class="badge bg-primary">{{ usuario.get_nivel_display }}</span>
+        </div>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Seção de Grupos -->
+      <div class="mb-4">
+        <h6 class="border-bottom pb-2 mb-3">
+          <i class="fas fa-users-cog me-2"></i> Grupos (Permissões Padrão)
+        </h6>
+        <p class="text-muted small">
+          Grupos definem conjuntos de permissões padrão para cada tipo de usuário.
+          Um usuário pode pertencer a múltiplos grupos.
+        </p>
+
+        <div class="row">
+          {% for grupo in todos_grupos %}
+          <div class="col-md-6 mb-2">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="grupos"
+                     value="{{ grupo.id }}" id="grupo_{{ grupo.id }}"
+                     {% if grupo in grupos_usuario %}checked{% endif %}>
+              <label class="form-check-label" for="grupo_{{ grupo.id }}">
+                <strong>{{ grupo.name }}</strong>
+                <span class="text-muted small">({{ grupo.permissions.count }} permissões)</span>
+              </label>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Seção de Permissões Individuais -->
+      <div class="mb-4">
+        <h6 class="border-bottom pb-2 mb-3">
+          <i class="fas fa-user-shield me-2"></i> Permissões Individuais (Customizações)
+        </h6>
+        <p class="text-muted small">
+          Permissões individuais são adicionadas além das permissões dos grupos.
+          Use para dar permissões específicas que não fazem parte do grupo padrão.
+        </p>
+
+        <!-- Permissões de Propostas -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong><i class="fas fa-file-contract me-2"></i> Propostas</strong>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% for perm in permissoes_proposta %}
+              <div class="col-md-6 mb-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permissoes"
+                         value="{{ perm.id }}" id="perm_{{ perm.id }}"
+                         {% if perm in permissoes_usuario %}checked{% endif %}>
+                  <label class="form-check-label" for="perm_{{ perm.id }}">
+                    {{ perm.name }}
+                    <span class="text-muted small">({{ perm.codename }})</span>
+                  </label>
+                </div>
+              </div>
+              {% empty %}
+              <div class="col-12">
+                <p class="text-muted small mb-0">Nenhuma permissão customizada disponível para propostas.</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Permissões de Produção -->
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong><i class="fas fa-industry me-2"></i> Produção e Compras</strong>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% for perm in permissoes_producao %}
+              <div class="col-md-6 mb-2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permissoes"
+                         value="{{ perm.id }}" id="perm_{{ perm.id }}"
+                         {% if perm in permissoes_usuario %}checked{% endif %}>
+                  <label class="form-check-label" for="perm_{{ perm.id }}">
+                    {{ perm.name }}
+                    <span class="text-muted small">({{ perm.codename }})</span>
+                  </label>
+                </div>
+              </div>
+              {% empty %}
+              <div class="col-12">
+                <p class="text-muted small mb-0">Nenhuma permissão customizada disponível para produção.</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Resumo Atual -->
+      <div class="mb-4">
+        <h6 class="border-bottom pb-2 mb-3">
+          <i class="fas fa-info-circle me-2"></i> Resumo das Permissões Atuais
+        </h6>
+        <div class="row">
+          <div class="col-md-6">
+            <strong>Grupos:</strong>
+            {% if grupos_usuario %}
+              {% for grupo in grupos_usuario %}
+                <span class="badge bg-primary me-1">{{ grupo.name }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">Nenhum grupo atribuído</span>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <strong>Permissões Individuais:</strong>
+            <span class="badge bg-info">{{ permissoes_usuario.count }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'gestor:usuario_list' %}" class="btn btn-secondary">
+          <i class="fas fa-times me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar Permissões
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Script para facilitar seleção -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Adicionar botões "Selecionar Todos" em cada seção se necessário
+  console.log('Página de permissões carregada');
+});
+</script>
+{% endblock %}

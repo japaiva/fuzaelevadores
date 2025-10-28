@@ -20,21 +20,24 @@
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'gestor:usuario_list' %}">
-        Usuários
+        <i class="fas fa-users me-2"></i> Usuários
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:grupos_permissoes_list' %}">
+        <i class="fas fa-key me-2"></i> Grupos de Permissões
     </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:parametros_gerais' %}">
-        Parâmetros Gerais
+        <i class="fas fa-cog me-2"></i> Parâmetros Gerais
     </a></li>
-    
+
     <li><hr class="dropdown-divider"></li>
-    
+
     <li><a class="dropdown-item" href="{% url 'gestor:cliente_list' %}">
-        Clientes
+        <i class="fas fa-building me-2"></i> Clientes
     </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
-        Fornecedores
+        <i class="fas fa-truck me-2"></i> Fornecedores
     </a></li>
-    
+
 
   </ul>
 </li>

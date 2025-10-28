@@ -88,7 +88,7 @@ class ComponenteDisponibilidadeMiddleware:
 
     def __call__(self, request):
         # Adicionar informações de disponibilidade se necessário
-        if request.user.is_authenticated and hasattr(request.user, 'nivel') and request.user.nivel in ['vendedor', 'compras', 'producao', 'gestor', 'admin']:
+        if request.user.is_authenticated and hasattr(request.user, 'nivel') and request.user.nivel in ['vendedor', 'compras', 'producao', 'gestor', 'admin', 'financeiro', 'vistoria', 'engenharia']:
             # Verificar se há produtos com estoque baixo
             try:
                 from core.models import Produto
@@ -180,9 +180,9 @@ class PermissaoPortalMiddleware:
             
             # Definir permissões por portal
             portal_permissions = {
-                '/gestor/': ['admin', 'gestor'],
-                '/vendedor/': ['admin', 'gestor', 'vendedor','engenharia'],
-                '/producao/': ['admin', 'gestor', 'producao', 'compras', 'engenharia'], # Adicione 'engenharia' aqui
+                '/gestor/': ['admin', 'gestor', 'financeiro'],
+                '/vendedor/': ['admin', 'gestor', 'vendedor', 'engenharia', 'vistoria'],
+                '/producao/': ['admin', 'gestor', 'producao', 'compras', 'engenharia'],
                 '/configuracao/': ['admin', 'gestor'],
             }
             

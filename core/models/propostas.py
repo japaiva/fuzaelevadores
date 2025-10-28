@@ -641,6 +641,29 @@ class Proposta(models.Model):
             models.Index(fields=['data_validade']),
             models.Index(fields=['valor_proposta']),
         ]
+        permissions = [
+            # Permissões de desconto
+            ("aprovar_desconto_5", "Pode aprovar desconto até 5%"),
+            ("aprovar_desconto_10", "Pode aprovar desconto até 10%"),
+            ("aprovar_desconto_15", "Pode aprovar desconto até 15%"),
+            ("aprovar_desconto_20", "Pode aprovar desconto até 20%"),
+            ("aprovar_desconto_ilimitado", "Pode aprovar desconto ilimitado"),
+
+            # Permissões de visualização
+            ("visualizar_custos", "Pode visualizar custos e margens"),
+            ("visualizar_todas_propostas", "Pode visualizar propostas de outros vendedores"),
+            ("exportar_relatorios", "Pode exportar relatórios"),
+
+            # Permissões de edição
+            ("editar_proposta_alheia", "Pode editar propostas de outros vendedores"),
+            ("aprovar_proposta", "Pode aprovar propostas"),
+            ("rejeitar_proposta", "Pode rejeitar propostas"),
+
+            # Permissões de vistoria
+            ("realizar_vistoria", "Pode realizar vistorias"),
+            ("agendar_vistoria", "Pode agendar vistorias"),
+            ("aprovar_medicao", "Pode aprovar medições de obra"),
+        ]
     
     def __str__(self):
         valor_display = f"R$ {self.valor_proposta:,.2f}" if self.valor_proposta else "Valor não definido"

@@ -72,6 +72,11 @@ class ListaMateriais(models.Model):
         verbose_name = "Lista de Materiais"
         verbose_name_plural = "Listas de Materiais"
         ordering = ['-criado_em']
+        permissions = [
+            ("aprovar_lista_materiais", "Pode aprovar lista de materiais"),
+            ("editar_lista_materiais_aprovada", "Pode editar lista de materiais já aprovada"),
+            ("visualizar_custos_lista", "Pode visualizar custos da lista de materiais"),
+        ]
     
     def __str__(self):
         return f"Lista Materiais - {self.proposta.numero}"
@@ -296,6 +301,11 @@ class RequisicaoCompra(models.Model):
             models.Index(fields=['numero']),
             models.Index(fields=['status']),
             models.Index(fields=['data_requisicao']),
+        ]
+        permissions = [
+            ("aprovar_requisicao", "Pode aprovar requisições de compra"),
+            ("cancelar_requisicao", "Pode cancelar requisições de compra"),
+            ("editar_requisicao_aprovada", "Pode editar requisições já aprovadas"),
         ]
     
     def __str__(self):
@@ -567,6 +577,14 @@ class OrcamentoCompra(models.Model):
             models.Index(fields=['numero']),
             models.Index(fields=['status']),
             models.Index(fields=['data_orcamento']),
+        ]
+        permissions = [
+            ("aprovar_orcamento_ate_5000", "Pode aprovar orçamentos até R$ 5.000"),
+            ("aprovar_orcamento_ate_10000", "Pode aprovar orçamentos até R$ 10.000"),
+            ("aprovar_orcamento_ate_50000", "Pode aprovar orçamentos até R$ 50.000"),
+            ("aprovar_orcamento_ilimitado", "Pode aprovar orçamentos sem limite de valor"),
+            ("cancelar_orcamento", "Pode cancelar orçamentos"),
+            ("editar_orcamento_aprovado", "Pode editar orçamentos já aprovados"),
         ]
     
     def __str__(self):

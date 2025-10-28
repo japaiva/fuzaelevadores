@@ -28,6 +28,9 @@
               <option value="admin" {% if nivel_filtro == 'admin' %}selected{% endif %}>Admin</option>
               <option value="gestor" {% if nivel_filtro == 'gestor' %}selected{% endif %}>Gestor</option>
               <option value="vendedor" {% if nivel_filtro == 'vendedor' %}selected{% endif %}>Vendedor</option>
+              <option value="financeiro" {% if nivel_filtro == 'financeiro' %}selected{% endif %}>Financeiro</option>
+              <option value="vistoria" {% if nivel_filtro == 'vistoria' %}selected{% endif %}>Vistoria</option>
+              <option value="producao" {% if nivel_filtro == 'producao' %}selected{% endif %}>Produção</option>
               <option value="compras" {% if nivel_filtro == 'compras' %}selected{% endif %}>Compras</option>
               <option value="engenharia" {% if nivel_filtro == 'engenharia' %}selected{% endif %}>Engenharia</option>
             </select>
@@ -82,18 +85,23 @@
               </td>
               <td class="text-center">
                 <div class="btn-group" role="group" aria-label="Ações do usuário">
-                  <a href="{% url 'gestor:usuario_update' usuario.id %}" 
-                     class="btn btn-outline-primary btn-sm" 
+                  <a href="{% url 'gestor:usuario_update' usuario.id %}"
+                     class="btn btn-outline-primary btn-sm"
                      title="Editar">
                     <i class="fas fa-edit"></i>
                   </a>
-                  <a href="{% url 'gestor:usuario_toggle_status' usuario.id %}" 
-                     class="btn btn-sm {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" 
+                  <a href="{% url 'gestor:usuario_permissoes' usuario.id %}"
+                     class="btn btn-outline-warning btn-sm"
+                     title="Gerenciar Permissões">
+                    <i class="fas fa-key"></i>
+                  </a>
+                  <a href="{% url 'gestor:usuario_toggle_status' usuario.id %}"
+                     class="btn btn-sm {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
                      title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}">
                     <i class="fas {% if usuario.is_active %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
                   </a>
-                  <a href="{% url 'gestor:usuario_delete' usuario.id %}" 
-                    class="btn btn-outline-danger btn-sm" 
+                  <a href="{% url 'gestor:usuario_delete' usuario.id %}"
+                    class="btn btn-outline-danger btn-sm"
                     title="Excluir"
                     onclick="return confirm('Tem certeza que deseja excluir este usuário?');">
                     <i class="fas fa-trash"></i>

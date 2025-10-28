@@ -13,11 +13,7 @@ from .base import NIVEL_USUARIO_CHOICES
 
 class Usuario(AbstractUser):
     """Modelo customizado de usuário"""
-    
-    # Desabilitar relacionamentos explicitamente
-    groups = None
-    user_permissions = None
-    
+
     nivel = models.CharField(max_length=20, choices=NIVEL_USUARIO_CHOICES)
     telefone = models.CharField(max_length=20, blank=True, null=True)
     codigo_loja = models.CharField(

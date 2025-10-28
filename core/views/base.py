@@ -65,11 +65,11 @@ def home_view(request):
     """
     if request.user.is_authenticated:
         # Redireciona para o portal adequado com base no nível do usuário
-        if request.user.nivel in ['admin', 'gestor']:
+        if request.user.nivel in ['admin', 'gestor', 'financeiro']:
             return redirect('gestor:dashboard')
-        elif request.user.nivel == 'vendedor':
+        elif request.user.nivel in ['vendedor', 'vistoria']:
             return redirect('vendedor:dashboard')
-        elif request.user.nivel in ['producao', 'compras']:
+        elif request.user.nivel in ['producao', 'compras', 'engenharia']:
             return redirect('producao:dashboard')
         else:
             # Nível de usuário não reconhecido, redireciona para a página inicial padrão
@@ -108,7 +108,7 @@ class GestorLoginView(LoginView):
     def form_valid(self, form):
         # Verificar se o usuário tem permissão para acessar o portal do gestor
         user = form.get_user()
-        if user.nivel not in ['admin', 'gestor']:
+        if user.nivel not in ['admin', 'gestor', 'financeiro']:
             messages.error(self.request, 'Você não tem permissão para acessar o Portal do Gestor.')
             return self.form_invalid(form)
         
@@ -133,7 +133,7 @@ class VendedorLoginView(LoginView):
     def form_valid(self, form):
         # Verificar se o usuário tem permissão para acessar o portal do vendedor
         user = form.get_user()
-        if user.nivel not in ['admin', 'vendedor']:
+        if user.nivel not in ['admin', 'vendedor', 'vistoria', 'engenharia', 'gestor']:
             messages.error(self.request, 'Você não tem permissão para acessar o Portal do Vendedor.')
             return self.form_invalid(form)
         
@@ -159,7 +159,7 @@ class ProducaoLoginView(LoginView):
     def form_valid(self, form):
         user = form.get_user()
         # Produção engloba compras, então ambos os níveis podem acessar
-        if user.nivel not in ['admin', 'gestor', 'producao', 'compras']:
+        if user.nivel not in ['admin', 'gestor', 'producao', 'compras', 'engenharia']:
             messages.error(self.request, 'Você não tem permissão para acessar o Portal de Produção.')
             return self.form_invalid(form)
         
