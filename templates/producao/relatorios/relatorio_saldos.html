@@ -1,0 +1,306 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}Relatório de Saldo de Requisições{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Tabela compacta */
+  .table-sm {
+    font-size: 0.85rem;
+  }
+
+  .table-sm thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.4rem;
+  }
+
+  .table-sm tbody td {
+    padding: 0.5rem 0.4rem;
+  }
+
+  .status-badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .progress-bar-wrapper {
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <!-- CABEÇALHO -->
+  <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="card-title mb-0 text-white">
+        <i class="fas fa-chart-line me-2"></i> Relatório de Saldo de Requisições
+      </h5>
+    </div>
+    <div>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card-header bg-white">
+    <form method="get" id="filtros-form">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label small fw-bold">Status Req.</label>
+          <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="rascunho" {% if status_filtro == 'rascunho' %}selected{% endif %}>Rascunho</option>
+            <option value="aberta" {% if status_filtro == 'aberta' %}selected{% endif %}>Aberta</option>
+            <option value="cotando" {% if status_filtro == 'cotando' %}selected{% endif %}>Em Cotação</option>
+            <option value="orcada" {% if status_filtro == 'orcada' %}selected{% endif %}>Orçada</option>
+            <option value="aprovada" {% if status_filtro == 'aprovada' %}selected{% endif %}>Aprovada</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small fw-bold">Prioridade</label>
+          <select name="prioridade" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todas</option>
+            <option value="BAIXA" {% if prioridade_filtro == 'BAIXA' %}selected{% endif %}>Baixa</option>
+            <option value="NORMAL" {% if prioridade_filtro == 'NORMAL' %}selected{% endif %}>Normal</option>
+            <option value="ALTA" {% if prioridade_filtro == 'ALTA' %}selected{% endif %}>Alta</option>
+            <option value="URGENTE" {% if prioridade_filtro == 'URGENTE' %}selected{% endif %}>Urgente</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label small fw-bold">Status Saldo</label>
+          <select name="status_atendimento" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="pendente" {% if status_atendimento_filtro == 'pendente' %}selected{% endif %}>Pendente</option>
+            <option value="parcial" {% if status_atendimento_filtro == 'parcial' %}selected{% endif %}>Parcial</option>
+            <option value="em_andamento" {% if status_atendimento_filtro == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+            <option value="completo" {% if status_atendimento_filtro == 'completo' %}selected{% endif %}>Completo</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label small fw-bold">Buscar</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="q" class="form-control"
+                   placeholder="Número da requisição ou proposta..."
+                   value="{{ busca|default:'' }}">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="pendentes" value="true"
+                   id="checkPendentes" {% if mostrar_apenas_pendentes %}checked{% endif %}
+                   onchange="this.form.submit()">
+            <label class="form-check-label small fw-bold" for="checkPendentes">
+              Pendentes
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-md-12 d-flex align-items-center">
+          <a href="{% url 'producao:relatorio_saldos_requisicoes' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-times me-1"></i> Limpar Filtros
+          </a>
+
+          <div class="ms-auto">
+            <small class="text-muted">
+              <strong>{{ total_requisicoes }}</strong> requisição(ões) encontrada(s)
+            </small>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- RESUMO DOS FILTROS APLICADOS -->
+  {% if status_filtro or prioridade_filtro or busca or mostrar_apenas_pendentes or status_atendimento_filtro %}
+  <div class="card-header bg-light border-top">
+    <div class="d-flex align-items-center">
+      <span class="badge bg-info me-2">
+        <i class="fas fa-filter me-1"></i> Filtros Aplicados
+      </span>
+      <div class="d-flex flex-wrap gap-1">
+        {% if status_filtro %}
+          <span class="badge bg-primary">Status: {{ status_filtro|title }}</span>
+        {% endif %}
+        {% if prioridade_filtro %}
+          <span class="badge bg-warning text-dark">Prioridade: {{ prioridade_filtro }}</span>
+        {% endif %}
+        {% if status_atendimento_filtro %}
+          <span class="badge bg-secondary">Atendimento: {{ status_atendimento_filtro|title }}</span>
+        {% endif %}
+        {% if mostrar_apenas_pendentes %}
+          <span class="badge bg-danger">Apenas Pendentes</span>
+        {% endif %}
+        {% if busca %}
+          <span class="badge bg-info">Busca: "{{ busca }}"</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- TABELA DE RESULTADOS -->
+  <div class="card-body p-0">
+    {% if requisicoes %}
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 12%">Requisição</th>
+              <th style="width: 15%">Proposta</th>
+              <th class="text-center" style="width: 8%">Itens</th>
+              <th class="text-center" style="width: 8%">Pedidos</th>
+              <th class="text-center" style="width: 22%">% Atendido</th>
+              <th class="text-center" style="width: 12%">Status Atend.</th>
+              <th class="text-center" style="width: 10%">Prioridade</th>
+              <th class="text-center" style="width: 13%">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in requisicoes %}
+            <tr>
+              <td>
+                <a href="{% url 'producao:requisicao_compra_detail' item.requisicao.pk %}"
+                   class="text-decoration-none fw-bold">
+                  {{ item.requisicao.numero }}
+                </a>
+                <br>
+                <small class="text-muted">{{ item.requisicao.data_requisicao|date:"d/m/Y" }}</small>
+              </td>
+              <td>
+                {% if item.requisicao.lista_materiais.proposta %}
+                  {{ item.requisicao.lista_materiais.proposta.numero }}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge bg-secondary status-badge">{{ item.total_itens }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-info status-badge">{{ item.pedidos_vinculados }}</span>
+              </td>
+              <td class="text-center">
+                <div class="progress-bar-wrapper">
+                  <div class="progress" style="height: 100%;">
+                    {% if item.percentual_atendido >= 100 %}
+                      <div class="progress-bar bg-success" style="width: 100%">
+                        <strong class="text-white">100%</strong>
+                      </div>
+                    {% elif item.percentual_atendido >= 50 %}
+                      <div class="progress-bar bg-warning" style="width: {{ item.percentual_atendido }}%">
+                        <strong class="text-dark">{{ item.percentual_atendido|floatformat:0 }}%</strong>
+                      </div>
+                    {% else %}
+                      <div class="progress-bar bg-danger" style="width: {% if item.percentual_atendido < 10 %}10{% else %}{{ item.percentual_atendido }}{% endif %}%">
+                        <strong class="text-white">{{ item.percentual_atendido|floatformat:0 }}%</strong>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">
+                {% if item.status_atendimento == 'completo' %}
+                  <span class="badge bg-success status-badge">Completo</span>
+                {% elif item.status_atendimento == 'em_andamento' %}
+                  <span class="badge bg-primary status-badge">Em Andamento</span>
+                {% elif item.status_atendimento == 'parcial' %}
+                  <span class="badge bg-warning status-badge">Parcial</span>
+                {% else %}
+                  <span class="badge bg-secondary status-badge">Pendente</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge {{ item.requisicao.prioridade_badge_class }} status-badge">
+                  {{ item.requisicao.get_prioridade_display }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:requisicao_saldo_detail' item.requisicao.pk %}"
+                     class="btn btn-outline-primary btn-sm"
+                     title="Ver Detalhes">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="{% url 'producao:requisicao_compra_detail' item.requisicao.pk %}"
+                     class="btn btn-outline-info btn-sm"
+                     title="Ver Requisição">
+                    <i class="fas fa-file-alt"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINAÇÃO -->
+      {% if requisicoes.has_other_pages %}
+      <div class="card-footer bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <small class="text-muted">
+              Mostrando {{ requisicoes.start_index }} a {{ requisicoes.end_index }} de {{ requisicoes.paginator.count }} requisições
+            </small>
+          </div>
+          <nav aria-label="Navegação de página">
+            <ul class="pagination pagination-sm mb-0">
+              {% if requisicoes.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page=1{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if prioridade_filtro %}&prioridade={{ prioridade_filtro }}{% endif %}{% if busca %}&q={{ busca }}{% endif %}{% if mostrar_apenas_pendentes %}&pendentes=true{% endif %}{% if status_atendimento_filtro %}&status_atendimento={{ status_atendimento_filtro }}{% endif %}">Primeira</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ requisicoes.previous_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if prioridade_filtro %}&prioridade={{ prioridade_filtro }}{% endif %}{% if busca %}&q={{ busca }}{% endif %}{% if mostrar_apenas_pendentes %}&pendentes=true{% endif %}{% if status_atendimento_filtro %}&status_atendimento={{ status_atendimento_filtro }}{% endif %}">Anterior</a>
+                </li>
+              {% endif %}
+
+              <li class="page-item active">
+                <span class="page-link">{{ requisicoes.number }} de {{ requisicoes.paginator.num_pages }}</span>
+              </li>
+
+              {% if requisicoes.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ requisicoes.next_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if prioridade_filtro %}&prioridade={{ prioridade_filtro }}{% endif %}{% if busca %}&q={{ busca }}{% endif %}{% if mostrar_apenas_pendentes %}&pendentes=true{% endif %}{% if status_atendimento_filtro %}&status_atendimento={{ status_atendimento_filtro }}{% endif %}">Próxima</a>
+                </li>
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ requisicoes.paginator.num_pages }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if prioridade_filtro %}&prioridade={{ prioridade_filtro }}{% endif %}{% if busca %}&q={{ busca }}{% endif %}{% if mostrar_apenas_pendentes %}&pendentes=true{% endif %}{% if status_atendimento_filtro %}&status_atendimento={{ status_atendimento_filtro }}{% endif %}">Última</a>
+                </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="card-body text-center py-5">
+        <div class="text-muted h5">Nenhuma requisição encontrada</div>
+        <small class="text-muted">Tente ajustar os filtros ou limpar para ver todos os resultados</small>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

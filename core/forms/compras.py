@@ -180,7 +180,7 @@ class ItemPedidoCompraForm(BaseModelForm):
     
     class Meta:
         model = ItemPedidoCompra
-        fields = ['produto', 'quantidade', 'valor_unitario', 'observacoes']
+        fields = ['produto', 'quantidade', 'valor_unitario', 'observacoes', 'item_requisicao']
         widgets = {
             'produto': forms.HiddenInput(),  # Campo hidden, será preenchido via JS
             'quantidade': QuantityInput(attrs={
@@ -193,28 +193,52 @@ class ItemPedidoCompraForm(BaseModelForm):
                 'class': 'form-control',
                 'placeholder': 'Observações do item...'
             }),
+            'item_requisicao': forms.Select(attrs={
+                'class': 'form-control form-select-sm',
+            }),
         }
         labels = {
             'produto': 'Produto Selecionado',
             'quantidade': 'Quantidade',
             'valor_unitario': 'Valor Unitário',
             'observacoes': 'Observações',
+            'item_requisicao': 'Vincular à Requisição (opcional)',
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Se já tem produto selecionado, mostrar no campo de busca
         if self.instance.pk and self.instance.produto:
             produto = self.instance.produto
             self.fields['produto_search'].initial = f"{produto.codigo} - {produto.nome}"
-        
+
         # 🔧 CORREÇÃO 1: Definir queryset para aceitar qualquer produto ativo
         self.fields['produto'].queryset = Produto.objects.filter(
             status='ATIVO',
             disponivel=True
         )
-        
+
+        # Configurar campo item_requisicao (opcional)
+        from core.models import ItemRequisicaoCompra
+        self.fields['item_requisicao'].required = False
+        self.fields['item_requisicao'].empty_label = "Sem vínculo com requisição"
+
+        # Filtrar apenas itens de requisições abertas/aprovadas com saldo
+        itens_requisicao = ItemRequisicaoCompra.objects.filter(
+            requisicao__status__in=['aberta', 'aprovada']
+        ).select_related('requisicao', 'produto')
+
+        # Criar choices customizados com informação de saldo
+        choices = [('', 'Sem vínculo com requisição')]
+        for item in itens_requisicao:
+            if item.quantidade_saldo > 0:
+                label = f"Req {item.requisicao.numero} - {item.produto.codigo} (Saldo: {item.quantidade_saldo} {item.unidade})"
+                choices.append((item.pk, label))
+
+        self.fields['item_requisicao'].choices = choices
+        self.fields['item_requisicao'].help_text = "Vincule este item a uma requisição para controlar o saldo"
+
         # Campos obrigatórios
         self.fields['produto'].required = True
         self.fields['quantidade'].required = True
@@ -236,10 +260,10 @@ class ItemPedidoCompraForm(BaseModelForm):
     def clean_produto(self):
         """Validar produto selecionado"""
         produto = self.cleaned_data.get('produto')
-        
+
         if not produto:
             raise ValidationError('Selecione um produto.')
-        
+
         # 🔧 CORREÇÃO 2: Lidar com UUID string vs objeto Produto
         if isinstance(produto, str):
             try:
@@ -254,13 +278,34 @@ class ItemPedidoCompraForm(BaseModelForm):
         else:
             # Se já é um objeto Produto
             produto_obj = produto
-        
+
         # Verificar se produto está ativo e disponível
         if produto_obj.status != 'ATIVO' or not produto_obj.disponivel:
             raise ValidationError('Produto selecionado não está disponível.')
-        
+
         # 🔧 CORREÇÃO 3: Retornar o objeto Produto, não a string
         return produto_obj
+
+    def clean(self):
+        """Validação cruzada entre campos"""
+        cleaned_data = super().clean()
+        item_requisicao = cleaned_data.get('item_requisicao')
+        quantidade = cleaned_data.get('quantidade')
+        produto = cleaned_data.get('produto')
+
+        # Se vinculou a uma requisição, validar saldo e produto
+        if item_requisicao and quantidade:
+            # Verificar se o produto do pedido é o mesmo da requisição
+            if produto and item_requisicao.produto != produto:
+                self.add_error('item_requisicao',
+                    f'O produto selecionado ({produto.codigo}) não corresponde ao produto da requisição ({item_requisicao.produto.codigo}).')
+
+            # Verificar se não excede o saldo disponível
+            if quantidade > item_requisicao.quantidade_saldo:
+                self.add_error('quantidade',
+                    f'Quantidade ({quantidade}) excede o saldo disponível ({item_requisicao.quantidade_saldo} {item_requisicao.unidade}).')
+
+        return cleaned_data
 
 
 # FORMSET PARA ITENS DO PEDIDO
@@ -272,7 +317,7 @@ ItemPedidoCompraFormSet = inlineformset_factory(
     can_delete=True,
     min_num=0,
     validate_min=False,
-    fields=['produto', 'quantidade', 'valor_unitario', 'observacoes']
+    fields=['produto', 'quantidade', 'valor_unitario', 'observacoes', 'item_requisicao']
 )
 
 

@@ -109,6 +109,7 @@ urlpatterns = [
     path('requisicoes-compra/<int:pk>/', views.requisicao_compra_detail, name='requisicao_compra_detail'),
     path('requisicoes-compra/<int:pk>/editar/', views.requisicao_compra_update, name='requisicao_compra_update'),
     path('requisicoes-compra/<int:pk>/excluir/', views.requisicao_compra_delete, name='requisicao_compra_delete'),
+    path('requisicoes-compra/<int:pk>/toggle-status/', views.requisicao_compra_toggle_status, name='requisicao_compra_toggle_status'),
     path('requisicoes-compra/<int:pk>/alterar-status/', views.requisicao_compra_alterar_status, name='requisicao_compra_alterar_status'),
     path('requisicoes-compra/<int:pk>/gerar-orcamento/', views.requisicao_compra_gerar_orcamento, name='requisicao_compra_gerar_orcamento'),
     
@@ -137,7 +138,19 @@ urlpatterns = [
     path('pedidos-compra/<int:pk>/duplicar/', views.pedido_compra_duplicar, name='pedido_compra_duplicar'),
     path('pedidos-compra/<int:pk>/recebimento/', views.pedido_compra_recebimento, name='pedido_compra_recebimento'),
     path('pedidos-compra/<int:pedido_pk>/item/<int:item_pk>/receber/', views.receber_item_pedido, name='receber_item_pedido'),
-    
+
+    # Criar pedido a partir de requisição
+    path('pedidos-compra/from-requisicao/<int:requisicao_pk>/', views.pedido_compra_from_requisicao, name='pedido_compra_from_requisicao'),
+
+    # (Opcional) Criar pedido a partir de orçamento - para uso futuro
+    path('pedidos-compra/from-orcamento/<int:orcamento_pk>/', views.pedido_compra_from_orcamento, name='pedido_compra_from_orcamento'),
+
+    # =======================================================================
+    # 📊 RELATÓRIOS DE SALDO DE REQUISIÇÕES
+    # =======================================================================
+    path('relatorios/saldos-requisicoes/', views.relatorio_saldos_requisicoes, name='relatorio_saldos_requisicoes'),
+    path('requisicoes/<int:pk>/saldo/', views.requisicao_saldo_detail, name='requisicao_saldo_detail'),
+
     # =======================================================================
     # 🔄 RECLASSIFICAÇÃO DE PRODUTOS
     # =======================================================================

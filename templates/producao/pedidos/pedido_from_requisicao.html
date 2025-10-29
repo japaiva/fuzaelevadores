@@ -1,0 +1,292 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .saldo-info {
+        padding: 10px;
+        border-radius: 6px;
+        background: #f8f9fa;
+        margin-bottom: 10px;
+    }
+    .saldo-badge {
+        font-size: 0.9rem;
+        padding: 4px 10px;
+    }
+    .item-row.sem-saldo {
+        opacity: 0.5;
+        background-color: #f8d7da;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-shopping-cart me-2"></i> {{ title }}</h2>
+                <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar à Requisição
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações da Requisição -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i> Requisição {{ requisicao.numero }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Solicitante:</strong><br>
+                            {{ requisicao.solicitante.get_full_name|default:requisicao.solicitante.username }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Data:</strong><br>
+                            {{ requisicao.data_requisicao|date:"d/m/Y" }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Status:</strong><br>
+                            <span class="badge {{ requisicao.status_badge_class }}">{{ requisicao.get_status_display }}</span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Prioridade:</strong><br>
+                            <span class="badge {{ requisicao.prioridade_badge_class }}">{{ requisicao.get_prioridade_display }}</span>
+                        </div>
+                    </div>
+                    {% if requisicao.lista_materiais.proposta %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <strong>Proposta:</strong>
+                            <span class="badge bg-secondary">{{ requisicao.lista_materiais.proposta.numero }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <form method="post" id="formPedido">
+        {% csrf_token %}
+
+        <!-- Dados do Pedido -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i> Dados do Pedido</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.fornecedor.label_tag }}
+                                {{ form.fornecedor }}
+                                {{ form.fornecedor.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.prioridade.label_tag }}
+                                {{ form.prioridade }}
+                                {{ form.prioridade.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.prazo_entrega.label_tag }}
+                                {{ form.prazo_entrega }}
+                                {{ form.prazo_entrega.errors }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                {{ form.condicao_pagamento.label_tag }}
+                                {{ form.condicao_pagamento }}
+                                {{ form.condicao_pagamento.errors }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.data_entrega_prevista.label_tag }}
+                                {{ form.data_entrega_prevista }}
+                                {{ form.data_entrega_prevista.errors }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                {{ form.observacoes.label_tag }}
+                                {{ form.observacoes }}
+                                {{ form.observacoes.errors }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itens da Requisição -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-boxes me-2"></i> Itens da Requisição</h5>
+                        <span class="badge bg-light text-dark">Selecione os itens para o pedido</span>
+                    </div>
+                    <div class="card-body">
+                        {% if requisicao.itens.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="50">
+                                                <input type="checkbox" id="selectAll" class="form-check-input">
+                                            </th>
+                                            <th>Produto</th>
+                                            <th class="text-center">Qtd Solicitada</th>
+                                            <th class="text-center">Em Pedido</th>
+                                            <th class="text-center">Recebida</th>
+                                            <th class="text-center">Saldo</th>
+                                            <th class="text-center">Qtd Pedido</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in requisicao.itens.all %}
+                                        <tr class="item-row {% if item.quantidade_saldo <= 0 %}sem-saldo{% endif %}">
+                                            <td class="text-center">
+                                                <input type="checkbox"
+                                                       name="itens_selecionados"
+                                                       value="{{ item.id }}"
+                                                       class="form-check-input item-checkbox"
+                                                       data-item-id="{{ item.id }}"
+                                                       {% if item.quantidade_saldo <= 0 %}disabled{% endif %}>
+                                            </td>
+                                            <td>
+                                                <strong>{{ item.produto.codigo }}</strong><br>
+                                                <small class="text-muted">{{ item.produto.nome|truncatewords:8 }}</small>
+                                            </td>
+                                            <td class="text-center">
+                                                <strong>{{ item.quantidade_solicitada }}</strong> {{ item.unidade }}
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info">{{ item.quantidade_em_pedido }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success">{{ item.quantidade_recebida }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if item.quantidade_saldo > 0 %}
+                                                    <strong class="text-primary">{{ item.quantidade_saldo }}</strong> {{ item.unidade }}
+                                                {% else %}
+                                                    <span class="text-danger"><i class="fas fa-times-circle"></i> Sem saldo</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="number"
+                                                       name="quantidade_{{ item.id }}"
+                                                       class="form-control form-control-sm text-center quantidade-input"
+                                                       value="{{ item.quantidade_saldo }}"
+                                                       step="0.01"
+                                                       min="0.01"
+                                                       max="{{ item.quantidade_saldo }}"
+                                                       style="width: 100px; display: inline-block;"
+                                                       {% if item.quantidade_saldo <= 0 %}disabled{% endif %}>
+                                            </td>
+                                            <td class="text-center">
+                                                {% if item.status_atendimento == 'completo' %}
+                                                    <span class="badge bg-success saldo-badge">Completo</span>
+                                                {% elif item.status_atendimento == 'em_andamento' %}
+                                                    <span class="badge bg-primary saldo-badge">Em Andamento</span>
+                                                {% elif item.status_atendimento == 'parcial' %}
+                                                    <span class="badge bg-warning saldo-badge">Parcial</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary saldo-badge">Pendente</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="saldo-info mt-3">
+                                <strong><i class="fas fa-info-circle me-2"></i>Informação:</strong>
+                                <ul class="mb-0">
+                                    <li>Apenas itens com saldo disponível podem ser adicionados ao pedido</li>
+                                    <li>A quantidade do pedido não pode exceder o saldo disponível</li>
+                                    <li>O saldo será atualizado automaticamente após criar o pedido</li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Esta requisição não possui itens.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="row">
+            <div class="col-12 text-end">
+                <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-1"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-success" id="btnCriarPedido">
+                    <i class="fas fa-shopping-cart me-1"></i> Criar Pedido
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Selecionar/desselecionar todos (apenas itens habilitados)
+    $('#selectAll').on('change', function() {
+        $('.item-checkbox:not(:disabled)').prop('checked', this.checked).trigger('change');
+    });
+
+    // Habilitar/desabilitar input de quantidade ao selecionar item
+    $('.item-checkbox').on('change', function() {
+        const itemId = $(this).data('item-id');
+        const quantidadeInput = $(`input[name="quantidade_${itemId}"]`);
+
+        if ($(this).is(':checked')) {
+            quantidadeInput.prop('disabled', false);
+            $(this).closest('tr').addClass('table-primary');
+        } else {
+            quantidadeInput.prop('disabled', true);
+            $(this).closest('tr').removeClass('table-primary');
+        }
+    });
+
+    // Validação antes de enviar
+    $('#formPedido').on('submit', function(e) {
+        const itensSelecionados = $('.item-checkbox:checked').length;
+
+        if (itensSelecionados === 0) {
+            e.preventDefault();
+            alert('Selecione pelo menos um item da requisição com saldo disponível.');
+            return false;
+        }
+
+        // Validar fornecedor
+        const fornecedor = $('select[name="fornecedor"]').val();
+        if (!fornecedor) {
+            e.preventDefault();
+            alert('Selecione um fornecedor para o pedido.');
+            $('select[name="fornecedor"]').focus();
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

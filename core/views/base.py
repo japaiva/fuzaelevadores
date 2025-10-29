@@ -69,7 +69,7 @@ def home_view(request):
             return redirect('gestor:dashboard')
         elif request.user.nivel in ['vendedor', 'vistoria']:
             return redirect('vendedor:dashboard')
-        elif request.user.nivel in ['producao', 'compras', 'engenharia']:
+        elif request.user.nivel in ['producao', 'compras', 'engenharia', 'almoxarifado']:
             return redirect('producao:dashboard')
         else:
             # Nível de usuário não reconhecido, redireciona para a página inicial padrão
@@ -158,8 +158,8 @@ class ProducaoLoginView(LoginView):
     
     def form_valid(self, form):
         user = form.get_user()
-        # Produção engloba compras, então ambos os níveis podem acessar
-        if user.nivel not in ['admin', 'gestor', 'producao', 'compras', 'engenharia']:
+        # Produção engloba compras, almoxarifado, então todos esses níveis podem acessar
+        if user.nivel not in ['admin', 'gestor', 'producao', 'compras', 'engenharia', 'almoxarifado']:
             messages.error(self.request, 'Você não tem permissão para acessar o Portal de Produção.')
             return self.form_invalid(form)
         

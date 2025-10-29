@@ -23,6 +23,7 @@ from .requisicoes_compra import (
     requisicao_compra_detail,
     requisicao_compra_update,
     requisicao_compra_delete,
+    requisicao_compra_toggle_status,
     requisicao_compra_alterar_status,
     requisicao_compra_gerar_orcamento
 )
@@ -82,7 +83,12 @@ from .pedidos_compra import (
     pedido_compra_list, pedido_compra_create, pedido_compra_detail,
     pedido_compra_update, pedido_compra_delete, pedido_compra_alterar_status,
     pedido_compra_gerar_pdf, pedido_compra_duplicar,
-    pedido_compra_recebimento, receber_item_pedido
+    pedido_compra_recebimento, receber_item_pedido,
+    # NOVO: Controle de Saldo Requisição -> Pedido
+    pedido_compra_from_requisicao,
+    pedido_compra_from_orcamento,
+    relatorio_saldos_requisicoes,
+    requisicao_saldo_detail,
 )
 
 from .relatorios_produtos import (
@@ -183,7 +189,7 @@ __all__ = [
 
     # Requisicoes Compra
     'requisicao_compra_list', 'requisicao_compra_create', 'requisicao_compra_detail',
-    'requisicao_compra_update', 'requisicao_compra_delete',
+    'requisicao_compra_update', 'requisicao_compra_delete', 'requisicao_compra_toggle_status',
     'requisicao_compra_alterar_status', 'requisicao_compra_gerar_orcamento',
 
     # Grupos e Subgrupos
@@ -227,6 +233,9 @@ __all__ = [
     'pedido_compra_update', 'pedido_compra_delete', 'pedido_compra_alterar_status',
     'pedido_compra_gerar_pdf', 'pedido_compra_duplicar',
     'pedido_compra_recebimento', 'receber_item_pedido',
+    # Controle de Saldo Requisição -> Pedido
+    'pedido_compra_from_requisicao', 'pedido_compra_from_orcamento',
+    'relatorio_saldos_requisicoes', 'requisicao_saldo_detail',
     
     # <<<< NOVO: RECLASSIFICAÇÃO DE PRODUTOS
     'reclassificar_produto_form',

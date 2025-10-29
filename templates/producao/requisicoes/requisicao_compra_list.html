@@ -3,6 +3,92 @@
 
 {% block title %}Requisições de Compra | Portal Produção{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* Tabela mais compacta */
+  .table {
+    font-size: 0.7rem;
+  }
+
+  .table thead th {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .table tbody td {
+    padding: 0.35rem 0.25rem;
+    vertical-align: middle;
+  }
+
+  /* Badges menores */
+  .table .badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.35rem;
+  }
+
+  /* Botões de ação menores */
+  .table .btn-sm {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.6rem;
+  }
+
+  /* Textos secundários menores */
+  .table small {
+    font-size: 0.6rem;
+  }
+
+  /* Números e valores */
+  .table .fw-bold {
+    font-size: 0.75rem;
+  }
+
+  .table .fw-semibold {
+    font-size: 0.7rem;
+  }
+
+  /* Links compactos */
+  .table a {
+    font-size: 0.7rem;
+  }
+
+  /* Ícones proporcionais */
+  .table i.fas {
+    font-size: 0.65rem;
+  }
+
+  /* Filtros mais compactos */
+  .card-header form label {
+    font-size: 0.65rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .card-header form input,
+  .card-header form select {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.5rem;
+    height: auto;
+  }
+
+  .card-header form .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  /* Grupo de botões mais compacto */
+  .btn-group {
+    gap: 2px;
+  }
+
+  /* Badge no header */
+  .card-header .badge {
+    font-size: 0.75rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -94,7 +180,6 @@
                 
                 <td>
                   <div>{{ requisicao.solicitante.get_full_name|default:requisicao.solicitante.username }}</div>
-                  <small class="text-muted">{{ requisicao.departamento }}</small>
                 </td>
                 
                 <td>{{ requisicao.data_requisicao|date:"d/m/Y" }}</td>
@@ -119,46 +204,59 @@
                 </td>
                 
                 <td class="text-center">
-                  <span class="badge bg-info">{{ requisicao.get_total_itens }}</span>
+                  <span class="badge bg-info">{{ requisicao.itens.count }}</span>
                 </td>
               
                 <td class="text-center">
                   <div class="btn-group" role="group">
                     <!-- Ver detalhes -->
-                    <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" 
-                       class="btn btn-outline-info btn-sm" 
+                    <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}"
+                       class="btn btn-outline-info btn-sm"
                        title="Ver Detalhes">
                       <i class="fas fa-eye"></i>
                     </a>
-                    
+
+                    <!-- Ver Saldo -->
+                    <a href="{% url 'producao:requisicao_saldo_detail' requisicao.pk %}"
+                       class="btn btn-outline-secondary btn-sm"
+                       title="Ver Saldo">
+                      <i class="fas fa-chart-pie"></i>
+                    </a>
+
                     <!-- Editar -->
                     {% if requisicao.pode_editar %}
-                      <a href="{% url 'producao:requisicao_compra_update' requisicao.pk %}" 
-                         class="btn btn-outline-primary btn-sm" 
+                      <a href="{% url 'producao:requisicao_compra_update' requisicao.pk %}"
+                         class="btn btn-outline-primary btn-sm"
                          title="Editar">
                         <i class="fas fa-edit"></i>
                       </a>
                     {% endif %}
-                    
-                    <!-- Alterar Status -->
-                    {% if requisicao.status not in 'cancelada,aprovada' %}
-                      <a href="{% url 'producao:requisicao_compra_alterar_status' requisicao.pk %}" 
-                         class="btn btn-outline-warning btn-sm" 
-                         title="Alterar Status">
-                        <i class="fas fa-exchange-alt"></i>
+
+                    <!-- Toggle Status Rascunho/Aberta -->
+                    {% if requisicao.status == 'rascunho' %}
+                      <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}"
+                         class="btn btn-success btn-sm"
+                         title="Marcar como Aberta">
+                        <i class="fas fa-check-circle"></i>
+                      </a>
+                    {% elif requisicao.status == 'aberta' %}
+                      <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}"
+                         class="btn btn-warning btn-sm"
+                         title="Voltar para Rascunho">
+                        <i class="fas fa-undo"></i>
                       </a>
                     {% endif %}
-                    
+
                     <!-- Gerar Orçamento -->
                     {% if requisicao.status in 'orcada,aprovada' %}
-                      <a href="{% url 'producao:requisicao_compra_gerar_orcamento' requisicao.pk %}" 
-                         class="btn btn-outline-success btn-sm" 
+                      <a href="{% url 'producao:requisicao_compra_gerar_orcamento' requisicao.pk %}"
+                         class="btn btn-outline-success btn-sm"
                          title="Gerar Orçamento"
                          onclick="return confirm('Deseja gerar orçamento a partir desta requisição?')">
                         <i class="fas fa-calculator"></i>
                       </a>
                     {% endif %}
-                    
+
                     <!-- Excluir -->
                     {% if requisicao.status in 'rascunho,aberta' %}
                       <a href="{% url 'producao:requisicao_compra_delete' requisicao.pk %}" 

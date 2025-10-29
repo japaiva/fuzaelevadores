@@ -377,12 +377,80 @@ class RequisicaoCompra(models.Model):
             total=models.Sum('valor_total_estimado')
         )['total'] or 0
 
+    def get_pedidos_vinculados(self):
+        """Retorna todos os pedidos vinculados aos itens desta requisição"""
+        if not self.pk:
+            from .compras import PedidoCompra
+            return PedidoCompra.objects.none()
+
+        from .compras import PedidoCompra
+        pedidos_ids = self.itens.values_list(
+            'itens_pedido__pedido',
+            flat=True
+        ).distinct()
+
+        return PedidoCompra.objects.filter(id__in=pedidos_ids)
+
+    @property
+    def percentual_atendido_geral(self):
+        """Percentual geral de atendimento da requisição"""
+        if not self.pk or self.get_total_itens() == 0:
+            return 0
+
+        total_solicitado = self.itens.aggregate(
+            total=models.Sum('quantidade_solicitada')
+        )['total'] or 0
+
+        if not total_solicitado:
+            return 0
+
+        total_em_pedido = self.itens.aggregate(
+            total=models.Sum('quantidade_em_pedido')
+        )['total'] or 0
+
+        total_recebido = self.itens.aggregate(
+            total=models.Sum('quantidade_recebida')
+        )['total'] or 0
+
+        total_atendido = total_em_pedido + total_recebido
+
+        return (total_atendido / total_solicitado) * 100
+
+    @property
+    def status_atendimento_geral(self):
+        """Status geral de atendimento da requisição"""
+        if not self.pk or self.get_total_itens() == 0:
+            return 'pendente'
+
+        itens_status = {
+            'completo': 0,
+            'em_andamento': 0,
+            'parcial': 0,
+            'pendente': 0
+        }
+
+        for item in self.itens.all():
+            status = item.status_atendimento
+            itens_status[status] += 1
+
+        total_itens = self.get_total_itens()
+
+        # Se todos completos
+        if itens_status['completo'] == total_itens:
+            return 'completo'
+        # Se todos pendentes
+        elif itens_status['pendente'] == total_itens:
+            return 'pendente'
+        # Se há algum item em andamento ou parcial
+        else:
+            return 'parcial'
+
 
 class ItemRequisicaoCompra(models.Model):
     """
     Item da requisição de compra
     """
-    
+
     requisicao = models.ForeignKey(
         RequisicaoCompra,
         on_delete=models.CASCADE,
@@ -393,18 +461,33 @@ class ItemRequisicaoCompra(models.Model):
         on_delete=models.PROTECT,
         related_name='itens_requisicao'
     )
-    
-    # Quantidades
-    quantidade = models.DecimalField(
+
+    # Quantidades - CONTROLE DE SALDO
+    quantidade_solicitada = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        verbose_name="Quantidade"
+        default=0,
+        verbose_name="Quantidade Solicitada"
+    )
+    quantidade_em_pedido = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Quantidade em Pedido",
+        help_text="Quantidade já incluída em pedidos de compra"
+    )
+    quantidade_recebida = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Quantidade Recebida",
+        help_text="Quantidade já recebida no estoque"
     )
     unidade = models.CharField(
         max_length=10,
         verbose_name="Unidade"
     )
-    
+
     # Valores estimados
     valor_unitario_estimado = models.DecimalField(
         max_digits=10,
@@ -420,13 +503,13 @@ class ItemRequisicaoCompra(models.Model):
         null=True,
         verbose_name="Valor Total Estimado"
     )
-    
+
     # Observações
     observacoes = models.TextField(
         blank=True,
         verbose_name="Observações"
     )
-    
+
     # Auditoria
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -440,14 +523,50 @@ class ItemRequisicaoCompra(models.Model):
     def __str__(self):
         return f"{self.requisicao.numero} - {self.produto.codigo}"
     
+    @property
+    def quantidade_saldo(self):
+        """Saldo disponível = solicitada - em_pedido - recebida"""
+        return self.quantidade_solicitada - self.quantidade_em_pedido - self.quantidade_recebida
+
+    @property
+    def percentual_atendido(self):
+        """Percentual já atendido (em pedido + recebido)"""
+        if not self.quantidade_solicitada:
+            return 0
+        atendido = self.quantidade_em_pedido + self.quantidade_recebida
+        return (atendido / self.quantidade_solicitada) * 100
+
+    @property
+    def status_atendimento(self):
+        """Status do atendimento do item"""
+        if self.quantidade_recebida >= self.quantidade_solicitada:
+            return 'completo'
+        elif self.quantidade_em_pedido + self.quantidade_recebida >= self.quantidade_solicitada:
+            return 'em_andamento'
+        elif self.quantidade_em_pedido > 0 or self.quantidade_recebida > 0:
+            return 'parcial'
+        else:
+            return 'pendente'
+
+    def recalcular_quantidades(self):
+        """Recalcula quantidade_em_pedido baseado nos pedidos vinculados"""
+        total_em_pedido = self.itens_pedido.filter(
+            pedido__status__in=['enviado', 'confirmado', 'recebido_parcial']
+        ).aggregate(
+            total=models.Sum('quantidade')
+        )['total'] or 0
+
+        self.quantidade_em_pedido = total_em_pedido
+        self.save(update_fields=['quantidade_em_pedido'])
+
     def save(self, *args, **kwargs):
         """Override para calcular valores"""
         if not self.unidade:
             self.unidade = self.produto.unidade_medida
-        
-        if self.quantidade and self.valor_unitario_estimado:
-            self.valor_total_estimado = self.quantidade * self.valor_unitario_estimado
-        
+
+        if self.quantidade_solicitada and self.valor_unitario_estimado:
+            self.valor_total_estimado = self.quantidade_solicitada * self.valor_unitario_estimado
+
         super().save(*args, **kwargs)
 
 

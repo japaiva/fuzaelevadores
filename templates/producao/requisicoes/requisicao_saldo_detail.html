@@ -1,0 +1,590 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}Detalhamento de Saldo - Requisição {{ requisicao.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Aumentar largura máxima do container apenas nesta página */
+  .content-container {
+    max-width: 95% !important;
+  }
+
+  /* Layout compacto e elegante - apenas no conteúdo principal */
+  .content-container {
+    font-size: 0.8rem;
+  }
+
+  /* Cabeçalho */
+  .card-title {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    font-weight: 500;
+  }
+
+  /* Informações da requisição */
+  .info-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.15rem;
+  }
+
+  .info-value {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Badges menores e elegantes */
+  .status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    font-weight: 500;
+  }
+
+  /* Barra de progresso compacta */
+  .progress-bar-wrapper {
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-wrapper .progress-bar {
+    font-size: 0.7rem;
+  }
+
+  /* Cards de itens */
+  .item-card {
+    border-left: 3px solid #dee2e6;
+    margin-bottom: 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .item-card.completo {
+    border-left-color: #28a745;
+  }
+
+  .item-card.em_andamento {
+    border-left-color: #007bff;
+  }
+
+  .item-card.parcial {
+    border-left-color: #ffc107;
+  }
+
+  .item-card.pendente {
+    border-left-color: #6c757d;
+  }
+
+  .item-card .card-body {
+    padding: 0.6rem;
+  }
+
+  .item-card .card-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+
+  .item-card small {
+    font-size: 0.7rem;
+  }
+
+  /* Caixas de quantidade */
+  .quantidade-box {
+    background: #f8f9fa;
+    border-radius: 3px;
+    padding: 0.4rem 0.3rem;
+    text-align: center;
+    min-width: 70px;
+  }
+
+  .quantidade-box .label {
+    font-size: 0.6rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.15rem;
+    white-space: nowrap;
+  }
+
+  .quantidade-box .valor {
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+
+  /* Resumo geral */
+  .resumo-geral {
+    background: #f8f9fa;
+    border-radius: 5px;
+    padding: 0.75rem;
+  }
+
+  .resumo-item {
+    text-align: center;
+  }
+
+  .resumo-item .label {
+    font-size: 0.65rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+  }
+
+  /* Tabelas compactas */
+  .table {
+    font-size: 0.7rem;
+  }
+
+  .table thead th {
+    font-size: 0.65rem;
+    padding: 0.35rem 0.25rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .table tbody td {
+    padding: 0.35rem 0.25rem;
+    vertical-align: middle;
+  }
+
+  .table small {
+    font-size: 0.65rem;
+  }
+
+  /* Botões menores */
+  .btn-sm {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.65rem;
+  }
+
+  /* Ícones proporcionais */
+  i.fas {
+    font-size: 0.8em;
+  }
+
+  /* Seções */
+  .section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    color: #495057;
+  }
+
+  /* Pedidos vinculados */
+  .pedidos-vinculados {
+    background: #f8f9fa;
+    border-radius: 3px;
+    padding: 0.6rem;
+    margin-top: 0.4rem;
+  }
+
+  .pedidos-vinculados h6 {
+    font-size: 0.7rem;
+    margin-bottom: 0.4rem;
+  }
+
+  /* Alertas */
+  .alert {
+    font-size: 0.7rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Card headers e footers */
+  .card-header {
+    padding: 0.6rem 1rem;
+  }
+
+  .card-body {
+    padding: 0.75rem;
+  }
+
+  .card-footer {
+    padding: 0.6rem 1rem;
+  }
+
+  /* Progresso nos itens */
+  .item-card .progress {
+    font-size: 0.65rem;
+  }
+
+  /* Responsividade */
+  @media (max-width: 768px) {
+    .quantidade-box {
+      margin-bottom: 0.4rem;
+    }
+
+    body {
+      font-size: 0.75rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <!-- CABEÇALHO -->
+  <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="card-title mb-0 text-white">
+        <i class="fas fa-chart-pie me-2"></i> Detalhamento de Saldo - Requisição {{ requisicao.numero }}
+      </h5>
+    </div>
+    <div>
+      <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-file-alt me-1"></i> Ver Requisição
+      </a>
+      <a href="{% url 'producao:requisicao_compra_list' %}" class="btn btn-outline-light btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- INFORMAÇÕES DA REQUISIÇÃO -->
+  <div class="card-header bg-light border-bottom">
+    <div class="row g-3">
+      <div class="col-md-2">
+        <div class="info-label">Solicitante</div>
+        <div class="info-value">{{ requisicao.solicitante.get_full_name|default:requisicao.solicitante.username }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="info-label">Data Requisição</div>
+        <div class="info-value">{{ requisicao.data_requisicao|date:"d/m/Y" }}</div>
+      </div>
+      <div class="col-md-2">
+        <div class="info-label">Status</div>
+        <div class="info-value">
+          <span class="badge {{ requisicao.status_badge_class }} status-badge">
+            {{ requisicao.get_status_display }}
+          </span>
+        </div>
+      </div>
+      <div class="col-md-1">
+        <div class="info-label">Prioridade</div>
+        <div class="info-value">
+          <span class="badge {{ requisicao.prioridade_badge_class }} status-badge">
+            {{ requisicao.get_prioridade_display }}
+          </span>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="info-label">Proposta</div>
+        <div class="info-value">
+          {% if requisicao.lista_materiais.proposta %}
+            {{ requisicao.lista_materiais.proposta.numero }}
+          {% else %}
+            <span class="text-muted">-</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUMO GERAL -->
+  <div class="card-body bg-white border-bottom">
+    <div class="resumo-geral">
+      <div class="row align-items-center">
+        <div class="col-md-2">
+          <div class="resumo-item">
+            <div class="label">Status Geral</div>
+            {% if status_geral == 'completo' %}
+              <span class="badge bg-success status-badge">
+                <i class="fas fa-check-circle me-1"></i> Completo
+              </span>
+            {% elif status_geral == 'em_andamento' %}
+              <span class="badge bg-primary status-badge">
+                <i class="fas fa-spinner me-1"></i> Em Andamento
+              </span>
+            {% elif status_geral == 'parcial' %}
+              <span class="badge bg-warning status-badge">
+                <i class="fas fa-hourglass-half me-1"></i> Parcial
+              </span>
+            {% else %}
+              <span class="badge bg-secondary status-badge">
+                <i class="fas fa-clock me-1"></i> Pendente
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-8">
+          <div class="resumo-item">
+            <div class="label">Percentual de Atendimento</div>
+            <div class="progress-bar-wrapper">
+              <div class="progress" style="height: 100%;">
+                {% if percentual_geral >= 100 %}
+                  <div class="progress-bar bg-success" style="width: 100%">
+                    <strong class="text-white">100%</strong>
+                  </div>
+                {% elif percentual_geral >= 50 %}
+                  <div class="progress-bar bg-warning" style="width: {{ percentual_geral }}%">
+                    <strong class="text-dark">{{ percentual_geral|floatformat:0 }}%</strong>
+                  </div>
+                {% else %}
+                  <div class="progress-bar bg-danger" style="width: {% if percentual_geral < 10 %}10{% else %}{{ percentual_geral }}{% endif %}%">
+                    <strong class="text-white">{{ percentual_geral|floatformat:0 }}%</strong>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2 text-center">
+          <div class="resumo-item">
+            <div class="label">Total de Itens</div>
+            <span class="badge bg-secondary status-badge">{{ itens_info|length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETALHAMENTO POR ITEM -->
+  <div class="card-body">
+    <h6 class="section-title">
+      <i class="fas fa-list me-2"></i> Detalhamento por Item
+    </h6>
+
+    {% for info in itens_info %}
+    <div class="card item-card {{ info.status }}">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <!-- Produto -->
+          <div class="col-md-5">
+            <h6 class="card-title text-primary mb-1">
+              <i class="fas fa-cube me-1"></i> {{ info.item.produto.codigo }}
+            </h6>
+            <small class="text-muted d-block">{{ info.item.produto.nome }}</small>
+            <small class="text-muted">
+              <i class="fas fa-tag me-1"></i> {{ info.item.unidade }}
+            </small>
+          </div>
+
+          <!-- Quantidades -->
+          <div class="col-md-4">
+            <div class="row g-2">
+              <div class="col-3">
+                <div class="quantidade-box">
+                  <div class="label">Solicitada</div>
+                  <div class="valor text-primary">{{ info.item.quantidade_solicitada }}</div>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="quantidade-box">
+                  <div class="label">Em Pedido</div>
+                  <div class="valor text-info">{{ info.item.quantidade_em_pedido }}</div>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="quantidade-box">
+                  <div class="label">Recebida</div>
+                  <div class="valor text-success">{{ info.item.quantidade_recebida }}</div>
+                </div>
+              </div>
+              <div class="col-3">
+                <div class="quantidade-box">
+                  <div class="label">Saldo</div>
+                  <div class="valor {% if info.saldo > 0 %}text-warning{% else %}text-muted{% endif %}">
+                    {{ info.saldo }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status e Percentual -->
+          <div class="col-md-3 text-center">
+            <div class="mb-2">
+              {% if info.status == 'completo' %}
+                <span class="badge bg-success status-badge">
+                  <i class="fas fa-check-circle me-1"></i> Completo
+                </span>
+              {% elif info.status == 'em_andamento' %}
+                <span class="badge bg-primary status-badge">
+                  <i class="fas fa-spinner me-1"></i> Em Andamento
+                </span>
+              {% elif info.status == 'parcial' %}
+                <span class="badge bg-warning status-badge">
+                  <i class="fas fa-hourglass-half me-1"></i> Parcial
+                </span>
+              {% else %}
+                <span class="badge bg-secondary status-badge">
+                  <i class="fas fa-clock me-1"></i> Pendente
+                </span>
+              {% endif %}
+            </div>
+            <div class="progress" style="height: 18px;">
+              {% if info.percentual >= 100 %}
+                <div class="progress-bar bg-success" style="width: 100%">
+                  <small><strong>100%</strong></small>
+                </div>
+              {% elif info.percentual >= 50 %}
+                <div class="progress-bar bg-warning" style="width: {{ info.percentual }}%">
+                  <small><strong>{{ info.percentual|floatformat:0 }}%</strong></small>
+                </div>
+              {% else %}
+                <div class="progress-bar bg-danger" style="width: {% if info.percentual < 10 %}10{% else %}{{ info.percentual }}{% endif %}%">
+                  <small><strong>{{ info.percentual|floatformat:0 }}%</strong></small>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Pedidos Vinculados a este Item -->
+        {% if info.pedidos %}
+        <div class="row mt-2">
+          <div class="col-12">
+            <button class="btn btn-sm btn-outline-secondary" type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#pedidos-item-{{ info.item.id }}"
+                    aria-expanded="false">
+              <i class="fas fa-shopping-cart me-1"></i>
+              Ver Pedidos Vinculados ({{ info.pedidos|length }})
+            </button>
+
+            <div class="collapse" id="pedidos-item-{{ info.item.id }}">
+              <div class="pedidos-vinculados">
+                <h6>
+                  <i class="fas fa-link me-1"></i>
+                  Pedidos que atendem este item:
+                </h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Pedido</th>
+                        <th>Fornecedor</th>
+                        <th class="text-center">Quantidade</th>
+                        <th class="text-center">Valor Unit.</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item_pedido in info.pedidos %}
+                      <tr>
+                        <td>
+                          <strong>{{ item_pedido.pedido.numero }}</strong><br>
+                          <small class="text-muted">{{ item_pedido.pedido.data_pedido|date:"d/m/Y" }}</small>
+                        </td>
+                        <td>{{ item_pedido.pedido.fornecedor.razao_social|truncatewords:3 }}</td>
+                        <td class="text-center">
+                          <strong>{{ item_pedido.quantidade }}</strong> {{ item_pedido.unidade }}
+                        </td>
+                        <td class="text-center">R$ {{ item_pedido.valor_unitario|floatformat:2 }}</td>
+                        <td class="text-center">
+                          <span class="badge {{ item_pedido.pedido.status_badge_class }} status-badge">
+                            {{ item_pedido.pedido.get_status_display }}
+                          </span>
+                        </td>
+                        <td class="text-center">
+                          <a href="{% url 'producao:pedido_compra_detail' item_pedido.pedido.pk %}"
+                             class="btn btn-sm btn-outline-primary"
+                             title="Ver Pedido">
+                            <i class="fas fa-eye"></i>
+                          </a>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="row mt-2">
+          <div class="col-12">
+            <div class="alert alert-info mb-0 py-2" style="font-size: 0.75rem;">
+              <i class="fas fa-info-circle me-1"></i>
+              Este item ainda não possui pedidos vinculados.
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      Esta requisição não possui itens cadastrados.
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- RESUMO DE PEDIDOS VINCULADOS -->
+  {% if pedidos_vinculados %}
+  <div class="card-body border-top">
+    <h6 class="section-title">
+      <i class="fas fa-shopping-cart me-2"></i>
+      Pedidos de Compra Vinculados ({{ pedidos_vinculados.count }})
+    </h6>
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Número</th>
+            <th>Fornecedor</th>
+            <th class="text-center">Data</th>
+            <th class="text-center">Itens</th>
+            <th class="text-center">Total</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pedido in pedidos_vinculados %}
+          <tr>
+            <td><strong>{{ pedido.numero }}</strong></td>
+            <td>{{ pedido.fornecedor.razao_social|truncatewords:4 }}</td>
+            <td class="text-center">{{ pedido.data_pedido|date:"d/m/Y" }}</td>
+            <td class="text-center">
+              <span class="badge bg-secondary status-badge">{{ pedido.itens.count }}</span>
+            </td>
+            <td class="text-center">
+              <strong>R$ {{ pedido.valor_total|floatformat:2 }}</strong>
+            </td>
+            <td class="text-center">
+              <span class="badge {{ pedido.status_badge_class }} status-badge">
+                {{ pedido.get_status_display }}
+              </span>
+            </td>
+            <td class="text-center">
+              <a href="{% url 'producao:pedido_compra_detail' pedido.pk %}"
+                 class="btn btn-sm btn-outline-primary"
+                 title="Ver Pedido">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- AÇÕES -->
+  <div class="card-footer bg-white text-end">
+    <a href="{% url 'producao:requisicao_compra_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar à Lista
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-expandir pedidos se houver apenas um item
+    {% if itens_info|length == 1 %}
+    $('.collapse').collapse('show');
+    {% endif %}
+});
+</script>
+{% endblock %}

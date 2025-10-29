@@ -1,0 +1,324 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}Recebimento - Pedido {{ pedido.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .item-card {
+    border-left: 4px solid #dee2e6;
+    transition: all 0.3s;
+  }
+
+  .item-card:hover {
+    border-left-color: #0d6efd;
+    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+  }
+
+  .quantidade-box {
+    background: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .quantidade-box .label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .quantidade-box .valor {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .btn-receber {
+    min-width: 120px;
+  }
+
+  .progress-wrapper {
+    height: 25px;
+    border-radius: 0.375rem;
+    overflow: hidden;
+  }
+
+  .produto-info {
+    font-size: 0.875rem;
+  }
+
+  .input-recebimento {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="card shadow mb-4">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+      <div>
+        <h4 class="mb-0">
+          <i class="fas fa-truck me-2"></i>
+          Recebimento de Materiais - Pedido #{{ pedido.numero }}
+        </h4>
+        <small class="opacity-75">Fornecedor: {{ pedido.fornecedor.razao_social }}</small>
+      </div>
+      <div>
+        <a href="{% url 'producao:pedido_compra_detail' pedido.pk %}" class="btn btn-outline-light">
+          <i class="fas fa-arrow-left me-1"></i> Voltar ao Pedido
+        </a>
+      </div>
+    </div>
+
+    <!-- Informações do Pedido -->
+    <div class="card-body bg-light">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label text-muted mb-1">Status</label>
+          <div>
+            <span class="badge {{ pedido.status_badge_class }} fs-6">
+              {{ pedido.get_status_display }}
+            </span>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted mb-1">Data de Emissão</label>
+          <div class="fw-bold">{{ pedido.data_emissao|date:"d/m/Y" }}</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted mb-1">Valor Total</label>
+          <div class="fw-bold text-success">R$ {{ pedido.valor_final|floatformat:2 }}</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label text-muted mb-1">Total de Itens</label>
+          <div class="fw-bold">{{ pedido.itens.count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Itens para Recebimento -->
+  <div class="row">
+    <div class="col-12">
+      <h5 class="mb-3">
+        <i class="fas fa-boxes me-2"></i>
+        Itens Pendentes de Recebimento ({{ itens_pendentes.count }})
+      </h5>
+
+      {% if itens_pendentes %}
+        {% for item in itens_pendentes %}
+        <div class="card item-card shadow-sm mb-3" id="item-{{ item.id }}">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <!-- Informações do Produto -->
+              <div class="col-md-4">
+                <h6 class="mb-2">
+                  <i class="fas fa-cube me-2 text-primary"></i>
+                  <strong>{{ item.produto.codigo }}</strong>
+                </h6>
+                <div class="produto-info text-muted">
+                  {{ item.produto.nome }}
+                </div>
+                <div class="mt-2">
+                  <small class="text-muted">
+                    <i class="fas fa-tag me-1"></i> {{ item.unidade }}
+                  </small>
+                  {% if item.item_requisicao %}
+                    <small class="badge bg-info ms-2">
+                      <i class="fas fa-link me-1"></i>
+                      Req: {{ item.item_requisicao.requisicao.numero }}
+                    </small>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Quantidades -->
+              <div class="col-md-5">
+                <div class="row g-2">
+                  <div class="col-4">
+                    <div class="quantidade-box border">
+                      <div class="label">Pedida</div>
+                      <div class="valor text-primary">{{ item.quantidade }}</div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="quantidade-box border border-success">
+                      <div class="label">Recebida</div>
+                      <div class="valor text-success">{{ item.quantidade_recebida }}</div>
+                    </div>
+                  </div>
+                  <div class="col-4">
+                    <div class="quantidade-box border border-warning">
+                      <div class="label">Pendente</div>
+                      <div class="valor text-warning">{{ item.quantidade_pendente }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Barra de Progresso -->
+                <div class="progress-wrapper mt-3">
+                  <div class="progress" style="height: 100%;">
+                    {% widthratio item.quantidade_recebida item.quantidade 100 as percentual %}
+                    {% if percentual >= 100 %}
+                      <div class="progress-bar bg-success" style="width: 100%">
+                        <strong>100%</strong>
+                      </div>
+                    {% elif percentual > 0 %}
+                      <div class="progress-bar bg-warning" style="width: {{ percentual }}%">
+                        <strong>{{ percentual }}%</strong>
+                      </div>
+                    {% else %}
+                      <div class="progress-bar bg-danger" style="width: 10%">
+                        <strong>0%</strong>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Ação de Recebimento -->
+              <div class="col-md-3 text-center">
+                <div class="mb-2">
+                  <label class="form-label fw-bold">Quantidade a Receber</label>
+                  <input
+                    type="number"
+                    class="form-control input-recebimento quantidade-input"
+                    id="quantidade-{{ item.id }}"
+                    data-item-id="{{ item.id }}"
+                    data-max="{{ item.quantidade_pendente }}"
+                    min="0"
+                    max="{{ item.quantidade_pendente }}"
+                    step="0.01"
+                    value="{{ item.quantidade_pendente }}"
+                  >
+                  <small class="text-muted">
+                    Máx: {{ item.quantidade_pendente }} {{ item.unidade }}
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn btn-success btn-receber w-100"
+                  onclick="receberItem({{ item.id }})"
+                >
+                  <i class="fas fa-check me-2"></i>
+                  Receber
+                </button>
+
+                <!-- Mensagem de status -->
+                <div id="status-{{ item.id }}" class="mt-2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="alert alert-success">
+          <i class="fas fa-check-circle me-2"></i>
+          <strong>Todos os itens foram recebidos!</strong>
+          <p class="mb-0">Este pedido não possui mais itens pendentes de recebimento.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function receberItem(itemId) {
+    const inputQuantidade = document.getElementById(`quantidade-${itemId}`);
+    const statusDiv = document.getElementById(`status-${itemId}`);
+    const quantidade = parseFloat(inputQuantidade.value);
+    const max = parseFloat(inputQuantidade.getAttribute('data-max'));
+
+    // Validações
+    if (!quantidade || quantidade <= 0) {
+        mostrarMensagem(statusDiv, 'Quantidade deve ser maior que zero', 'danger');
+        return;
+    }
+
+    if (quantidade > max) {
+        mostrarMensagem(statusDiv, `Quantidade não pode ser maior que ${max}`, 'danger');
+        return;
+    }
+
+    // Confirmar recebimento
+    if (!confirm(`Confirma o recebimento de ${quantidade} unidades?`)) {
+        return;
+    }
+
+    // Desabilitar botão durante o envio
+    const btn = event.target.closest('button');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processando...';
+
+    // Enviar requisição
+    fetch(`{% url 'producao:pedido_compra_detail' pedido.pk %}`.replace('/detail/', `/item/${itemId}/receber/`), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            quantidade: quantidade
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarMensagem(statusDiv, 'Recebimento registrado com sucesso!', 'success');
+
+            // Recarregar a página após 1 segundo
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            mostrarMensagem(statusDiv, data.error || 'Erro ao registrar recebimento', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>Receber';
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarMensagem(statusDiv, 'Erro ao comunicar com o servidor', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check me-2"></i>Receber';
+    });
+}
+
+function mostrarMensagem(elemento, mensagem, tipo) {
+    elemento.innerHTML = `
+        <div class="alert alert-${tipo} alert-dismissible fade show py-2 px-3 mb-0" role="alert">
+            <small>${mensagem}</small>
+            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+}
+
+// Validar input de quantidade em tempo real
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.quantidade-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const max = parseFloat(this.getAttribute('data-max'));
+            const valor = parseFloat(this.value);
+
+            if (valor > max) {
+                this.value = max;
+                alert(`Quantidade máxima permitida: ${max}`);
+            }
+
+            if (valor < 0) {
+                this.value = 0;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

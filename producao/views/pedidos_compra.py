@@ -21,7 +21,8 @@ from django.utils import timezone
 
 from core.models import (
     PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra,
-    Fornecedor, Produto
+    Fornecedor, Produto, OrcamentoCompra, ItemOrcamentoCompra,
+    RequisicaoCompra, ItemRequisicaoCompra
 )
 from core.forms import (
     PedidoCompraForm, ItemPedidoCompraFormSet, PedidoCompraFiltroForm,
@@ -560,3 +561,327 @@ def receber_item_pedido(request, pedido_pk, item_pk):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# =============================================================================
+# CRIAR PEDIDO A PARTIR DE REQUISIÇÃO
+# =============================================================================
+
+@login_required
+def pedido_compra_from_requisicao(request, requisicao_pk):
+    """Criar pedido de compra a partir de uma requisição"""
+    requisicao = get_object_or_404(
+        RequisicaoCompra.objects.select_related(
+            'solicitante', 'lista_materiais__proposta'
+        ).prefetch_related('itens__produto'),
+        pk=requisicao_pk
+    )
+
+    if requisicao.status not in ['aberta', 'aprovada']:
+        messages.error(request, 'Somente requisições abertas ou aprovadas podem gerar pedidos.')
+        return redirect('producao:requisicao_compra_detail', pk=requisicao_pk)
+
+    if request.method == 'POST':
+        form = PedidoCompraForm(request.POST)
+
+        # IDs dos itens selecionados
+        itens_selecionados = request.POST.getlist('itens_selecionados')
+
+        if not itens_selecionados:
+            messages.error(request, 'Selecione pelo menos um item da requisição.')
+        elif form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Criar pedido
+                    pedido = form.save(commit=False)
+                    pedido.criado_por = request.user
+                    pedido.atualizado_por = request.user
+                    pedido.save()
+
+                    # Criar itens do pedido vinculando à requisição
+                    itens_criados = 0
+                    for item_req_id in itens_selecionados:
+                        item_req = ItemRequisicaoCompra.objects.get(id=item_req_id)
+
+                        # Verificar saldo disponível
+                        saldo = item_req.quantidade_saldo
+                        if saldo <= 0:
+                            continue  # Pula itens sem saldo
+
+                        # Quantidade do pedido (pode ser parcial)
+                        quantidade_pedido = request.POST.get(f'quantidade_{item_req_id}', saldo)
+                        quantidade_pedido = float(quantidade_pedido)
+
+                        # Limitar ao saldo disponível
+                        if quantidade_pedido > saldo:
+                            quantidade_pedido = saldo
+
+                        if quantidade_pedido > 0:
+                            ItemPedidoCompra.objects.create(
+                                pedido=pedido,
+                                produto=item_req.produto,
+                                item_requisicao=item_req,  # VINCULO COM REQUISIÇÃO
+                                quantidade=quantidade_pedido,
+                                valor_unitario=item_req.valor_unitario_estimado or 0,
+                                unidade=item_req.unidade,
+                                observacoes=item_req.observacoes
+                            )
+                            itens_criados += 1
+
+                    if itens_criados == 0:
+                        messages.error(request, 'Nenhum item válido foi adicionado ao pedido.')
+                        pedido.delete()
+                        return redirect('producao:requisicao_compra_detail', pk=requisicao_pk)
+
+                    # Recalcular valores
+                    pedido.recalcular_valores()
+
+                    # Registrar no histórico
+                    HistoricoPedidoCompra.objects.create(
+                        pedido=pedido,
+                        usuario=request.user,
+                        acao='Pedido criado de requisição',
+                        observacao=f'Criado a partir da requisição {requisicao.numero} com {itens_criados} itens'
+                    )
+
+                    messages.success(request, f'Pedido {pedido.numero} criado com sucesso!')
+                    return redirect('producao:pedido_compra_detail', pk=pedido.pk)
+
+            except Exception as e:
+                logger.error(f"Erro ao criar pedido de requisição: {str(e)}", exc_info=True)
+                messages.error(request, f'Erro ao criar pedido: {str(e)}')
+    else:
+        # Formulário inicial
+        form = PedidoCompraForm(initial={
+            'prioridade': requisicao.prioridade,
+            'prazo_entrega': 15,
+        })
+
+    context = {
+        'form': form,
+        'requisicao': requisicao,
+        'title': f'Criar Pedido da Requisição {requisicao.numero}'
+    }
+
+    return render(request, 'producao/pedidos/pedido_from_requisicao.html', context)
+
+
+# =============================================================================
+# CRIAR PEDIDO A PARTIR DE ORÇAMENTO (SE NECESSÁRIO NO FUTURO)
+# =============================================================================
+
+@login_required
+def pedido_compra_from_orcamento(request, orcamento_pk):
+    """Criar pedido de compra a partir de um orçamento aprovado"""
+    orcamento = get_object_or_404(
+        OrcamentoCompra.objects.select_related('fornecedor')
+        .prefetch_related('itens__produto', 'requisicoes'),
+        pk=orcamento_pk
+    )
+
+    if orcamento.status != 'aprovado':
+        messages.error(request, 'Somente orçamentos aprovados podem gerar pedidos.')
+        return redirect('producao:orcamento_compra_detail', pk=orcamento_pk)
+
+    if request.method == 'POST':
+        form = PedidoCompraForm(request.POST)
+
+        # IDs dos itens selecionados
+        itens_selecionados = request.POST.getlist('itens_selecionados')
+
+        if not itens_selecionados:
+            messages.error(request, 'Selecione pelo menos um item do orçamento.')
+            form = PedidoCompraForm(initial={
+                'fornecedor': orcamento.fornecedor,
+                'prioridade': 'NORMAL',
+            })
+        elif form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Criar pedido
+                    pedido = form.save(commit=False)
+                    pedido.orcamento = orcamento
+                    pedido.fornecedor = orcamento.fornecedor
+                    pedido.criado_por = request.user
+                    pedido.atualizado_por = request.user
+                    pedido.save()
+
+                    # Criar itens do pedido vinculando às requisições
+                    itens_criados = 0
+                    for item_orc_id in itens_selecionados:
+                        item_orc = ItemOrcamentoCompra.objects.get(id=item_orc_id)
+
+                        # Buscar item de requisição correspondente
+                        item_req = ItemRequisicaoCompra.objects.filter(
+                            requisicao__in=orcamento.requisicoes.all(),
+                            produto=item_orc.produto
+                        ).first()
+
+                        quantidade_item = request.POST.get(f'quantidade_{item_orc_id}', item_orc.quantidade)
+
+                        ItemPedidoCompra.objects.create(
+                            pedido=pedido,
+                            produto=item_orc.produto,
+                            item_requisicao=item_req,  # VINCULO COM REQUISIÇÃO
+                            quantidade=float(quantidade_item),
+                            valor_unitario=item_orc.valor_unitario_cotado or item_orc.valor_unitario_estimado,
+                            unidade=item_orc.unidade,
+                            observacoes=item_orc.observacoes
+                        )
+                        itens_criados += 1
+
+                    # Recalcular valores
+                    pedido.recalcular_valores()
+
+                    # Registrar no histórico
+                    HistoricoPedidoCompra.objects.create(
+                        pedido=pedido,
+                        usuario=request.user,
+                        acao='Pedido criado de orçamento',
+                        observacao=f'Criado a partir do orçamento {orcamento.numero} com {itens_criados} itens'
+                    )
+
+                    messages.success(request, f'Pedido {pedido.numero} criado com sucesso a partir do orçamento!')
+                    return redirect('producao:pedido_compra_detail', pk=pedido.pk)
+
+            except Exception as e:
+                logger.error(f"Erro ao criar pedido de orçamento: {str(e)}", exc_info=True)
+                messages.error(request, f'Erro ao criar pedido: {str(e)}')
+    else:
+        # Formulário inicial com dados do orçamento
+        form = PedidoCompraForm(initial={
+            'fornecedor': orcamento.fornecedor,
+            'prioridade': 'NORMAL',
+            'condicao_pagamento': orcamento.condicao_pagamento,
+            'prazo_entrega': 15,
+        })
+
+    context = {
+        'form': form,
+        'orcamento': orcamento,
+        'title': f'Criar Pedido do Orçamento {orcamento.numero}'
+    }
+
+    return render(request, 'producao/pedidos/pedido_from_orcamento.html', context)
+
+
+# =============================================================================
+# RELATÓRIOS DE SALDO
+# =============================================================================
+
+@login_required
+def relatorio_saldos_requisicoes(request):
+    """Relatório geral de saldo de requisições"""
+
+    # Filtrar requisições (exceto canceladas e rascunho) que necessitam acompanhamento de saldo
+    requisicoes = RequisicaoCompra.objects.filter(
+        status__in=['aberta', 'cotando', 'orcada', 'aprovada']
+    ).select_related(
+        'solicitante', 'lista_materiais__proposta'
+    ).prefetch_related(
+        'itens__produto', 'itens__itens_pedido__pedido'
+    ).order_by('-data_requisicao')
+
+    # Aplicar filtros
+    status_filtro = request.GET.get('status')
+    if status_filtro:
+        requisicoes = requisicoes.filter(status=status_filtro)
+
+    prioridade_filtro = request.GET.get('prioridade')
+    if prioridade_filtro:
+        requisicoes = requisicoes.filter(prioridade=prioridade_filtro)
+
+    busca = request.GET.get('q')
+    if busca:
+        requisicoes = requisicoes.filter(
+            Q(numero__icontains=busca) |
+            Q(lista_materiais__proposta__numero__icontains=busca) |
+            Q(solicitante__username__icontains=busca)
+        )
+
+    # Filtrar apenas com saldo pendente (PADRÃO: DESATIVADO - mostra todas)
+    mostrar_apenas_pendentes = request.GET.get('pendentes') == 'true'
+
+    # Filtro por status de atendimento
+    status_atendimento_filtro = request.GET.get('status_atendimento')
+
+    requisicoes_com_info = []
+    for req in requisicoes:
+        percentual = req.percentual_atendido_geral
+        status_atend = req.status_atendimento_geral
+
+        # Se filtro "apenas pendentes" ativado, não mostrar completos
+        if mostrar_apenas_pendentes and status_atend == 'completo':
+            continue
+
+        # Se filtro de status de atendimento ativado, filtrar
+        if status_atendimento_filtro and status_atend != status_atendimento_filtro:
+            continue
+
+        requisicoes_com_info.append({
+            'requisicao': req,
+            'percentual_atendido': percentual,
+            'status_atendimento': status_atend,
+            'total_itens': req.get_total_itens(),
+            'pedidos_vinculados': req.get_pedidos_vinculados().count()
+        })
+
+    # Paginação
+    paginator = Paginator(requisicoes_com_info, 20)
+    page = request.GET.get('page', 1)
+    try:
+        requisicoes_page = paginator.page(page)
+    except:
+        requisicoes_page = paginator.page(1)
+
+    context = {
+        'requisicoes': requisicoes_page,
+        'total_requisicoes': len(requisicoes_com_info),
+        'status_filtro': status_filtro,
+        'prioridade_filtro': prioridade_filtro,
+        'busca': busca,
+        'mostrar_apenas_pendentes': mostrar_apenas_pendentes,
+        'status_atendimento_filtro': status_atendimento_filtro,
+    }
+
+    return render(request, 'producao/relatorios/relatorio_saldos.html', context)
+
+
+@login_required
+def requisicao_saldo_detail(request, pk):
+    """Detalhamento de saldo de uma requisição específica"""
+    requisicao = get_object_or_404(
+        RequisicaoCompra.objects.select_related(
+            'solicitante', 'lista_materiais__proposta'
+        ).prefetch_related(
+            'itens__produto',
+            'itens__itens_pedido__pedido__fornecedor'
+        ),
+        pk=pk
+    )
+
+    # Montar informações de cada item
+    itens_info = []
+    for item in requisicao.itens.all():
+        pedidos_vinculados = item.itens_pedido.select_related('pedido__fornecedor').all()
+
+        itens_info.append({
+            'item': item,
+            'saldo': item.quantidade_saldo,
+            'percentual': item.percentual_atendido,
+            'status': item.status_atendimento,
+            'pedidos': pedidos_vinculados
+        })
+
+    # Pedidos vinculados à requisição
+    pedidos_vinculados = requisicao.get_pedidos_vinculados()
+
+    context = {
+        'requisicao': requisicao,
+        'itens_info': itens_info,
+        'pedidos_vinculados': pedidos_vinculados,
+        'percentual_geral': requisicao.percentual_atendido_geral,
+        'status_geral': requisicao.status_atendimento_geral,
+    }
+
+    return render(request, 'producao/requisicoes/requisicao_saldo_detail.html', context)

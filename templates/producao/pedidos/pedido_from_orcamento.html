@@ -1,0 +1,286 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .item-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        background: #fff;
+    }
+    .item-card.selected {
+        border-color: #0d6efd;
+        background-color: #f8f9fa;
+    }
+    .item-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+    .saldo-badge {
+        font-size: 0.9rem;
+        padding: 4px 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-shopping-cart me-2"></i> {{ title }}</h2>
+                <a href="{% url 'producao:orcamento_compra_detail' orcamento.pk %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar ao Orçamento
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações do Orçamento -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i> Orçamento {{ orcamento.numero }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Fornecedor:</strong><br>
+                            {{ orcamento.fornecedor.razao_social }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Data:</strong><br>
+                            {{ orcamento.data_orcamento|date:"d/m/Y" }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Valor Total:</strong><br>
+                            R$ {{ orcamento.valor_total_cotado|floatformat:2 }}
+                        </div>
+                    </div>
+                    {% if orcamento.requisicoes.exists %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <strong>Requisições Vinculadas:</strong><br>
+                            {% for req in orcamento.requisicoes.all %}
+                                <span class="badge bg-secondary me-1">{{ req.numero }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <form method="post" id="formPedido">
+        {% csrf_token %}
+
+        <!-- Dados do Pedido -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i> Dados do Pedido</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ form.prioridade.label_tag }}
+                                {{ form.prioridade }}
+                                {{ form.prioridade.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.condicao_pagamento.label_tag }}
+                                {{ form.condicao_pagamento }}
+                                {{ form.condicao_pagamento.errors }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.prazo_entrega.label_tag }}
+                                {{ form.prazo_entrega }}
+                                {{ form.prazo_entrega.errors }}
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                {{ form.observacoes.label_tag }}
+                                {{ form.observacoes }}
+                                {{ form.observacoes.errors }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itens do Orçamento -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-boxes me-2"></i> Itens do Orçamento</h5>
+                        <span class="badge bg-light text-dark">Selecione os itens para o pedido</span>
+                    </div>
+                    <div class="card-body">
+                        {% if orcamento.itens.exists %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="50">
+                                                <input type="checkbox" id="selectAll" class="form-check-input">
+                                            </th>
+                                            <th>Produto</th>
+                                            <th class="text-center">Qtd Orçamento</th>
+                                            <th class="text-center">Qtd Pedido</th>
+                                            <th class="text-center">Saldo Requisição</th>
+                                            <th class="text-end">Valor Unit.</th>
+                                            <th class="text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in orcamento.itens.all %}
+                                        <tr>
+                                            <td class="text-center">
+                                                <input type="checkbox"
+                                                       name="itens_selecionados"
+                                                       value="{{ item.id }}"
+                                                       class="form-check-input item-checkbox"
+                                                       data-item-id="{{ item.id }}">
+                                            </td>
+                                            <td>
+                                                <strong>{{ item.produto.codigo }}</strong><br>
+                                                <small class="text-muted">{{ item.produto.nome|truncatewords:6 }}</small>
+                                            </td>
+                                            <td class="text-center">
+                                                <strong>{{ item.quantidade }}</strong> {{ item.unidade }}
+                                            </td>
+                                            <td class="text-center">
+                                                <input type="number"
+                                                       name="quantidade_{{ item.id }}"
+                                                       class="form-control form-control-sm text-center quantidade-input"
+                                                       value="{{ item.quantidade }}"
+                                                       step="0.01"
+                                                       min="0.01"
+                                                       max="{{ item.quantidade }}"
+                                                       style="width: 100px; display: inline-block;"
+                                                       disabled>
+                                            </td>
+                                            <td class="text-center">
+                                                {% comment %}
+                                                <!-- Aqui você pode adicionar lógica para mostrar o saldo da requisição -->
+                                                {% endcomment %}
+                                                <span class="badge bg-info saldo-badge">Ver saldo</span>
+                                            </td>
+                                            <td class="text-end">
+                                                R$ {{ item.valor_unitario_cotado|default:item.valor_unitario_estimado|floatformat:2 }}
+                                            </td>
+                                            <td class="text-end">
+                                                <strong>R$ <span class="item-total">{{ item.valor_total_cotado|default:item.valor_total_estimado|floatformat:2 }}</span></strong>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <td colspan="6" class="text-end"><strong>Total do Pedido:</strong></td>
+                                            <td class="text-end">
+                                                <strong class="text-primary">R$ <span id="totalPedido">0,00</span></strong>
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Este orçamento não possui itens.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="row">
+            <div class="col-12 text-end">
+                <a href="{% url 'producao:orcamento_compra_detail' orcamento.pk %}" class="btn btn-secondary">
+                    <i class="fas fa-times me-1"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-success" id="btnCriarPedido">
+                    <i class="fas fa-shopping-cart me-1"></i> Criar Pedido
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Selecionar/desselecionar todos
+    $('#selectAll').on('change', function() {
+        $('.item-checkbox').prop('checked', this.checked).trigger('change');
+    });
+
+    // Habilitar/desabilitar input de quantidade ao selecionar item
+    $('.item-checkbox').on('change', function() {
+        const itemId = $(this).data('item-id');
+        const quantidadeInput = $(`input[name="quantidade_${itemId}"]`);
+
+        if ($(this).is(':checked')) {
+            quantidadeInput.prop('disabled', false);
+            $(this).closest('tr').addClass('table-primary');
+        } else {
+            quantidadeInput.prop('disabled', true);
+            $(this).closest('tr').removeClass('table-primary');
+        }
+
+        calcularTotal();
+    });
+
+    // Recalcular total ao alterar quantidade
+    $('.quantidade-input').on('input', function() {
+        calcularTotal();
+    });
+
+    function calcularTotal() {
+        let total = 0;
+
+        $('.item-checkbox:checked').each(function() {
+            const itemId = $(this).data('item-id');
+            const quantidade = parseFloat($(`input[name="quantidade_${itemId}"]`).val()) || 0;
+            const tr = $(this).closest('tr');
+            const valorUnitText = tr.find('td:nth-child(6)').text().replace('R$', '').trim().replace(',', '.');
+            const valorUnit = parseFloat(valorUnitText) || 0;
+
+            const subtotal = quantidade * valorUnit;
+            total += subtotal;
+
+            tr.find('.item-total').text(subtotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        });
+
+        $('#totalPedido').text(total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    }
+
+    // Validação antes de enviar
+    $('#formPedido').on('submit', function(e) {
+        const itensSelecionados = $('.item-checkbox:checked').length;
+
+        if (itensSelecionados === 0) {
+            e.preventDefault();
+            alert('Selecione pelo menos um item do orçamento.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

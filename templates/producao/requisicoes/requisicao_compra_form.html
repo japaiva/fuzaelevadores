@@ -6,6 +6,74 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/produto-search.css' %}">
+<style>
+/* =========================================================================== */
+/* ESTILOS CUSTOMIZADOS PARA TABELA DE ITENS                                  */
+/* =========================================================================== */
+
+/* Tabela de itens mais compacta */
+#itens-table {
+  font-size: 0.8rem;  /* Reduzido */
+}
+
+#itens-table thead th {
+  font-size: 0.75rem;  /* Reduzido */
+  padding: 0.4rem 0.3rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+#itens-table tbody td {
+  padding: 0.4rem 0.3rem;
+  vertical-align: middle;
+}
+
+/* Inputs menores dentro da tabela */
+#itens-table input[type="text"],
+#itens-table input[type="number"],
+#itens-table select,
+#itens-table textarea {
+  font-size: 0.75rem;  /* Reduzido */
+  padding: 0.25rem 0.4rem;
+  height: auto;
+}
+
+/* Texto "produto selecionado" menor */
+.produto-selecionado {
+  font-size: 0.7rem;  /* Reduzido */
+}
+
+/* Info text menor */
+#itens-table small {
+  font-size: 0.65rem;  /* Reduzido */
+}
+
+/* Número do item */
+.item-numero {
+  font-size: 0.8rem;  /* Reduzido */
+}
+
+/* Botões menores */
+#itens-table .btn-sm {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.4rem;
+}
+
+/* Input de busca de produto */
+#itens-table .produto-search-input {
+  font-size: 0.75rem !important;
+}
+
+/* Resultados de busca de produto */
+.produto-search-results {
+  font-size: 0.75rem;
+}
+
+.produto-search-results .list-group-item {
+  padding: 0.4rem 0.6rem;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -197,11 +265,11 @@
                       </td>
 
                       <td class="align-middle">
-                        {{ form_item.quantidade }}
-                        {% if form_item.quantidade.errors %}
+                        {{ form_item.quantidade_solicitada }}
+                        {% if form_item.quantidade_solicitada.errors %}
                           <div class="text-danger small mt-1">
                             <i class="fas fa-exclamation-triangle me-1"></i>
-                            {{ form_item.quantidade.errors.0 }}
+                            {{ form_item.quantidade_solicitada.errors.0 }}
                           </div>
                         {% endif %}
                       </td>
@@ -251,7 +319,7 @@
                   </td>
 
                   <td class="align-middle">
-                    {{ formset.empty_form.quantidade }}
+                    {{ formset.empty_form.quantidade_solicitada }}
                   </td>
 
                   <td class="align-middle">

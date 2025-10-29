@@ -8,3 +8,4 @@ class CoreConfig(AppConfig):
     def ready(self):
         """Importar signals quando o app está pronto"""
         import core.signals  # noqa
+        import core.signals_saldo  # noqa - signals de controle de saldo

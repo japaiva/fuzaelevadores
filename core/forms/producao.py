@@ -123,8 +123,12 @@ class RequisicaoCompraForm(DateAwareModelForm, AuditMixin):
             'prioridade': forms.Select(attrs={
                 'class': 'form-control'
             }),
-            'data_requisicao': CustomDateInput(),
-            'data_necessidade': CustomDateInput(),
+            'data_requisicao': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
+            'data_necessidade': CustomDateInput(attrs={
+                'class': 'form-control'
+            }),
             'solicitante': forms.Select(attrs={
                 'class': 'form-control',
                 'required': True
@@ -257,10 +261,10 @@ class ItemRequisicaoCompraForm(BaseModelForm):
 
     class Meta:
         model = ItemRequisicaoCompra
-        fields = ['produto', 'quantidade', 'valor_unitario_estimado', 'observacoes']
+        fields = ['produto', 'quantidade_solicitada', 'valor_unitario_estimado', 'observacoes']
         widgets = {
             'produto': forms.HiddenInput(),  # Campo hidden, será preenchido via JS
-            'quantidade': QuantityInput(attrs={
+            'quantidade_solicitada': QuantityInput(attrs={
                 'class': 'form-control'
             }),
             'valor_unitario_estimado': forms.HiddenInput(),  # Hidden - não obrigatório na requisição
@@ -271,7 +275,7 @@ class ItemRequisicaoCompraForm(BaseModelForm):
         }
         labels = {
             'produto': 'Produto Selecionado',
-            'quantidade': 'Quantidade',
+            'quantidade_solicitada': 'Quantidade Solicitada',
             'valor_unitario_estimado': 'Valor Unitário Estimado',
             'observacoes': 'Observações',
         }
@@ -291,7 +295,7 @@ class ItemRequisicaoCompraForm(BaseModelForm):
 
         # Campos obrigatórios
         self.fields['produto'].required = True
-        self.fields['quantidade'].required = True
+        self.fields['quantidade_solicitada'].required = True
         self.fields['valor_unitario_estimado'].required = False  # NÃO OBRIGATÓRIO
 
     def clean_produto(self):
@@ -336,7 +340,7 @@ ItemRequisicaoCompraFormSet = inlineformset_factory(
     can_delete=True,
     min_num=0,
     validate_min=False,
-    fields=['produto', 'quantidade', 'valor_unitario_estimado', 'observacoes']
+    fields=['produto', 'quantidade_solicitada', 'valor_unitario_estimado', 'observacoes']
 )
 
 

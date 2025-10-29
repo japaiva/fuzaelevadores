@@ -60,6 +60,7 @@ NIVEL_USUARIO_CHOICES = [
     ('financeiro', 'Financeiro'),
     ('vistoria', 'Vistoria'),
     ('producao', 'Produção'),
+    ('almoxarifado', 'Almoxarifado'),
 ]
 
 PRIORIDADE_FORNECEDOR_CHOICES = [

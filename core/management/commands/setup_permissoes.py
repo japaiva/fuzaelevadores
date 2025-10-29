@@ -212,6 +212,32 @@ class Command(BaseCommand):
 
 
         # ====================================
+        # GRUPO: ALMOXARIFADO
+        # ====================================
+        grupo_almoxarifado, created = Group.objects.get_or_create(name='Almoxarifado')
+        if created:
+            self.stdout.write(self.style.SUCCESS('✓ Grupo Almoxarifado criado'))
+
+        permissoes_almoxarifado = [
+            # Propostas - apenas visualização
+            'view_proposta',
+
+            # Listas de materiais - visualização
+            'view_listamateriais', 'visualizar_custos_lista',
+
+            # Requisições - visualização
+            'view_requisicaocompra',
+
+            # Orçamentos - visualização
+            'view_orcamentocompra',
+
+            # Produtos - gestão de estoque
+            'view_produto', 'change_produto',
+        ]
+        self._adicionar_permissoes(grupo_almoxarifado, permissoes_almoxarifado)
+
+
+        # ====================================
         # RESUMO
         # ====================================
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))

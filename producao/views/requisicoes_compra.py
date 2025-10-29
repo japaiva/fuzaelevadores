@@ -287,6 +287,35 @@ def requisicao_compra_delete(request, pk):
 
 
 @login_required
+def requisicao_compra_toggle_status(request, pk):
+    """Alternar status entre Rascunho e Aberta"""
+    requisicao = get_object_or_404(RequisicaoCompra, pk=pk)
+
+    # Só permite toggle para rascunho e aberta
+    if requisicao.status not in ['rascunho', 'aberta']:
+        messages.error(request, f'Requisição {requisicao.numero} não pode ter o status alterado (status atual: {requisicao.get_status_display()}).')
+        return redirect('producao:requisicao_compra_detail', pk=pk)
+
+    try:
+        # Alternar entre rascunho e aberta
+        if requisicao.status == 'rascunho':
+            requisicao.status = 'aberta'
+            msg = 'Requisição marcada como Aberta'
+        else:
+            requisicao.status = 'rascunho'
+            msg = 'Requisição marcada como Rascunho'
+
+        requisicao.atualizado_por = request.user
+        requisicao.save()
+
+        messages.success(request, msg)
+    except Exception as e:
+        messages.error(request, f'Erro ao alterar status: {str(e)}')
+
+    return redirect('producao:requisicao_compra_detail', pk=pk)
+
+
+@login_required
 def requisicao_compra_alterar_status(request, pk):
     """Alterar status da requisição"""
     requisicao = get_object_or_404(RequisicaoCompra, pk=pk)

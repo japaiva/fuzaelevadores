@@ -21,6 +21,7 @@ NIVEL_TO_GROUP = {
     'producao': 'Produção',
     'compras': 'Compras',
     'engenharia': 'Engenharia',
+    'almoxarifado': 'Almoxarifado',
 }
 
 

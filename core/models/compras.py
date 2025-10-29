@@ -21,9 +21,21 @@ class PedidoCompra(models.Model):
     
     # Identificação
     numero = models.CharField(max_length=20, unique=True, verbose_name="Número")
+
+    # Relacionamento com orçamento (opcional)
+    orcamento = models.ForeignKey(
+        'OrcamentoCompra',
+        on_delete=models.PROTECT,
+        related_name='pedidos_compra',
+        blank=True,
+        null=True,
+        verbose_name="Orçamento de Origem",
+        help_text="Opcional - Orçamento que gerou este pedido"
+    )
+
     fornecedor = models.ForeignKey(
-        'Fornecedor', 
-        on_delete=models.PROTECT, 
+        'Fornecedor',
+        on_delete=models.PROTECT,
         related_name='pedidos_compra'
     )
     
@@ -312,22 +324,46 @@ class PedidoCompra(models.Model):
             return 0
         return self.itens.count()
 
+    def get_requisicoes_vinculadas(self):
+        """Retorna requisições vinculadas através dos itens"""
+        if not self.pk:
+            from .producao import RequisicaoCompra
+            return RequisicaoCompra.objects.none()
+
+        from .producao import RequisicaoCompra
+        requisicoes_ids = self.itens.filter(
+            item_requisicao__isnull=False
+        ).values_list('item_requisicao__requisicao', flat=True).distinct()
+
+        return RequisicaoCompra.objects.filter(id__in=requisicoes_ids)
+
 
 class ItemPedidoCompra(models.Model):
     """
     Item do pedido de compra
     """
     pedido = models.ForeignKey(
-        PedidoCompra, 
-        on_delete=models.CASCADE, 
+        PedidoCompra,
+        on_delete=models.CASCADE,
         related_name='itens'
     )
     produto = models.ForeignKey(
-        'Produto', 
+        'Produto',
         on_delete=models.PROTECT,
         related_name='itens_pedido_compra'
     )
-    
+
+    # VÍNCULO COM REQUISIÇÃO - CHAVE PARA RASTREABILIDADE
+    item_requisicao = models.ForeignKey(
+        'ItemRequisicaoCompra',
+        on_delete=models.PROTECT,
+        related_name='itens_pedido',
+        blank=True,
+        null=True,
+        verbose_name="Item da Requisição",
+        help_text="Item da requisição que este pedido atende"
+    )
+
     # Quantidades
     quantidade = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantidade")
     unidade = models.CharField(max_length=10, verbose_name="Unidade")
