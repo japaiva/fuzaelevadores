@@ -39,16 +39,6 @@
     font-weight: 500;
   }
 
-  /* Barra de progresso compacta */
-  .progress-bar-wrapper {
-    height: 20px;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .progress-bar-wrapper .progress-bar {
-    font-size: 0.7rem;
-  }
 
   /* Cards de itens */
   .item-card {
@@ -230,10 +220,21 @@
         <i class="fas fa-chart-pie me-2"></i> Detalhamento de Saldo - Requisição {{ requisicao.numero }}
       </h5>
     </div>
-    <div>
+    <div class="btn-group">
       <a href="{% url 'producao:requisicao_compra_detail' requisicao.pk %}" class="btn btn-outline-light btn-sm">
         <i class="fas fa-file-alt me-1"></i> Ver Requisição
       </a>
+
+      {% if requisicao.status == 'rascunho' %}
+        <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}" class="btn btn-success btn-sm">
+          <i class="fas fa-check-circle me-1"></i> Marcar como Aberta
+        </a>
+      {% elif requisicao.status == 'aberta' %}
+        <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}" class="btn btn-warning btn-sm">
+          <i class="fas fa-undo me-1"></i> Voltar para Rascunho
+        </a>
+      {% endif %}
+
       <a href="{% url 'producao:requisicao_compra_list' %}" class="btn btn-outline-light btn-sm">
         <i class="fas fa-arrow-left me-1"></i> Voltar
       </a>
@@ -309,22 +310,14 @@
         <div class="col-md-8">
           <div class="resumo-item">
             <div class="label">Percentual de Atendimento</div>
-            <div class="progress-bar-wrapper">
-              <div class="progress" style="height: 100%;">
-                {% if percentual_geral >= 100 %}
-                  <div class="progress-bar bg-success" style="width: 100%">
-                    <strong class="text-white">100%</strong>
-                  </div>
-                {% elif percentual_geral >= 50 %}
-                  <div class="progress-bar bg-warning" style="width: {{ percentual_geral }}%">
-                    <strong class="text-dark">{{ percentual_geral|floatformat:0 }}%</strong>
-                  </div>
-                {% else %}
-                  <div class="progress-bar bg-danger" style="width: {% if percentual_geral < 10 %}10{% else %}{{ percentual_geral }}{% endif %}%">
-                    <strong class="text-white">{{ percentual_geral|floatformat:0 }}%</strong>
-                  </div>
-                {% endif %}
-              </div>
+            <div class="text-center" style="font-size: 1.5rem; font-weight: bold;">
+              {% if percentual_geral >= 100 %}
+                <span class="text-success">100%</span>
+              {% elif percentual_geral >= 50 %}
+                <span class="text-warning">{{ percentual_geral|floatformat:0 }}%</span>
+              {% else %}
+                <span class="text-danger">{{ percentual_geral|floatformat:0 }}%</span>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -349,7 +342,7 @@
       <div class="card-body">
         <div class="row align-items-center">
           <!-- Produto -->
-          <div class="col-md-5">
+          <div class="col-md-4">
             <h6 class="card-title text-primary mb-1">
               <i class="fas fa-cube me-1"></i> {{ info.item.produto.codigo }}
             </h6>
@@ -360,27 +353,33 @@
           </div>
 
           <!-- Quantidades -->
-          <div class="col-md-4">
+          <div class="col-md-6">
             <div class="row g-2">
-              <div class="col-3">
+              <div class="col">
                 <div class="quantidade-box">
                   <div class="label">Solicitada</div>
                   <div class="valor text-primary">{{ info.item.quantidade_solicitada }}</div>
                 </div>
               </div>
-              <div class="col-3">
+              <div class="col">
                 <div class="quantidade-box">
                   <div class="label">Em Pedido</div>
                   <div class="valor text-info">{{ info.item.quantidade_em_pedido }}</div>
                 </div>
               </div>
-              <div class="col-3">
+              <div class="col">
                 <div class="quantidade-box">
                   <div class="label">Recebida</div>
                   <div class="valor text-success">{{ info.item.quantidade_recebida }}</div>
                 </div>
               </div>
-              <div class="col-3">
+              <div class="col">
+                <div class="quantidade-box">
+                  <div class="label">Cancelada</div>
+                  <div class="valor text-danger">{{ info.item.quantidade_cancelada }}</div>
+                </div>
+              </div>
+              <div class="col">
                 <div class="quantidade-box">
                   <div class="label">Saldo</div>
                   <div class="valor {% if info.saldo > 0 %}text-warning{% else %}text-muted{% endif %}">
@@ -392,7 +391,7 @@
           </div>
 
           <!-- Status e Percentual -->
-          <div class="col-md-3 text-center">
+          <div class="col-md-2 text-center">
             <div class="mb-2">
               {% if info.status == 'completo' %}
                 <span class="badge bg-success status-badge">
@@ -412,19 +411,13 @@
                 </span>
               {% endif %}
             </div>
-            <div class="progress" style="height: 18px;">
+            <div style="font-size: 1.2rem; font-weight: bold;">
               {% if info.percentual >= 100 %}
-                <div class="progress-bar bg-success" style="width: 100%">
-                  <small><strong>100%</strong></small>
-                </div>
+                <span class="text-success">100%</span>
               {% elif info.percentual >= 50 %}
-                <div class="progress-bar bg-warning" style="width: {{ info.percentual }}%">
-                  <small><strong>{{ info.percentual|floatformat:0 }}%</strong></small>
-                </div>
+                <span class="text-warning">{{ info.percentual|floatformat:0 }}%</span>
               {% else %}
-                <div class="progress-bar bg-danger" style="width: {% if info.percentual < 10 %}10{% else %}{{ info.percentual }}{% endif %}%">
-                  <small><strong>{{ info.percentual|floatformat:0 }}%</strong></small>
-                </div>
+                <span class="text-danger">{{ info.percentual|floatformat:0 }}%</span>
               {% endif %}
             </div>
           </div>

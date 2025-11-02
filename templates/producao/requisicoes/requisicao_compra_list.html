@@ -235,13 +235,13 @@
 
                     <!-- Toggle Status Rascunho/Aberta -->
                     {% if requisicao.status == 'rascunho' %}
-                      <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}"
+                      <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}?next={% url 'producao:requisicao_compra_list' %}"
                          class="btn btn-success btn-sm"
                          title="Marcar como Aberta">
                         <i class="fas fa-check-circle"></i>
                       </a>
                     {% elif requisicao.status == 'aberta' %}
-                      <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}"
+                      <a href="{% url 'producao:requisicao_compra_toggle_status' requisicao.pk %}?next={% url 'producao:requisicao_compra_list' %}"
                          class="btn btn-warning btn-sm"
                          title="Voltar para Rascunho">
                         <i class="fas fa-undo"></i>

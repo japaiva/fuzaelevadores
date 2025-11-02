@@ -33,14 +33,20 @@
     height: auto;
   }
 
-  /* Texto "produto selecionado" menor */
-  .produto-selecionado {
-    font-size: 0.7rem;
-  }
-
   /* Info text menor */
   #itens-table small {
     font-size: 0.65rem;
+  }
+
+  /* Remover checkmark do Bootstrap em inputs válidos */
+  .produto-search-input.is-valid,
+  .produto-search-input.was-validated {
+    background-image: none !important;
+  }
+
+  .produto-search-input.is-valid::after,
+  .produto-search-input.was-validated::after {
+    display: none !important;
   }
 
   /* Botões menores */
@@ -273,18 +279,10 @@
                       <td class="align-middle">
                         <!-- Campo de busca visível -->
                         {{ form_item.produto_search }}
-                        
+
                         <!-- Campo hidden do produto -->
                         {{ form_item.produto }}
-                        
-                        <!-- Container para mostrar produto selecionado -->
-                        <div class="produto-selecionado mt-1" style="display: none;">
-                          <small class="text-success">
-                            <i class="fas fa-check-circle me-1"></i>
-                            <span class="produto-texto"></span>
-                          </small>
-                        </div>
-                        
+
                         {% if form_item.produto.errors %}
                           <div class="text-danger small mt-1">
                             <i class="fas fa-exclamation-triangle me-1"></i>
@@ -370,12 +368,6 @@
                   <td class="align-middle">
                     {{ formset.empty_form.produto_search }}
                     {{ formset.empty_form.produto }}
-                    <div class="produto-selecionado mt-1" style="display: none;">
-                      <small class="text-success">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <span class="produto-texto"></span>
-                      </small>
-                    </div>
                   </td>
 
                   <td class="align-middle">
@@ -531,47 +523,87 @@
 {% block extra_js %}
 <script src="{% static 'js/produto-search.js' %}"></script>
 <script>
+// Mapeamento produto -> requisições (vindo do backend)
+const PRODUTO_REQUISICOES = {{ produto_requisicoes_json|safe }};
+
+// =============================================================================
+// FILTRO DINÂMICO DE REQUISIÇÕES POR PRODUTO
+// =============================================================================
+function filtrarRequisicoesPorProduto(row, produtoId) {
+    const requisicaoSelect = row.querySelector('[name*="-item_requisicao"]');
+    if (!requisicaoSelect) return;
+
+    // Guardar valor atual selecionado
+    const valorAtual = requisicaoSelect.value;
+
+    // Limpar todas as opções exceto a primeira (vazia)
+    while (requisicaoSelect.options.length > 1) {
+        requisicaoSelect.remove(1);
+    }
+
+    // Se não há produto selecionado, deixar apenas opção vazia
+    if (!produtoId) {
+        console.log('📍 Nenhum produto selecionado, requisições limpas');
+        return;
+    }
+
+    // Adicionar apenas requisições do produto selecionado
+    const requisicoesDisponiveis = PRODUTO_REQUISICOES[produtoId] || [];
+    console.log(`📍 Produto ${produtoId}: ${requisicoesDisponiveis.length} requisições disponíveis`);
+
+    requisicoesDisponiveis.forEach(function(req) {
+        const option = new Option(req.label, req.id);
+        requisicaoSelect.add(option);
+    });
+
+    // Restaurar valor se ainda estiver disponível
+    if (valorAtual) {
+        const optionExists = Array.from(requisicaoSelect.options).some(opt => opt.value === valorAtual);
+        if (optionExists) {
+            requisicaoSelect.value = valorAtual;
+        }
+    }
+}
+
 // =============================================================================
 // INICIALIZAÇÃO
 // =============================================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 DOM carregado - inicializando...');
-    
+
     // Inicializar componentes
     inicializarEventListeners();
     configurarCalculoAutomaticoDatas();
-    setupAddAnotherItem(); 
+    setupAddAnotherItem();
     atualizarNumeracaoItens();
     calcularTotais();
     verificarItensVazios();
-    
+
     // Inicializar busca de produtos
     initProdutoSearch();
-    
+
     // Event listener para quando um produto é selecionado
     document.addEventListener('produto-selecionado', function(e) {
+        console.log('🔔 Produto selecionado:', e.detail);
+
         // Recalcular totais quando produto for selecionado
         calcularTotais();
-        
-        // Mostrar confirmação visual
+
+        // Filtrar requisições disponíveis para o produto selecionado
         const row = e.target.closest('tr');
-        if (row) {
-            const produtoSelecionado = row.querySelector('.produto-selecionado');
-            const produtoTexto = row.querySelector('.produto-selecionado .produto-texto');
-            const produtoInput = row.querySelector('.produto-search-input');
-            
-            if (produtoSelecionado && produtoTexto && produtoInput) {
-                produtoTexto.textContent = produtoInput.value;
-                produtoSelecionado.style.display = 'block';
-                
-                // Esconder após 3 segundos
-                setTimeout(() => {
-                    produtoSelecionado.style.display = 'none';
-                }, 3000);
-            }
+        if (row && e.detail && e.detail.produtoId) {
+            filtrarRequisicoesPorProduto(row, e.detail.produtoId);
         }
     });
-    
+
+    // Inicializar filtros para itens já existentes (no edit)
+    document.querySelectorAll('.item-row').forEach(function(row) {
+        const produtoHidden = row.querySelector('[name*="-produto"]');
+        if (produtoHidden && produtoHidden.value) {
+            filtrarRequisicoesPorProduto(row, produtoHidden.value);
+        }
+    });
+
     console.log('✅ Inicialização completa');
 });
 

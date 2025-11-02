@@ -186,10 +186,17 @@ def pedido_compra_create(request):
         form = PedidoCompraForm()
         formset = ItemPedidoCompraFormSet()
 
+    # Coletar mapeamento produto -> requisições para filtro dinâmico
+    produto_requisicoes = {}
+    for form_item in formset:
+        if hasattr(form_item, 'produto_requisicoes'):
+            produto_requisicoes.update(form_item.produto_requisicoes)
+
     context = {
         'form': form,
         'formset': formset,
-        'title': 'Novo Pedido de Compra'
+        'title': 'Novo Pedido de Compra',
+        'produto_requisicoes_json': json.dumps(produto_requisicoes)
     }
 
     return render(request, 'producao/pedidos/pedido_compra_form.html', context)
@@ -313,11 +320,18 @@ def pedido_compra_update(request, pk):
         form = PedidoCompraForm(instance=pedido)
         formset = ItemPedidoCompraFormSet(instance=pedido)
 
+    # Coletar mapeamento produto -> requisições para filtro dinâmico
+    produto_requisicoes = {}
+    for form_item in formset:
+        if hasattr(form_item, 'produto_requisicoes'):
+            produto_requisicoes.update(form_item.produto_requisicoes)
+
     context = {
         'form': form,
         'formset': formset,
         'pedido': pedido,
-        'title': f'Editar Pedido {pedido.numero}'
+        'title': f'Editar Pedido {pedido.numero}',
+        'produto_requisicoes_json': json.dumps(produto_requisicoes)
     }
 
     return render(request, 'producao/pedidos/pedido_compra_form.html', context)

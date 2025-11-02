@@ -213,12 +213,6 @@ class ItemPedidoCompraForm(BaseModelForm):
             produto = self.instance.produto
             self.fields['produto_search'].initial = f"{produto.codigo} - {produto.nome}"
 
-        # 🔧 CORREÇÃO 1: Definir queryset para aceitar qualquer produto ativo
-        self.fields['produto'].queryset = Produto.objects.filter(
-            status='ATIVO',
-            disponivel=True
-        )
-
         # Configurar campo item_requisicao (opcional)
         from core.models import ItemRequisicaoCompra
         self.fields['item_requisicao'].required = False
@@ -229,12 +223,38 @@ class ItemPedidoCompraForm(BaseModelForm):
             requisicao__status__in=['aberta', 'aprovada']
         ).select_related('requisicao', 'produto')
 
+        # Guardar mapeamento produto_id -> itens para uso no JavaScript
+        # E coletar IDs de produtos com requisição
+        self.produto_requisicoes = {}
+        produtos_com_requisicao_ids = set()
+
         # Criar choices customizados com informação de saldo
         choices = [('', 'Sem vínculo com requisição')]
         for item in itens_requisicao:
             if item.quantidade_saldo > 0:
                 label = f"Req {item.requisicao.numero} - {item.produto.codigo} (Saldo: {item.quantidade_saldo} {item.unidade})"
                 choices.append((item.pk, label))
+
+                # Mapear produto_id para esta requisição (para filtro JS)
+                produto_id = str(item.produto.pk)
+                if produto_id not in self.produto_requisicoes:
+                    self.produto_requisicoes[produto_id] = []
+                self.produto_requisicoes[produto_id].append({
+                    'id': item.pk,
+                    'label': label
+                })
+
+                # Adicionar produto aos IDs com requisição
+                produtos_com_requisicao_ids.add(item.produto.pk)
+
+        # Definir queryset para aceitar produtos ativos E (disponíveis OU com requisição)
+        from django.db.models import Q
+        self.fields['produto'].queryset = Produto.objects.filter(
+            status='ATIVO'
+        ).filter(
+            Q(disponivel=True) |  # Produto disponível
+            Q(pk__in=produtos_com_requisicao_ids)  # OU tem requisição aberta
+        )
 
         self.fields['item_requisicao'].choices = choices
         self.fields['item_requisicao'].help_text = "Vincule este item a uma requisição para controlar o saldo"

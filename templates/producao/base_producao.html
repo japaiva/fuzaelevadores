@@ -84,7 +84,7 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-// Fazer todos os botões "Voltar" retornarem para a página anterior de forma inteligente
+// Fazer botões "Voltar" retornarem para a página anterior de forma inteligente
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔧 Inicializando botões voltar inteligentes...');
 
@@ -102,16 +102,26 @@ document.addEventListener('DOMContentLoaded', function() {
             const hrefOriginal = botao.getAttribute('href');
             console.log(`✅ Botão ${index + 1} - href original:`, hrefOriginal);
 
-            // Adicionar evento de clique
+            // REGRA: Se o href aponta para uma lista ou dashboard, SEMPRE usar o href
+            // Só usar history.back() para navegação entre detalhes/edição
+            const ehDestinoCerto = hrefOriginal && (
+                hrefOriginal.includes('_list') ||
+                hrefOriginal.includes('/list/') ||
+                hrefOriginal.includes('dashboard')
+            );
+
+            if (ehDestinoCerto) {
+                console.log(`📌 Botão ${index + 1} aponta para destino específico, mantendo href`);
+                // Não adicionar listener - deixar comportamento padrão
+                return;
+            }
+
+            // Para outros casos, tentar voltar inteligentemente
             botao.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
                 console.log('⬅️ Processando voltar...');
-
-                // ESTRATÉGIA INTELIGENTE:
-                // 1. Se há referrer e veio de dentro do site, usar referrer
-                // 2. Caso contrário, usar history.back()
 
                 const mesmoSite = paginaAnterior && paginaAnterior.includes(window.location.hostname);
                 const veioDeOutraPagina = paginaAnterior && paginaAnterior !== window.location.href;
@@ -119,6 +129,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (mesmoSite && veioDeOutraPagina) {
                     console.log('✅ Voltando via referrer:', paginaAnterior);
                     window.location.href = paginaAnterior;
+                } else if (hrefOriginal) {
+                    console.log('✅ Usando href como fallback:', hrefOriginal);
+                    window.location.href = hrefOriginal;
                 } else {
                     console.log('✅ Voltando via history.back()');
                     window.history.back();

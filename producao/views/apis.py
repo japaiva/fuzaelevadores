@@ -215,12 +215,29 @@ def api_buscar_produtos(request):
         return JsonResponse({'produtos': []})
     
     try:
+        from core.models import ItemRequisicaoCompra
+
+        # IDs de produtos que têm requisição aberta/aprovada com saldo
+        # quantidade_saldo é uma property, então filtrar na aplicação
+        itens_com_saldo = ItemRequisicaoCompra.objects.filter(
+            requisicao__status__in=['aberta', 'aprovada']
+        ).select_related('produto')
+
+        produtos_com_requisicao_ids = set()
+        for item in itens_com_saldo:
+            if item.quantidade_saldo > 0:  # Filtrar por property
+                produtos_com_requisicao_ids.add(item.produto_id)
+
         # Buscar produtos que contenham o termo
+        # Filtros: Produtos ativos E (disponíveis OU com requisição aberta)
         produtos = Produto.objects.filter(
             models.Q(codigo__icontains=termo) |
             models.Q(nome__icontains=termo) |
             models.Q(descricao__icontains=termo),
             status='ATIVO'
+        ).filter(
+            models.Q(disponivel=True) |  # Produto disponível
+            models.Q(pk__in=produtos_com_requisicao_ids)  # OU tem requisição aberta
         ).select_related('grupo', 'subgrupo').order_by('codigo')[:20]  # Limitar a 20 resultados
         
         produtos_data = []

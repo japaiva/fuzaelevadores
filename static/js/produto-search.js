@@ -312,7 +312,7 @@ class ProdutoSearch {
             if (this.produtoHiddenInput) {
                 this.produtoHiddenInput.value = produto.id;
             }
-            
+
             // Preencher valor unitário se disponível
             if (produto.custo_medio) {
                 const valorUnitarioInput = this.input.closest('tr').querySelector('input[name*="-valor_unitario"]');
@@ -320,12 +320,20 @@ class ProdutoSearch {
                     valorUnitarioInput.value = produto.custo_medio.toFixed(2).replace('.', ',');
                 }
             }
-            
+
             // Fechar dropdown
             this.hideDropdown();
-            
-            // Trigger para recalcular totais
-            this.input.dispatchEvent(new Event('produto-selecionado', { bubbles: true }));
+
+            // Trigger para recalcular totais E filtrar requisições
+            const event = new CustomEvent('produto-selecionado', {
+                bubbles: true,
+                detail: {
+                    produtoId: produto.id,
+                    produtoCodigo: produto.codigo,
+                    produtoNome: produto.nome
+                }
+            });
+            this.input.dispatchEvent(event);
         }
     }
     

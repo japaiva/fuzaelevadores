@@ -312,6 +312,11 @@ def requisicao_compra_toggle_status(request, pk):
     except Exception as e:
         messages.error(request, f'Erro ao alterar status: {str(e)}')
 
+    # Redirecionar para a página de origem (se veio da lista, volta pra lista)
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+
     return redirect('producao:requisicao_compra_detail', pk=pk)
 
 
