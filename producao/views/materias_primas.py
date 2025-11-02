@@ -136,12 +136,20 @@ def materiaprima_update(request, pk):
     """Editar matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
 
+    # Preservar parâmetros de paginação e filtros
+    page = request.GET.get('page', '1')
+    grupo = request.GET.get('grupo', '')
+    subgrupo = request.GET.get('subgrupo', '')
+    status = request.GET.get('status', '')
+    utilizado = request.GET.get('utilizado', '')
+    query = request.GET.get('q', '')
+
     if request.method == 'POST':
         post_data = request.POST.copy()
-        
+
         if 'estoque_minimo' in post_data and not post_data['estoque_minimo']:
             post_data['estoque_minimo'] = None
-            
+
         form = ProdutoForm(post_data, instance=produto)
 
         if form.is_valid():
@@ -152,7 +160,29 @@ def materiaprima_update(request, pk):
             produto.save()
 
             messages.success(request, f'Matéria-prima "{produto.codigo} - {produto.nome}" atualizada com sucesso.')
-            return redirect('producao:materiaprima_list')
+
+            # Construir URL de redirect com parâmetros preservados
+            redirect_url = 'producao:materiaprima_list'
+            params = []
+            if page and page != '1':
+                params.append(f'page={page}')
+            if grupo:
+                params.append(f'grupo={grupo}')
+            if subgrupo:
+                params.append(f'subgrupo={subgrupo}')
+            if status:
+                params.append(f'status={status}')
+            if utilizado:
+                params.append(f'utilizado={utilizado}')
+            if query:
+                params.append(f'q={query}')
+
+            if params:
+                from django.urls import reverse
+                url = reverse(redirect_url) + '?' + '&'.join(params)
+                return redirect(url)
+            else:
+                return redirect(redirect_url)
         else:
             messages.error(request, 'Erro ao atualizar matéria-prima. Verifique os dados informados.')
     else:
@@ -163,7 +193,11 @@ def materiaprima_update(request, pk):
 
     return render(request, 'producao/produtos/materiaprima_form.html', {
         'form': form,
-        'produto': produto
+        'produto': produto,
+        'return_params': {
+            'page': page, 'grupo': grupo, 'subgrupo': subgrupo,
+            'status': status, 'utilizado': utilizado, 'q': query
+        }
     })
 
 @login_required

@@ -109,21 +109,21 @@
               <td class="text-center">
                 <div class="btn-group" role="group" aria-label="Ações do subgrupo">
                   {% if subgrupo.grupo.tipo_produto == 'MP' %}
-                    <a href="{% url 'producao:materiaprima_list' %}?subgrupo={{ subgrupo.id }}" 
-                       class="btn btn-outline-info btn-sm" 
+                    <a href="{% url 'producao:materiaprima_list' %}?subgrupo={{ subgrupo.id }}"
+                       class="btn btn-outline-info btn-sm"
                        title="Ver Matérias-Primas ({{ subgrupo.produtos.count }})">
                       <i class="fas fa-boxes"></i>
                     </a>
                   {% elif subgrupo.grupo.tipo_produto == 'PI' %}
-                    <a href="#" 
-                       class="btn btn-outline-info btn-sm disabled" 
-                       title="Produtos Intermediários (Em desenvolvimento)">
+                    <a href="{% url 'producao:produto_intermediario_list' %}?subgrupo={{ subgrupo.id }}"
+                       class="btn btn-outline-info btn-sm"
+                       title="Ver Produtos Intermediários ({{ subgrupo.produtos.count }})">
                       <i class="fas fa-cogs"></i>
                     </a>
                   {% elif subgrupo.grupo.tipo_produto == 'PA' %}
-                    <a href="#" 
-                       class="btn btn-outline-info btn-sm disabled" 
-                       title="Produtos Acabados (Em desenvolvimento)">
+                    <a href="{% url 'producao:produto_acabado_list' %}?subgrupo={{ subgrupo.id }}"
+                       class="btn btn-outline-info btn-sm"
+                       title="Ver Produtos Acabados ({{ subgrupo.produtos.count }})">
                       <i class="fas fa-check-circle"></i>
                     </a>
                   {% endif %}

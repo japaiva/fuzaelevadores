@@ -164,6 +164,16 @@ def produto_intermediario_create(request):
 def produto_intermediario_update(request, pk):
     """Editar produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
+
+    # Preservar parâmetros de paginação e filtros
+    page = request.GET.get('page', '1')
+    grupo = request.GET.get('grupo', '')
+    subgrupo = request.GET.get('subgrupo', '')
+    tipo_pi = request.GET.get('tipo_pi', '')
+    status = request.GET.get('status', '')
+    utilizado = request.GET.get('utilizado', '')
+    query = request.GET.get('q', '')
+
     if request.method == 'POST':
         form = ProdutoForm(request.POST, instance=produto) #
         if form.is_valid():
@@ -172,7 +182,31 @@ def produto_intermediario_update(request, pk):
             produto.atualizado_por = request.user
             produto.save()
             messages.success(request, f'Produto intermediário "{produto.codigo} - {produto.nome}" atualizado com sucesso.')
-            return redirect('producao:produto_intermediario_list')
+
+            # Construir URL de redirect com parâmetros preservados
+            redirect_url = f'producao:produto_intermediario_list'
+            params = []
+            if page and page != '1':
+                params.append(f'page={page}')
+            if grupo:
+                params.append(f'grupo={grupo}')
+            if subgrupo:
+                params.append(f'subgrupo={subgrupo}')
+            if tipo_pi:
+                params.append(f'tipo_pi={tipo_pi}')
+            if status:
+                params.append(f'status={status}')
+            if utilizado:
+                params.append(f'utilizado={utilizado}')
+            if query:
+                params.append(f'q={query}')
+
+            if params:
+                from django.urls import reverse
+                url = reverse(redirect_url) + '?' + '&'.join(params)
+                return redirect(url)
+            else:
+                return redirect(redirect_url)
         else:
             messages.error(request, 'Erro ao atualizar produto intermediário. Verifique os dados informados.')
     else:
@@ -182,7 +216,11 @@ def produto_intermediario_update(request, pk):
     form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='PI', ativo=True).order_by('codigo') #
 
     return render(request, 'producao/produtos/produto_intermediario_form.html', {
-        'form': form, 'produto': produto
+        'form': form, 'produto': produto,
+        'return_params': {
+            'page': page, 'grupo': grupo, 'subgrupo': subgrupo,
+            'tipo_pi': tipo_pi, 'status': status, 'utilizado': utilizado, 'q': query
+        }
     }) #
 
 

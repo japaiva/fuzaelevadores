@@ -352,10 +352,9 @@ function initProdutoSearch() {
             const row = input.closest('tr');
             const hiddenInput = row ? row.querySelector('input[name*="-produto"]') : null;
             
-            // Se é um item existente (tem valor no hidden), marcar como válido
+            // Item existente detectado
             if (hiddenInput && hiddenInput.value && input.value) {
-                input.classList.add('is-valid');
-                console.log('✅ Item existente detectado e marcado como válido:', input.value);
+                console.log('✅ Item existente detectado:', input.value);
             }
             
             input.produtoSearchInstance = new ProdutoSearch(input);

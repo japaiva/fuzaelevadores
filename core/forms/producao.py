@@ -261,11 +261,17 @@ class ItemRequisicaoCompraForm(BaseModelForm):
 
     class Meta:
         model = ItemRequisicaoCompra
-        fields = ['produto', 'quantidade_solicitada', 'valor_unitario_estimado', 'observacoes']
+        fields = ['produto', 'quantidade_solicitada', 'quantidade_cancelada', 'valor_unitario_estimado', 'observacoes']
         widgets = {
             'produto': forms.HiddenInput(),  # Campo hidden, será preenchido via JS
             'quantidade_solicitada': QuantityInput(attrs={
                 'class': 'form-control'
+            }),
+            'quantidade_cancelada': QuantityInput(attrs={
+                'class': 'form-control',
+                'min': '0',
+                'placeholder': '0',
+                'required': False
             }),
             'valor_unitario_estimado': forms.HiddenInput(),  # Hidden - não obrigatório na requisição
             'observacoes': forms.TextInput(attrs={
@@ -276,6 +282,7 @@ class ItemRequisicaoCompraForm(BaseModelForm):
         labels = {
             'produto': 'Produto Selecionado',
             'quantidade_solicitada': 'Quantidade Solicitada',
+            'quantidade_cancelada': 'Quantidade Cancelada',
             'valor_unitario_estimado': 'Valor Unitário Estimado',
             'observacoes': 'Observações',
         }
@@ -296,6 +303,7 @@ class ItemRequisicaoCompraForm(BaseModelForm):
         # Campos obrigatórios
         self.fields['produto'].required = True
         self.fields['quantidade_solicitada'].required = True
+        self.fields['quantidade_cancelada'].required = False  # NÃO OBRIGATÓRIO
         self.fields['valor_unitario_estimado'].required = False  # NÃO OBRIGATÓRIO
 
     def clean_produto(self):
@@ -330,6 +338,14 @@ class ItemRequisicaoCompraForm(BaseModelForm):
             return None
         return valor
 
+    def clean_quantidade_cancelada(self):
+        """Permitir valor vazio (não obrigatório), converter para 0"""
+        quantidade = self.cleaned_data.get('quantidade_cancelada')
+        # Se vazio, retornar 0
+        if quantidade == '' or quantidade is None:
+            return 0
+        return quantidade
+
 
 # FORMSET PARA ITENS DA REQUISIÇÃO
 ItemRequisicaoCompraFormSet = inlineformset_factory(
@@ -340,7 +356,7 @@ ItemRequisicaoCompraFormSet = inlineformset_factory(
     can_delete=True,
     min_num=0,
     validate_min=False,
-    fields=['produto', 'quantidade_solicitada', 'valor_unitario_estimado', 'observacoes']
+    fields=['produto', 'quantidade_solicitada', 'quantidade_cancelada', 'valor_unitario_estimado', 'observacoes']
 )
 
 

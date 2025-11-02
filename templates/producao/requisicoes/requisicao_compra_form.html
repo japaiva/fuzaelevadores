@@ -39,14 +39,20 @@
   height: auto;
 }
 
-/* Texto "produto selecionado" menor */
-.produto-selecionado {
-  font-size: 0.7rem;  /* Reduzido */
-}
-
 /* Info text menor */
 #itens-table small {
   font-size: 0.65rem;  /* Reduzido */
+}
+
+/* Remover checkmark do Bootstrap em inputs válidos */
+.produto-search-input.is-valid,
+.produto-search-input.was-validated {
+  background-image: none !important;
+}
+
+.produto-search-input.is-valid::after,
+.produto-search-input.was-validated::after {
+  display: none !important;
 }
 
 /* Número do item */
@@ -222,9 +228,10 @@
               <thead class="table-light">
                 <tr>
                   <th style="width: 5%" class="text-center">#</th>
-                  <th style="width: 40%">Produto <span class="text-danger">*</span></th>
-                  <th style="width: 15%" class="text-center">Qtd <span class="text-danger">*</span></th>
-                  <th style="width: 35%">Observações</th>
+                  <th style="width: 35%">Produto </th>
+                  <th style="width: 12%" class="text-center">Qtd Solicitada</th>
+                  <th style="width: 12%" class="text-center">Qtd Cancelada</th>
+                  <th style="width: 31%">Observações</th>
                   <th style="width: 5%" class="text-center">Ações</th>
                 </tr>
               </thead>
@@ -248,14 +255,6 @@
                         <!-- Campo hidden do produto -->
                         {{ form_item.produto }}
 
-                        <!-- Container para mostrar produto selecionado -->
-                        <div class="produto-selecionado mt-1" style="display: none;">
-                          <small class="text-success">
-                            <i class="fas fa-check-circle me-1"></i>
-                            <span class="produto-texto"></span>
-                          </small>
-                        </div>
-
                         {% if form_item.produto.errors %}
                           <div class="text-danger small mt-1">
                             <i class="fas fa-exclamation-triangle me-1"></i>
@@ -270,6 +269,16 @@
                           <div class="text-danger small mt-1">
                             <i class="fas fa-exclamation-triangle me-1"></i>
                             {{ form_item.quantidade_solicitada.errors.0 }}
+                          </div>
+                        {% endif %}
+                      </td>
+
+                      <td class="align-middle">
+                        {{ form_item.quantidade_cancelada }}
+                        {% if form_item.quantidade_cancelada.errors %}
+                          <div class="text-danger small mt-1">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            {{ form_item.quantidade_cancelada.errors.0 }}
                           </div>
                         {% endif %}
                       </td>
@@ -310,16 +319,14 @@
                   <td class="align-middle">
                     {{ formset.empty_form.produto_search }}
                     {{ formset.empty_form.produto }}
-                    <div class="produto-selecionado mt-1" style="display: none;">
-                      <small class="text-success">
-                        <i class="fas fa-check-circle me-1"></i>
-                        <span class="produto-texto"></span>
-                      </small>
-                    </div>
                   </td>
 
                   <td class="align-middle">
                     {{ formset.empty_form.quantidade_solicitada }}
+                  </td>
+
+                  <td class="align-middle">
+                    {{ formset.empty_form.quantidade_cancelada }}
                   </td>
 
                   <td class="align-middle">

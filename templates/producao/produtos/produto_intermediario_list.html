@@ -179,8 +179,8 @@
                 <div class="btn-group" role="group" aria-label="Ações do produto intermediário">
                   
                   
-                  <a href="{% url 'producao:produto_intermediario_update' produto.pk %}" 
-                     class="btn btn-outline-primary btn-sm" 
+                  <a href="{% url 'producao:produto_intermediario_update' produto.pk %}?page={{ produtos.number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if subgrupo_filtro %}&subgrupo={{ subgrupo_filtro }}{% endif %}{% if tipo_pi_filtro %}&tipo_pi={{ tipo_pi_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if utilizado_filtro %}&utilizado={{ utilizado_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}"
+                     class="btn btn-outline-primary btn-sm"
                      title="Editar">
                     <i class="fas fa-edit"></i>
                   </a>

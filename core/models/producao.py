@@ -483,6 +483,14 @@ class ItemRequisicaoCompra(models.Model):
         verbose_name="Quantidade Recebida",
         help_text="Quantidade já recebida no estoque"
     )
+    quantidade_cancelada = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        verbose_name="Quantidade Cancelada",
+        help_text="Quantidade de saldo cancelada/não mais necessária (reversível)"
+    )
     unidade = models.CharField(
         max_length=10,
         verbose_name="Unidade"
@@ -525,8 +533,8 @@ class ItemRequisicaoCompra(models.Model):
     
     @property
     def quantidade_saldo(self):
-        """Saldo disponível = solicitada - em_pedido - recebida"""
-        return self.quantidade_solicitada - self.quantidade_em_pedido - self.quantidade_recebida
+        """Saldo disponível = solicitada - em_pedido - recebida - cancelada"""
+        return self.quantidade_solicitada - self.quantidade_em_pedido - self.quantidade_recebida - self.quantidade_cancelada
 
     @property
     def percentual_atendido(self):
