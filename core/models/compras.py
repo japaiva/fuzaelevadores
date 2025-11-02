@@ -392,7 +392,8 @@ class ItemPedidoCompra(models.Model):
         verbose_name = "Item do Pedido de Compra"
         verbose_name_plural = "Itens dos Pedidos de Compra"
         ordering = ['id']
-        unique_together = ['pedido', 'produto']
+        # Removido unique_together: permite mesmo produto múltiplas vezes
+        # (útil quando vinculado a requisições diferentes)
     
     def __str__(self):
         return f"{self.pedido.numero} - {self.produto.codigo}"

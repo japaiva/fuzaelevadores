@@ -82,7 +82,7 @@ from .produtos_acabados import (
 from .pedidos_compra import (
     pedido_compra_list, pedido_compra_create, pedido_compra_detail,
     pedido_compra_update, pedido_compra_delete, pedido_compra_alterar_status,
-    pedido_compra_gerar_pdf, pedido_compra_duplicar,
+    pedido_compra_toggle_status, pedido_compra_gerar_pdf, pedido_compra_duplicar,
     pedido_compra_recebimento, receber_item_pedido,
     # NOVO: Controle de Saldo Requisição -> Pedido
     pedido_compra_from_requisicao,
@@ -231,7 +231,7 @@ __all__ = [
     # Pedidos de Compra
     'pedido_compra_list', 'pedido_compra_create', 'pedido_compra_detail',
     'pedido_compra_update', 'pedido_compra_delete', 'pedido_compra_alterar_status',
-    'pedido_compra_gerar_pdf', 'pedido_compra_duplicar',
+    'pedido_compra_toggle_status', 'pedido_compra_gerar_pdf', 'pedido_compra_duplicar',
     'pedido_compra_recebimento', 'receber_item_pedido',
     # Controle de Saldo Requisição -> Pedido
     'pedido_compra_from_requisicao', 'pedido_compra_from_orcamento',

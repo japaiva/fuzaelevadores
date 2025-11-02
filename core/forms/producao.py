@@ -104,20 +104,17 @@ ItemListaMateriaisFormSet = inlineformset_factory(
 
 class RequisicaoCompraForm(DateAwareModelForm, AuditMixin):
     """Formulário para requisição de compra"""
-    
+
     class Meta:
         model = RequisicaoCompra
         fields = [
-            'lista_materiais', 'status', 'prioridade',
+            'lista_materiais', 'prioridade',
             'data_requisicao', 'data_necessidade',
             'solicitante', 'departamento',
             'justificativa', 'observacoes', 'observacoes_compras'
         ]
         widgets = {
             'lista_materiais': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'status': forms.Select(attrs={
                 'class': 'form-control'
             }),
             'prioridade': forms.Select(attrs={
@@ -155,7 +152,6 @@ class RequisicaoCompraForm(DateAwareModelForm, AuditMixin):
         }
         labels = {
             'lista_materiais': 'Lista de Materiais',
-            'status': 'Status',
             'prioridade': 'Prioridade',
             'data_requisicao': 'Data da Requisição',
             'data_necessidade': 'Data de Necessidade',

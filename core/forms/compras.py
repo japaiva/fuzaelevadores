@@ -142,7 +142,31 @@ class PedidoCompraForm(DateAwareModelForm, AuditMixin):
         if desconto is not None and (desconto < 0 or desconto > 100):
             raise ValidationError('Desconto deve estar entre 0 e 100%.')
         return desconto
-    
+
+    def clean_valor_frete(self):
+        """Converter vírgula para ponto no valor do frete"""
+        # Tentar pegar o valor já processado primeiro
+        valor_frete = self.cleaned_data.get('valor_frete')
+
+        # Se já foi convertido com sucesso, retornar
+        if valor_frete is not None:
+            return valor_frete
+
+        # Se falhou, tentar pegar o valor RAW e converter manualmente
+        valor_raw = self.data.get('valor_frete', '')
+
+        # Se vier como string vazia ou None, retornar 0
+        if not valor_raw or valor_raw == '':
+            return 0
+
+        try:
+            # Remover espaços e substituir vírgula por ponto
+            from decimal import Decimal, InvalidOperation
+            valor_limpo = str(valor_raw).strip().replace(',', '.')
+            return Decimal(valor_limpo)
+        except (ValueError, TypeError, InvalidOperation):
+            raise ValidationError('Informe um valor numérico válido para o frete.')
+
     def clean(self):
         """Validações customizadas"""
         cleaned_data = super().clean()
@@ -264,19 +288,81 @@ class ItemPedidoCompraForm(BaseModelForm):
         self.fields['quantidade'].required = True
         self.fields['valor_unitario'].required = True
     
+    def clean_quantidade(self):
+        """Converter vírgula para ponto na quantidade"""
+        # Tentar pegar o valor já processado primeiro
+        quantidade = self.cleaned_data.get('quantidade')
+
+        # Se já foi convertido com sucesso, retornar
+        if quantidade is not None:
+            if quantidade <= 0:
+                raise ValidationError('A quantidade deve ser maior que zero.')
+            return quantidade
+
+        # Se falhou, tentar pegar o valor RAW e converter manualmente
+        field_name = f'{self.prefix}-quantidade' if self.prefix else 'quantidade'
+        valor_raw = self.data.get(field_name, '')
+
+        if not valor_raw or valor_raw == '':
+            return None
+
+        try:
+            # Remover espaços e substituir vírgula por ponto
+            from decimal import Decimal, InvalidOperation
+            valor_limpo = str(valor_raw).strip().replace(',', '.')
+            valor = Decimal(valor_limpo)
+
+            if valor <= 0:
+                raise ValidationError('A quantidade deve ser maior que zero.')
+
+            return valor
+        except (ValueError, TypeError, InvalidOperation):
+            raise ValidationError('Informe um valor numérico válido para a quantidade.')
+
+    def clean_valor_unitario(self):
+        """Converter vírgula para ponto no valor unitário"""
+        # Tentar pegar o valor já processado primeiro
+        valor_unitario = self.cleaned_data.get('valor_unitario')
+
+        # Se já foi convertido com sucesso, retornar
+        if valor_unitario is not None:
+            if valor_unitario < 0:
+                raise ValidationError('O valor unitário não pode ser negativo.')
+            return valor_unitario
+
+        # Se falhou, tentar pegar o valor RAW e converter manualmente
+        field_name = f'{self.prefix}-valor_unitario' if self.prefix else 'valor_unitario'
+        valor_raw = self.data.get(field_name, '')
+
+        if not valor_raw or valor_raw == '':
+            return None
+
+        try:
+            # Remover espaços e substituir vírgula por ponto
+            from decimal import Decimal, InvalidOperation
+            valor_limpo = str(valor_raw).strip().replace(',', '.')
+            valor = Decimal(valor_limpo)
+
+            if valor < 0:
+                raise ValidationError('O valor unitário não pode ser negativo.')
+
+            return valor
+        except (ValueError, TypeError, InvalidOperation):
+            raise ValidationError('Informe um valor numérico válido para o valor unitário.')
+
     def clean_produto_search(self):
         """Validar que um produto foi selecionado"""
         produto_search = self.cleaned_data.get('produto_search')
         produto = self.cleaned_data.get('produto')
-        
+
         # Se não tem produto selecionado mas tem texto de busca
         if produto_search and not produto:
             raise ValidationError(
                 'Selecione um produto da lista de sugestões.'
             )
-        
+
         return produto_search
-    
+
     def clean_produto(self):
         """Validar produto selecionado"""
         produto = self.cleaned_data.get('produto')
@@ -299,9 +385,34 @@ class ItemPedidoCompraForm(BaseModelForm):
             # Se já é um objeto Produto
             produto_obj = produto
 
-        # Verificar se produto está ativo e disponível
-        if produto_obj.status != 'ATIVO' or not produto_obj.disponivel:
-            raise ValidationError('Produto selecionado não está disponível.')
+        # Verificar se produto está ativo
+        if produto_obj.status != 'ATIVO':
+            raise ValidationError('Produto selecionado não está ativo.')
+
+        # Verificar disponibilidade: aceitar se disponível=True OU tem requisição aberta
+        if not produto_obj.disponivel:
+            # Se não disponível, verificar se tem requisição aberta com saldo
+            from core.models import ItemRequisicaoCompra
+            tem_requisicao = ItemRequisicaoCompra.objects.filter(
+                produto=produto_obj,
+                requisicao__status__in=['aberta', 'aprovada']
+            ).exists()
+
+            # Verificar se tem saldo em alguma requisição
+            tem_saldo = False
+            if tem_requisicao:
+                itens = ItemRequisicaoCompra.objects.filter(
+                    produto=produto_obj,
+                    requisicao__status__in=['aberta', 'aprovada']
+                ).select_related('requisicao')
+
+                for item in itens:
+                    if item.quantidade_saldo > 0:
+                        tem_saldo = True
+                        break
+
+            if not tem_saldo:
+                raise ValidationError('Produto não está disponível e não possui requisições abertas com saldo.')
 
         # 🔧 CORREÇÃO 3: Retornar o objeto Produto, não a string
         return produto_obj

@@ -389,6 +389,40 @@ def pedido_compra_alterar_status(request, pk):
 
 
 @login_required
+def pedido_compra_toggle_status(request, pk):
+    """Alternar status entre Rascunho e Enviado"""
+    pedido = get_object_or_404(PedidoCompra, pk=pk)
+
+    # Só permite toggle para rascunho e enviado
+    if pedido.status not in ['rascunho', 'enviado']:
+        messages.error(request, f'Pedido {pedido.numero} não pode ter o status alterado (status atual: {pedido.get_status_display()}).')
+        return redirect('producao:pedido_compra_detail', pk=pk)
+
+    try:
+        # Alternar entre rascunho e enviado
+        if pedido.status == 'rascunho':
+            pedido.status = 'enviado'
+            msg = 'Pedido marcado como Enviado'
+        else:
+            pedido.status = 'rascunho'
+            msg = 'Pedido marcado como Rascunho'
+
+        pedido.atualizado_por = request.user
+        pedido.save()
+
+        messages.success(request, msg)
+    except Exception as e:
+        messages.error(request, f'Erro ao alterar status: {str(e)}')
+
+    # Redirecionar para a página de origem (se veio da lista, volta pra lista)
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+
+    return redirect('producao:pedido_compra_detail', pk=pk)
+
+
+@login_required
 def pedido_compra_gerar_pdf(request, pk):
     """Gerar PDF do pedido de compra"""
     pedido = get_object_or_404(

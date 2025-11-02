@@ -393,7 +393,7 @@ class RequisicaoCompra(models.Model):
 
     @property
     def percentual_atendido_geral(self):
-        """Percentual geral de atendimento da requisição"""
+        """Percentual geral de atendimento da requisição (incluindo cancelado)"""
         if not self.pk or self.get_total_itens() == 0:
             return 0
 
@@ -412,7 +412,11 @@ class RequisicaoCompra(models.Model):
             total=models.Sum('quantidade_recebida')
         )['total'] or 0
 
-        total_atendido = total_em_pedido + total_recebido
+        total_cancelado = self.itens.aggregate(
+            total=models.Sum('quantidade_cancelada')
+        )['total'] or 0
+
+        total_atendido = total_em_pedido + total_recebido + total_cancelado
 
         return (total_atendido / total_solicitado) * 100
 
@@ -538,28 +542,33 @@ class ItemRequisicaoCompra(models.Model):
 
     @property
     def percentual_atendido(self):
-        """Percentual já atendido (em pedido + recebido)"""
+        """Percentual já atendido (em pedido + recebido + cancelado)"""
         if not self.quantidade_solicitada:
             return 0
-        atendido = self.quantidade_em_pedido + self.quantidade_recebida
+        # Incluir cancelado: representa o que foi "tratado" da requisição
+        atendido = self.quantidade_em_pedido + self.quantidade_recebida + self.quantidade_cancelada
         return (atendido / self.quantidade_solicitada) * 100
 
     @property
     def status_atendimento(self):
         """Status do atendimento do item"""
+        total_tratado = self.quantidade_em_pedido + self.quantidade_recebida + self.quantidade_cancelada
+
         if self.quantidade_recebida >= self.quantidade_solicitada:
             return 'completo'
-        elif self.quantidade_em_pedido + self.quantidade_recebida >= self.quantidade_solicitada:
+        elif total_tratado >= self.quantidade_solicitada:
             return 'em_andamento'
-        elif self.quantidade_em_pedido > 0 or self.quantidade_recebida > 0:
+        elif total_tratado > 0:
             return 'parcial'
         else:
             return 'pendente'
 
     def recalcular_quantidades(self):
         """Recalcula quantidade_em_pedido baseado nos pedidos vinculados"""
+        # Status que "reservam" saldo: RASCUNHO até pedidos em andamento
+        # NÃO inclui CANCELADO (que libera o saldo) nem RECEBIDO (que já foi pra quantidade_recebida)
         total_em_pedido = self.itens_pedido.filter(
-            pedido__status__in=['enviado', 'confirmado', 'recebido_parcial']
+            pedido__status__in=['RASCUNHO', 'ENVIADO', 'CONFIRMADO', 'PARCIAL']
         ).aggregate(
             total=models.Sum('quantidade')
         )['total'] or 0

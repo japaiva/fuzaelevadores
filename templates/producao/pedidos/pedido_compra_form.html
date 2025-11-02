@@ -604,6 +604,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // =========================================================================
+    // CONVERTER VÍRGULA PARA PONTO ANTES DE SUBMETER
+    // =========================================================================
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('📤 Preparando submit - convertendo vírgulas para pontos...');
+
+            // Converter campos numéricos de vírgula para ponto
+            const camposNumericos = form.querySelectorAll(
+                '[name*="-quantidade"], [name*="-valor_unitario"], #id_valor_frete, #id_desconto_percentual'
+            );
+
+            camposNumericos.forEach(function(campo) {
+                if (campo.value && typeof campo.value === 'string') {
+                    // Substituir vírgula por ponto
+                    const valorOriginal = campo.value;
+                    const valorConvertido = valorOriginal.replace(',', '.');
+
+                    if (valorOriginal !== valorConvertido) {
+                        campo.value = valorConvertido;
+                        console.log(`  ✓ ${campo.name}: "${valorOriginal}" → "${valorConvertido}"`);
+                    }
+                }
+            });
+
+            console.log('✅ Conversão completa, submetendo formulário');
+        });
+    }
+
     console.log('✅ Inicialização completa');
 });
 

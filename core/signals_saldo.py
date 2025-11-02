@@ -19,9 +19,9 @@ def atualizar_saldo_requisicao_ao_salvar_item(sender, instance, created, **kwarg
     if not instance.item_requisicao:
         return
 
-    # Só conta se o pedido está em status ativo (não cancelado ou rascunho)
-    if instance.pedido.status in ['ENVIADO', 'CONFIRMADO', 'PARCIAL', 'RECEBIDO']:
-        instance.item_requisicao.recalcular_quantidades()
+    # Recalcula para todos os status (inclusive RASCUNHO)
+    # O método recalcular_quantidades já filtra os status corretos
+    instance.item_requisicao.recalcular_quantidades()
 
 
 @receiver(post_delete, sender=ItemPedidoCompra)
@@ -103,8 +103,8 @@ def validar_quantidade_contra_saldo(sender, instance, **kwargs):
     if instance.pk:
         try:
             old_instance = ItemPedidoCompra.objects.get(pk=instance.pk)
-            # Só conta se o pedido estava em status ativo
-            if old_instance.pedido.status in ['ENVIADO', 'CONFIRMADO', 'PARCIAL', 'RECEBIDO']:
+            # Só conta se o pedido estava em status que "reserva" saldo (não CANCELADO)
+            if old_instance.pedido.status in ['RASCUNHO', 'ENVIADO', 'CONFIRMADO', 'PARCIAL', 'RECEBIDO']:
                 saldo_disponivel += old_instance.quantidade
         except ItemPedidoCompra.DoesNotExist:
             pass

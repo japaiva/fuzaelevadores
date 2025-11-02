@@ -265,13 +265,28 @@
                     
                     <!-- Editar (se permitido) -->
                     {% if pedido.pode_editar %}
-                      <a href="{% url 'producao:pedido_compra_update' pedido.pk %}" 
-                         class="btn btn-outline-primary btn-sm" 
+                      <a href="{% url 'producao:pedido_compra_update' pedido.pk %}"
+                         class="btn btn-outline-primary btn-sm"
                          title="Editar Pedido">
                         <i class="fas fa-edit"></i>
                       </a>
                     {% endif %}
-                    
+
+                    <!-- Toggle Status Rascunho/Enviado -->
+                    {% if pedido.status == 'rascunho' %}
+                      <a href="{% url 'producao:pedido_compra_toggle_status' pedido.pk %}?next={% url 'producao:pedido_compra_list' %}"
+                         class="btn btn-success btn-sm"
+                         title="Marcar como Enviado">
+                        <i class="fas fa-check-circle"></i>
+                      </a>
+                    {% elif pedido.status == 'enviado' %}
+                      <a href="{% url 'producao:pedido_compra_toggle_status' pedido.pk %}?next={% url 'producao:pedido_compra_list' %}"
+                         class="btn btn-warning btn-sm"
+                         title="Voltar para Rascunho">
+                        <i class="fas fa-undo"></i>
+                      </a>
+                    {% endif %}
+
                     <!-- PDF -->
                     <a href="{% url 'producao:pedido_compra_gerar_pdf' pedido.pk %}" 
                        class="btn btn-outline-danger btn-sm" 
@@ -288,10 +303,10 @@
                       <i class="fas fa-copy"></i>
                     </a>
                     
-                    <!-- Alterar Status -->
-                    {% if pedido.status != 'CANCELADO' and pedido.status != 'RECEBIDO' %}
-                      <a href="{% url 'producao:pedido_compra_alterar_status' pedido.pk %}" 
-                         class="btn btn-outline-warning btn-sm" 
+                    <!-- Alterar Status (para outros status além de rascunho/enviado) -->
+                    {% if pedido.status != 'CANCELADO' and pedido.status != 'RECEBIDO' and pedido.status != 'rascunho' and pedido.status != 'enviado' %}
+                      <a href="{% url 'producao:pedido_compra_alterar_status' pedido.pk %}"
+                         class="btn btn-outline-warning btn-sm"
                          title="Alterar Status">
                         <i class="fas fa-exchange-alt"></i>
                       </a>
