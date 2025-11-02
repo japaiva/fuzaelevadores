@@ -7,54 +7,52 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.views import LoginView
 
-from core.models import PerfilUsuario, Usuario
+from core.models import Usuario
 from core.forms import UsuarioForm
 
 @login_required
 def perfil(request):
+    """
+    View de perfil do usuário
+    ATUALIZADO: Removido uso de PerfilUsuario - todos os dados estão em Usuario
+    """
     usuario = request.user
-    
-    # Obter ou criar perfil ao carregar a página
-    perfil, created = PerfilUsuario.objects.get_or_create(usuario=usuario)
-    
+
     # Obter o contexto atual do usuário
     app_context = request.session.get('app_context', 'home')
-    
-    # Determinar para onde voltar com base no contexto - ATUALIZADO
+
+    # Determinar para onde voltar com base no contexto
     if app_context == 'gestor':
         back_url = 'gestor:dashboard'
     elif app_context == 'vendedor':
         back_url = 'vendedor:dashboard'
-    elif app_context == 'producao':  # ← ATUALIZADO
+    elif app_context == 'producao':
         back_url = 'producao:dashboard'
     else:
         back_url = 'home'
-    
+
     if request.method == 'POST':
         # Atualizar informações básicas
         usuario.first_name = request.POST.get('first_name', '')
         usuario.last_name = request.POST.get('last_name', '')
         usuario.email = request.POST.get('email', '')
-        
-        # Atualizar telefone no usuário e no perfil
-        telefone = request.POST.get('telefone', '')
-        usuario.telefone = telefone
-        perfil.telefone = telefone
-        
+
+        # Atualizar telefone (agora apenas no Usuario)
+        usuario.telefone = request.POST.get('telefone', '')
+
         # Processar senha
         nova_senha = request.POST.get('nova_senha')
         if nova_senha:
             usuario.set_password(nova_senha)
-        
+
         # Salvar alterações
         usuario.save()
-        perfil.save()
-        
+
         messages.success(request, 'Perfil atualizado com sucesso!')
-        
+
         # Após salvar, redirecionar para a URL de retorno
         return redirect(back_url)
-    
+
     return render(request, 'perfil.html', {'usuario': usuario, 'back_url': back_url})
 
 def home_view(request):

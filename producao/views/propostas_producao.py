@@ -674,5 +674,77 @@ def item_lista_materiais_delete(request, lista_id, item_id):
         'lista_materiais': lista_materiais,
         'proposta': lista_materiais.proposta,
     }
-    
+
     return render(request, 'producao/propostas/item_lista_materiais_delete.html', context)
+
+
+# =============================================================================
+# UPLOAD DE PROJETOS
+# =============================================================================
+
+@login_required
+def upload_projeto_executivo(request, pk):
+    """Upload de Projeto Executivo"""
+    from django.utils import timezone
+
+    proposta = get_object_or_404(Proposta, pk=pk)
+
+    if request.method == 'POST' and request.FILES.get('arquivo'):
+        arquivo = request.FILES['arquivo']
+
+        # Validar extensão
+        if not arquivo.name.lower().endswith('.pdf'):
+            messages.error(request, 'Apenas arquivos PDF são permitidos.')
+            return redirect('producao:proposta_detail_producao', pk=pk)
+
+        # Salvar arquivo
+        proposta.arquivo_projeto_executivo = arquivo
+        proposta.data_upload_projeto_executivo = timezone.now()
+        proposta.save()
+
+        messages.success(
+            request,
+            f'Projeto Executivo enviado com sucesso em {proposta.data_upload_projeto_executivo.strftime("%d/%m/%Y às %H:%M")}'
+        )
+        return redirect('producao:proposta_detail_producao', pk=pk)
+
+    context = {
+        'proposta': proposta,
+        'tipo_projeto': 'Executivo'
+    }
+
+    return render(request, 'producao/propostas/upload_projeto.html', context)
+
+
+@login_required
+def upload_projeto_elevador(request, pk):
+    """Upload de Projeto do Elevador"""
+    from django.utils import timezone
+
+    proposta = get_object_or_404(Proposta, pk=pk)
+
+    if request.method == 'POST' and request.FILES.get('arquivo'):
+        arquivo = request.FILES['arquivo']
+
+        # Validar extensão
+        if not arquivo.name.lower().endswith('.pdf'):
+            messages.error(request, 'Apenas arquivos PDF são permitidos.')
+            return redirect('producao:proposta_detail_producao', pk=pk)
+
+        # Salvar arquivo
+        proposta.arquivo_projeto_elevador = arquivo
+        proposta.data_upload_projeto_elevador = timezone.now()
+        proposta.save()
+
+        messages.success(
+            request,
+            f'Projeto do Elevador enviado com sucesso em {proposta.data_upload_projeto_elevador.strftime("%d/%m/%Y às %H:%M")}'
+        )
+        return redirect('producao:proposta_detail_producao', pk=pk)
+
+    context = {
+        'proposta': proposta,
+        'tipo_projeto': 'Elevador'
+    }
+
+    return render(request, 'producao/propostas/upload_projeto.html', context)

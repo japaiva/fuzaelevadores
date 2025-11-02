@@ -1,0 +1,259 @@
+{% extends 'gestor/base_gestor.html' %}
+{% load formato_br %}
+
+{% block title %}Projeto {{ proposta.numero }} | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-project-diagram me-2"></i>Projeto {{ proposta.numero }}
+        </h5>
+        <div>
+            <a href="{% url 'gestor:painel_projetos' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <!-- Informações Básicas -->
+        <div class="mb-4 pb-3 border-bottom">
+            <h6 class="text-primary mb-3">
+                <i class="fas fa-info-circle me-2"></i>Informações Básicas
+            </h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Cliente:</label>
+                    <div><strong>{{ proposta.cliente.nome }}</strong></div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Projeto:</label>
+                    <div><strong>{{ proposta.nome_projeto|default:"Sem nome definido" }}</strong></div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Vendedor:</label>
+                    <div>{{ proposta.vendedor.get_full_name|default:proposta.vendedor.username }}</div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Valor:</label>
+                    <div class="text-success"><strong>{{ proposta.valor_proposta|formato_br }}</strong></div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Status:</label>
+                    <div><span class="badge {{ proposta.status_badge_class }}">{{ proposta.get_status_display }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fase 1: Criação e Aprovação -->
+        <div class="mb-4 pb-3 border-bottom">
+            <h6 class="text-info mb-3">
+                <i class="fas fa-flag-checkered me-2"></i>Fase 1: Criação e Aprovação
+            </h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Data de Criação:</label>
+                    <div>
+                        {% if proposta.criado_em %}
+                            <i class="fas fa-calendar-alt me-1 text-primary"></i>
+                            <strong>{{ proposta.criado_em|date:"d/m/Y H:i" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Data de Aprovação:</label>
+                    <div>
+                        {% if proposta.data_aprovacao %}
+                            <i class="fas fa-check-circle me-1 text-success"></i>
+                            <strong>{{ proposta.data_aprovacao|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fase 2: Projetos -->
+        <div class="mb-4 pb-3 border-bottom">
+            <h6 class="text-warning mb-3">
+                <i class="fas fa-drafting-compass me-2"></i>Fase 2: Projetos
+            </h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Projeto Executivo:</label>
+                    <div>
+                        {% if proposta.data_upload_projeto_executivo %}
+                            <i class="fas fa-file-pdf me-1 text-danger"></i>
+                            <strong>{{ proposta.data_upload_projeto_executivo|date:"d/m/Y H:i" }}</strong>
+                            {% if proposta.arquivo_projeto_executivo %}
+                                <a href="{{ proposta.arquivo_projeto_executivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Projeto Elevador:</label>
+                    <div>
+                        {% if proposta.data_upload_projeto_elevador %}
+                            <i class="fas fa-file-pdf me-1 text-danger"></i>
+                            <strong>{{ proposta.data_upload_projeto_elevador|date:"d/m/Y H:i" }}</strong>
+                            {% if proposta.arquivo_projeto_elevador %}
+                                <a href="{{ proposta.arquivo_projeto_elevador.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fase 3: Medição e Obra -->
+        <div class="mb-4 pb-3 border-bottom">
+            <h6 class="text-secondary mb-3">
+                <i class="fas fa-ruler-combined me-2"></i>Fase 3: Medição e Obra
+            </h6>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Data de Medição:</label>
+                    <div>
+                        {% if proposta.data_medicao %}
+                            <i class="fas fa-calendar-check me-1 text-primary"></i>
+                            <strong>{{ proposta.data_medicao|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Previsão Entrega Obra:</label>
+                    <div>
+                        {% if proposta.data_previsao_entrega_obra %}
+                            <i class="fas fa-calendar me-1 text-info"></i>
+                            <strong>{{ proposta.data_previsao_entrega_obra|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Entrega Obra:</label>
+                    <div>
+                        {% if proposta.data_entrega_obra %}
+                            <i class="fas fa-check-double me-1 text-success"></i>
+                            <strong>{{ proposta.data_entrega_obra|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fase 4: Produção -->
+        <div class="mb-4 pb-3 border-bottom">
+            <h6 class="text-primary mb-3">
+                <i class="fas fa-industry me-2"></i>Fase 4: Produção
+            </h6>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Autorização Produção:</label>
+                    <div>
+                        {% if proposta.data_autorizacao_producao %}
+                            <i class="fas fa-thumbs-up me-1 text-success"></i>
+                            <strong>{{ proposta.data_autorizacao_producao|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Data da Compra:</label>
+                    <div>
+                        {% if proposta.data_compra %}
+                            <i class="fas fa-shopping-cart me-1 text-primary"></i>
+                            <strong>{{ proposta.data_compra|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="text-muted small">Início da Produção:</label>
+                    <div>
+                        {% if proposta.data_inicio_producao %}
+                            <i class="fas fa-play-circle me-1 text-info"></i>
+                            <strong>{{ proposta.data_inicio_producao|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Previsão de Conclusão:</label>
+                    <div>
+                        {% if proposta.data_previsao_conclusao %}
+                            <i class="fas fa-calendar me-1 text-warning"></i>
+                            <strong>{{ proposta.data_previsao_conclusao|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Conclusão:</label>
+                    <div>
+                        {% if proposta.data_conclusao %}
+                            <i class="fas fa-flag me-1 text-success"></i>
+                            <strong>{{ proposta.data_conclusao|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fase 5: Entrega ao Cliente -->
+        <div class="mb-3">
+            <h6 class="text-success mb-3">
+                <i class="fas fa-shipping-fast me-2"></i>Fase 5: Entrega ao Cliente
+            </h6>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Previsão de Entrega:</label>
+                    <div>
+                        {% if proposta.data_previsao_entrega %}
+                            <i class="fas fa-calendar me-1 text-warning"></i>
+                            <strong>{{ proposta.data_previsao_entrega|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="text-muted small">Data da Entrega:</label>
+                    <div>
+                        {% if proposta.data_entrega %}
+                            <i class="fas fa-check-circle me-1 text-success"></i>
+                            <strong>{{ proposta.data_entrega|date:"d/m/Y" }}</strong>
+                        {% else %}
+                            <span class="text-muted fst-italic">-</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

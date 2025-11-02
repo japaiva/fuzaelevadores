@@ -39,3 +39,35 @@
 </li>
 
 {% endblock %}
+
+{% block extra_css %}
+<style>
+/* Reduzir fonte dos menus principais */
+.navbar-nav .nav-link {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* Reduzir fonte dos itens dropdown */
+.dropdown-menu .dropdown-item {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.75rem !important;
+}
+
+/* Ícones dos menus */
+.nav-link i,
+.dropdown-item i {
+    font-size: 0.65rem !important;
+}
+
+/* Badge de contador */
+.nav-link .badge {
+    font-size: 0.55rem !important;
+}
+
+/* Ajustar altura do dropdown */
+.dropdown-menu {
+    font-size: 0.7rem !important;
+}
+</style>
+{% endblock %}

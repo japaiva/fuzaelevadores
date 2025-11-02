@@ -10,7 +10,17 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard/analytics/', views.dashboard_analytics, name='dashboard_analytics'),
-    
+
+    # =======================================================================
+    # ✅ TAREFAS E WORKFLOW
+    # =======================================================================
+    path('tarefas/', views.lista_tarefas, name='tarefas'),
+    path('tarefas/<int:tarefa_id>/', views.detalhes_tarefa, name='tarefa_detalhes'),
+    path('tarefas/<int:tarefa_id>/iniciar/', views.iniciar_tarefa, name='tarefa_iniciar'),
+    path('tarefas/<int:tarefa_id>/concluir/', views.concluir_tarefa, name='tarefa_concluir'),
+    path('tarefas/<int:tarefa_id>/cancelar/', views.cancelar_tarefa, name='tarefa_cancelar'),
+    path('api/tarefas/contador/', views.contador_tarefas_pendentes, name='tarefas_contador'),
+
     # =======================================================================
     # 🔧 MOTOR DE REGRAS YAML
     # =======================================================================
@@ -88,7 +98,9 @@ urlpatterns = [
     path('propostas/', views.proposta_list_producao, name='proposta_list_producao'),
     path('propostas/<uuid:pk>/', views.proposta_detail_producao, name='proposta_detail_producao'),
     path('propostas/<uuid:pk>/gerar-lista-materiais/', views.gerar_lista_materiais, name='gerar_lista_materiais'),
-    
+    path('propostas/<uuid:pk>/upload-projeto-executivo/', views.upload_projeto_executivo, name='upload_projeto_executivo'),
+    path('propostas/<uuid:pk>/upload-projeto-elevador/', views.upload_projeto_elevador, name='upload_projeto_elevador'),
+
     # =======================================================================
     # 📋 LISTAS DE MATERIAIS
     # =======================================================================

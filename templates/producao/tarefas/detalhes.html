@@ -1,0 +1,246 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}{{ tarefa.titulo }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tasks me-2"></i>{{ tarefa.titulo }}</h2>
+    <div>
+        {% if tarefa.status == 'pendente' %}
+        <a href="{% url 'producao:tarefa_iniciar' tarefa.id %}" class="btn btn-info btn-sm me-2">
+            <i class="fas fa-play me-1"></i>Iniciar
+        </a>
+        {% endif %}
+        {% if tarefa.status in 'pendente,em_andamento' %}
+        <a href="{% url 'producao:tarefa_concluir' tarefa.id %}" class="btn btn-success btn-sm me-2">
+            <i class="fas fa-check me-1"></i>Concluir
+        </a>
+        {% endif %}
+        {% if user.nivel in 'admin,gestor' and tarefa.status not in 'concluida,cancelada' %}
+        <a href="{% url 'producao:tarefa_cancelar' tarefa.id %}" class="btn btn-danger btn-sm me-2">
+            <i class="fas fa-ban me-1"></i>Cancelar
+        </a>
+        {% endif %}
+        <a href="{% url 'producao:tarefas' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informações da Tarefa -->
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações da Tarefa</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Tipo:</dt>
+                    <dd class="col-sm-9">
+                        <span class="badge bg-primary">{{ tarefa.get_tipo_display }}</span>
+                    </dd>
+
+                    <dt class="col-sm-3">Status:</dt>
+                    <dd class="col-sm-9">
+                        {% if tarefa.status == 'pendente' %}
+                        <span class="badge bg-warning text-dark">{{ tarefa.get_status_display }}</span>
+                        {% elif tarefa.status == 'em_andamento' %}
+                        <span class="badge bg-info">{{ tarefa.get_status_display }}</span>
+                        {% elif tarefa.status == 'concluida' %}
+                        <span class="badge bg-success">{{ tarefa.get_status_display }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ tarefa.get_status_display }}</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">Prioridade:</dt>
+                    <dd class="col-sm-9">
+                        {% if tarefa.prioridade == 'urgente' %}
+                        <span class="badge bg-danger"><i class="fas fa-exclamation-circle"></i> Urgente</span>
+                        {% elif tarefa.prioridade == 'alta' %}
+                        <span class="badge bg-warning text-dark"><i class="fas fa-arrow-up"></i> Alta</span>
+                        {% elif tarefa.prioridade == 'normal' %}
+                        <span class="badge bg-info"><i class="fas fa-minus"></i> Normal</span>
+                        {% else %}
+                        <span class="badge bg-secondary"><i class="fas fa-arrow-down"></i> Baixa</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">Prazo:</dt>
+                    <dd class="col-sm-9">
+                        {% if tarefa.prazo %}
+                        {{ tarefa.prazo|date:"d/m/Y" }}
+                        {% if tarefa.esta_atrasada %}
+                        <span class="badge bg-danger ms-2"><i class="fas fa-clock"></i> Atrasada</span>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted">Sem prazo definido</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+
+                <h6 class="mt-4"><i class="fas fa-align-left me-2"></i>Descrição</h6>
+                <div class="bg-light p-3 rounded">
+                    {{ tarefa.descricao|linebreaks }}
+                </div>
+
+                {% if tarefa.observacoes %}
+                <h6 class="mt-4"><i class="fas fa-comment me-2"></i>Observações da Conclusão</h6>
+                <div class="bg-light p-3 rounded">
+                    {{ tarefa.observacoes|linebreaks }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Histórico -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Histórico de Ações</h5>
+            </div>
+            <div class="card-body">
+                {% if historico %}
+                <div class="list-group list-group-flush">
+                    {% for item in historico %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                <strong>{{ item.usuario.get_full_name|default:item.usuario.username }}</strong>
+                                {{ item.acao }} a tarefa
+                            </h6>
+                            <small class="text-muted">{{ item.data|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        {% if item.descricao %}
+                        <p class="mb-1 text-muted small">{{ item.descricao }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="fas fa-inbox fa-2x mb-2"></i>
+                    <p class="mb-0">Nenhum histórico disponível</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Relacionamentos -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-link me-2"></i>Relacionamentos</h5>
+            </div>
+            <div class="card-body">
+                {% if tarefa.proposta %}
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Proposta:</dt>
+                    <dd class="col-sm-8">
+                        <a href="{% url 'producao:proposta_detail_producao' tarefa.proposta.id %}" class="text-decoration-none">
+                            <i class="fas fa-file-contract"></i> #{{ tarefa.proposta.numero }}
+                        </a>
+                    </dd>
+
+                    <dt class="col-sm-4">Cliente:</dt>
+                    <dd class="col-sm-8">{{ tarefa.proposta.cliente }}</dd>
+
+                    <dt class="col-sm-4">Valor:</dt>
+                    <dd class="col-sm-8">R$ {{ tarefa.proposta.valor_total|floatformat:2 }}</dd>
+                </dl>
+                {% elif tarefa.requisicao %}
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Requisição:</dt>
+                    <dd class="col-sm-7">
+                        <a href="{% url 'producao:requisicao_compra_detail' tarefa.requisicao.id %}" class="text-decoration-none">
+                            <i class="fas fa-shopping-cart"></i> #{{ tarefa.requisicao.numero }}
+                        </a>
+                    </dd>
+                </dl>
+                {% elif tarefa.lista_materiais %}
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Lista Materiais:</dt>
+                    <dd class="col-sm-7">
+                        <i class="fas fa-list-alt"></i> #{{ tarefa.lista_materiais.id }}
+                    </dd>
+                </dl>
+                {% else %}
+                <p class="text-muted mb-0 text-center"><i>Sem relacionamentos</i></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Responsáveis -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Responsáveis</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    {% if tarefa.nivel_destino %}
+                    <dt class="col-sm-5">Nível:</dt>
+                    <dd class="col-sm-7">
+                        <i class="fas fa-users"></i> {{ tarefa.get_nivel_destino_display }}
+                    </dd>
+                    {% endif %}
+
+                    {% if tarefa.usuario_destino %}
+                    <dt class="col-sm-5">Usuário:</dt>
+                    <dd class="col-sm-7">
+                        <i class="fas fa-user"></i> {{ tarefa.usuario_destino.get_full_name|default:tarefa.usuario_destino.username }}
+                    </dd>
+                    {% endif %}
+
+                    {% if tarefa.criada_por %}
+                    <dt class="col-sm-5">Criada por:</dt>
+                    <dd class="col-sm-7">
+                        {{ tarefa.criada_por.get_full_name|default:tarefa.criada_por.username }}<br>
+                        <small class="text-muted">{{ tarefa.data_criacao|date:"d/m/Y H:i" }}</small>
+                    </dd>
+                    {% endif %}
+
+                    {% if tarefa.concluida_por %}
+                    <dt class="col-sm-5">Concluída por:</dt>
+                    <dd class="col-sm-7">
+                        {{ tarefa.concluida_por.get_full_name|default:tarefa.concluida_por.username }}<br>
+                        <small class="text-muted">{{ tarefa.data_conclusao|date:"d/m/Y H:i" }}</small>
+                    </dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Datas -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Datas</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Criada em:</dt>
+                    <dd class="col-sm-7">{{ tarefa.data_criacao|date:"d/m/Y H:i" }}</dd>
+
+                    {% if tarefa.data_inicio %}
+                    <dt class="col-sm-5">Iniciada em:</dt>
+                    <dd class="col-sm-7">{{ tarefa.data_inicio|date:"d/m/Y H:i" }}</dd>
+                    {% endif %}
+
+                    {% if tarefa.data_conclusao %}
+                    <dt class="col-sm-5">Concluída em:</dt>
+                    <dd class="col-sm-7">{{ tarefa.data_conclusao|date:"d/m/Y H:i" }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if tarefa.dias_em_aberto %}
+                <div class="mt-3 alert alert-info mb-0 small">
+                    <i class="fas fa-clock"></i> Aberta há <strong>{{ tarefa.dias_em_aberto }}</strong> dias
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

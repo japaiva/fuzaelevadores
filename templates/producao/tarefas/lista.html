@@ -1,0 +1,213 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}Minhas Tarefas | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-tasks me-2"></i>Minhas Tarefas
+    </h5>
+    <div>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Estatísticas -->
+  <div class="card-header bg-white">
+    <div class="row g-2">
+      <div class="col-md-3">
+        <div class="d-flex align-items-center p-2 bg-warning bg-opacity-10 rounded">
+          <div class="flex-grow-1">
+            <small class="text-muted d-block">Pendentes</small>
+            <strong class="fs-5">{{ total_pendentes }}</strong>
+          </div>
+          <i class="fas fa-clock fa-2x text-warning opacity-50"></i>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="d-flex align-items-center p-2 bg-info bg-opacity-10 rounded">
+          <div class="flex-grow-1">
+            <small class="text-muted d-block">Em Andamento</small>
+            <strong class="fs-5">{{ total_em_andamento }}</strong>
+          </div>
+          <i class="fas fa-spinner fa-2x text-info opacity-50"></i>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="d-flex align-items-center p-2 bg-danger bg-opacity-10 rounded">
+          <div class="flex-grow-1">
+            <small class="text-muted d-block">Atrasadas</small>
+            <strong class="fs-5">{{ total_atrasadas }}</strong>
+          </div>
+          <i class="fas fa-exclamation-triangle fa-2x text-danger opacity-50"></i>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="d-flex align-items-center p-2 bg-secondary bg-opacity-10 rounded">
+          <div class="flex-grow-1">
+            <small class="text-muted d-block">Total</small>
+            <strong class="fs-5">{{ tarefas.count }}</strong>
+          </div>
+          <i class="fas fa-list fa-2x text-secondary opacity-50"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card-header bg-white border-top">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label for="status" class="form-label small text-muted mb-1">Status</label>
+        <select name="status" id="status" class="form-select form-select-sm">
+          <option value="">Todas (exceto concluídas)</option>
+          <option value="pendente" {% if status_filtro == 'pendente' %}selected{% endif %}>Pendente</option>
+          <option value="em_andamento" {% if status_filtro == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+          <option value="concluida" {% if status_filtro == 'concluida' %}selected{% endif %}>Concluída</option>
+          <option value="cancelada" {% if status_filtro == 'cancelada' %}selected{% endif %}>Cancelada</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="tipo" class="form-label small text-muted mb-1">Tipo</label>
+        <select name="tipo" id="tipo" class="form-select form-select-sm">
+          <option value="">Todos os tipos</option>
+          {% for value, label in tipo_choices %}
+          <option value="{{ value }}" {% if tipo_filtro == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="prioridade" class="form-label small text-muted mb-1">Prioridade</label>
+        <select name="prioridade" id="prioridade" class="form-select form-select-sm">
+          <option value="">Todas as prioridades</option>
+          {% for value, label in prioridade_choices %}
+          <option value="{{ value }}" {% if prioridade_filtro == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary btn-sm me-1">
+          <i class="fas fa-search"></i> Filtrar
+        </button>
+        <a href="{% url 'producao:tarefas' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fas fa-times"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tabela de Tarefas -->
+  <div class="card-body">
+    {% if tarefas %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th width="8%">Prioridade</th>
+            <th width="30%">Tarefa</th>
+            <th width="15%">Tipo</th>
+            <th width="15%">Relacionado</th>
+            <th width="10%">Status</th>
+            <th width="10%">Prazo</th>
+            <th width="12%" class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tarefa in tarefas %}
+          <tr {% if tarefa.esta_atrasada %}class="table-danger"{% endif %}>
+            <td>
+              {% if tarefa.prioridade == 'urgente' %}
+              <span class="badge bg-danger"><i class="fas fa-exclamation-circle"></i> Urgente</span>
+              {% elif tarefa.prioridade == 'alta' %}
+              <span class="badge bg-warning text-dark"><i class="fas fa-arrow-up"></i> Alta</span>
+              {% elif tarefa.prioridade == 'normal' %}
+              <span class="badge bg-info"><i class="fas fa-minus"></i> Normal</span>
+              {% else %}
+              <span class="badge bg-secondary"><i class="fas fa-arrow-down"></i> Baixa</span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ tarefa.titulo }}</strong>
+              {% if tarefa.esta_atrasada %}
+              <br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Atrasada!</small>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-primary">{{ tarefa.get_tipo_display }}</span>
+            </td>
+            <td>
+              {% if tarefa.proposta %}
+              <a href="{% url 'producao:proposta_detail_producao' tarefa.proposta.id %}" class="text-decoration-none">
+                <i class="fas fa-file-contract"></i> #{{ tarefa.proposta.numero }}
+              </a>
+              {% elif tarefa.requisicao %}
+              <a href="{% url 'producao:requisicao_compra_detail' tarefa.requisicao.id %}" class="text-decoration-none">
+                <i class="fas fa-shopping-cart"></i> Req. #{{ tarefa.requisicao.numero }}
+              </a>
+              {% elif tarefa.lista_materiais %}
+              <i class="fas fa-list-alt"></i> Lista #{{ tarefa.lista_materiais.id }}
+              {% else %}
+              <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if tarefa.status == 'pendente' %}
+              <span class="badge bg-warning text-dark">{{ tarefa.get_status_display }}</span>
+              {% elif tarefa.status == 'em_andamento' %}
+              <span class="badge bg-info">{{ tarefa.get_status_display }}</span>
+              {% elif tarefa.status == 'concluida' %}
+              <span class="badge bg-success">{{ tarefa.get_status_display }}</span>
+              {% else %}
+              <span class="badge bg-secondary">{{ tarefa.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if tarefa.prazo %}
+              {{ tarefa.prazo|date:"d/m/Y" }}
+              {% if tarefa.esta_atrasada %}
+              <br><small class="text-danger"><i class="fas fa-clock"></i> Vencido</small>
+              {% endif %}
+              {% else %}
+              <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="{% url 'producao:tarefa_detalhes' tarefa.id %}" class="btn btn-outline-primary" title="Ver Detalhes">
+                  <i class="fas fa-eye"></i>
+                </a>
+                {% if tarefa.status == 'pendente' %}
+                <a href="{% url 'producao:tarefa_iniciar' tarefa.id %}" class="btn btn-outline-info" title="Iniciar">
+                  <i class="fas fa-play"></i>
+                </a>
+                {% endif %}
+                {% if tarefa.status in 'pendente,em_andamento' %}
+                <a href="{% url 'producao:tarefa_concluir' tarefa.id %}" class="btn btn-outline-success" title="Concluir">
+                  <i class="fas fa-check"></i>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+      <p class="text-muted">Nenhuma tarefa encontrada.</p>
+      {% if status_filtro or tipo_filtro or prioridade_filtro %}
+      <a href="{% url 'producao:tarefas' %}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-times me-1"></i>Limpar Filtros
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

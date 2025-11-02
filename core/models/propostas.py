@@ -619,11 +619,97 @@ class Proposta(models.Model):
         verbose_name="Custos Detalhados"
     )
     formacao_preco = models.JSONField(
-        default=dict, 
+        default=dict,
         blank=True,
         verbose_name="Formação de Preço"
     )
-    
+
+    # === ARQUIVOS DE PROJETO ===
+    arquivo_projeto_executivo = models.FileField(
+        upload_to='projetos/executivos/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name="Arquivo Projeto Executivo",
+        help_text="PDF do projeto executivo"
+    )
+    data_upload_projeto_executivo = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Data Upload Projeto Executivo",
+        help_text="Data e hora do upload do projeto executivo"
+    )
+
+    arquivo_projeto_elevador = models.FileField(
+        upload_to='projetos/elevadores/%Y/%m/',
+        blank=True,
+        null=True,
+        verbose_name="Arquivo Projeto Elevador",
+        help_text="PDF do projeto do elevador"
+    )
+    data_upload_projeto_elevador = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="Data Upload Projeto Elevador",
+        help_text="Data e hora do upload do projeto do elevador"
+    )
+
+    # === CICLO DE VIDA DO PROJETO ===
+    data_entrega_obra = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Entrega Obra",
+        help_text="Data efetiva da entrega da obra civil"
+    )
+
+    data_autorizacao_producao = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Autorização Produção",
+        help_text="Data de autorização para iniciar produção"
+    )
+
+    data_compra = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Compra",
+        help_text="Data de realização das compras de materiais"
+    )
+
+    data_inicio_producao = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Início Produção",
+        help_text="Data efetiva de início da produção"
+    )
+
+    data_previsao_conclusao = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Previsão Conclusão",
+        help_text="Data prevista para conclusão da produção"
+    )
+
+    data_conclusao = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Conclusão",
+        help_text="Data efetiva de conclusão da produção"
+    )
+
+    data_previsao_entrega = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Previsão Entrega",
+        help_text="Data prevista para entrega ao cliente"
+    )
+
+    data_entrega = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Entrega",
+        help_text="Data efetiva de entrega ao cliente"
+    )
+
     # === AUDITORIA ===
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)

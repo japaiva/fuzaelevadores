@@ -128,11 +128,11 @@ class Command(BaseCommand):
 
 
         # ====================================
-        # GRUPO: PRODUÇÃO
+        # GRUPO: PRODUCAO (sem acento para consistência)
         # ====================================
-        grupo_producao, created = Group.objects.get_or_create(name='Produção')
+        grupo_producao, created = Group.objects.get_or_create(name='Producao')
         if created:
-            self.stdout.write(self.style.SUCCESS('✓ Grupo Produção criado'))
+            self.stdout.write(self.style.SUCCESS('✓ Grupo Producao criado'))
 
         permissoes_producao = [
             # Propostas - apenas visualização

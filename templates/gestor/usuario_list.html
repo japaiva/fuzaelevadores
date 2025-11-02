@@ -91,11 +91,6 @@
                      title="Editar">
                     <i class="fas fa-edit"></i>
                   </a>
-                  <a href="{% url 'gestor:usuario_permissoes' usuario.id %}"
-                     class="btn btn-outline-warning btn-sm"
-                     title="Gerenciar Permissões">
-                    <i class="fas fa-key"></i>
-                  </a>
                   <a href="{% url 'gestor:usuario_toggle_status' usuario.id %}"
                      class="btn btn-sm {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
                      title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}">

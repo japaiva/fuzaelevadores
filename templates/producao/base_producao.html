@@ -13,72 +13,159 @@
   <span class="nav-link" style="border-left: 2px solid #60a5fa; height: 24px; margin: 8px 15px;"></span>
 </li>
 
-<!-- Menu de Cadastros Básicos -->
+<!-- 🔧 Engenharia -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'grupo' in request.resolver_match.url_name or 'subgrupo' in request.resolver_match.url_name or 'fornecedor' in request.resolver_match.url_name or 'cliente' in request.resolver_match.url_name or 'parametros' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-     Cadastros
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'producao:fornecedor_list' %}">
-        Fornecedores
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
-        Matérias-Primas
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:produto_intermediario_list' %}">
-        Produtos Intermediários
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:grupo_list' %}">
-        Grupos de Produtos
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:subgrupo_list' %}">
-        Subgrupos de Produtos
-    </a></li>
-  </ul>
-</li>
-
-<!-- Menu de Compras e Orçamentos -->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'compra' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'requisicao' in request.resolver_match.url_name or 'proposta' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Suprimentos
+  <a class="nav-link dropdown-toggle {% if 'proposta' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Engenharia
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'producao:proposta_list_producao' %}">
-        Propostas
+        Gestão Projetos
     </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:requisicao_compra_list' %}">
-        Requisições de Compra
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:orcamento_compra_list' %}">
-        Orçamentos de Compra
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
-        Pedidos de Compra
-    </a></li>
-  </ul>
-</li>
-
-<!-- Adm -->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'relatorio' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name or 'saldo' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Adm
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'producao:relatorio_produtos_completo' %}">
-        Relatório de Produtos
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:relatorio_saldos_requisicoes' %}">
-        Saldos de Requisições
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="{% url 'producao:regras_yaml_list' %}">
         Regras Composição Preço
     </a></li>
   </ul>
 </li>
 
+<!-- 🛒 Suprimentos -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'requisicao' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'pedido' in request.resolver_match.url_name or 'saldo' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Suprimentos
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'producao:requisicao_compra_list' %}">
+        Requisição de Compra
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:orcamento_compra_list' %}">
+        Orçamento de Compra
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
+        Pedido de Compra
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:relatorio_saldos_requisicoes' %}">
+        Saldo Requisição
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
+        Matéria Prima
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:produto_intermediario_list' %}">
+        Produto Intermediário
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:grupo_list' %}">
+        Grupo Produtos
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:subgrupo_list' %}">
+        Subgrupo Produtos
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:fornecedor_list' %}">
+        Fornecedores
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:relatorio_produtos_completo' %}">
+        Relatório Produtos
+    </a></li>
+
+
+
+
+
+  </ul>
+</li>
+
+<!-- 🛒 Almoxarifado -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'recebimento' in request.resolver_match.url_name or 'estoque' in request.resolver_match.url_name or 'inventario' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Almoxarifado
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <!-- FUTURO -->
+    <li><a class="dropdown-item disabled" href="#">
+        Recebimento Material
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Saldo Estoque MP/PI
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Inventário
+    </a></li>
+  </ul>
+</li>
+
+<!-- 🏭 Produção -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'ordem' in request.resolver_match.url_name or 'remessa' in request.resolver_match.url_name or 'retorno' in request.resolver_match.url_name or 'apontamento' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Produção
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <!-- FUTURO -->
+    <li><a class="dropdown-item disabled" href="#">
+        Ordens de Produção
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Apontamentos
+    </a></li>
+  </ul>
+</li>
+
+<!-- 🚚 Logística -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'expedicao' in request.resolver_match.url_name or 'entrega' in request.resolver_match.url_name or 'transportadora' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Logística
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <!-- FUTURO -->
+    <li><a class="dropdown-item disabled" href="#">
+        Expedição
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Entregas Programadas
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Transportadoras
+    </a></li>
+  </ul>
+</li>
+
+
+
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Reduzir fonte dos menus principais */
+.navbar-nav .nav-link {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.5rem !important;
+}
+
+/* Reduzir fonte dos itens dropdown */
+.dropdown-menu .dropdown-item {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.75rem !important;
+}
+
+/* Ícones dos menus */
+.nav-link i,
+.dropdown-item i {
+    font-size: 0.65rem !important;
+}
+
+/* Badge de contador */
+.nav-link .badge {
+    font-size: 0.55rem !important;
+}
+
+/* Ajustar altura do dropdown */
+.dropdown-menu {
+    font-size: 0.7rem !important;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -139,6 +226,30 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Atualizar contador de tarefas pendentes
+    function atualizarContadorTarefas() {
+        fetch('{% url "producao:tarefas_contador" %}')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('badge-tarefas-pendentes');
+                if (badge) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => console.error('Erro ao buscar contador de tarefas:', error));
+    }
+
+    // Atualizar ao carregar a página
+    atualizarContadorTarefas();
+
+    // Atualizar a cada 60 segundos
+    setInterval(atualizarContadorTarefas, 60000);
 });
 </script>
 {% endblock %}

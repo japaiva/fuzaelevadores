@@ -1,0 +1,74 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}Upload Projeto {{ tipo_projeto }} | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-upload me-2"></i>Upload Projeto {{ tipo_projeto }}
+    </h5>
+    <a href="{% url 'producao:proposta_detail_producao' proposta.id %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <!-- Informações da Proposta -->
+    <div class="card mb-4">
+      <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Proposta</h6>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-3">Número:</dt>
+          <dd class="col-sm-9">{{ proposta.numero }}</dd>
+
+          <dt class="col-sm-3">Cliente:</dt>
+          <dd class="col-sm-9">{{ proposta.cliente }}</dd>
+
+          <dt class="col-sm-3">Projeto:</dt>
+          <dd class="col-sm-9">{{ proposta.nome_projeto }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- Formulário de Upload -->
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label for="arquivo" class="form-label">
+          <i class="fas fa-file-pdf me-1"></i>Arquivo do Projeto {{ tipo_projeto }} <span class="text-danger">*</span>
+        </label>
+        <input
+          type="file"
+          name="arquivo"
+          id="arquivo"
+          class="form-control"
+          accept=".pdf"
+          required
+        >
+        <small class="form-text text-muted">
+          Apenas arquivos PDF são aceitos.
+        </small>
+      </div>
+
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Nota:</strong> Ao enviar o arquivo, a data e hora do upload serão registradas automaticamente.
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{% url 'producao:proposta_detail_producao' proposta.id %}" class="btn btn-secondary">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-upload me-1"></i>Enviar Arquivo
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

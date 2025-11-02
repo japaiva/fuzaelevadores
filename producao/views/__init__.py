@@ -104,6 +104,8 @@ from .propostas_producao import (
     gerar_lista_materiais,
     lista_materiais_edit,
     lista_materiais_aprovar,
+    upload_projeto_executivo,
+    upload_projeto_elevador,
 )
 
 # CRUD Itens da Lista de Materiais
@@ -145,10 +147,22 @@ from .regras_yaml import (
     regra_yaml_detail,
     regra_yaml_update,
     regra_yaml_delete,
-    
+
     # Actions Regras YAML
     regra_yaml_toggle_status,
     regra_yaml_validar,
+)
+
+# =============================================================================
+# SISTEMA DE WORKFLOW E TAREFAS
+# =============================================================================
+from .tarefas import (
+    lista_tarefas,
+    detalhes_tarefa,
+    iniciar_tarefa,
+    concluir_tarefa,
+    cancelar_tarefa,
+    contador_tarefas_pendentes,
 )
 
 # =============================================================================
@@ -175,6 +189,8 @@ __all__ = [
     'gerar_lista_materiais',
     'lista_materiais_edit',
     'lista_materiais_aprovar',
+    'upload_projeto_executivo',
+    'upload_projeto_elevador',
 
     # CRUD Itens da Lista de Materiais
     'item_lista_materiais_list',
@@ -255,6 +271,14 @@ __all__ = [
     # Actions Regras YAML
     'regra_yaml_toggle_status',
     'regra_yaml_validar',
+
+    # Tarefas e Workflow
+    'lista_tarefas',
+    'detalhes_tarefa',
+    'iniciar_tarefa',
+    'concluir_tarefa',
+    'cancelar_tarefa',
+    'contador_tarefas_pendentes',
 
     # APIs Gerais
     'get_subgrupos_by_grupo', 'get_info_produto_codigo',

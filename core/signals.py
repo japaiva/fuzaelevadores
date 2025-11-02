@@ -5,92 +5,105 @@ Signals para gerenciamento automático de permissões
 Sistema de Elevadores FUZA
 """
 
-from django.db.models.signals import post_save
+import logging
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.models import Group
 from core.models import Usuario
 
+logger = logging.getLogger(__name__)
+
 
 # Mapeamento de níveis para grupos
+# Importante: os nomes dos grupos são capitalizados SEM acento
+# para evitar problemas de encoding e manter consistência
 NIVEL_TO_GROUP = {
     'admin': 'Admin',
     'gestor': 'Gestor',
     'vendedor': 'Vendedor',
     'financeiro': 'Financeiro',
     'vistoria': 'Vistoria',
-    'producao': 'Produção',
+    'producao': 'Producao',  # SEM acento
     'compras': 'Compras',
     'engenharia': 'Engenharia',
     'almoxarifado': 'Almoxarifado',
 }
 
 
-@receiver(post_save, sender=Usuario)
-def adicionar_usuario_ao_grupo(sender, instance, created, **kwargs):
+# DESATIVADO: Sistema simplificado usa apenas níveis, sem grupos
+# @receiver(post_save, sender=Usuario)
+# def adicionar_usuario_ao_grupo(sender, instance, created, **kwargs):
+#     """
+#     DESATIVADO - Sistema simplificado não usa grupos
+#     Controle de acesso é feito apenas por nível (hardcoded no middleware)
+#     """
+#     pass
+
+
+# DESATIVADO: PerfilUsuario é duplicação desnecessária
+# @receiver(post_save, sender=Usuario)
+# def criar_perfil_usuario(sender, instance, created, **kwargs):
+#     """
+#     DESATIVADO - PerfilUsuario será removido
+#     Todas as informações estão no modelo Usuario
+#     """
+#     pass
+
+
+# ====================================
+# SIGNALS DE WORKFLOW
+# ====================================
+
+@receiver(post_save, sender='core.Proposta')
+def criar_tarefa_proposta_aprovada(sender, instance, created, **kwargs):
     """
-    Signal que adiciona automaticamente o usuário ao grupo correspondente
-    ao seu nível quando é criado ou atualizado
+    Signal que cria uma tarefa para engenharia quando proposta é aprovada
 
-    Executa quando:
-    - Usuário é criado (created=True)
-    - Usuário tem o nível alterado
-
-    Lógica:
-    1. Remove usuário de TODOS os grupos baseados em nível
-    2. Adiciona ao grupo correspondente ao nível atual
+    Workflow:
+    1. Vendedor aprova proposta (status = 'aprovado')
+    2. Sistema cria tarefa automaticamente para nível Engenharia
+    3. Tarefa: "Enviar Projeto Executivo para proposta #XXX"
+    4. Usuários com nível 'engenharia' veem a tarefa e podem concluí-la
     """
+    from core.models import Tarefa
 
-    # Só processar se o usuário tem nível definido
-    if not instance.nivel:
+    # Verificar se a proposta foi aprovada
+    if instance.status != 'aprovado':
         return
 
-    # Obter o nome do grupo baseado no nível
-    grupo_nome = NIVEL_TO_GROUP.get(instance.nivel)
+    # Evitar duplicação: verificar se já existe tarefa para esta proposta
+    tarefa_existente = Tarefa.objects.filter(
+        proposta=instance,
+        tipo='projeto_executivo',
+        status__in=['pendente', 'em_andamento']
+    ).exists()
 
-    if not grupo_nome:
-        print(f"⚠️ Nível '{instance.nivel}' não mapeado para nenhum grupo")
+    if tarefa_existente:
+        logger.debug(f"Tarefa de projeto executivo para proposta {instance.numero} já existe")
         return
 
+    # Criar a tarefa (sistema simplificado: usa nivel_destino)
     try:
-        # Obter ou criar o grupo
-        grupo, grupo_criado = Group.objects.get_or_create(name=grupo_nome)
+        tarefa = Tarefa.objects.create(
+            tipo='projeto_executivo',
+            titulo=f"Enviar Projeto Executivo - Proposta #{instance.numero}",
+            descricao=(
+                f"A proposta #{instance.numero} foi aprovada e precisa de projeto executivo.\n\n"
+                f"Cliente: {instance.cliente}\n"
+                f"Valor: R$ {instance.valor_total:,.2f}\n"
+                f"Vendedor: {instance.vendedor if hasattr(instance, 'vendedor') else 'N/A'}\n\n"
+                f"Por favor, envie o projeto executivo para o cliente."
+            ),
+            proposta=instance,
+            nivel_destino='engenharia',  # Sistema simplificado: usa nível ao invés de grupo
+            prioridade='normal',
+            criada_por=instance.atualizado_por,  # Quem aprovou a proposta
+        )
 
-        if grupo_criado:
-            print(f"✓ Grupo '{grupo_nome}' criado automaticamente")
-
-        # Remover usuário de todos os grupos de nível
-        # (para evitar conflito se o nível foi alterado)
-        grupos_nivel = Group.objects.filter(name__in=NIVEL_TO_GROUP.values())
-        instance.groups.remove(*grupos_nivel)
-
-        # Adicionar ao grupo correto
-        instance.groups.add(grupo)
-
-        if created:
-            print(f"✓ Usuário '{instance.username}' adicionado ao grupo '{grupo_nome}'")
-        else:
-            print(f"✓ Usuário '{instance.username}' movido para grupo '{grupo_nome}'")
+        logger.info(
+            f"✓ Tarefa #{tarefa.id} criada: Projeto executivo para proposta {instance.numero} "
+            f"(destinada ao nível: engenharia)"
+        )
 
     except Exception as e:
-        print(f"❌ Erro ao adicionar usuário ao grupo: {e}")
-
-
-@receiver(post_save, sender=Usuario)
-def criar_perfil_usuario(sender, instance, created, **kwargs):
-    """
-    Signal para criar PerfilUsuario automaticamente quando um usuário é criado
-    """
-    if created:
-        from core.models import PerfilUsuario
-
-        try:
-            PerfilUsuario.objects.get_or_create(
-                usuario=instance,
-                defaults={
-                    'nivel': instance.nivel if instance.nivel else 'vendedor',
-                    'telefone': instance.telefone if instance.telefone else '',
-                }
-            )
-            print(f"✓ Perfil criado para usuário '{instance.username}'")
-        except Exception as e:
-            print(f"❌ Erro ao criar perfil: {e}")
+        logger.exception(f"Erro ao criar tarefa para proposta {instance.numero}: {e}")

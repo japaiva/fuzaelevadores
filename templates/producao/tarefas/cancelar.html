@@ -1,0 +1,102 @@
+{% extends 'producao/base_producao.html' %}
+{% load static %}
+
+{% block title %}Cancelar Tarefa | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-ban me-2 text-danger"></i>Cancelar Tarefa
+    </h5>
+    <a href="{% url 'producao:tarefa_detalhes' tarefa.id %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <!-- Informações da Tarefa -->
+    <div class="card mb-4">
+      <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações da Tarefa</h6>
+      </div>
+      <div class="card-body">
+        <h5 class="mb-3">{{ tarefa.titulo }}</h5>
+        <div class="bg-light p-3 rounded mb-3">
+          {{ tarefa.descricao|linebreaks }}
+        </div>
+
+        <div class="row">
+          <div class="col-md-3">
+            <small class="text-muted d-block">Tipo</small>
+            <span class="badge bg-primary">{{ tarefa.get_tipo_display }}</span>
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Status</small>
+            {% if tarefa.status == 'pendente' %}
+            <span class="badge bg-warning text-dark">{{ tarefa.get_status_display }}</span>
+            {% elif tarefa.status == 'em_andamento' %}
+            <span class="badge bg-info">{{ tarefa.get_status_display }}</span>
+            {% endif %}
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Criada em</small>
+            {{ tarefa.data_criacao|date:"d/m/Y H:i" }}
+          </div>
+          <div class="col-md-3">
+            <small class="text-muted d-block">Responsável</small>
+            {% if tarefa.nivel_destino %}
+            {{ tarefa.get_nivel_destino_display }}
+            {% else %}
+            -
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerta -->
+    <div class="alert alert-danger">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Atenção!</strong> Você está prestes a cancelar esta tarefa.
+      Esta ação ficará registrada no histórico.
+    </div>
+
+    <!-- Formulário -->
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="mb-3">
+        <label for="motivo" class="form-label">
+          <i class="fas fa-comment me-1"></i>Motivo do Cancelamento <span class="text-danger">*</span>
+        </label>
+        <textarea
+          name="motivo"
+          id="motivo"
+          class="form-control"
+          rows="4"
+          required
+          placeholder="Explique o motivo do cancelamento desta tarefa..."
+        ></textarea>
+        <small class="form-text text-muted">
+          É obrigatório informar o motivo do cancelamento.
+        </small>
+      </div>
+
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Nota:</strong> Apenas administradores, gestores ou quem criou a tarefa podem cancelá-la.
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{% url 'producao:tarefa_detalhes' tarefa.id %}" class="btn btn-secondary">
+          <i class="fas fa-times me-1"></i>Voltar
+        </a>
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-ban me-1"></i>Confirmar Cancelamento
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -22,7 +22,6 @@ urlpatterns = [
     path('usuarios/<int:pk>/editar/', views.usuario_update, name='usuario_update'),
     path('usuario/<int:pk>/delete/', views.usuario_delete, name='usuario_delete'),
     path('usuarios/<int:pk>/alternar-status/', views.usuario_toggle_status, name='usuario_toggle_status'),
-    path('usuarios/<int:pk>/permissoes/', views.usuario_permissoes, name='usuario_permissoes'),
     
     # CRUD Grupos de Produtos
     path('grupos/', views.grupo_list, name='grupo_list'),
@@ -76,7 +75,7 @@ urlpatterns = [
     # Dashboard analytics (opcional)
     path('analytics/', views.dashboard_analytics, name='dashboard_analytics'),
 
-    # Gerenciamento de Permissões
-    path('permissoes/grupos/', views.grupos_permissoes_list, name='grupos_permissoes_list'),
-    path('permissoes/grupos/<int:pk>/editar/', views.grupo_permissoes_edit, name='grupo_permissoes_edit'),
+    # Painel de Projetos
+    path('painel-projetos/', views.painel_projetos, name='painel_projetos'),
+    path('painel-projetos/<uuid:pk>/', views.projeto_detail, name='projeto_detail'),
 ]

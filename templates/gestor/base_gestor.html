@@ -13,54 +13,115 @@
   <span class="nav-link" style="border-left: 2px solid #60a5fa; height: 24px; margin: 8px 15px;"></span>
 </li>
 
-<!-- Menu de Cadastros Básicos -->
+<!-- 💼 Gerencial -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'grupo' in request.resolver_match.url_name or 'subgrupo' in request.resolver_match.url_name or 'fornecedor' in request.resolver_match.url_name or 'cliente' in request.resolver_match.url_name or 'parametros' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-     Cadastros
+  <a class="nav-link dropdown-toggle {% if 'painel_projetos' in request.resolver_match.url_name or 'dashboard' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Gerencial
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'gestor:painel_projetos' %}">
+        Painel de Projetos
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:dashboard' %}">
+        Dashboard
+    </a></li>
+  </ul>
+</li>
+
+<!-- 💰 Financeiro -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'financeiro' in request.resolver_match.url_name or 'contas' in request.resolver_match.url_name or 'fluxo' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Financeiro
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <!-- FUTURO -->
+    <li><a class="dropdown-item disabled" href="#">
+        Atualização Projetos
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Contas a Receber
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Contas a Pagar
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item disabled" href="#">
+        Fluxo de Caixa
+    </a></li>
+  </ul>
+</li>
+
+<!-- 📋 Movimentos -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'nf_entrada' in request.resolver_match.url_name or 'nf_saida' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Movimentos
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <!-- FUTURO -->
+    <li><a class="dropdown-item disabled" href="#">
+        NF Entrada
+    </a></li>
+    <li><a class="dropdown-item disabled" href="#">
+        NF Saída
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+
+    <li><a class="dropdown-item disabled" href="#">
+        Clientes
+    </a></li>
+
+    <li><a class="dropdown-item disabled" href="#">
+        Fornecedores
+    </a></li>
+  </ul>
+</li>
+
+
+<!-- ⚙️ Adm -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'parametros' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Adm
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'gestor:usuario_list' %}">
         Usuários
     </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:grupos_permissoes_list' %}">
-        Grupos de Permissões
-    </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:parametros_gerais' %}">
-        Parâmetros Gerais
+        Parâmetros
     </a></li>
-
-    <li><hr class="dropdown-divider"></li>
-
-    <li><a class="dropdown-item" href="{% url 'gestor:cliente_list' %}">
-        Clientes
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
-        Fornecedores
-    </a></li>
-
-
   </ul>
 </li>
 
-<!-- Menu de Produtos -->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'produto' in request.resolver_match.url_name or 'materiaprima' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Produtos
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'gestor:materiaprima_list' %}">
-        Matérias-Primas
-    </a></li>
-        <li><hr class="dropdown-divider"></li>
-    
-    <li><a class="dropdown-item" href="{% url 'gestor:grupo_list' %}">
-        Grupos de Produtos
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'gestor:subgrupo_list' %}">
-        Subgrupos de Produtos
-    </a></li>
+{% endblock %}
 
-  </ul>
-</li>
+{% block extra_css %}
+<style>
+/* Reduzir fonte dos menus principais */
+.navbar-nav .nav-link {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.5rem !important;
+}
 
+/* Reduzir fonte dos itens dropdown */
+.dropdown-menu .dropdown-item {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.75rem !important;
+}
+
+/* Ícones dos menus */
+.nav-link i,
+.dropdown-item i {
+    font-size: 0.65rem !important;
+}
+
+/* Badge de contador */
+.nav-link .badge {
+    font-size: 0.55rem !important;
+}
+
+/* Ajustar altura do dropdown */
+.dropdown-menu {
+    font-size: 0.7rem !important;
+}
+</style>
 {% endblock %}

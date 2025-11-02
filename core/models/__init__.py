@@ -13,9 +13,9 @@ from .produtos import GrupoProduto, SubgrupoProduto, Produto, EstruturaProduto
 from .compras import PedidoCompra, ItemPedidoCompra, HistoricoPedidoCompra
 from .propostas import Proposta
 from .propostas2 import (
-    HistoricoProposta, 
-    AnexoProposta, 
-    ParcelaProposta, 
+    HistoricoProposta,
+    AnexoProposta,
+    ParcelaProposta,
     VistoriaHistorico,
     VaoPortaVistoria,
     criar_vaos_porta_automaticos
@@ -32,6 +32,7 @@ from .producao import (
 )
 from .portas_pavimento import PortaPavimento
 from .regras_yaml import RegraYAML, TipoRegra
+from .workflow import Tarefa, HistoricoTarefa
 
 # === LISTA ESSENCIAL ===
 __all__ = [
@@ -80,4 +81,8 @@ __all__ = [
     # Motor de Regras
     'RegraYAML',
     'TipoRegra',
+
+    # Workflow
+    'Tarefa',
+    'HistoricoTarefa',
 ]

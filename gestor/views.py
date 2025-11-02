@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def home(request):
-    """Página inicial do Portal do Gestor"""
-    return render(request, 'gestor/home.html')
+    """Página inicial do Portal do Gestor - redireciona direto para painel de projetos"""
+    return redirect('gestor:painel_projetos')
 
 @login_required
 def dashboard(request):
@@ -924,118 +924,50 @@ def dashboard_analytics(request):
 
 
 # =============================================================================
-# GERENCIAMENTO DE PERMISSÕES
+# PAINEL DE PROJETOS
 # =============================================================================
 
 @login_required
-def usuario_permissoes(request, pk):
+def painel_projetos(request):
     """
-    View para gerenciar permissões de um usuário específico
+    Painel de Projetos - Lista simples de propostas aprovadas
     """
-    from django.contrib.auth.models import Group, Permission
-    from django.contrib.contenttypes.models import ContentType
+    from core.models import Proposta
 
-    usuario = get_object_or_404(Usuario, pk=pk)
-
-    if request.method == 'POST':
-        # Atualizar grupos
-        grupos_ids = request.POST.getlist('grupos')
-        usuario.groups.set(Group.objects.filter(id__in=grupos_ids))
-
-        # Atualizar permissões individuais
-        permissoes_ids = request.POST.getlist('permissoes')
-        usuario.user_permissions.set(Permission.objects.filter(id__in=permissoes_ids))
-
-        messages.success(request, f'Permissões do usuário {usuario.username} atualizadas com sucesso.')
-        return redirect('gestor:usuario_list')
-
-    # Obter todos os grupos disponíveis
-    todos_grupos = Group.objects.all().order_by('name')
-
-    # Obter permissões customizadas (do nosso sistema)
-    permissoes_proposta = Permission.objects.filter(
-        content_type__app_label='core',
-        content_type__model='proposta'
-    ).order_by('name')
-
-    permissoes_producao = Permission.objects.filter(
-        content_type__app_label='core',
-        content_type__model__in=['listamateriais', 'requisicaocompra', 'orcamentocompra']
-    ).order_by('content_type__model', 'name')
-
-    # Grupos que o usuário pertence
-    grupos_usuario = usuario.groups.all()
-
-    # Permissões que o usuário tem individualmente
-    permissoes_usuario = usuario.user_permissions.all()
+    # Buscar apenas propostas aprovadas
+    propostas = Proposta.objects.filter(
+        status='aprovado'
+    ).select_related(
+        'cliente',
+        'vendedor'
+    ).order_by('-data_aprovacao')
 
     context = {
-        'usuario': usuario,
-        'todos_grupos': todos_grupos,
-        'grupos_usuario': grupos_usuario,
-        'permissoes_usuario': permissoes_usuario,
-        'permissoes_proposta': permissoes_proposta,
-        'permissoes_producao': permissoes_producao,
+        'propostas': propostas,
     }
 
-    return render(request, 'gestor/usuario_permissoes.html', context)
+    return render(request, 'gestor/painel_projetos.html', context)
 
 
 @login_required
-def grupos_permissoes_list(request):
+def projeto_detail(request, pk):
     """
-    Lista todos os grupos com suas permissões
+    Detalhe do Projeto - Mostra todas as datas do ciclo de vida
     """
-    from django.contrib.auth.models import Group
+    from core.models import Proposta
 
-    grupos = Group.objects.all().prefetch_related('permissions').order_by('name')
+    proposta = get_object_or_404(Proposta, pk=pk)
 
     context = {
-        'grupos': grupos,
+        'proposta': proposta,
     }
 
-    return render(request, 'gestor/grupos_permissoes_list.html', context)
+    return render(request, 'gestor/projeto_detail.html', context)
 
 
-@login_required
-def grupo_permissoes_edit(request, pk):
-    """
-    Editar permissões de um grupo
-    """
-    from django.contrib.auth.models import Group, Permission
-
-    grupo = get_object_or_404(Group, pk=pk)
-
-    if request.method == 'POST':
-        # Atualizar permissões do grupo
-        permissoes_ids = request.POST.getlist('permissoes')
-        grupo.permissions.set(Permission.objects.filter(id__in=permissoes_ids))
-
-        messages.success(request, f'Permissões do grupo {grupo.name} atualizadas com sucesso.')
-        return redirect('gestor:grupos_permissoes_list')
-
-    # Obter todas as permissões disponíveis organizadas por app/model
-    todas_permissoes = Permission.objects.select_related('content_type').order_by(
-        'content_type__app_label',
-        'content_type__model',
-        'codename'
-    )
-
-    # Permissões que o grupo já tem
-    permissoes_grupo = grupo.permissions.all()
-
-    # Organizar permissões por app
-    permissoes_por_app = {}
-    for perm in todas_permissoes:
-        app_label = perm.content_type.app_label
-        if app_label not in permissoes_por_app:
-            permissoes_por_app[app_label] = []
-        permissoes_por_app[app_label].append(perm)
-
-    context = {
-        'grupo': grupo,
-        'permissoes_grupo': permissoes_grupo,
-        'permissoes_por_app': permissoes_por_app,
-    }
-
-    return render(request, 'gestor/grupo_permissoes_edit.html', context)
+# =============================================================================
+# SISTEMA SIMPLIFICADO - Permissões removidas
+# =============================================================================
+# As views de gerenciamento de permissões foram removidas.
+# O sistema agora usa apenas níveis (hardcoded) para controle de acesso.
+# Veja docs/SISTEMA_SIMPLIFICADO.md para mais detalhes.
