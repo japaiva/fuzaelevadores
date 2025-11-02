@@ -6,11 +6,6 @@
 
 {% block nav_items %}
 
-<!-- Divisor vertical -->
-<li class="nav-item">
-  <span class="nav-link" style="border-left: 2px solid #28a745; height: 24px; margin: 8px 15px;"></span>
-</li>
-
 <!-- Menu de Propostas -->
 <li class="nav-item dropdown">
   <a class="nav-link dropdown-toggle {% if 'pedido' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -47,33 +42,5 @@
 {% endblock %}
 
 {% block extra_css %}
-<style>
-/* Reduzir fonte dos menus principais */
-.navbar-nav .nav-link {
-    font-size: 0.7rem !important;
-    padding: 0.25rem 0.5rem !important;
-}
-
-/* Reduzir fonte dos itens dropdown */
-.dropdown-menu .dropdown-item {
-    font-size: 0.7rem !important;
-    padding: 0.25rem 0.75rem !important;
-}
-
-/* Ícones dos menus */
-.nav-link i,
-.dropdown-item i {
-    font-size: 0.65rem !important;
-}
-
-/* Badge de contador */
-.nav-link .badge {
-    font-size: 0.55rem !important;
-}
-
-/* Ajustar altura do dropdown */
-.dropdown-menu {
-    font-size: 0.7rem !important;
-}
-</style>
+<!-- Estilos removidos - agora usando estilos globais do style.css -->
 {% endblock %}
