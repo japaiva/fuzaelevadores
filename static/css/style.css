@@ -57,11 +57,11 @@
   .app-title-text {
     font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
     font-weight: 700;
-    letter-spacing: 1.2px;
+    letter-spacing: 0.8px;
     color: #f0f9ff;
     text-transform: uppercase;
-    margin-left: 12px;
-    font-size: 1.08rem;
+    margin-left: 8px;
+    font-size: 0.75rem;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     display: inline-block;
     position: relative;
@@ -83,15 +83,15 @@
   /* Media queries para responsividade do título */
   @media (max-width: 768px) {
     .app-title-text {
-      font-size: 0.9rem;
-      margin-left: 8px;
-      letter-spacing: 0.8px;
+      font-size: 0.7rem;
+      margin-left: 6px;
+      letter-spacing: 0.6px;
     }
   }
-  
+
   @media (max-width: 576px) {
     .app-title-text {
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       margin-left: 5px;
     }
     .app-title-text::after {
@@ -441,4 +441,84 @@
     margin-bottom: 15px;
     border: 1px solid #ddd;
   }
-  
+
+  /* Estilos para diminuir fonte do menu */
+  .navbar {
+    font-size: 0.75rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    min-height: 45px;
+  }
+
+  .navbar-brand {
+    font-size: 0.85rem;
+  }
+
+  .navbar-nav .nav-link {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+  }
+
+  .navbar-nav .dropdown-toggle {
+    font-size: 0.7rem;
+  }
+
+  .navbar .dropdown-menu {
+    font-size: 0.7rem;
+  }
+
+  .navbar .dropdown-item {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+  }
+
+  .navbar .dropdown-item i {
+    font-size: 0.65rem;
+  }
+
+  /* Ajustar dropdown do usuário */
+  .navbar .text-light.dropdown-toggle {
+    font-size: 0.7rem;
+  }
+
+  .navbar .dropdown-toggle i {
+    font-size: 0.75rem;
+  }
+
+  /* Diminuir botão de login na navbar */
+  .navbar .btn-sm {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .navbar .btn-sm i {
+    font-size: 0.65rem;
+  }
+
+  /* Media queries para navbar em dispositivos menores */
+  @media (max-width: 768px) {
+    .navbar {
+      font-size: 0.7rem;
+    }
+
+    .navbar-nav .nav-link {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .navbar {
+      font-size: 0.65rem;
+      padding-top: 0.2rem;
+      padding-bottom: 0.2rem;
+    }
+
+    .navbar-brand img {
+      height: 24px;
+    }
+
+    .navbar-nav .nav-link {
+      font-size: 0.6rem;
+    }
+  }

@@ -28,8 +28,8 @@
     }
     
     .navbar-brand img {
-      height: 40px;
-      margin-right: 10px;
+      height: 28px;
+      margin-right: 6px;
     }
     
     .navbar-nav .nav-item.dropdown {
@@ -38,7 +38,7 @@
     }
     
     .content-container {
-      margin-top: 80px;
+      margin-top: 55px;
       margin-bottom: 40px;
       flex: 1;
       min-height: 60vh; /* Adicionado para garantir espaço mínimo */
@@ -84,22 +84,22 @@
           <div class="dropdown">
             <a class="text-light text-decoration-none dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
               {% if user.foto_perfil %}
-                <img src="{{ user.foto_perfil.url }}" alt="{{ user.username }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                <img src="{{ user.foto_perfil.url }}" alt="{{ user.username }}" class="rounded-circle me-1" style="width: 22px; height: 22px; object-fit: cover;">
               {% else %}
-                <i class="fas fa-user-circle me-2" style="font-size: 1.2rem;"></i>
+                <i class="fas fa-user-circle me-1" style="font-size: 0.9rem;"></i>
               {% endif %}
               {{ user.first_name|default:user.username }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="userDropdown">
               <li>
                 <a class="dropdown-item" href="{% url 'perfil' %}">
-                  <i class="fas fa-id-card-alt me-2"></i> Meu Perfil
+                  <i class="fas fa-id-card-alt me-1"></i> Meu Perfil
                 </a>
               </li>
               <li><hr class="dropdown-divider"></li>
               <li>
                 <a class="dropdown-item" href="{% url 'logout' %}">
-                  <i class="fas fa-sign-out-alt me-2"></i> Sair
+                  <i class="fas fa-sign-out-alt me-1"></i> Sair
                 </a>
               </li>
             </ul>
@@ -115,7 +115,7 @@
   </nav>
 
 <!-- Mensagens de alerta usando toast -->
-<div class="toast-container position-fixed top-0 end-0 p-3" style="margin-top: 70px; z-index: 1100;">
+<div class="toast-container position-fixed top-0 end-0 p-3" style="margin-top: 50px; z-index: 1100;">
   {% if messages %}
     {% for message in messages %}
       <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
