@@ -304,10 +304,11 @@ class ProdutoSearch {
    
     selecionarProduto(produtoId) {
         const produto = this.produtos.find(p => p.id == produtoId);
+
         if (produto) {
             // Atualizar campo de busca
             this.input.value = produto.texto_completo;
-            
+
             // Atualizar campo hidden
             if (this.produtoHiddenInput) {
                 this.produtoHiddenInput.value = produto.id;
@@ -333,13 +334,9 @@ class ProdutoSearch {
                     produtoNome: produto.nome
                 }
             });
+
             this.input.dispatchEvent(event);
         }
-    }
-    
-    
-    hideDropdown() {
-        this.dropdown.style.display = 'none';
     }
 }
 

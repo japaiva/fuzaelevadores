@@ -150,6 +150,7 @@ urlpatterns = [
     # 📊 RELATÓRIOS DE SALDO DE REQUISIÇÕES
     # =======================================================================
     path('relatorios/saldos-requisicoes/', views.relatorio_saldos_requisicoes, name='relatorio_saldos_requisicoes'),
+    path('relatorios/saldos-requisicoes/exportar-excel/', views.exportar_saldos_requisicoes_excel, name='exportar_saldos_requisicoes_excel'),
     path('requisicoes/<int:pk>/saldo/', views.requisicao_saldo_detail, name='requisicao_saldo_detail'),
 
     # =======================================================================

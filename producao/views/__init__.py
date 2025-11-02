@@ -89,6 +89,7 @@ from .pedidos_compra import (
     pedido_compra_from_orcamento,
     relatorio_saldos_requisicoes,
     requisicao_saldo_detail,
+    exportar_saldos_requisicoes_excel,
 )
 
 from .relatorios_produtos import (
@@ -235,7 +236,7 @@ __all__ = [
     'pedido_compra_recebimento', 'receber_item_pedido',
     # Controle de Saldo Requisição -> Pedido
     'pedido_compra_from_requisicao', 'pedido_compra_from_orcamento',
-    'relatorio_saldos_requisicoes', 'requisicao_saldo_detail',
+    'relatorio_saldos_requisicoes', 'requisicao_saldo_detail', 'exportar_saldos_requisicoes_excel',
     
     # <<<< NOVO: RECLASSIFICAÇÃO DE PRODUTOS
     'reclassificar_produto_form',

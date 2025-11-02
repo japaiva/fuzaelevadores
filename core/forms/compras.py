@@ -232,13 +232,16 @@ class ItemPedidoCompraForm(BaseModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Imports necessários
+        from core.models import ItemRequisicaoCompra, Produto
+        from django.db.models import Q
+
         # Se já tem produto selecionado, mostrar no campo de busca
         if self.instance.pk and self.instance.produto:
             produto = self.instance.produto
             self.fields['produto_search'].initial = f"{produto.codigo} - {produto.nome}"
 
         # Configurar campo item_requisicao (opcional)
-        from core.models import ItemRequisicaoCompra
         self.fields['item_requisicao'].required = False
         self.fields['item_requisicao'].empty_label = "Sem vínculo com requisição"
 
@@ -254,10 +257,24 @@ class ItemPedidoCompraForm(BaseModelForm):
 
         # Criar choices customizados com informação de saldo
         choices = [('', 'Sem vínculo com requisição')]
+
+        # Se já tem um produto definido (item em edição), filtrar apenas suas requisições
+        produto_filtrado = None
+        if self.instance.pk and self.instance.produto:
+            produto_filtrado = self.instance.produto
+        elif self.data and self.prefix:
+            # Tentar pegar o produto do POST data (durante validação)
+            produto_id_field = f'{self.prefix}-produto'
+            produto_id = self.data.get(produto_id_field)
+            if produto_id:
+                try:
+                    produto_filtrado = Produto.objects.get(pk=produto_id)
+                except:
+                    pass
+
         for item in itens_requisicao:
             if item.quantidade_saldo > 0:
                 label = f"Req {item.requisicao.numero} - {item.produto.codigo} (Saldo: {item.quantidade_saldo} {item.unidade})"
-                choices.append((item.pk, label))
 
                 # Mapear produto_id para esta requisição (para filtro JS)
                 produto_id = str(item.produto.pk)
@@ -271,8 +288,14 @@ class ItemPedidoCompraForm(BaseModelForm):
                 # Adicionar produto aos IDs com requisição
                 produtos_com_requisicao_ids.add(item.produto.pk)
 
+                # Adicionar às choices APENAS se for do produto filtrado (ou se não tiver filtro em item novo)
+                if produto_filtrado:
+                    if item.produto == produto_filtrado:
+                        choices.append((item.pk, label))
+                # Se não tem produto filtrado, não adicionar nenhuma opção inicialmente
+                # O JavaScript vai popular quando o produto for selecionado
+
         # Definir queryset para aceitar produtos ativos E (disponíveis OU com requisição)
-        from django.db.models import Q
         self.fields['produto'].queryset = Produto.objects.filter(
             status='ATIVO'
         ).filter(

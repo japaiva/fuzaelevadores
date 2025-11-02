@@ -933,3 +933,202 @@ def requisicao_saldo_detail(request, pk):
     }
 
     return render(request, 'producao/requisicoes/requisicao_saldo_detail.html', context)
+
+
+@login_required
+def exportar_saldos_requisicoes_excel(request):
+    """Exportar relatório de saldos para Excel"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        messages.error(request, 'Biblioteca openpyxl não instalada. Execute: pip install openpyxl')
+        return redirect('producao:relatorio_saldos_requisicoes')
+
+    # Buscar requisições com os mesmos filtros da tela
+    requisicoes = RequisicaoCompra.objects.filter(
+        status__in=['aberta', 'cotando', 'orcada', 'aprovada']
+    ).select_related(
+        'solicitante', 'lista_materiais__proposta'
+    ).prefetch_related(
+        'itens__produto', 'itens__itens_pedido__pedido'
+    ).order_by('-data_requisicao')
+
+    # Aplicar filtros
+    status_filtro = request.GET.get('status')
+    if status_filtro:
+        requisicoes = requisicoes.filter(status=status_filtro)
+
+    prioridade_filtro = request.GET.get('prioridade')
+    if prioridade_filtro:
+        requisicoes = requisicoes.filter(prioridade=prioridade_filtro)
+
+    busca = request.GET.get('q')
+    if busca:
+        requisicoes = requisicoes.filter(
+            Q(numero__icontains=busca) |
+            Q(lista_materiais__proposta__numero__icontains=busca) |
+            Q(solicitante__username__icontains=busca)
+        )
+
+    # Criar workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Saldos Requisições"
+
+    # Estilos
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+    subheader_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    subheader_font = Font(bold=True, color="FFFFFF", size=10)
+
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Título
+    ws.merge_cells('A1:M1')
+    title_cell = ws['A1']
+    title_cell.value = "RELATÓRIO DE SALDOS DE REQUISIÇÕES DE COMPRA"
+    title_cell.font = Font(bold=True, size=14, color="366092")
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Data do relatório
+    ws.merge_cells('A2:M2')
+    date_cell = ws['A2']
+    date_cell.value = f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    date_cell.alignment = Alignment(horizontal="center")
+
+    # Cabeçalhos principais
+    row = 4
+    headers = [
+        'Requisição', 'Status Req.', 'Prioridade', 'Proposta', 'Solicitante',
+        'Código Produto', 'Produto', 'Unidade',
+        'Solicitado', 'Em Pedido', 'Recebido', 'Cancelado', 'Saldo', 'Atendido %'
+    ]
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=row, column=col)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+        cell.border = border
+
+    # Dados
+    row = 5
+    for requisicao in requisicoes:
+        for item in requisicao.itens.all():
+            # Número da requisição
+            ws.cell(row=row, column=1).value = requisicao.numero
+            ws.cell(row=row, column=1).border = border
+
+            # Status
+            ws.cell(row=row, column=2).value = requisicao.get_status_display()
+            ws.cell(row=row, column=2).border = border
+
+            # Prioridade
+            ws.cell(row=row, column=3).value = requisicao.get_prioridade_display()
+            ws.cell(row=row, column=3).border = border
+
+            # Proposta
+            proposta = requisicao.lista_materiais.proposta.numero if requisicao.lista_materiais else '-'
+            ws.cell(row=row, column=4).value = proposta
+            ws.cell(row=row, column=4).border = border
+
+            # Solicitante
+            solicitante = requisicao.solicitante.get_full_name() or requisicao.solicitante.username
+            ws.cell(row=row, column=5).value = solicitante
+            ws.cell(row=row, column=5).border = border
+
+            # Código produto
+            ws.cell(row=row, column=6).value = item.produto.codigo
+            ws.cell(row=row, column=6).border = border
+
+            # Nome produto
+            ws.cell(row=row, column=7).value = item.produto.nome
+            ws.cell(row=row, column=7).border = border
+
+            # Unidade
+            ws.cell(row=row, column=8).value = item.unidade
+            ws.cell(row=row, column=8).border = border
+            ws.cell(row=row, column=8).alignment = Alignment(horizontal="center")
+
+            # Quantidade solicitada
+            ws.cell(row=row, column=9).value = float(item.quantidade_solicitada)
+            ws.cell(row=row, column=9).border = border
+            ws.cell(row=row, column=9).number_format = '#,##0.00'
+            ws.cell(row=row, column=9).alignment = Alignment(horizontal="right")
+
+            # Em pedido
+            ws.cell(row=row, column=10).value = float(item.quantidade_em_pedido)
+            ws.cell(row=row, column=10).border = border
+            ws.cell(row=row, column=10).number_format = '#,##0.00'
+            ws.cell(row=row, column=10).alignment = Alignment(horizontal="right")
+
+            # Recebido
+            ws.cell(row=row, column=11).value = float(item.quantidade_recebida)
+            ws.cell(row=row, column=11).border = border
+            ws.cell(row=row, column=11).number_format = '#,##0.00'
+            ws.cell(row=row, column=11).alignment = Alignment(horizontal="right")
+
+            # Cancelado
+            ws.cell(row=row, column=12).value = float(item.quantidade_cancelada)
+            ws.cell(row=row, column=12).border = border
+            ws.cell(row=row, column=12).number_format = '#,##0.00'
+            ws.cell(row=row, column=12).alignment = Alignment(horizontal="right")
+
+            # Saldo
+            ws.cell(row=row, column=13).value = float(item.quantidade_saldo)
+            ws.cell(row=row, column=13).border = border
+            ws.cell(row=row, column=13).number_format = '#,##0.00'
+            ws.cell(row=row, column=13).alignment = Alignment(horizontal="right")
+
+            # Destacar saldo em vermelho se > 0
+            if item.quantidade_saldo > 0:
+                ws.cell(row=row, column=13).font = Font(color="FF0000", bold=True)
+
+            # Percentual atendido
+            ws.cell(row=row, column=14).value = float(item.percentual_atendido) / 100
+            ws.cell(row=row, column=14).border = border
+            ws.cell(row=row, column=14).number_format = '0.0%'
+            ws.cell(row=row, column=14).alignment = Alignment(horizontal="right")
+
+            row += 1
+
+    # Ajustar larguras das colunas
+    column_widths = {
+        'A': 15,  # Requisição
+        'B': 12,  # Status
+        'C': 12,  # Prioridade
+        'D': 15,  # Proposta
+        'E': 20,  # Solicitante
+        'F': 15,  # Código
+        'G': 40,  # Produto
+        'H': 8,   # Unidade
+        'I': 12,  # Solicitado
+        'J': 12,  # Em Pedido
+        'K': 12,  # Recebido
+        'L': 12,  # Cancelado
+        'M': 12,  # Saldo
+        'N': 12,  # %
+    }
+
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    # Gerar resposta HTTP
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f'saldos_requisicoes_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response

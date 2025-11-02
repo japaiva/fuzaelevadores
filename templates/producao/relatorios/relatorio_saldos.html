@@ -50,6 +50,11 @@
       </h5>
     </div>
     <div>
+      <a href="{% url 'producao:exportar_saldos_requisicoes_excel' %}?{{ request.GET.urlencode }}"
+         class="btn btn-success btn-sm me-2"
+         title="Exportar para Excel">
+        <i class="fas fa-file-excel me-1"></i> Exportar Excel
+      </a>
       <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-light btn-sm">
         <i class="fas fa-arrow-left me-1"></i> Voltar
       </a>

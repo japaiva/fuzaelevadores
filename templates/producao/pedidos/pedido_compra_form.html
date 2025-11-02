@@ -531,7 +531,9 @@ const PRODUTO_REQUISICOES = {{ produto_requisicoes_json|safe }};
 // =============================================================================
 function filtrarRequisicoesPorProduto(row, produtoId) {
     const requisicaoSelect = row.querySelector('[name*="-item_requisicao"]');
-    if (!requisicaoSelect) return;
+    if (!requisicaoSelect) {
+        return;
+    }
 
     // Guardar valor atual selecionado
     const valorAtual = requisicaoSelect.value;
@@ -543,13 +545,11 @@ function filtrarRequisicoesPorProduto(row, produtoId) {
 
     // Se não há produto selecionado, deixar apenas opção vazia
     if (!produtoId) {
-        console.log('📍 Nenhum produto selecionado, requisições limpas');
         return;
     }
 
     // Adicionar apenas requisições do produto selecionado
     const requisicoesDisponiveis = PRODUTO_REQUISICOES[produtoId] || [];
-    console.log(`📍 Produto ${produtoId}: ${requisicoesDisponiveis.length} requisições disponíveis`);
 
     requisicoesDisponiveis.forEach(function(req) {
         const option = new Option(req.label, req.id);
@@ -584,8 +584,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listener para quando um produto é selecionado
     document.addEventListener('produto-selecionado', function(e) {
-        console.log('🔔 Produto selecionado:', e.detail);
-
         // Recalcular totais quando produto for selecionado
         calcularTotais();
 
@@ -596,11 +594,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Inicializar filtros para itens já existentes (no edit)
+    // Inicializar filtros para TODOS os itens (existentes e novos)
     document.querySelectorAll('.item-row').forEach(function(row) {
         const produtoHidden = row.querySelector('[name*="-produto"]');
-        if (produtoHidden && produtoHidden.value) {
-            filtrarRequisicoesPorProduto(row, produtoHidden.value);
+        if (produtoHidden) {
+            // Se tem produto, filtrar por esse produto
+            // Se não tem (novo item vazio), limpar requisições
+            filtrarRequisicoesPorProduto(row, produtoHidden.value || null);
         }
     });
 
