@@ -57,11 +57,11 @@
   .app-title-text {
     font-family: 'Montserrat', 'Segoe UI', Arial, sans-serif;
     font-weight: 700;
-    letter-spacing: 0.8px;
+    letter-spacing: 1.2px;
     color: #f0f9ff;
     text-transform: uppercase;
-    margin-left: 8px;
-    font-size: 0.75rem;
+    margin-left: 12px;
+    font-size: 1.125rem;
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
     display: inline-block;
     position: relative;
@@ -83,16 +83,16 @@
   /* Media queries para responsividade do título */
   @media (max-width: 768px) {
     .app-title-text {
-      font-size: 0.7rem;
-      margin-left: 6px;
-      letter-spacing: 0.6px;
+      font-size: 1.05rem;
+      margin-left: 9px;
+      letter-spacing: 0.9px;
     }
   }
 
   @media (max-width: 576px) {
     .app-title-text {
-      font-size: 0.65rem;
-      margin-left: 5px;
+      font-size: 0.98rem;
+      margin-left: 7px;
     }
     .app-title-text::after {
       width: 30%;
@@ -102,13 +102,14 @@
   /* Para dispositivos muito pequenos */
   @media (max-width: 400px) {
     .navbar-brand img {
-      height: 30px; /* Logo menor */
+      height: 38px; /* Logo ajustado */
     }
     .app-title-text {
-      max-width: 140px;
+      max-width: 180px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      font-size: 0.9rem;
     }
   }
   
@@ -442,83 +443,93 @@
     border: 1px solid #ddd;
   }
 
-  /* Estilos para diminuir fonte do menu */
+  /* Estilos para fonte do menu */
   .navbar {
-    font-size: 0.75rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    min-height: 45px;
+    font-size: 1.125rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    min-height: 65px;
   }
 
   .navbar-brand {
-    font-size: 0.85rem;
+    font-size: 1.3rem;
   }
 
   .navbar-nav .nav-link {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.6rem;
+    font-size: 1.05rem;
+    padding: 0.45rem 0.9rem;
   }
 
   .navbar-nav .dropdown-toggle {
-    font-size: 0.7rem;
+    font-size: 1.05rem;
   }
 
   .navbar .dropdown-menu {
-    font-size: 0.7rem;
+    font-size: 1.05rem;
   }
 
   .navbar .dropdown-item {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.8rem;
+    font-size: 1.05rem;
+    padding: 0.45rem 1.2rem;
   }
 
   .navbar .dropdown-item i {
-    font-size: 0.65rem;
+    font-size: 0.98rem;
   }
 
   /* Ajustar dropdown do usuário */
   .navbar .text-light.dropdown-toggle {
-    font-size: 0.7rem;
+    font-size: 1.05rem;
   }
 
   .navbar .dropdown-toggle i {
-    font-size: 0.75rem;
+    font-size: 1.125rem;
   }
 
-  /* Diminuir botão de login na navbar */
+  /* Botão de login na navbar */
   .navbar .btn-sm {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.6rem;
+    font-size: 1.05rem;
+    padding: 0.4rem 0.9rem;
   }
 
   .navbar .btn-sm i {
-    font-size: 0.65rem;
+    font-size: 0.98rem;
+  }
+
+  /* Centralizar itens do menu */
+  .navbar .navbar-nav.me-auto {
+    flex-grow: 0;
+    margin: 0 auto;
+  }
+
+  .navbar .container-fluid {
+    justify-content: space-between;
   }
 
   /* Media queries para navbar em dispositivos menores */
   @media (max-width: 768px) {
     .navbar {
-      font-size: 0.7rem;
+      font-size: 1.05rem;
     }
 
     .navbar-nav .nav-link {
-      font-size: 0.65rem;
-      padding: 0.25rem 0.5rem;
+      font-size: 0.98rem;
+      padding: 0.38rem 0.75rem;
     }
   }
 
   @media (max-width: 576px) {
     .navbar {
-      font-size: 0.65rem;
-      padding-top: 0.2rem;
-      padding-bottom: 0.2rem;
+      font-size: 0.98rem;
+      padding-top: 0.3rem;
+      padding-bottom: 0.3rem;
     }
 
     .navbar-brand img {
-      height: 24px;
+      height: 36px;
     }
 
     .navbar-nav .nav-link {
-      font-size: 0.6rem;
+      font-size: 0.9rem;
     }
   }
