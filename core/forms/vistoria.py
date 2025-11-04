@@ -18,6 +18,18 @@ class VistoriaHistoricoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
         label="Novo Status da Obra",
         help_text="Selecione se esta vistoria deve alterar o status da obra"
     )
+
+    # Campo para upload de múltiplas fotos
+    # Nota: O atributo 'multiple' será adicionado no template HTML
+    fotos = forms.FileField(
+        required=False,
+        label="Fotos da Vistoria",
+        help_text="Selecione uma ou mais fotos (formatos: JPG, PNG, HEIC)",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
+    )
     
     class Meta:
         model = VistoriaHistorico

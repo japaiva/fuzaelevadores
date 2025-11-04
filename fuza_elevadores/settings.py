@@ -44,6 +44,8 @@ AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL')
+# AWS_S3_CUSTOM_DOMAIN - Desabilitado para permitir URLs assinadas
+# AWS_S3_CUSTOM_DOMAIN = f"{os.getenv('AWS_S3_ENDPOINT_URL', '').replace('https://', '').replace('http://', '')}/{os.getenv('AWS_STORAGE_BUCKET_NAME', '')}"
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 AWS_DEFAULT_ACL = 'public-read'
 AWS_QUERYSTRING_AUTH = False
@@ -51,16 +53,28 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 AWS_S3_REGION_NAME = 'us-east-1'  # Região padrão para compatibilidade
 AWS_S3_ADDRESSING_STYLE = 'path'  # Importante: usar 'path' em vez de 'virtual'
+AWS_S3_USE_SSL = True  # Usar HTTPS
 
-# Usa MinIO como armazenamento padrão
+# Usa MinIO como armazenamento padrão (Django 4.2+)
+STORAGES = {
+    "default": {
+        "BACKEND": "core.storage.MinioStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Para compatibilidade com versões antigas (será ignorado no Django 5+)
 DEFAULT_FILE_STORAGE = 'core.storage.MinioStorage'
-MEDIA_URL = '/media/'
+# MEDIA_URL será gerada automaticamente pelo MinioStorage com URLs assinadas
+# MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
 
 # Static Files
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# STATICFILES_STORAGE foi substituído por STORAGES['staticfiles'] acima
 
 # API KEYS
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')

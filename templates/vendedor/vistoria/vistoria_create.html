@@ -70,7 +70,7 @@
         </div>
       </div>
 
-      <form method="post" id="vistoriaForm">
+      <form method="post" id="vistoriaForm" enctype="multipart/form-data">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
@@ -165,12 +165,34 @@
                 {% endif %}
               </div>
               
+              <!-- Upload de Fotos -->
+              <div class="col-12">
+                <label class="form-label" for="{{ form.fotos.id_for_label }}">
+                  <i class="fas fa-camera me-1"></i> Fotos da Vistoria
+                </label>
+                {{ form.fotos }}
+                <div class="form-text">
+                  Você pode selecionar múltiplas fotos. Formatos aceitos: JPG, PNG, HEIC. As fotos serão armazenadas no MinIO.
+                </div>
+                {% if form.fotos.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.fotos.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+
+                <!-- Preview de fotos selecionadas -->
+                <div id="fotosPreview" class="mt-3" style="display:none;">
+                  <strong class="d-block mb-2">Fotos selecionadas:</strong>
+                  <div id="fotosPreviewContainer" class="d-flex flex-wrap gap-2"></div>
+                </div>
+              </div>
+
               <!-- Campo de mudanças automático -->
               <div class="col-12">
                 <label class="form-label" for="mudancas_automaticas">
                   Alterações Realizadas
                 </label>
-                <textarea class="form-control" id="mudancas_automaticas" name="mudancas_automaticas" rows="3" readonly 
+                <textarea class="form-control" id="mudancas_automaticas" name="mudancas_automaticas" rows="3" readonly
                           style="background-color: #f8f9fa; border-color: #e9ecef;"></textarea>
               </div>
             </div>
@@ -199,6 +221,48 @@
           </div>
         </div>
 
+        <!-- Assinatura Digital -->
+        <div class="card shadow-sm border-primary mb-4">
+          <div class="card-header bg-primary text-white">
+            <h6 class="card-title mb-0">
+              <i class="fas fa-signature me-2"></i>Assinatura Digital (Opcional)
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">
+                  Nome do Assinante
+                </label>
+                <input type="text" class="form-control" id="assinatura_nome" name="assinatura_nome"
+                       placeholder="Nome de quem está assinando a vistoria">
+                <div class="form-text">
+                  Informe o nome do responsável que assinará esta vistoria
+                </div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">
+                  Desenhe a Assinatura Abaixo
+                </label>
+                <div class="signature-container">
+                  <canvas id="signaturePad" class="signature-pad"></canvas>
+                </div>
+                <div class="signature-actions mt-2">
+                  <button type="button" class="btn btn-sm btn-outline-secondary" id="clearSignature">
+                    <i class="fas fa-eraser me-1"></i> Limpar Assinatura
+                  </button>
+                  <span class="text-muted ms-3 small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Use o dedo ou caneta stylus para assinar
+                  </span>
+                </div>
+                <input type="hidden" id="assinatura_data" name="assinatura_data">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="d-flex justify-content-between mt-4">
           <a href="{% url 'vendedor:vistoria_proposta_detail' proposta.pk %}" class="btn btn-outline-secondary">
             <i class="fas fa-times me-1"></i> Cancelar
@@ -214,6 +278,9 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Signature Pad Library -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('vistoriaForm');
@@ -436,14 +503,158 @@ document.addEventListener('DOMContentLoaded', function() {
     sugerirProximaVistoria();
     sugerirStatus();
     atualizarMudancas();
-    
-    console.log('✅ Formulário de nova vistoria inicializado com redirecionamento automático para medição');
+
+    // PREVIEW DE FOTOS
+    const fotosInput = document.getElementById('{{ form.fotos.id_for_label }}');
+    const fotosPreview = document.getElementById('fotosPreview');
+    const fotosPreviewContainer = document.getElementById('fotosPreviewContainer');
+
+    if (fotosInput) {
+        // Adicionar atributo multiple ao input (Django Forms não suporta nativamente)
+        fotosInput.setAttribute('multiple', 'multiple');
+        fotosInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+
+            if (files.length > 0) {
+                fotosPreview.style.display = 'block';
+                fotosPreviewContainer.innerHTML = '';
+
+                Array.from(files).forEach((file, index) => {
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'preview-item';
+                    previewItem.style.cssText = 'position: relative; width: 100px; height: 100px; border: 2px solid #dee2e6; border-radius: 8px; overflow: hidden;';
+
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            previewItem.innerHTML = `
+                                <img src="${event.target.result}"
+                                     style="width: 100%; height: 100%; object-fit: cover;"
+                                     title="${file.name}">
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 2px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    ${file.name}
+                                </div>
+                            `;
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        previewItem.innerHTML = `
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa;">
+                                <i class="fas fa-file-image fa-2x text-muted"></i>
+                            </div>
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 2px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${file.name}
+                            </div>
+                        `;
+                    }
+
+                    fotosPreviewContainer.appendChild(previewItem);
+                });
+
+                console.log(`${files.length} foto(s) selecionada(s) para upload`);
+            } else {
+                fotosPreview.style.display = 'none';
+                fotosPreviewContainer.innerHTML = '';
+            }
+        });
+    }
+
+    // ===== SIGNATURE PAD =====
+    const canvas = document.getElementById('signaturePad');
+    const signatureDataInput = document.getElementById('assinatura_data');
+    const clearButton = document.getElementById('clearSignature');
+
+    if (canvas) {
+        // Configurar tamanho do canvas responsivo
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            const container = canvas.parentElement;
+            canvas.width = container.offsetWidth * ratio;
+            canvas.height = 200 * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+
+            // Redesenhar se já tinha assinatura
+            if (signaturePad && !signaturePad.isEmpty()) {
+                const data = signaturePad.toData();
+                signaturePad.fromData(data);
+            }
+        }
+
+        // Inicializar Signature Pad
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)',
+            penColor: 'rgb(0, 0, 0)',
+            minWidth: 1,
+            maxWidth: 2.5,
+            throttle: 16, // Suavizar no mobile
+        });
+
+        // Resize ao carregar e ao redimensionar
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Botão limpar
+        if (clearButton) {
+            clearButton.addEventListener('click', function() {
+                signaturePad.clear();
+                signatureDataInput.value = '';
+            });
+        }
+
+        // Capturar assinatura antes de enviar o formulário
+        form.addEventListener('submit', function(e) {
+            if (!signaturePad.isEmpty()) {
+                // Converter para base64 PNG
+                const dataURL = signaturePad.toDataURL('image/png');
+                signatureDataInput.value = dataURL;
+                console.log('✓ Assinatura capturada');
+            } else {
+                console.log('→ Vistoria sem assinatura');
+            }
+        });
+
+        console.log('✅ Signature Pad inicializado');
+    }
+
+    console.log('✅ Formulário de nova vistoria inicializado com redirecionamento automático para medição e upload de fotos');
 });
 </script>
 {% endblock %}
 
 {% block extra_css %}
 <style>
+/* Signature Pad Styles */
+.signature-container {
+    border: 2px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #fff;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.signature-pad {
+    width: 100%;
+    height: 200px;
+    cursor: crosshair;
+    touch-action: none;
+    display: block;
+}
+
+.signature-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    .signature-pad {
+        height: 180px;
+    }
+}
+
+/* Resto dos estilos */
 .container-fluid {
     max-width: 1400px;
 }

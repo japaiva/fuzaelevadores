@@ -12,15 +12,105 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Max
 from django.http import JsonResponse
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import uuid
+import base64
 
 from core.models import Proposta, VistoriaHistorico
 from core.forms import (
-    PropostaVistoriaForm, 
-    VistoriaHistoricoForm, 
+    PropostaVistoriaForm,
+    VistoriaHistoricoForm,
     VistoriaFiltroForm
 )
 
 logger = logging.getLogger(__name__)
+
+
+def processar_upload_fotos(files, proposta_numero):
+    """
+    Processa upload de múltiplas fotos para o MinIO
+
+    Args:
+        files: Lista de arquivos da request.FILES.getlist('fotos')
+        proposta_numero: Número da proposta para organizar no MinIO
+
+    Returns:
+        Lista de dicionários com informações das fotos: [{'url': ..., 'nome': ..., 'tamanho': ...}]
+    """
+    fotos_info = []
+
+    for foto in files:
+        try:
+            # Gerar nome único para o arquivo
+            extensao = foto.name.split('.')[-1] if '.' in foto.name else 'jpg'
+            nome_arquivo = f"vistorias/{proposta_numero}/{uuid.uuid4().hex}.{extensao}"
+
+            # Salvar no MinIO usando default_storage
+            caminho_salvo = default_storage.save(nome_arquivo, foto)
+
+            # Obter URL do arquivo (será URL assinada válida por 7 dias)
+            url = default_storage.url(caminho_salvo)
+
+            fotos_info.append({
+                'url': url,
+                'nome': foto.name,
+                'tamanho': foto.size,
+                'caminho': caminho_salvo
+            })
+
+            logger.info(f"Foto uploaded com sucesso: {nome_arquivo}")
+            logger.info(f"URL gerada: {url}")
+
+        except Exception as e:
+            logger.error(f"Erro ao fazer upload da foto {foto.name}: {str(e)}")
+            continue
+
+    return fotos_info
+
+
+def processar_assinatura(assinatura_base64, proposta_numero):
+    """
+    Processa assinatura digital e faz upload para o MinIO
+
+    Args:
+        assinatura_base64: String base64 da imagem da assinatura
+        proposta_numero: Número da proposta para organizar no MinIO
+
+    Returns:
+        URL da assinatura no MinIO ou None se falhar
+    """
+    if not assinatura_base64:
+        return None
+
+    try:
+        # Remove o prefixo "data:image/png;base64," se existir
+        if 'base64,' in assinatura_base64:
+            assinatura_base64 = assinatura_base64.split('base64,')[1]
+
+        # Decodificar base64
+        assinatura_bytes = base64.b64decode(assinatura_base64)
+
+        # Gerar nome único para a assinatura
+        nome_arquivo = f"vistorias/{proposta_numero}/assinatura_{uuid.uuid4().hex}.png"
+
+        # Salvar no MinIO
+        caminho_salvo = default_storage.save(
+            nome_arquivo,
+            ContentFile(assinatura_bytes)
+        )
+
+        # Obter URL assinada
+        url = default_storage.url(caminho_salvo)
+
+        logger.info(f"Assinatura salva com sucesso: {nome_arquivo}")
+        logger.info(f"URL da assinatura: {url}")
+
+        return url
+
+    except Exception as e:
+        logger.error(f"Erro ao processar assinatura: {str(e)}")
+        return None
 
 
 @login_required
@@ -177,21 +267,41 @@ def vistoria_create(request, proposta_pk):
         
         if form.is_valid():
             try:
-                data_que_estava_planejada = proposta.data_proxima_vistoria                
+                data_que_estava_planejada = proposta.data_proxima_vistoria
                 vistoria = form.save(commit=False)
                 vistoria.proposta = proposta
                 vistoria.responsavel = request.user
                 vistoria.status_obra_anterior = proposta.status_obra
                 vistoria.data_agendada = data_que_estava_planejada or date.today()
-                
+
                 # SEMPRE marcar como realizada
                 vistoria.status_vistoria = 'realizada'
-                
+
                 # Capturar e salvar as alterações realizadas
                 alteracoes_realizadas = request.POST.get('mudancas_automaticas', '')
                 if alteracoes_realizadas:
                     vistoria.alteracoes_realizadas = alteracoes_realizadas
-                
+
+                # Processar upload de fotos
+                fotos_files = request.FILES.getlist('fotos')
+                if fotos_files:
+                    fotos_info = processar_upload_fotos(fotos_files, proposta.numero)
+                    vistoria.fotos_anexos = fotos_info
+                    logger.info(f"{len(fotos_info)} fotos enviadas para vistoria da proposta {proposta.numero}")
+
+                # Processar assinatura digital
+                assinatura_data = request.POST.get('assinatura_data', '')
+                assinatura_nome = request.POST.get('assinatura_nome', '')
+
+                if assinatura_data:
+                    assinatura_url = processar_assinatura(assinatura_data, proposta.numero)
+                    if assinatura_url:
+                        vistoria.assinatura_url = assinatura_url
+                        vistoria.assinatura_nome = assinatura_nome or 'Não informado'
+                        logger.info(f"Assinatura capturada de: {vistoria.assinatura_nome}")
+                    else:
+                        logger.warning("Falha ao processar assinatura")
+
                 # Salvar vistoria primeiro
                 vistoria.save()
                 

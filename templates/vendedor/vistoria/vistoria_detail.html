@@ -216,6 +216,76 @@
       </div>
       {% endif %}
 
+      <!-- Assinatura Digital -->
+      {% if vistoria.assinatura_url %}
+      <div class="card shadow-sm border-success mb-4">
+        <div class="card-header bg-success text-white">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-signature me-2"></i>Assinatura Digital
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="assinatura-display">
+                <img src="{{ vistoria.assinatura_url }}" alt="Assinatura" class="img-fluid border rounded p-2 bg-white">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="assinatura-info">
+                <p class="mb-2">
+                  <strong><i class="fas fa-user me-2"></i>Assinado por:</strong><br>
+                  <span class="text-primary">{{ vistoria.assinatura_nome }}</span>
+                </p>
+                <p class="mb-2">
+                  <strong><i class="fas fa-calendar me-2"></i>Data:</strong><br>
+                  {{ vistoria.data_realizada|date:"d/m/Y" }}
+                </p>
+                <p class="mb-0">
+                  <strong><i class="fas fa-clock me-2"></i>Horário:</strong><br>
+                  {{ vistoria.criado_em|date:"H:i" }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Fotos da Vistoria -->
+      {% if vistoria.fotos_anexos %}
+      <div class="card shadow-sm border-primary mb-4">
+        <div class="card-header bg-primary text-white">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-camera me-2"></i>Fotos da Vistoria ({{ vistoria.fotos_anexos|length }})
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% for foto in vistoria.fotos_anexos %}
+            <div class="col-md-3 col-sm-6">
+              <div class="foto-card">
+                <a href="{{ foto.url }}" target="_blank" data-lightbox="vistoria-fotos" data-title="{{ foto.nome }}">
+                  <img src="{{ foto.url }}" alt="{{ foto.nome }}" class="img-thumbnail">
+                </a>
+                <div class="foto-info">
+                  <small class="text-muted d-block text-truncate" title="{{ foto.nome }}">
+                    {{ foto.nome }}
+                  </small>
+                  <small class="text-muted">
+                    {% if foto.tamanho %}
+                      {{ foto.tamanho|filesizeformat }}
+                    {% endif %}
+                  </small>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
     </div>
   </div>
 </div>
@@ -389,6 +459,68 @@ h6.text-success {
 
 .content-box.bg-light:hover {
     background-color: #e2e6ea !important;
+}
+
+/* Estilos para galeria de fotos */
+.foto-card {
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.foto-card:hover {
+    transform: scale(1.05);
+}
+
+.foto-card .img-thumbnail {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.foto-card .img-thumbnail:hover {
+    opacity: 0.8;
+}
+
+.foto-info {
+    margin-top: 0.5rem;
+    padding: 0.25rem;
+}
+
+.foto-info small {
+    display: block;
+    font-size: 0.75rem;
+}
+
+/* Estilos para assinatura digital */
+.assinatura-display img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.assinatura-info {
+    background-color: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    height: 100%;
+}
+
+.assinatura-info p {
+    line-height: 1.8;
+}
+
+.assinatura-info strong {
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .assinatura-info {
+        margin-top: 1rem;
+    }
 }
 </style>
 {% endblock %}

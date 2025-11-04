@@ -175,7 +175,21 @@ class VistoriaHistorico(models.Model):
         verbose_name="Fotos e Anexos",
         help_text="Lista de URLs/caminhos para fotos e anexos"
     )
-    
+
+    # Assinatura digital
+    assinatura_url = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="URL da Assinatura",
+        help_text="URL da assinatura digital no MinIO"
+    )
+    assinatura_nome = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Nome do Assinante",
+        help_text="Nome de quem assinou a vistoria"
+    )
+
     # Dados técnicos específicos (JSON para flexibilidade)
     dados_tecnicos = models.JSONField(
         default=dict,
