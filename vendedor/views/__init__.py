@@ -56,6 +56,7 @@ from .vistoria import (
     vistoria_create,
     vistoria_detail,
     vistoria_inativar,
+    vistoria_pdf,
     api_vistoria_quick_status,
 )
 
@@ -104,6 +105,7 @@ __all__ = [
     'vistoria_create',
     'vistoria_detail',
     'vistoria_inativar',
+    'vistoria_pdf',
     'api_vistoria_quick_status',
     
     # Medição (especializada)
