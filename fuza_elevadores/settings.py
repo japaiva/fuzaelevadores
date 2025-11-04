@@ -55,23 +55,14 @@ AWS_S3_REGION_NAME = 'us-east-1'  # Região padrão para compatibilidade
 AWS_S3_ADDRESSING_STYLE = 'path'  # Importante: usar 'path' em vez de 'virtual'
 AWS_S3_USE_SSL = True  # Usar HTTPS
 
-# Django 5.1 STORAGES - MinIO para mídia, WhiteNoise para estáticos
-STORAGES = {
-    "default": {
-        "BACKEND": "core.storage.MinioStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# MinIO para upload de arquivos (fotos, assinaturas)
+DEFAULT_FILE_STORAGE = 'core.storage.MinioStorage'
 
-# Static Files (mantém configuração original que já funcionava)
+# Static Files (configuração original que funcionava)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# WhiteNoise - não falhar se arquivo CSS referenciar imagem faltante
-WHITENOISE_MANIFEST_STRICT = False
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # API KEYS
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
