@@ -56,25 +56,24 @@ AWS_S3_ADDRESSING_STYLE = 'path'  # Importante: usar 'path' em vez de 'virtual'
 AWS_S3_USE_SSL = True  # Usar HTTPS
 
 # Usa MinIO como armazenamento padrão (Django 4.2+)
+# IMPORTANTE: Só configurar "default" para MinIO, deixar staticfiles como estava antes
 STORAGES = {
     "default": {
         "BACKEND": "core.storage.MinioStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
 
 # Para compatibilidade com versões antigas (será ignorado no Django 5+)
 DEFAULT_FILE_STORAGE = 'core.storage.MinioStorage'
-# MEDIA_URL será gerada automaticamente pelo MinioStorage com URLs assinadas
-# MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
 
-# Static Files
+# Static Files (mantém configuração original que já funcionava)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# STATICFILES_STORAGE foi substituído por STORAGES['staticfiles'] acima
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# WhiteNoise - não falhar se arquivo CSS referenciar imagem faltante
+WHITENOISE_MANIFEST_STRICT = False
 
 # API KEYS
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
