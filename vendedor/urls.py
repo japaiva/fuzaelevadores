@@ -49,7 +49,8 @@ urlpatterns = [
     path('vistorias/proposta/<uuid:proposta_pk>/nova/', views.vistoria_create, name='vistoria_create'),
     path('vistorias/<int:pk>/', views.vistoria_detail, name='vistoria_detail'),  # ✅ CORRIGIDO
     path('vistorias/<int:pk>/inativar/', views.vistoria_inativar, name='vistoria_inativar'),  # ✅ NOVA
-    
+    path('vistorias/<int:pk>/pdf/', views.vistoria_pdf, name='vistoria_pdf'),  # Gerar PDF da vistoria
+
     # API Ajax
     path('api/proposta/<uuid:proposta_pk>/quick-status/', views.api_vistoria_quick_status, name='api_vistoria_quick_status'),
     

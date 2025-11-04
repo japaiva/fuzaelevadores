@@ -12,6 +12,8 @@ from decimal import Decimal
 from datetime import datetime
 from django.conf import settings
 from core.models import ParametrosGerais
+import requests
+from PIL import Image as PILImage
 
 
 def gerar_pdf_pedido_compra(pedido):
@@ -539,8 +541,378 @@ def gerar_pdf_pedido_compra(pedido):
     
     # Construir PDF
     doc.build(elementos)
-    
+
     # Resetar buffer
     buffer.seek(0)
-    
+
+    return buffer
+
+
+def gerar_pdf_vistoria(vistoria):
+    """
+    Gera PDF do relatório de vistoria com fotos e assinatura digital
+    """
+    buffer = BytesIO()
+
+    # Configurar documento
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=1.5*cm,
+        leftMargin=1.5*cm,
+        topMargin=2*cm,
+        bottomMargin=2*cm,
+        title=f'Relatório de Vistoria - Proposta {vistoria.proposta.numero}'
+    )
+
+    # Buscar parâmetros da empresa
+    try:
+        parametros = ParametrosGerais.objects.first()
+    except:
+        parametros = None
+
+    # Estilos
+    styles = getSampleStyleSheet()
+
+    # Cores da identidade visual
+    COR_PRIMARIA = colors.HexColor('#1a365d')
+    COR_SECUNDARIA = colors.HexColor('#2c5282')
+    COR_ACCENT = colors.HexColor('#3182ce')
+    COR_TEXTO = colors.HexColor('#2d3748')
+    COR_BACKGROUND = colors.HexColor('#f7fafc')
+
+    titulo_principal = ParagraphStyle(
+        'TituloPrincipal',
+        parent=styles['Heading1'],
+        fontSize=20,
+        spaceAfter=10,
+        alignment=TA_CENTER,
+        textColor=COR_PRIMARIA,
+        fontName='Helvetica-Bold'
+    )
+
+    subtitulo_style = ParagraphStyle(
+        'Subtitulo',
+        parent=styles['Heading2'],
+        fontSize=14,
+        spaceAfter=8,
+        spaceBefore=12,
+        textColor=COR_SECUNDARIA,
+        fontName='Helvetica-Bold'
+    )
+
+    normal_style = ParagraphStyle(
+        'NormalMelhorado',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=14,
+        textColor=COR_TEXTO,
+        alignment=TA_LEFT
+    )
+
+    empresa_style = ParagraphStyle(
+        'EmpresaStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        leading=12,
+        alignment=TA_CENTER,
+        textColor=COR_TEXTO,
+        spaceAfter=0
+    )
+
+    elementos = []
+
+    # =============================================================================
+    # CABEÇALHO DA EMPRESA
+    # =============================================================================
+
+    if parametros:
+        elementos.append(Paragraph(f"<b>{parametros.razao_social}</b>", titulo_principal))
+        elementos.append(Spacer(1, 2))
+
+        if parametros.nome_fantasia:
+            elementos.append(Paragraph(parametros.nome_fantasia, empresa_style))
+
+        # Informações da empresa
+        empresa_info = []
+
+        # Endereço
+        endereco_parts = []
+        if parametros.endereco:
+            endereco_parts.append(parametros.endereco)
+            if parametros.numero:
+                endereco_parts[-1] += f", {parametros.numero}"
+        if parametros.bairro:
+            endereco_parts.append(parametros.bairro)
+        if parametros.cidade and parametros.estado:
+            endereco_parts.append(f"{parametros.cidade} - {parametros.estado}")
+        if parametros.cep:
+            endereco_parts.append(f"CEP: {parametros.cep}")
+
+        if endereco_parts:
+            empresa_info.append([Paragraph(" • ".join(endereco_parts), empresa_style)])
+
+        # Contatos
+        contatos = []
+        if parametros.telefone:
+            contatos.append(f"Tel: {parametros.telefone}")
+        if parametros.email:
+            contatos.append(f"Email: {parametros.email}")
+        if parametros.cnpj:
+            contatos.append(f"CNPJ: {parametros.cnpj}")
+
+        if contatos:
+            empresa_info.append([Paragraph(" • ".join(contatos), empresa_style)])
+
+        if empresa_info:
+            empresa_table = Table(empresa_info, colWidths=[18*cm])
+            empresa_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('TOPPADDING', (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ]))
+
+            elementos.append(empresa_table)
+
+    elementos.append(Spacer(1, 10))
+
+    # =============================================================================
+    # TÍTULO DO DOCUMENTO
+    # =============================================================================
+
+    elementos.append(Paragraph("RELATÓRIO DE VISTORIA", titulo_principal))
+    elementos.append(Spacer(1, 10))
+
+    # =============================================================================
+    # DADOS DA PROPOSTA
+    # =============================================================================
+
+    proposta = vistoria.proposta
+
+    proposta_data = [
+        [
+            Paragraph("<b>Proposta:</b>", normal_style),
+            Paragraph(proposta.numero, normal_style),
+            Paragraph("<b>Cliente:</b>", normal_style),
+            Paragraph(proposta.cliente.nome_fantasia or proposta.cliente.razao_social, normal_style)
+        ],
+        [
+            Paragraph("<b>Data da Vistoria:</b>", normal_style),
+            Paragraph(vistoria.data_vistoria.strftime('%d/%m/%Y às %H:%M'), normal_style),
+            Paragraph("<b>Obra:</b>", normal_style),
+            Paragraph(proposta.obra or "N/I", normal_style)
+        ]
+    ]
+
+    if proposta.endereco_obra:
+        proposta_data.append([
+            Paragraph("<b>Endereço da Obra:</b>", normal_style),
+            Paragraph(proposta.endereco_obra, normal_style),
+            Paragraph("", normal_style),
+            Paragraph("", normal_style)
+        ])
+
+    proposta_table = Table(proposta_data, colWidths=[3.5*cm, 5.5*cm, 3*cm, 6*cm])
+    proposta_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, -1), COR_BACKGROUND),
+        ('BACKGROUND', (2, 0), (3, -1), COR_BACKGROUND),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LINEBELOW', (0, 0), (-1, 0), 2, COR_ACCENT),
+    ]))
+
+    elementos.append(proposta_table)
+    elementos.append(Spacer(1, 15))
+
+    # =============================================================================
+    # OBSERVAÇÕES
+    # =============================================================================
+
+    if vistoria.observacoes:
+        elementos.append(Paragraph("<b>Observações:</b>", subtitulo_style))
+        elementos.append(Spacer(1, 5))
+
+        obs_style = ParagraphStyle(
+            'ObsStyle',
+            parent=normal_style,
+            fontSize=10,
+            leading=16,
+            alignment=TA_JUSTIFY
+        )
+
+        elementos.append(Paragraph(vistoria.observacoes, obs_style))
+        elementos.append(Spacer(1, 15))
+
+    # =============================================================================
+    # FOTOS DA VISTORIA
+    # =============================================================================
+
+    fotos = vistoria.fotos.all()
+
+    if fotos:
+        elementos.append(Paragraph("<b>Registro Fotográfico:</b>", subtitulo_style))
+        elementos.append(Spacer(1, 10))
+
+        # Processar fotos em grades de 2 colunas
+        foto_rows = []
+        foto_row_atual = []
+
+        for i, foto in enumerate(fotos):
+            try:
+                # Baixar imagem da URL assinada
+                response = requests.get(foto.foto_url, timeout=10)
+                if response.status_code == 200:
+                    img_buffer = BytesIO(response.content)
+
+                    # Abrir com PIL para redimensionar
+                    pil_img = PILImage.open(img_buffer)
+
+                    # Redimensionar mantendo proporção (largura máxima 8cm)
+                    max_width = 8 * cm
+                    max_height = 6 * cm
+
+                    aspect = pil_img.width / pil_img.height
+                    if pil_img.width > max_width or pil_img.height > max_height:
+                        if aspect > 1:  # Landscape
+                            new_width = max_width
+                            new_height = max_width / aspect
+                        else:  # Portrait
+                            new_height = max_height
+                            new_width = max_height * aspect
+                    else:
+                        new_width = pil_img.width
+                        new_height = pil_img.height
+
+                    # Salvar imagem redimensionada em buffer
+                    img_resized_buffer = BytesIO()
+                    pil_img.save(img_resized_buffer, format='JPEG', quality=85)
+                    img_resized_buffer.seek(0)
+
+                    # Criar Image do ReportLab
+                    img_reportlab = Image(img_resized_buffer, width=new_width, height=new_height)
+
+                    # Adicionar legenda se existir
+                    if foto.legenda:
+                        legenda_style = ParagraphStyle(
+                            'LegendaStyle',
+                            parent=normal_style,
+                            fontSize=8,
+                            alignment=TA_CENTER,
+                            textColor=colors.HexColor('#718096')
+                        )
+                        legenda_para = Paragraph(foto.legenda, legenda_style)
+                        foto_com_legenda = [img_reportlab, Spacer(1, 3), legenda_para]
+                    else:
+                        foto_com_legenda = [img_reportlab]
+
+                    foto_row_atual.append(foto_com_legenda)
+
+                    # Se completou 2 fotos, adiciona a linha
+                    if len(foto_row_atual) == 2:
+                        foto_rows.append(foto_row_atual)
+                        foto_row_atual = []
+
+            except Exception as e:
+                print(f"Erro ao processar foto {foto.id}: {str(e)}")
+                continue
+
+        # Adicionar última linha se tiver foto sozinha
+        if foto_row_atual:
+            # Preencher com célula vazia se necessário
+            if len(foto_row_atual) == 1:
+                foto_row_atual.append("")
+            foto_rows.append(foto_row_atual)
+
+        # Criar tabela de fotos
+        if foto_rows:
+            for row in foto_rows:
+                foto_table = Table([row], colWidths=[9*cm, 9*cm])
+                foto_table.setStyle(TableStyle([
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                    ('TOPPADDING', (0, 0), (-1, -1), 5),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ]))
+                elementos.append(foto_table)
+
+            elementos.append(Spacer(1, 10))
+
+    # =============================================================================
+    # ASSINATURA DIGITAL
+    # =============================================================================
+
+    if vistoria.assinatura_url:
+        elementos.append(Spacer(1, 20))
+        elementos.append(Paragraph("<b>Assinatura Digital:</b>", subtitulo_style))
+        elementos.append(Spacer(1, 10))
+
+        try:
+            # Baixar assinatura
+            response = requests.get(vistoria.assinatura_url, timeout=10)
+            if response.status_code == 200:
+                assinatura_buffer = BytesIO(response.content)
+
+                # Criar imagem da assinatura (tamanho fixo)
+                assinatura_img = Image(assinatura_buffer, width=6*cm, height=3*cm)
+
+                # Dados da assinatura
+                assinatura_info = [
+                    [assinatura_img,
+                     Paragraph(f"<b>Assinado por:</b><br/>{vistoria.assinatura_nome}<br/><br/>"
+                              f"<b>Data:</b> {vistoria.data_vistoria.strftime('%d/%m/%Y às %H:%M')}",
+                              normal_style)]
+                ]
+
+                assinatura_table = Table(assinatura_info, colWidths=[8*cm, 10*cm])
+                assinatura_table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e2e8f0')),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                    ('ALIGN', (1, 0), (1, 0), 'LEFT'),
+                    ('BACKGROUND', (0, 0), (-1, -1), COR_BACKGROUND),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                    ('TOPPADDING', (0, 0), (-1, -1), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+                ]))
+
+                elementos.append(assinatura_table)
+
+        except Exception as e:
+            print(f"Erro ao processar assinatura: {str(e)}")
+
+    # =============================================================================
+    # RODAPÉ
+    # =============================================================================
+
+    elementos.append(Spacer(1, 30))
+
+    rodape_text = f"Relatório gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}"
+    if vistoria.usuario:
+        usuario_nome = vistoria.usuario.get_full_name() or vistoria.usuario.username
+        rodape_text += f" por {usuario_nome}"
+
+    rodape_style = ParagraphStyle(
+        'RodapeCustom',
+        parent=normal_style,
+        fontSize=8,
+        alignment=TA_CENTER,
+        textColor=colors.HexColor('#718096')
+    )
+
+    elementos.append(Paragraph(rodape_text, rodape_style))
+
+    # Construir PDF
+    doc.build(elementos)
+
+    # Resetar buffer
+    buffer.seek(0)
+
     return buffer

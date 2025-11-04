@@ -502,3 +502,44 @@ def api_vistoria_quick_status(request, proposta_pk):
     except Exception as e:
         logger.error(f"Erro na alteração rápida de status: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def vistoria_pdf(request, pk):
+    """
+    Gera PDF do relatório de vistoria com fotos e assinatura
+    """
+    from django.http import HttpResponse
+    from core.utils.pdf_generator import gerar_pdf_vistoria
+
+    vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
+
+    # Verificar se usuário tem permissão
+    if request.user.tipo_usuario not in ['vendedor', 'gestor', 'admin']:
+        messages.error(request, "Você não tem permissão para visualizar este relatório.")
+        return redirect('vendedor:vistoria_list')
+
+    try:
+        # Gerar PDF
+        pdf_buffer = gerar_pdf_vistoria(vistoria)
+
+        # Preparar resposta
+        response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
+
+        # Nome do arquivo
+        nome_arquivo = f'Vistoria_{vistoria.proposta.numero}_{vistoria.data_vistoria.strftime("%Y%m%d")}.pdf'
+
+        # Headers para download ou visualização
+        if request.GET.get('download') == '1':
+            response['Content-Disposition'] = f'attachment; filename="{nome_arquivo}"'
+        else:
+            response['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
+
+        logger.info(f"PDF de vistoria gerado: {nome_arquivo} por {request.user.username}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Erro ao gerar PDF de vistoria {pk}: {str(e)}")
+        messages.error(request, f"Erro ao gerar PDF: {str(e)}")
+        return redirect('vendedor:vistoria_detail', pk=pk)
