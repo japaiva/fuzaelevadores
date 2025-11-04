@@ -57,6 +57,7 @@ AWS_S3_USE_SSL = True  # Usar HTTPS
 
 # MinIO para upload de arquivos (fotos, assinaturas)
 DEFAULT_FILE_STORAGE = 'core.storage.MinioStorage'
+MEDIA_URL = '/media/'
 
 # Static Files (configuração original que funcionava)
 STATIC_URL = '/static/'
