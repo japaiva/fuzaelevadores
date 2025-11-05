@@ -183,6 +183,13 @@
       const navbarCollapse = document.querySelector('.navbar-collapse');
 
       if (navbarToggler && navbarCollapse) {
+        // Abrir menu automaticamente no mobile na primeira carga
+        if (window.innerWidth < 992) {
+          navbarCollapse.classList.add('show');
+          document.body.classList.add('menu-open');
+          navbarToggler.setAttribute('aria-expanded', 'true');
+        }
+
         // Adicionar/remover classe do body quando menu abre/fecha
         navbarToggler.addEventListener('click', function() {
           setTimeout(function() {
