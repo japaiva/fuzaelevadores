@@ -173,6 +173,60 @@
         })
         return toast
       })
+
+      // ============================================
+      // MELHORIAS PARA MENU MOBILE
+      // ============================================
+
+      // Controlar overlay escuro quando menu abre/fecha
+      const navbarToggler = document.querySelector('.navbar-toggler');
+      const navbarCollapse = document.querySelector('.navbar-collapse');
+
+      if (navbarToggler && navbarCollapse) {
+        // Adicionar/remover classe do body quando menu abre/fecha
+        navbarToggler.addEventListener('click', function() {
+          setTimeout(function() {
+            if (navbarCollapse.classList.contains('show')) {
+              document.body.classList.add('menu-open');
+            } else {
+              document.body.classList.remove('menu-open');
+            }
+          }, 10);
+        });
+
+        // Fechar menu ao clicar em qualquer link dentro do menu
+        const menuLinks = navbarCollapse.querySelectorAll('.nav-link, .dropdown-item');
+        menuLinks.forEach(function(link) {
+          link.addEventListener('click', function() {
+            if (window.innerWidth < 992) {
+              const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+              if (bsCollapse) {
+                bsCollapse.hide();
+              }
+              document.body.classList.remove('menu-open');
+            }
+          });
+        });
+
+        // Fechar menu ao clicar no overlay (fundo escuro)
+        document.body.addEventListener('click', function(e) {
+          if (window.innerWidth < 992 &&
+              navbarCollapse.classList.contains('show') &&
+              !navbarCollapse.contains(e.target) &&
+              !navbarToggler.contains(e.target)) {
+            const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+            if (bsCollapse) {
+              bsCollapse.hide();
+            }
+            document.body.classList.remove('menu-open');
+          }
+        });
+
+        // Remover classe ao fechar o menu
+        navbarCollapse.addEventListener('hidden.bs.collapse', function() {
+          document.body.classList.remove('menu-open');
+        });
+      }
     });
   </script>
   {% endblock %}
