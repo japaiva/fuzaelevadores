@@ -1,6 +1,7 @@
 # vendedor/views/vistoria_medicao.py
 
 import logging
+import json
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -63,18 +64,33 @@ def vistoria_medicao_create(request, proposta_pk):
                     
                     # Salvar vistoria primeiro
                     vistoria.save()
-                    
-                    # Criar vãos de porta automaticamente
-                    if hasattr(proposta, 'pavimentos') and proposta.pavimentos:
-                        criar_vaos_porta_automaticos(vistoria, proposta.pavimentos)
-                    
+
+                    # Debug: Ver dados recebidos
+                    logger.info("=== DEBUG VÃOS DE PORTA (Backend) ===")
+                    for key, value in request.POST.items():
+                        if 'vaos_porta' in key:
+                            logger.info(f"{key} = {value}")
+
                     # Processar FormSet de vãos de porta
-                    vaos_formset = VaoPortaFormSet(request.POST, instance=vistoria)
+                    vaos_formset = VaoPortaFormSet(request.POST, instance=vistoria, prefix='vaos_porta')
+                    logger.info(f"FormSet válido: {vaos_formset.is_valid()}")
+                    logger.info(f"Número de forms no formset: {len(vaos_formset.forms)}")
+
                     if vaos_formset.is_valid():
-                        vaos_formset.save()
+                        # Debug: Ver dados de cada form antes de salvar
+                        for i, form in enumerate(vaos_formset.forms):
+                            logger.info(f"Form {i} cleaned_data: {form.cleaned_data}")
+
+                        vaos_saved = vaos_formset.save()
+                        logger.info(f"{len(vaos_saved)} vãos de porta salvos para vistoria {vistoria.pk}")
+
+                        # Debug: Ver o que foi salvo
+                        for vao in vaos_saved:
+                            logger.info(f"Vão salvo: {vao.pavimento} - {vao.largura}m x {vao.altura}m")
                     else:
-                        # Log dos erros do formset mas não bloquear
+                        # Log dos erros do formset
                         logger.warning(f"Erros no formset de vãos: {vaos_formset.errors}")
+                        logger.warning(f"Erros non-form: {vaos_formset.non_form_errors()}")
                     
                     # Atualizar dados na proposta
                     if novo_status:
@@ -116,18 +132,34 @@ def vistoria_medicao_create(request, proposta_pk):
     
     else:
         form = VistoriaMedicaoForm(proposta=proposta)
-    
+
     # Criar FormSet vazio para vãos de porta (será populado via JavaScript)
-    vaos_formset = VaoPortaFormSet(instance=None)
-    
+    vaos_formset = VaoPortaFormSet(instance=None, prefix='vaos_porta')
+
+    # Buscar especificações de andares da proposta
+    portas_pavimento = proposta.portas_pavimento.all().order_by('andar')
+
+    # Preparar dados dos andares para JavaScript
+    andares_data = []
+    for porta in portas_pavimento:
+        andares_data.append({
+            'andar': porta.andar,
+            'nome_andar': porta.nome_andar,
+            'largura': float(porta.largura) if porta.largura else 0,
+            'altura': float(porta.altura) if porta.altura else 0,
+            'modelo': porta.modelo or '',
+            'material': porta.material or '',
+        })
+
     context = {
         'form': form,
         'vaos_formset': vaos_formset,
         'proposta': proposta,
         'is_medicao': True,
         'numero_pavimentos': getattr(proposta, 'pavimentos', 0),
+        'andares_data': json.dumps(andares_data),  # Serializar para JSON
     }
-    
+
     return render(request, 'vendedor/vistoria/vistoria_medicao_create.html', context)
 
 
@@ -143,8 +175,8 @@ def vistoria_medicao_detail(request, pk):
     )
     
     # Buscar vãos de porta relacionados
-    vaos_porta = vistoria.vaos_porta.all().order_by('pavimento')
-    
+    vaos_porta = vistoria.vaos_porta.all().order_by('id')  # Ordenar por ID (ordem de criação)
+
     context = {
         'vistoria': vistoria,
         'proposta': vistoria.proposta,
@@ -178,8 +210,8 @@ def vistoria_medicao_edit(request, pk):
     
     if request.method == 'POST':
         form = VistoriaMedicaoForm(request.POST, instance=vistoria, proposta=vistoria.proposta)
-        vaos_formset = VaoPortaFormSet(request.POST, instance=vistoria)
-        
+        vaos_formset = VaoPortaFormSet(request.POST, instance=vistoria, prefix='vaos_porta')
+
         if form.is_valid() and vaos_formset.is_valid():
             try:
                 with transaction.atomic():
@@ -215,7 +247,7 @@ def vistoria_medicao_edit(request, pk):
     
     else:
         form = VistoriaMedicaoForm(instance=vistoria, proposta=vistoria.proposta)
-        vaos_formset = VaoPortaFormSet(instance=vistoria)
+        vaos_formset = VaoPortaFormSet(instance=vistoria, prefix='vaos_porta')
     
     context = {
         'form': form,

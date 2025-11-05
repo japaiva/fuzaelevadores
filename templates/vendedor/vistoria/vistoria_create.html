@@ -105,13 +105,7 @@
                   Tipo de Vistoria*
                 </label>
                 {{ form.tipo_vistoria }}
-                
-                <!-- NOVO: Alerta para medição -->
-                <div class="alert alert-info alert-sm mt-2" id="alerta-medicao" style="display:none; font-size:0.8rem;">
-                  <i class="fas fa-info-circle me-1"></i>
-                  <strong>Medição Inicial:</strong> Será redirecionado para formulário especializado com campos técnicos.
-                </div>
-                
+
                 {% if form.tipo_vistoria.errors %}
                   <div class="text-danger small mt-1">
                     {% for error in form.tipo_vistoria.errors %}{{ error }}{% endfor %}
@@ -290,48 +284,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const proximaVistoriaInput = document.getElementById('{{ form.proxima_vistoria_sugerida.id_for_label }}');
     const previsaoEntregaInput = document.getElementById('previsao_entrega_obra');
     const mudancasTextarea = document.getElementById('mudancas_automaticas');
-    const alertaMedicao = document.getElementById('alerta-medicao');
-    
+
     // Status e previsão originais para comparação
     const statusOriginal = '{{ proposta.status_obra|default:"Aguardando" }}';
     const previsaoOriginal = '{{ proposta.previsao_conclusao_obra|date:"d/m/Y"|default:"Não definida" }}';
-    
+
     // FUNÇÃO PRINCIPAL: Verificar e redirecionar para medição
     function verificarRedirecionamentoMedicao() {
         if (tipoVistoriaSelect.value === 'medicao') {
-            const confirmacao = confirm(
-                'Medição inicial requer formulário especializado com campos técnicos de medição:\n\n' +
-                '• Medições do fosso, poço e cintas\n' +
-                '• Vãos de porta por pavimento\n' +
-                '• Casa de máquina\n\n' +
-                'Deseja ir para o formulário de medição agora?'
-            );
-            
-            if (confirmacao) {
-                // Redirecionar para formulário de medição
-                window.location.href = `{% url 'vendedor:vistoria_medicao_create' proposta.pk %}`;
-                return true; // Indica que foi redirecionado
-            } else {
-                // Voltar para acompanhamento se cancelou
-                tipoVistoriaSelect.value = 'acompanhamento';
-                mostrarOcultarAlertaMedicao();
-                sugerirProximaVistoria();
-                sugerirStatus();
-                atualizarMudancas();
-            }
+            // Redirecionar diretamente para formulário de medição
+            window.location.href = `{% url 'vendedor:vistoria_medicao_create' proposta.pk %}`;
+            return true; // Indica que foi redirecionado
         }
         return false; // Não foi redirecionado
-    }
-    
-    // Função para mostrar/ocultar alerta de medição
-    function mostrarOcultarAlertaMedicao() {
-        if (alertaMedicao) {
-            if (tipoVistoriaSelect.value === 'medicao') {
-                alertaMedicao.style.display = 'block';
-            } else {
-                alertaMedicao.style.display = 'none';
-            }
-        }
     }
     
     // Função para atualizar o campo de mudanças - CORRIGIDA para não somar um dia
@@ -429,19 +394,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // EVENT LISTENERS
     if (tipoVistoriaSelect) {
         tipoVistoriaSelect.addEventListener('change', function() {
-            mostrarOcultarAlertaMedicao();
-            
             // Se não redirecionou, executar outras funções
             if (!verificarRedirecionamentoMedicao()) {
                 sugerirProximaVistoria();
                 sugerirStatus();
             }
         });
-        
+
         // Verificar no carregamento da página se já está como medição
         if (tipoVistoriaSelect.value === 'medicao') {
             setTimeout(function() {
-                mostrarOcultarAlertaMedicao();
                 verificarRedirecionamentoMedicao();
             }, 100);
         }
@@ -467,7 +429,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Bloquear submit se for medição
             if (tipoSelecionado === 'medicao') {
                 e.preventDefault();
-                alert('Para medição inicial, use o formulário especializado.\nRedirecionando agora...');
                 window.location.href = `{% url 'vendedor:vistoria_medicao_create' proposta.pk %}`;
                 return false;
             }
@@ -499,7 +460,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Inicializar sugestões
-    mostrarOcultarAlertaMedicao();
     sugerirProximaVistoria();
     sugerirStatus();
     atualizarMudancas();
@@ -687,23 +647,6 @@ textarea.form-control {
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
     color: #495057;
-}
-
-/* NOVO: Estilos para alerta de medição */
-.alert-sm {
-    padding: 0.5rem;
-    border-radius: 0.25rem;
-}
-
-#alerta-medicao {
-    border-color: #0dcaf0;
-    background-color: rgba(13, 202, 240, 0.1);
-    animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ESTILO PARA CAMPOS COM DUAS LINHAS */

@@ -383,7 +383,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const numeroPavimentos = {{ numero_pavimentos|default:0 }};
-    
+
+    // Dados das especificações dos andares da proposta
+    const andaresData = {{ andares_data|safe|default:"[]" }};
+
+    console.log('Dados dos andares da proposta:', andaresData);
+
     // Função para gerar vãos de porta
     function gerarVaosPorta() {
         const container = document.getElementById('vaos-porta-container');
@@ -391,63 +396,103 @@ document.addEventListener('DOMContentLoaded', function() {
             "Térreo", "1º Andar", "2º Andar", "3º Andar", "4º Andar",
             "5º Andar", "6º Andar", "7º Andar", "8º Andar", "9º Andar", "10º Andar"
         ];
-        
+
+        // Limpar container
+        container.innerHTML = '';
+
+        // Criar todos os vãos de uma vez para evitar problemas com innerHTML
+        let allHtml = '';
+
         for (let i = 0; i < numeroPavimentos; i++) {
-            const nome = nomesPavimentos[i] || `${i+1}º Andar`;
-            
-            const vaoHtml = `
+            // Buscar dados da especificação deste andar
+            const especAndar = andaresData.find(a => a.andar === i);
+
+            // Usar nome personalizado da especificação ou nome padrão
+            const nome = especAndar && especAndar.nome_andar ? especAndar.nome_andar : (nomesPavimentos[i] || `${i+1}º Andar`);
+            const largura = especAndar ? especAndar.largura : '';
+            const altura = especAndar ? especAndar.altura : '';
+            const observacao = especAndar ? `Especificação: ${especAndar.modelo} ${especAndar.material}`.trim() : '';
+
+            allHtml += `
                 <div class="col-md-4 mb-3">
                     <div class="card border-light">
                         <div class="card-header py-2 bg-light">
                             <h6 class="mb-0 text-center">${nome}</h6>
                         </div>
                         <div class="card-body py-2">
+                            <input type="hidden" name="vaos_porta-${i}-id" value="">
+                            <input type="hidden" name="vaos_porta-${i}-vistoria" value="">
+                            <input type="hidden" name="vaos_porta-${i}-pavimento" value="${nome}">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <label class="form-label small">Largura (m)</label>
-                                    <input type="number" class="form-control form-control-sm medida-input vao-largura" 
-                                           step="0.01" min="0" placeholder="0.80" 
-                                           name="vao_largura_${i}" data-pavimento="${nome}">
+                                    <input type="number" class="form-control form-control-sm medida-input vao-largura"
+                                           step="0.001" min="0" placeholder="0.80" value="${largura}"
+                                           name="vaos_porta-${i}-largura" id="id_vaos_porta-${i}-largura" required>
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label small">Altura (m)</label>
-                                    <input type="number" class="form-control form-control-sm medida-input vao-altura" 
-                                           step="0.01" min="0" placeholder="2.10" 
-                                           name="vao_altura_${i}" data-pavimento="${nome}">
+                                    <input type="number" class="form-control form-control-sm medida-input vao-altura"
+                                           step="0.001" min="0" placeholder="2.10" value="${altura}"
+                                           name="vaos_porta-${i}-altura" id="id_vaos_porta-${i}-altura" required>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label small">Observações</label>
-                                    <textarea class="form-control form-control-sm" rows="2" 
-                                              placeholder="Obs. específicas..." 
-                                              name="vao_obs_${i}" data-pavimento="${nome}"></textarea>
+                                    <textarea class="form-control form-control-sm" rows="2"
+                                              placeholder="Obs. específicas..."
+                                              name="vaos_porta-${i}-observacoes" id="id_vaos_porta-${i}-observacoes">${observacao}</textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
-            
-            container.innerHTML += vaoHtml;
         }
+
+        // Adicionar campos de gerenciamento do formset
+        allHtml += `
+            <input type="hidden" name="vaos_porta-TOTAL_FORMS" value="${numeroPavimentos}" id="id_vaos_porta-TOTAL_FORMS">
+            <input type="hidden" name="vaos_porta-INITIAL_FORMS" value="0" id="id_vaos_porta-INITIAL_FORMS">
+            <input type="hidden" name="vaos_porta-MIN_NUM_FORMS" value="0" id="id_vaos_porta-MIN_NUM_FORMS">
+            <input type="hidden" name="vaos_porta-MAX_NUM_FORMS" value="1000" id="id_vaos_porta-MAX_NUM_FORMS">
+        `;
+
+        // Inserir tudo de uma vez
+        container.innerHTML = allHtml;
+
+        console.log('Vãos de porta gerados:', numeroPavimentos);
     }
     
     // Função para calcular volume do fosso
     function calcularVolumeFosso() {
-        const altura = parseFloat(document.getElementById('{{ form.fosso_altura.id_for_label }}').value) || 0;
-        const largura = parseFloat(document.getElementById('{{ form.fosso_largura.id_for_label }}').value) || 0;
-        const profundidade = parseFloat(document.getElementById('{{ form.fosso_profundidade.id_for_label }}').value) || 0;
-        
+        const alturaEl = document.getElementById('{{ form.fosso_altura.id_for_label }}');
+        const larguraEl = document.getElementById('{{ form.fosso_largura.id_for_label }}');
+        const profundidadeEl = document.getElementById('{{ form.fosso_profundidade.id_for_label }}');
+        const volumeEl = document.getElementById('volume-fosso');
+
+        if (!alturaEl || !larguraEl || !profundidadeEl || !volumeEl) return;
+
+        const altura = parseFloat(alturaEl.value) || 0;
+        const largura = parseFloat(larguraEl.value) || 0;
+        const profundidade = parseFloat(profundidadeEl.value) || 0;
+
         const volume = altura * largura * profundidade;
-        document.getElementById('volume-fosso').textContent = volume > 0 ? `${volume.toFixed(2)} m³` : '-';
+        volumeEl.textContent = volume > 0 ? `${volume.toFixed(2)} m³` : '-';
     }
-    
+
     // Função para calcular área do poço
     function calcularAreaPoco() {
-        const largura = parseFloat(document.getElementById('{{ form.poco_largura.id_for_label }}').value) || 0;
-        const profundidade = parseFloat(document.getElementById('{{ form.poco_profundidade.id_for_label }}').value) || 0;
-        
+        const larguraEl = document.getElementById('{{ form.poco_largura.id_for_label }}');
+        const profundidadeEl = document.getElementById('{{ form.poco_profundidade.id_for_label }}');
+        const areaEl = document.getElementById('area-poco');
+
+        if (!larguraEl || !profundidadeEl || !areaEl) return;
+
+        const largura = parseFloat(larguraEl.value) || 0;
+        const profundidade = parseFloat(profundidadeEl.value) || 0;
+
         const area = largura * profundidade;
-        document.getElementById('area-poco').textContent = area > 0 ? `${area.toFixed(2)} m²` : '-';
+        areaEl.textContent = area > 0 ? `${area.toFixed(2)} m²` : '-';
     }
     
     // Gerar vãos de porta
@@ -486,31 +531,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Coletar dados dos vãos de porta
-            const vaosData = [];
+            // Debug: verificar dados dos vãos
+            console.log('=== DEBUG VÃOS DE PORTA ===');
+            console.log('Total de pavimentos:', numeroPavimentos);
             for (let i = 0; i < numeroPavimentos; i++) {
-                const largura = document.querySelector(`input[name="vao_largura_${i}"]`);
-                const altura = document.querySelector(`input[name="vao_altura_${i}"]`);
-                const obs = document.querySelector(`textarea[name="vao_obs_${i}"]`);
-                
-                if (largura && altura) {
-                    vaosData.push({
-                        pavimento: largura.dataset.pavimento,
-                        largura: largura.value,
-                        altura: altura.value,
-                        observacoes: obs ? obs.value : ''
-                    });
-                }
+                const largura = document.querySelector(`input[name="vaos_porta-${i}-largura"]`);
+                const altura = document.querySelector(`input[name="vaos_porta-${i}-altura"]`);
+                const pavimento = document.querySelector(`input[name="vaos_porta-${i}-pavimento"]`);
+                console.log(`Pavimento ${i}:`, {
+                    nome: pavimento ? pavimento.value : 'N/A',
+                    largura: largura ? largura.value : 'N/A',
+                    altura: altura ? altura.value : 'N/A'
+                });
             }
-            
-            // Adicionar dados dos vãos como campo hidden
-            const vaosInput = document.createElement('input');
-            vaosInput.type = 'hidden';
-            vaosInput.name = 'vaos_porta_data';
-            vaosInput.value = JSON.stringify(vaosData);
-            form.appendChild(vaosInput);
-            
-            console.log('Formulário de medição enviado');
+            console.log('=========================');
         });
     }
     

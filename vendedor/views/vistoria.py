@@ -373,7 +373,6 @@ def vistoria_detail(request, pk):
     
     # NOVO: Se for medição, redirecionar para view específica
     if vistoria.tipo_vistoria == 'medicao':
-        messages.info(request, 'Redirecionando para visualização de medição especializada.')
         return redirect('vendedor:vistoria_medicao_detail', pk=pk)
     
     context = {
@@ -514,10 +513,11 @@ def vistoria_pdf(request, pk):
 
     vistoria = get_object_or_404(VistoriaHistorico, pk=pk)
 
-    # Verificar se usuário tem permissão
-    if request.user.tipo_usuario not in ['vendedor', 'gestor', 'admin']:
-        messages.error(request, "Você não tem permissão para visualizar este relatório.")
-        return redirect('vendedor:vistoria_list')
+    # Verificar se usuário tem permissão (superuser sempre pode)
+    if not request.user.is_superuser:
+        if not hasattr(request.user, 'nivel') or request.user.nivel not in ['vendedor', 'gestor', 'admin', 'vistoria', 'engenharia']:
+            messages.error(request, "Você não tem permissão para visualizar este relatório.")
+            return redirect('vendedor:vistoria_list')
 
     try:
         # Gerar PDF
@@ -527,7 +527,8 @@ def vistoria_pdf(request, pk):
         response = HttpResponse(pdf_buffer.read(), content_type='application/pdf')
 
         # Nome do arquivo
-        nome_arquivo = f'Vistoria_{vistoria.proposta.numero}_{vistoria.data_vistoria.strftime("%Y%m%d")}.pdf'
+        data_vistoria = vistoria.data_realizada or vistoria.data_agendada
+        nome_arquivo = f'Vistoria_{vistoria.proposta.numero}_{data_vistoria.strftime("%Y%m%d")}.pdf'
 
         # Headers para download ou visualização
         if request.GET.get('download') == '1':

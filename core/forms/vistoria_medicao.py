@@ -236,18 +236,15 @@ class VistoriaMedicaoForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     
     def save(self, commit=True):
         vistoria = super().save(commit=False)
-        
+
         # Definir campos específicos de medição
         vistoria.tipo_vistoria = 'medicao'
         vistoria.status_vistoria = 'realizada'
-        
+
         if commit:
             vistoria.save()
-            
-            # Criar vãos de porta automaticamente baseado no número de pavimentos
-            if self.proposta and hasattr(self.proposta, 'pavimentos'):
-                criar_vaos_porta_automaticos(vistoria, self.proposta.pavimentos)
-        
+            # Vãos de porta serão criados pelo FormSet, não aqui
+
         return vistoria
 
 

@@ -14,6 +14,9 @@ from django.conf import settings
 from core.models import ParametrosGerais
 import requests
 from PIL import Image as PILImage
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def gerar_pdf_pedido_compra(pedido):
@@ -552,6 +555,12 @@ def gerar_pdf_vistoria(vistoria):
     """
     Gera PDF do relatório de vistoria com fotos e assinatura digital
     """
+    # Debug: Ver o que temos
+    logger.info(f"Gerando PDF para vistoria ID {vistoria.id}")
+    logger.info(f"Fotos anexos: {vistoria.fotos_anexos}")
+    logger.info(f"Assinatura URL: {vistoria.assinatura_url}")
+    logger.info(f"Assinatura Nome: {vistoria.assinatura_nome}")
+
     buffer = BytesIO()
 
     # Configurar documento
@@ -695,20 +704,20 @@ def gerar_pdf_vistoria(vistoria):
             Paragraph("<b>Proposta:</b>", normal_style),
             Paragraph(proposta.numero, normal_style),
             Paragraph("<b>Cliente:</b>", normal_style),
-            Paragraph(proposta.cliente.nome_fantasia or proposta.cliente.razao_social, normal_style)
+            Paragraph(proposta.cliente.nome_fantasia or proposta.cliente.nome, normal_style)
         ],
         [
             Paragraph("<b>Data da Vistoria:</b>", normal_style),
-            Paragraph(vistoria.data_vistoria.strftime('%d/%m/%Y às %H:%M'), normal_style),
-            Paragraph("<b>Obra:</b>", normal_style),
-            Paragraph(proposta.obra or "N/I", normal_style)
+            Paragraph((vistoria.data_realizada or vistoria.data_agendada).strftime('%d/%m/%Y'), normal_style),
+            Paragraph("<b>Projeto:</b>", normal_style),
+            Paragraph(proposta.nome_projeto or "N/I", normal_style)
         ]
     ]
 
-    if proposta.endereco_obra:
+    if proposta.local_instalacao:
         proposta_data.append([
-            Paragraph("<b>Endereço da Obra:</b>", normal_style),
-            Paragraph(proposta.endereco_obra, normal_style),
+            Paragraph("<b>Local da Instalação:</b>", normal_style),
+            Paragraph(proposta.local_instalacao, normal_style),
             Paragraph("", normal_style),
             Paragraph("", normal_style)
         ])
@@ -752,9 +761,9 @@ def gerar_pdf_vistoria(vistoria):
     # FOTOS DA VISTORIA
     # =============================================================================
 
-    fotos = vistoria.fotos.all()
+    fotos_anexos = vistoria.fotos_anexos if vistoria.fotos_anexos else []
 
-    if fotos:
+    if fotos_anexos:
         elementos.append(Paragraph("<b>Registro Fotográfico:</b>", subtitulo_style))
         elementos.append(Spacer(1, 10))
 
@@ -762,10 +771,11 @@ def gerar_pdf_vistoria(vistoria):
         foto_rows = []
         foto_row_atual = []
 
-        for i, foto in enumerate(fotos):
+        for i, foto_dict in enumerate(fotos_anexos):
             try:
-                # Baixar imagem da URL assinada
-                response = requests.get(foto.foto_url, timeout=10)
+                # Baixar imagem da URL assinada (fotos_anexos é lista de dicts com 'url', 'nome', 'tamanho')
+                foto_url = foto_dict.get('url') if isinstance(foto_dict, dict) else foto_dict
+                response = requests.get(foto_url, timeout=10)
                 if response.status_code == 200:
                     img_buffer = BytesIO(response.content)
 
@@ -796,19 +806,17 @@ def gerar_pdf_vistoria(vistoria):
                     # Criar Image do ReportLab
                     img_reportlab = Image(img_resized_buffer, width=new_width, height=new_height)
 
-                    # Adicionar legenda se existir
-                    if foto.legenda:
-                        legenda_style = ParagraphStyle(
-                            'LegendaStyle',
-                            parent=normal_style,
-                            fontSize=8,
-                            alignment=TA_CENTER,
-                            textColor=colors.HexColor('#718096')
-                        )
-                        legenda_para = Paragraph(foto.legenda, legenda_style)
-                        foto_com_legenda = [img_reportlab, Spacer(1, 3), legenda_para]
-                    else:
-                        foto_com_legenda = [img_reportlab]
+                    # Adicionar legenda com nome do arquivo se disponível
+                    foto_nome = foto_dict.get('nome', f'Foto {i+1}') if isinstance(foto_dict, dict) else f'Foto {i+1}'
+                    legenda_style = ParagraphStyle(
+                        'LegendaStyle',
+                        parent=normal_style,
+                        fontSize=8,
+                        alignment=TA_CENTER,
+                        textColor=colors.HexColor('#718096')
+                    )
+                    legenda_para = Paragraph(foto_nome, legenda_style)
+                    foto_com_legenda = [img_reportlab, Spacer(1, 3), legenda_para]
 
                     foto_row_atual.append(foto_com_legenda)
 
@@ -818,7 +826,7 @@ def gerar_pdf_vistoria(vistoria):
                         foto_row_atual = []
 
             except Exception as e:
-                print(f"Erro ao processar foto {foto.id}: {str(e)}")
+                logger.error(f"Erro ao processar foto {i+1}: {str(e)}")
                 continue
 
         # Adicionar última linha se tiver foto sozinha
@@ -866,7 +874,7 @@ def gerar_pdf_vistoria(vistoria):
                 assinatura_info = [
                     [assinatura_img,
                      Paragraph(f"<b>Assinado por:</b><br/>{vistoria.assinatura_nome}<br/><br/>"
-                              f"<b>Data:</b> {vistoria.data_vistoria.strftime('%d/%m/%Y às %H:%M')}",
+                              f"<b>Data:</b> {vistoria.atualizado_em.strftime('%d/%m/%Y às %H:%M')}",
                               normal_style)]
                 ]
 
@@ -895,8 +903,8 @@ def gerar_pdf_vistoria(vistoria):
     elementos.append(Spacer(1, 30))
 
     rodape_text = f"Relatório gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}"
-    if vistoria.usuario:
-        usuario_nome = vistoria.usuario.get_full_name() or vistoria.usuario.username
+    if vistoria.responsavel:
+        usuario_nome = vistoria.responsavel.get_full_name() or vistoria.responsavel.username
         rodape_text += f" por {usuario_nome}"
 
     rodape_style = ParagraphStyle(
