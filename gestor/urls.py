@@ -3,6 +3,39 @@ from django.urls import path
 from . import views
 from core.views import GestorLoginView
 
+# Importar views de producao para PI e MP
+from producao.views import (
+    # Matérias-Primas
+    materiaprima_list as producao_mp_list,
+    materiaprima_create as producao_mp_create,
+    materiaprima_update as producao_mp_update,
+    materiaprima_delete as producao_mp_delete,
+    materiaprima_toggle_status as producao_mp_toggle_status,
+    materiaprima_toggle_utilizado as producao_mp_toggle_utilizado,
+    materiaprima_detail as producao_mp_detail,
+
+    # Produtos Intermediários
+    produto_intermediario_list as producao_pi_list,
+    produto_intermediario_create as producao_pi_create,
+    produto_intermediario_update as producao_pi_update,
+    produto_intermediario_delete as producao_pi_delete,
+    produto_intermediario_toggle_status as producao_pi_toggle_status,
+    produto_intermediario_toggle_utilizado as producao_pi_toggle_utilizado,
+    produto_intermediario_estrutura as producao_pi_estrutura,
+    produto_intermediario_calcular_custo as producao_pi_calcular_custo,
+
+    # APIs de Estrutura
+    api_buscar_produtos_estrutura,
+    api_adicionar_componente_estrutura,
+    api_remover_componente_estrutura,
+    api_editar_componente_estrutura,
+    api_aplicar_custo_estrutura,
+    api_listar_componentes_estrutura,
+
+    # APIs gerais
+    get_subgrupos_by_grupo,
+)
+
 app_name = 'gestor'
 
 urlpatterns = [
@@ -56,17 +89,54 @@ urlpatterns = [
     path('cliente/<int:pk>/delete/', views.cliente_delete, name='cliente_delete'),
     path('clientes/<int:pk>/alternar-status/', views.cliente_toggle_status, name='cliente_toggle_status'),
     
-    # MATÉRIAS-PRIMAS
-    path('materias-primas/', views.materiaprima_list, name='materiaprima_list'),
-    path('materias-primas/novo/', views.materiaprima_create, name='materiaprima_create'),
-    path('materias-primas/<uuid:pk>/editar/', views.materiaprima_update, name='materiaprima_update'),
-    path('materias-primas/<uuid:pk>/status/', views.materiaprima_toggle_status, name='materiaprima_toggle_status'),
-    path('materiasprimas/<uuid:pk>/excluir/', views.materiaprima_delete, name='materiaprima_delete'),  # NOVA
+    # =======================================================================
+    # MATÉRIAS-PRIMAS (usando views de producao)
+    # =======================================================================
+    path('materias-primas/', producao_mp_list, name='materiaprima_list'),
+    path('materias-primas/nova/', producao_mp_create, name='materiaprima_create'),
+    path('materias-primas/<uuid:pk>/', producao_mp_detail, name='materiaprima_detail'),
+    path('materias-primas/<uuid:pk>/editar/', producao_mp_update, name='materiaprima_update'),
+    path('materias-primas/<uuid:pk>/excluir/', producao_mp_delete, name='materiaprima_delete'),
+    path('materias-primas/<uuid:pk>/toggle-status/', producao_mp_toggle_status, name='materiaprima_toggle_status'),
+    path('materias-primas/<uuid:pk>/toggle-utilizado/', producao_mp_toggle_utilizado, name='materiaprima_toggle_utilizado'),
 
+    # =======================================================================
+    # PRODUTOS INTERMEDIÁRIOS (usando views de producao)
+    # =======================================================================
+    path('produtos-intermediarios/', producao_pi_list, name='produto_intermediario_list'),
+    path('produtos-intermediarios/novo/', producao_pi_create, name='produto_intermediario_create'),
+    path('produtos-intermediarios/<uuid:pk>/editar/', producao_pi_update, name='produto_intermediario_update'),
+    path('produtos-intermediarios/<uuid:pk>/excluir/', producao_pi_delete, name='produto_intermediario_delete'),
+    path('produtos-intermediarios/<uuid:pk>/toggle-status/', producao_pi_toggle_status, name='produto_intermediario_toggle_status'),
+    path('produtos-intermediarios/<uuid:pk>/toggle-utilizado/', producao_pi_toggle_utilizado, name='produto_intermediario_toggle_utilizado'),
 
-    # APIs para AJAX
+    # Estrutura de Componentes
+    path('produtos-intermediarios/<uuid:pk>/estrutura/', producao_pi_estrutura, name='produto_intermediario_estrutura'),
+    path('produtos-intermediarios/<uuid:pk>/calcular-custo/', producao_pi_calcular_custo, name='produto_intermediario_calcular_custo'),
+
+    # =======================================================================
+    # PRODUTOS ACABADOS (usando views gestor)
+    # =======================================================================
+    path('produtos-acabados/', views.produto_acabado_list, name='produto_acabado_list'),
+    path('produtos-acabados/novo/', views.produto_acabado_create, name='produto_acabado_create'),
+    path('produtos-acabados/<uuid:pk>/editar/', views.produto_acabado_update, name='produto_acabado_update'),
+    path('produtos-acabados/<uuid:pk>/status/', views.produto_acabado_toggle_status, name='produto_acabado_toggle_status'),
+    path('produtos-acabados/<uuid:pk>/excluir/', views.produto_acabado_delete, name='produto_acabado_delete'),
+
+    # =======================================================================
+    # APIs PARA AJAX
+    # =======================================================================
     path('api/subgrupos-por-grupo/<int:grupo_id>/', views.api_subgrupos_por_grupo, name='api_subgrupos_por_grupo'),
     path('api/produto-por-codigo/<str:codigo>/', views.api_produto_por_codigo, name='api_produto_por_codigo'),
+
+    # APIs para estrutura de componentes (redirecionam para producao)
+    path('api/subgrupos/', get_subgrupos_by_grupo, name='api_subgrupos'),
+    path('api/buscar-produtos-estrutura/', api_buscar_produtos_estrutura, name='api_buscar_produtos_estrutura'),
+    path('api/estrutura/adicionar-componente/', api_adicionar_componente_estrutura, name='api_adicionar_componente_estrutura'),
+    path('api/estrutura/componente/<int:componente_id>/remover/', api_remover_componente_estrutura, name='api_remover_componente_estrutura'),
+    path('api/estrutura/componente/<int:componente_id>/editar/', api_editar_componente_estrutura, name='api_editar_componente_estrutura'),
+    path('api/estrutura/produto/<uuid:produto_id>/aplicar-custo/', api_aplicar_custo_estrutura, name='api_aplicar_custo_estrutura'),
+    path('api/estrutura/produto/<uuid:produto_id>/componentes/', api_listar_componentes_estrutura, name='api_listar_componentes_estrutura'),
     
     # Relatórios
     path('relatorios/estoque-baixo/', views.relatorio_estoque_baixo, name='relatorio_estoque_baixo'),
@@ -78,4 +148,66 @@ urlpatterns = [
     # Painel de Projetos
     path('painel-projetos/', views.painel_projetos, name='painel_projetos'),
     path('painel-projetos/<uuid:pk>/', views.projeto_detail, name='projeto_detail'),
+
+    # Financeiro - Liberação Produção
+    path('liberacao-producao/', views.liberacao_producao, name='liberacao_producao'),
+    path('liberacao-producao/<uuid:pk>/salvar/', views.liberacao_producao_salvar, name='liberacao_producao_salvar'),
+
+    # === ESTOQUE - CADASTROS ===
+
+    # Locais de Estoque
+    path('locais-estoque/', views.local_estoque_list, name='local_estoque_list'),
+    path('locais-estoque/novo/', views.local_estoque_create, name='local_estoque_create'),
+    path('locais-estoque/<int:pk>/editar/', views.local_estoque_update, name='local_estoque_update'),
+    path('locais-estoque/<int:pk>/excluir/', views.local_estoque_delete, name='local_estoque_delete'),
+    path('locais-estoque/<int:pk>/alternar-status/', views.local_estoque_toggle_status, name='local_estoque_toggle_status'),
+
+    # Tipos de Movimento de Entrada
+    path('tipos-movimento-entrada/', views.tipo_movimento_entrada_list, name='tipo_movimento_entrada_list'),
+    path('tipos-movimento-entrada/novo/', views.tipo_movimento_entrada_create, name='tipo_movimento_entrada_create'),
+    path('tipos-movimento-entrada/<int:pk>/editar/', views.tipo_movimento_entrada_update, name='tipo_movimento_entrada_update'),
+    path('tipos-movimento-entrada/<int:pk>/excluir/', views.tipo_movimento_entrada_delete, name='tipo_movimento_entrada_delete'),
+    path('tipos-movimento-entrada/<int:pk>/alternar-status/', views.tipo_movimento_entrada_toggle_status, name='tipo_movimento_entrada_toggle_status'),
+
+    # Tipos de Movimento de Saída
+    path('tipos-movimento-saida/', views.tipo_movimento_saida_list, name='tipo_movimento_saida_list'),
+    path('tipos-movimento-saida/novo/', views.tipo_movimento_saida_create, name='tipo_movimento_saida_create'),
+    path('tipos-movimento-saida/<int:pk>/editar/', views.tipo_movimento_saida_update, name='tipo_movimento_saida_update'),
+    path('tipos-movimento-saida/<int:pk>/excluir/', views.tipo_movimento_saida_delete, name='tipo_movimento_saida_delete'),
+    path('tipos-movimento-saida/<int:pk>/alternar-status/', views.tipo_movimento_saida_toggle_status, name='tipo_movimento_saida_toggle_status'),
+
+    # Movimentos de Entrada
+    path('entradas/', views.movimento_entrada_list, name='movimento_entrada_list'),
+    path('entradas/nova/', views.movimento_entrada_create, name='movimento_entrada_create'),
+    path('entradas/<int:pk>/', views.movimento_entrada_detail, name='movimento_entrada_detail'),
+    path('entradas/<int:pk>/editar/', views.movimento_entrada_update, name='movimento_entrada_update'),
+    path('entradas/<int:pk>/excluir/', views.movimento_entrada_delete, name='movimento_entrada_delete'),
+    path('entradas/<int:pk>/confirmar/', views.movimento_entrada_confirmar, name='movimento_entrada_confirmar'),
+    path('entradas/<int:pk>/cancelar/', views.movimento_entrada_cancelar, name='movimento_entrada_cancelar'),
+
+    # Movimentos de Saída
+    path('saidas/', views.movimento_saida_list, name='movimento_saida_list'),
+    path('saidas/nova/', views.movimento_saida_create, name='movimento_saida_create'),
+    path('saidas/<int:pk>/', views.movimento_saida_detail, name='movimento_saida_detail'),
+    path('saidas/<int:pk>/editar/', views.movimento_saida_update, name='movimento_saida_update'),
+    path('saidas/<int:pk>/excluir/', views.movimento_saida_delete, name='movimento_saida_delete'),
+    path('saidas/<int:pk>/confirmar/', views.movimento_saida_confirmar, name='movimento_saida_confirmar'),
+    path('saidas/<int:pk>/cancelar/', views.movimento_saida_cancelar, name='movimento_saida_cancelar'),
+
+    # Posição de Estoque
+    path('posicao-estoque/', views.posicao_estoque, name='posicao_estoque'),
+
+    # =======================================================================
+    # ORDENS DE PRODUCAO (FASE 4)
+    # =======================================================================
+    path('ordens-producao/', views.ordem_producao_list, name='ordem_producao_list'),
+    path('ordens-producao/nova/', views.ordem_producao_create, name='ordem_producao_create'),
+    path('ordens-producao/<int:pk>/', views.ordem_producao_detail, name='ordem_producao_detail'),
+    path('ordens-producao/<int:pk>/editar/', views.ordem_producao_update, name='ordem_producao_update'),
+    path('ordens-producao/<int:pk>/excluir/', views.ordem_producao_delete, name='ordem_producao_delete'),
+    path('ordens-producao/<int:pk>/liberar/', views.ordem_producao_liberar, name='ordem_producao_liberar'),
+    path('ordens-producao/<int:pk>/iniciar/', views.ordem_producao_iniciar, name='ordem_producao_iniciar'),
+    path('ordens-producao/<int:pk>/apontar/', views.ordem_producao_apontar, name='ordem_producao_apontar'),
+    path('ordens-producao/<int:pk>/concluir/', views.ordem_producao_concluir, name='ordem_producao_concluir'),
+    path('ordens-producao/<int:pk>/cancelar/', views.ordem_producao_cancelar, name='ordem_producao_cancelar'),
 ]

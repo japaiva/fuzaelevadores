@@ -10,6 +10,7 @@ from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.views.decorators.http import require_GET
 
 from core.models import (
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 # APIs AJAX
 # =============================================================================
 
-@login_required
+@portal_producao
 @require_GET
 def get_subgrupos_by_grupo(request):
     """
@@ -70,7 +71,7 @@ def get_subgrupos_by_grupo(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@login_required
+@portal_producao
 @require_GET
 def get_info_produto_codigo(request):
     """
@@ -113,7 +114,7 @@ def get_info_produto_codigo(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@login_required
+@portal_producao
 def api_produto_info(request):
     """API para buscar informações do produto"""
     produto_id = request.GET.get('produto_id')
@@ -156,7 +157,7 @@ def api_produto_info(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@login_required
+@portal_producao
 def api_fornecedor_produtos(request, fornecedor_id):
     """API para buscar produtos de um fornecedor"""
     try:
@@ -202,7 +203,7 @@ def api_fornecedor_produtos(request, fornecedor_id):
     
 # producao/views/apis.py - ADICIONAR ESTA FUNÇÃO
 
-@login_required
+@portal_producao
 @require_GET
 def api_buscar_produtos(request):
     """
@@ -269,7 +270,7 @@ def api_buscar_produtos(request):
 
 # ADICIONAR esta função no final do seu producao/views/apis.py:
 
-@login_required
+@portal_producao
 @require_GET
 def api_grupos_todos(request):
     """

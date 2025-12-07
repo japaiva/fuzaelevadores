@@ -1,13 +1,13 @@
 {% extends 'producao/base_producao.html' %}
 {% load formato_br %}
 
-{% block title %}Propostas | Portal Produção{% endblock %}
+{% block title %}Projetos | Portal Produção{% endblock %}
 
 {% block content %}
 <div class="card shadow">
   <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
     <h5 class="card-title mb-0">
-      <i class="fas fa-clipboard-list me-2"></i>Propostas
+      <i class="fas fa-clipboard-list me-2"></i>Projetos
     </h5>
     <div>
       <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
@@ -18,31 +18,35 @@
   
   <div class="card-header bg-white py-2">
     <form method="get" class="row g-2 align-items-center">
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Clientes</label>
-        {{ form.cliente }}
+      <div class="col-auto">
+        <span class="badge bg-success">Pedido: Aprovado</span>
       </div>
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Modelos</label>
-        {{ form.modelo_elevador }}
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Modelo:</label>
+          {{ form.modelo_elevador }}
+        </div>
       </div>
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Período</label>
-        {{ form.periodo }}
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Produção:</label>
+          <select name="status_producao" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_status_producao == 'todos' %}selected{% endif %}>Todos</option>
+            <option value="" {% if filtro_status_producao == '' %}selected{% endif %}>Aguardando</option>
+            <option value="em_producao" {% if filtro_status_producao == 'em_producao' %}selected{% endif %}>Em Produção</option>
+            <option value="concluido" {% if filtro_status_producao == 'concluido' %}selected{% endif %}>Concluído</option>
+            <option value="cancelado" {% if filtro_status_producao == 'cancelado' %}selected{% endif %}>Cancelado</option>
+          </select>
+        </div>
       </div>
-      <div class="col-md-2">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Status</label>
-        {{ form.status }}
+      <div class="col">
+        <div class="input-group input-group-sm">
+          {{ form.q }}
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+        </div>
       </div>
-      <div class="col-md-3">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">Buscar</label>
-        {{ form.q }}
-      </div>
-      <div class="col-md-1">
-        <label class="form-label text-muted mb-1" style="font-size: 0.8rem;">&nbsp;</label>
-        <button type="submit" class="btn btn-sm btn-primary w-100">
-          <i class="fas fa-search"></i>
-        </button>
+      <div class="col-auto text-end">
+        <span class="badge bg-secondary">{{ propostas.paginator.count }} projetos</span>
       </div>
     </form>
   </div>
@@ -52,13 +56,13 @@
       <table class="table table-hover table-sm align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th width="10%">Número</th>
-            <th width="10%">Data</th>
-            <th width="20%">Cliente</th>
+            <th width="8%">Número</th>
+            <th width="8%">Data</th>
+            <th width="6%" class="text-center">OP</th>
             <th width="20%">Projeto</th>
-            <th width="10%">Proposta</th>
-            <th width="15%">Status Lista</th>
-            <th width="15%" class="text-end">Ações</th>
+            <th width="10%" class="text-center">Produção</th>
+            <th width="14%" class="text-center text-nowrap">Lista Materiais</th>
+            <th width="36%" class="text-end">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -76,85 +80,82 @@
                 </div>
               </td>
 
-              <td>
-                <div class="client-info">
-                  <div class="text-truncate" style="max-width: 180px;" title="{{ proposta.cliente.nome }}">
-                    <strong>{{ proposta.cliente.nome }}</strong>
-                  </div>
-                </div>
+              <td class="text-center">
+                {% if proposta.numero_op %}
+                  <strong>{{ proposta.numero_op }}</strong>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
               </td>
 
               <td>
                 <div class="d-flex align-items-start">
                   <div class="flex-grow-1">
-                    <div class="text-truncate" style="max-width: 180px;" title="{{ proposta.nome_projeto }}">
+                    <div class="text-truncate" style="max-width: 200px;" title="{{ proposta.nome_projeto }}">
                       <strong>{{ proposta.nome_projeto }}</strong>
                     </div>
                   </div>
                 </div>
               </td>
 
-              <td>
-                <span class="badge {{ proposta.status_badge_class }}">
-                  {{ proposta.get_status_display }}
-                </span>
+              <td class="text-center">
+                {% if proposta.status_producao == 'em_producao' %}
+                  <span class="badge bg-primary">Em Produção</span>
+                {% elif proposta.status_producao == 'concluido' %}
+                  <span class="badge bg-info">Concluído</span>
+                {% elif proposta.status_producao == 'cancelado' %}
+                  <span class="badge bg-danger">Cancelado</span>
+                {% else %}
+                  <span class="badge bg-secondary">Aguardando</span>
+                {% endif %}
               </td>
 
-              <td>
+              <td class="text-center">
                 {% if proposta.lista_materiais %}
-                  <div class="lista-status-info">
-                    {% if proposta.lista_materiais.status == 'calculando' %}
-                      <span class="badge bg-warning text-dark">
-                        <i class="fas fa-spinner fa-spin me-1"></i>Calculando
-                      </span>
-                    {% elif proposta.lista_materiais.status == 'em_edicao' %}
-                      <span class="badge bg-info">
-                        <i class="fas fa-edit me-1"></i>Em Edição
-                      </span>
-                    {% elif proposta.lista_materiais.status == 'aprovada' %}
-                      <span class="badge bg-success">
-                        <i class="fas fa-check me-1"></i>Aprovada
-                      </span>
-                      <div class="small text-muted mt-1">
-                        Pronta para requisição
-                      </div>
-                    {% else %}
-                      <span class="badge bg-secondary">
-                        <i class="fas fa-question me-1"></i>{{ proposta.lista_materiais.get_status_display }}
-                      </span>
-                    {% endif %}
-                  </div>
+                  {% if proposta.lista_materiais.status == 'calculando' %}
+                    <span class="badge bg-warning text-dark"><i class="fas fa-spinner fa-spin me-1"></i>Calculando</span>
+                  {% elif proposta.lista_materiais.status == 'em_edicao' %}
+                    <span class="badge bg-info"><i class="fas fa-edit me-1"></i>Em Edição</span>
+                  {% elif proposta.lista_materiais.status == 'aprovada' %}
+                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Aprovada</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ proposta.lista_materiais.get_status_display }}</span>
+                  {% endif %}
                 {% else %}
-                  <div class="lista-status-info">
-                    {% if proposta.pode_calcular %}
-                      <span class="badge bg-outline-secondary border">
-                        <i class="fas fa-plus me-1"></i>Não Gerada
-                      </span>
-                      <div class="small text-muted mt-1">
-                        Pronta para gerar
-                      </div>
-                    {% else %}
-                      <span class="badge bg-light text-muted border">
-                        <i class="fas fa-exclamation-triangle me-1"></i>Pendente
-                      </span>
-                      <div class="small text-warning mt-1">
-                        Dados incompletos
-                      </div>
-                    {% endif %}
-                  </div>
+                  {% if proposta.pode_calcular %}
+                    <span class="badge bg-outline-secondary border">Não Gerada</span>
+                  {% else %}
+                    <span class="badge bg-light text-muted border">Pendente</span>
+                  {% endif %}
                 {% endif %}
               </td>
 
               <td class="text-end">
                 <div class="btn-group" role="group">
-                  <!-- Botão Ver Proposta (sempre aparece) -->
-                  <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}" 
-                    class="btn btn-sm btn-outline-primary" 
+                  <!-- Botão Ver Proposta -->
+                  <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}"
+                    class="btn btn-sm btn-outline-primary"
                     title="Ver Proposta"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-eye"></i>
                   </a>
-                  
+
+                  <!-- Upload Projeto Executivo -->
+                  <a href="{% url 'producao:upload_projeto_executivo' proposta.pk %}"
+                    class="btn btn-sm {% if proposta.arquivo_projeto_executivo %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                    title="{% if proposta.arquivo_projeto_executivo %}Projeto Executivo enviado{% else %}Upload Projeto Executivo{% endif %}"
+                    data-bs-toggle="tooltip">
+                    <i class="fas fa-file-pdf"></i>
+                  </a>
+
+                  <!-- Upload Projeto Elevador -->
+                  <a href="{% url 'producao:upload_projeto_elevador' proposta.pk %}"
+                    class="btn btn-sm {% if proposta.arquivo_projeto_elevador %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                    title="{% if proposta.arquivo_projeto_elevador %}Projeto Elevador enviado{% else %}Upload Projeto Elevador{% endif %}"
+                    data-bs-toggle="tooltip">
+                    <i class="fas fa-elevator"></i>
+                  </a>
+
                   {% if proposta.lista_materiais %}
                     <!-- TEM LISTA DE MATERIAIS -->
                     
@@ -240,8 +241,8 @@
               <td colspan="7" class="text-center py-5">
                 <div class="empty-state">
                   <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                  <h5 class="text-muted">Nenhuma proposta encontrada</h5>
-                  <p class="text-muted">Ajuste os filtros ou verifique se há propostas cadastradas</p>
+                  <h5 class="text-muted">Nenhum projeto encontrado</h5>
+                  <p class="text-muted">Ajuste os filtros ou verifique se há projetos cadastrados</p>
                 </div>
               </td>
             </tr>
@@ -257,7 +258,7 @@
       <div class="pagination-info">
         <small class="text-muted">
           <i class="fas fa-info-circle me-1"></i>
-          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} propostas
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} projetos
         </small>
       </div>
       <nav aria-label="Navegação de página">
@@ -323,7 +324,7 @@
       <div>
         <small class="text-muted">
           <i class="fas fa-filter me-1"></i>
-          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} propostas
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} projetos
         </small>
       </div>
       <div>
@@ -343,6 +344,10 @@
 .table-sm td, .table-sm th {
   padding: 0.75rem 0.5rem;
   vertical-align: middle;
+}
+
+.table thead th {
+  font-size: 0.75rem;
 }
 
 .text-truncate {
@@ -424,8 +429,9 @@
 
 .card-header form .form-select,
 .card-header form .form-control {
-  font-size: 0.9rem;
-  padding: 0.375rem 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  height: auto;
 }
 
 /* Labels dos filtros */
@@ -522,9 +528,13 @@
     font-size: 2rem !important;
   }
   
-  /* Ocultar colunas menos importantes em mobile */
+  /* Ocultar colunas menos importantes em mobile (Data, OP e Produção) */
   .table th:nth-child(2),
-  .table td:nth-child(2) {
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
     display: none;
   }
   

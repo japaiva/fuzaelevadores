@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 # CRUD ORÇAMENTOS DE COMPRA
 # =============================================================================
 
-@login_required
+@portal_producao
 def orcamento_compra_list(request):
     """Lista de orçamentos de compra com filtros"""
     orcamentos_list = OrcamentoCompra.objects.select_related(
@@ -105,7 +106,7 @@ def orcamento_compra_list(request):
     return render(request, 'producao/orcamentos/orcamento_compra_list.html', context)
 
 
-@login_required
+@portal_producao
 def orcamento_compra_create(request):
     """Criar novo orçamento de compra"""
 
@@ -187,7 +188,7 @@ def orcamento_compra_create(request):
     return render(request, 'producao/orcamentos/orcamento_compra_form.html', context)
 
 
-@login_required
+@portal_producao
 def orcamento_compra_detail(request, pk):
     """Detalhes do orçamento de compra"""
     orcamento = get_object_or_404(
@@ -206,7 +207,7 @@ def orcamento_compra_detail(request, pk):
     return render(request, 'producao/orcamentos/orcamento_compra_detail.html', context)
 
 
-@login_required
+@portal_producao
 def orcamento_compra_update(request, pk):
     """Editar orçamento de compra"""
     orcamento = get_object_or_404(OrcamentoCompra, pk=pk)
@@ -275,7 +276,7 @@ def orcamento_compra_update(request, pk):
     return render(request, 'producao/orcamentos/orcamento_compra_form.html', context)
 
 
-@login_required
+@portal_producao
 def orcamento_compra_delete(request, pk):
     """Excluir orçamento de compra"""
     orcamento = get_object_or_404(OrcamentoCompra, pk=pk)
@@ -302,7 +303,7 @@ def orcamento_compra_delete(request, pk):
     return render(request, 'producao/orcamentos/orcamento_compra_delete.html', {'orcamento': orcamento})
 
 
-@login_required
+@portal_producao
 def orcamento_compra_alterar_status(request, pk):
     """Alterar status do orçamento"""
     orcamento = get_object_or_404(OrcamentoCompra, pk=pk)
@@ -325,7 +326,7 @@ def orcamento_compra_alterar_status(request, pk):
     return render(request, 'producao/orcamentos/orcamento_compra_alterar_status.html', context)
 
 
-@login_required
+@portal_producao
 def orcamento_compra_duplicar(request, pk):
     """Duplicar orçamento de compra"""
     orcamento_original = get_object_or_404(OrcamentoCompra, pk=pk)
@@ -383,7 +384,7 @@ def orcamento_compra_duplicar(request, pk):
         return redirect('producao:orcamento_compra_detail', pk=pk)
 
 
-@login_required
+@portal_producao
 def orcamento_compra_gerar_pedido(request, pk):
     """Gerar pedido de compra a partir do orçamento"""
     orcamento = get_object_or_404(OrcamentoCompra, pk=pk)

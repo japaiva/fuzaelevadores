@@ -1,0 +1,137 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Posicao de Estoque | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2><i class="fas fa-warehouse text-primary me-2"></i>Posicao de Estoque</h2>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Local de Estoque</label>
+        <select name="local" class="form-select form-select-sm">
+          <option value="">Todos os Locais</option>
+          {% for local in locais %}
+            <option value="{{ local.id }}" {% if request.GET.local == local.id|stringformat:"s" %}selected{% endif %}>
+              {{ local.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Tipo Local</label>
+        <select name="tipo_local" class="form-select form-select-sm">
+          <option value="">Todos</option>
+          <option value="proprio" {% if request.GET.tipo_local == 'proprio' %}selected{% endif %}>Proprio</option>
+          <option value="terceiros" {% if request.GET.tipo_local == 'terceiros' %}selected{% endif %}>Em Terceiros</option>
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Buscar Produto</label>
+        <input type="text" name="q" class="form-control form-control-sm" placeholder="Codigo ou descricao..." value="{{ request.GET.q }}">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <i class="fas fa-search me-1"></i> Filtrar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Resumo -->
+<div class="row mb-4">
+  <div class="col-md-4">
+    <div class="card bg-primary text-white shadow-sm">
+      <div class="card-body text-center">
+        <h5 class="card-title">Valor Total em Estoque</h5>
+        <h2 class="mb-0">R$ {{ total_valor|floatformat:2 }}</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lista -->
+<div class="card shadow">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Codigo</th>
+          <th>Produto</th>
+          <th>Local</th>
+          <th class="text-center">Tipo</th>
+          <th class="text-end">Quantidade</th>
+          <th class="text-end">Reservado</th>
+          <th class="text-end">Disponivel</th>
+          <th class="text-end">Custo Medio</th>
+          <th class="text-end">Valor Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for est in estoques %}
+        <tr>
+          <td><strong>{{ est.produto.codigo }}</strong></td>
+          <td>{{ est.produto.descricao }}</td>
+          <td>{{ est.local_estoque.nome }}</td>
+          <td class="text-center">
+            {% if est.local_estoque.tipo == 'proprio' %}
+              <span class="badge bg-primary">Proprio</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Terceiros</span>
+            {% endif %}
+          </td>
+          <td class="text-end">{{ est.quantidade|floatformat:4 }}</td>
+          <td class="text-end">
+            {% if est.quantidade_reservada %}
+              <span class="text-warning">{{ est.quantidade_reservada|floatformat:4 }}</span>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <strong>{{ est.quantidade_disponivel|floatformat:4 }}</strong>
+          </td>
+          <td class="text-end">R$ {{ est.custo_medio|floatformat:4 }}</td>
+          <td class="text-end">R$ {{ est.valor_total|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+            Nenhum item em estoque encontrado.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Paginacao -->
+{% if estoques.has_other_pages %}
+<nav aria-label="Paginacao" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if estoques.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ estoques.previous_page_number }}{% if request.GET.local %}&local={{ request.GET.local }}{% endif %}{% if request.GET.tipo_local %}&tipo_local={{ request.GET.tipo_local }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Anterior</a>
+    </li>
+    {% endif %}
+
+    <li class="page-item active">
+      <span class="page-link">{{ estoques.number }} de {{ estoques.paginator.num_pages }}</span>
+    </li>
+
+    {% if estoques.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ estoques.next_page_number }}{% if request.GET.local %}&local={{ request.GET.local }}{% endif %}{% if request.GET.tipo_local %}&tipo_local={{ request.GET.tipo_local }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Proximo</a>
+    </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

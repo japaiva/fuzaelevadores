@@ -3,6 +3,7 @@
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 # CRUD REGRAS YAML
 # =============================================================================
 
-@login_required
+@portal_producao
 def regras_yaml_list(request):
     """Lista regras YAML com filtros"""
     regras_list = RegraYAML.objects.select_related(
@@ -65,7 +66,7 @@ def regras_yaml_list(request):
     })
 
 
-@login_required
+@portal_producao
 def regra_yaml_create(request):
     """Criar nova regra YAML"""
     if request.method == 'POST':
@@ -94,7 +95,7 @@ def regra_yaml_create(request):
     })
 
 
-@login_required
+@portal_producao
 def regra_yaml_update(request, pk):
     """Editar regra YAML"""
     regra = get_object_or_404(RegraYAML, pk=pk)
@@ -125,7 +126,7 @@ def regra_yaml_update(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def regra_yaml_detail(request, pk):
     """Visualizar detalhes de uma regra YAML"""
     regra = get_object_or_404(RegraYAML, pk=pk)
@@ -143,7 +144,7 @@ def regra_yaml_detail(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def regra_yaml_delete(request, pk):
     """Excluir regra YAML"""
     regra = get_object_or_404(RegraYAML, pk=pk)
@@ -163,7 +164,7 @@ def regra_yaml_delete(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def regra_yaml_toggle_status(request, pk):
     """Ativar/desativar regra YAML"""
     regra = get_object_or_404(RegraYAML, pk=pk)
@@ -182,7 +183,7 @@ def regra_yaml_toggle_status(request, pk):
     return redirect('producao:regras_yaml_list')
 
 
-@login_required
+@portal_producao
 def regra_yaml_validar(request, pk):
     """Validar códigos de produtos da regra"""
     regra = get_object_or_404(RegraYAML, pk=pk)

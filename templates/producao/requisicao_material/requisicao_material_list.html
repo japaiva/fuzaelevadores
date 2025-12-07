@@ -1,0 +1,138 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Requisicao de Material | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-list me-2 text-primary"></i> Requisicao de Material
+    </h5>
+    <div>
+      <a href="{% url 'producao:requisicao_material_create' %}" class="btn btn-primary btn-sm me-2">
+        <i class="fas fa-plus me-1"></i> Nova Requisicao
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-header bg-white">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto">
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos Status</option>
+          <option value="rascunho" {% if request.GET.status == 'rascunho' %}selected{% endif %}>Rascunho</option>
+          <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
+          <option value="parcial" {% if request.GET.status == 'parcial' %}selected{% endif %}>Parcialmente Atendida</option>
+          <option value="atendida" {% if request.GET.status == 'atendida' %}selected{% endif %}>Atendida</option>
+          <option value="cancelada" {% if request.GET.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        {{ form_filtro.tipo_movimento }}
+      </div>
+      <div class="col-auto">
+        <input type="date" name="data_de" class="form-control form-control-sm" value="{{ request.GET.data_de }}" placeholder="De">
+      </div>
+      <div class="col-auto">
+        <input type="date" name="data_ate" class="form-control form-control-sm" value="{{ request.GET.data_ate }}" placeholder="Ate">
+      </div>
+      <div class="col-auto">
+        <input type="text" name="busca" class="form-control form-control-sm" placeholder="Buscar..." value="{{ request.GET.busca }}">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>Numero</th>
+          <th>Data</th>
+          <th>Tipo Movimento</th>
+          <th>OP</th>
+          <th class="text-center">Itens</th>
+          <th class="text-center">Status</th>
+          <th class="text-center" style="width: 100px;">Acoes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requisicoes %}
+        <tr>
+          <td>
+            <a href="{% url 'producao:requisicao_material_detail' req.pk %}" class="text-decoration-none fw-bold">
+              {{ req.numero }}
+            </a>
+          </td>
+          <td>{{ req.data_requisicao|date:"d/m/Y" }}</td>
+          <td>{{ req.tipo_movimento.descricao }}</td>
+          <td>{% if req.proposta %}OP {{ req.proposta.numero_op }} - {{ req.proposta.cliente.nome }}{% else %}-{% endif %}</td>
+          <td class="text-center">{{ req.itens.count }}</td>
+          <td class="text-center">
+            {% if req.status == 'rascunho' %}
+              <span class="badge bg-secondary">Rascunho</span>
+            {% elif req.status == 'pendente' %}
+              <span class="badge bg-warning text-dark">Pendente</span>
+            {% elif req.status == 'parcial' %}
+              <span class="badge bg-info">Parcial</span>
+            {% elif req.status == 'atendida' %}
+              <span class="badge bg-success">Atendida</span>
+            {% else %}
+              <span class="badge bg-danger">Cancelada</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <a href="{% url 'producao:requisicao_material_detail' req.pk %}" class="btn btn-sm btn-outline-primary" title="Visualizar">
+              <i class="fas fa-eye"></i>
+            </a>
+            {% if req.status == 'rascunho' %}
+            <a href="{% url 'producao:requisicao_material_update' req.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+              <i class="fas fa-edit"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+            Nenhuma requisicao de material encontrada.
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if requisicoes.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav aria-label="Paginacao">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if requisicoes.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ requisicoes.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.busca %}&busca={{ request.GET.busca }}{% endif %}">&laquo;</a>
+        </li>
+        {% endif %}
+        <li class="page-item active">
+          <span class="page-link">{{ requisicoes.number }} / {{ requisicoes.paginator.num_pages }}</span>
+        </li>
+        {% if requisicoes.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ requisicoes.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.busca %}&busca={{ request.GET.busca }}{% endif %}">&raquo;</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

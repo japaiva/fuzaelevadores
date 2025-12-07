@@ -34,6 +34,25 @@ from .portas_pavimento import PortaPavimento
 from .regras_yaml import RegraYAML, TipoRegra
 from .workflow import Tarefa, HistoricoTarefa
 
+# Estoque
+from .estoque import (
+    LocalEstoque,
+    TipoMovimentoEntrada,
+    TipoMovimentoSaida,
+    MovimentoEntrada,
+    ItemMovimentoEntrada,
+    MovimentoSaida,
+    ItemMovimentoSaida,
+    Estoque,
+    MovimentoEstoque,
+    # Requisição de Material
+    RequisicaoMaterial,
+    ItemRequisicaoMaterial,
+    # FASE 4 - Ordens de Producao
+    OrdemProducao,
+    ItemConsumoOP,
+)
+
 # === LISTA ESSENCIAL ===
 __all__ = [
     # Usuários
@@ -85,4 +104,19 @@ __all__ = [
     # Workflow
     'Tarefa',
     'HistoricoTarefa',
+
+    # Estoque
+    'LocalEstoque',
+    'TipoMovimentoEntrada',
+    'TipoMovimentoSaida',
+    'MovimentoEntrada',
+    'ItemMovimentoEntrada',
+    'MovimentoSaida',
+    'ItemMovimentoSaida',
+    'Estoque',
+    'MovimentoEstoque',
+
+    # FASE 4 - Ordens de Producao
+    'OrdemProducao',
+    'ItemConsumoOP',
 ]

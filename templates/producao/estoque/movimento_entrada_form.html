@@ -1,0 +1,233 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}{% if movimento %}Editar{% else %}Nova{% endif %} Entrada | Portal Producao{% endblock %}
+
+{% block content %}
+<form method="post" id="form-entrada">
+  {% csrf_token %}
+
+  <div class="card shadow">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-arrow-down me-2 text-success"></i>
+        {% if movimento %}Editar Entrada: {{ movimento.numero }}{% else %}Nova Entrada{% endif %}
+      </h5>
+      <div>
+        <button type="submit" class="btn btn-success btn-sm me-2">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+        <a href="{% url 'producao:movimento_entrada_list' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fas fa-arrow-left me-1"></i> Voltar
+        </a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <!-- Dados da Entrada -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-3">
+          <label for="id_tipo_movimento" class="form-label">Tipo de Movimento *</label>
+          {{ form.tipo_movimento }}
+          {% if form.tipo_movimento.errors %}
+            <div class="text-danger small">{{ form.tipo_movimento.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-3" id="div-fornecedor">
+          <label for="id_fornecedor" class="form-label">Fornecedor</label>
+          {{ form.fornecedor }}
+        </div>
+
+        <div class="col-md-3" id="div-cliente" style="display: none;">
+          <label for="id_cliente" class="form-label">Cliente</label>
+          {{ form.cliente }}
+        </div>
+
+        <div class="col-md-3" id="div-pedido">
+          <label for="id_pedido_compra" class="form-label">Pedido de Compra</label>
+          {{ form.pedido_compra }}
+        </div>
+
+        <div class="col-md-2">
+          <label for="id_data_movimento" class="form-label">Data Movimento *</label>
+          {{ form.data_movimento }}
+        </div>
+      </div>
+
+      <!-- Nota Fiscal -->
+      <div class="card mb-4">
+        <div class="card-header bg-white py-2">
+          <strong><i class="fas fa-file-invoice me-2"></i>Nota Fiscal</strong>
+        </div>
+        <div class="card-body py-3">
+          <div class="row g-3">
+            <div class="col-md-2">
+              <label class="form-label">Numero NF</label>
+              {{ form.numero_nf }}
+            </div>
+            <div class="col-md-1">
+              <label class="form-label">Serie</label>
+              {{ form.serie_nf }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Data Emissao</label>
+              {{ form.data_emissao_nf }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Chave de Acesso NFe</label>
+              {{ form.chave_acesso }}
+            </div>
+            <div class="col-md-1">
+              <label class="form-label">Frete</label>
+              {{ form.valor_frete }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Desconto</label>
+              {{ form.valor_desconto }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="card mb-4">
+        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+          <strong><i class="fas fa-boxes me-2"></i>Itens</strong>
+          <button type="button" class="btn btn-sm btn-outline-success" id="btn-add-item">
+            <i class="fas fa-plus me-1"></i> Adicionar
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {{ formset.management_form }}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="tabela-itens">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 35%;">Produto *</th>
+                  <th style="width: 12%;">Quantidade *</th>
+                  <th style="width: 8%;">Unidade</th>
+                  <th style="width: 12%;">Valor Unit.</th>
+                  <th style="width: 12%;">Lote</th>
+                  <th style="width: 17%;">Obs.</th>
+                  <th style="width: 4%;" class="text-center">X</th>
+                </tr>
+              </thead>
+              <tbody id="itens-tbody">
+                {% for item_form in formset %}
+                <tr class="item-row">
+                  <td>
+                    {{ item_form.produto }}
+                    {{ item_form.id }}
+                  </td>
+                  <td>{{ item_form.quantidade }}</td>
+                  <td>{{ item_form.unidade }}</td>
+                  <td>{{ item_form.valor_unitario }}</td>
+                  <td>{{ item_form.lote }}</td>
+                  <td>{{ item_form.observacoes }}</td>
+                  <td class="text-center">
+                    {{ item_form.DELETE }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Observacoes -->
+      <div class="row">
+        <div class="col-12">
+          <label class="form-label">Observacoes</label>
+          {{ form.observacoes }}
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- Template para nova linha de item -->
+<template id="template-item-row">
+  <tr class="item-row">
+    <td>
+      <select name="itens-__prefix__-produto" class="form-select form-select-sm item-produto">
+        <option value="">---------</option>
+      </select>
+      <input type="hidden" name="itens-__prefix__-id" value="">
+    </td>
+    <td><input type="number" name="itens-__prefix__-quantidade" step="0.0001" min="0.0001" class="form-control form-control-sm item-quantidade"></td>
+    <td><input type="text" name="itens-__prefix__-unidade" class="form-control form-control-sm item-unidade" readonly></td>
+    <td><input type="number" name="itens-__prefix__-valor_unitario" step="0.0001" min="0" class="form-control form-control-sm item-valor-unitario"></td>
+    <td><input type="text" name="itens-__prefix__-lote" class="form-control form-control-sm"></td>
+    <td><input type="text" name="itens-__prefix__-observacoes" class="form-control form-control-sm"></td>
+    <td class="text-center">
+      <input type="checkbox" name="itens-__prefix__-DELETE" class="form-check-input">
+    </td>
+  </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Dados dos tipos de movimento
+  const tiposMovimento = {{ tipos_movimento|safe }};
+  const tiposMap = {};
+  tiposMovimento.forEach(t => tiposMap[t.id] = t);
+
+  const tipoMovimentoSelect = document.getElementById('id_tipo_movimento');
+  const divFornecedor = document.getElementById('div-fornecedor');
+  const divCliente = document.getElementById('div-cliente');
+  const divPedido = document.getElementById('div-pedido');
+
+  // Funcao para atualizar campos baseado no tipo
+  function atualizarCampos() {
+    const tipoId = tipoMovimentoSelect.value;
+    const tipo = tiposMap[tipoId];
+
+    if (tipo) {
+      if (tipo.tipo_parceiro === 'fornecedor') {
+        divFornecedor.style.display = '';
+        divCliente.style.display = 'none';
+        divPedido.style.display = '';
+      } else if (tipo.tipo_parceiro === 'cliente') {
+        divFornecedor.style.display = 'none';
+        divCliente.style.display = '';
+        divPedido.style.display = 'none';
+      } else {
+        divFornecedor.style.display = 'none';
+        divCliente.style.display = 'none';
+        divPedido.style.display = 'none';
+      }
+    }
+  }
+
+  tipoMovimentoSelect.addEventListener('change', atualizarCampos);
+  atualizarCampos();
+
+  // Gerenciamento de itens do formset
+  const tbody = document.getElementById('itens-tbody');
+  const template = document.getElementById('template-item-row');
+  const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
+
+  // Copiar opcoes de produto do primeiro select para o template
+  const firstSelect = document.querySelector('.item-produto');
+  if (firstSelect && template) {
+    const templateSelect = template.content.querySelector('.item-produto');
+    templateSelect.innerHTML = firstSelect.innerHTML;
+  }
+
+  document.getElementById('btn-add-item').addEventListener('click', function() {
+    const formNum = parseInt(totalForms.value);
+    const newRow = template.content.cloneNode(true);
+
+    newRow.querySelectorAll('[name*="__prefix__"]').forEach(el => {
+      el.name = el.name.replace('__prefix__', formNum);
+    });
+
+    tbody.appendChild(newRow);
+    totalForms.value = formNum + 1;
+  });
+});
+</script>
+{% endblock %}

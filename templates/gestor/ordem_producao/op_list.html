@@ -1,0 +1,183 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Ordens de Producao | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-industry me-2 text-primary"></i> Ordens de Producao
+    </h5>
+    <div>
+      <a href="{% url 'gestor:ordem_producao_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Nova OP
+      </a>
+      <a href="{% url 'gestor:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <!-- Estatisticas -->
+  <div class="card-header bg-white">
+    <div class="row text-center">
+      <div class="col">
+        <span class="badge bg-secondary fs-6">{{ stats.total }}</span>
+        <small class="d-block text-muted">Total</small>
+      </div>
+      <div class="col">
+        <span class="badge bg-light text-dark fs-6">{{ stats.rascunho }}</span>
+        <small class="d-block text-muted">Rascunho</small>
+      </div>
+      <div class="col">
+        <span class="badge bg-info fs-6">{{ stats.liberada }}</span>
+        <small class="d-block text-muted">Liberada</small>
+      </div>
+      <div class="col">
+        <span class="badge bg-warning fs-6">{{ stats.em_producao }}</span>
+        <small class="d-block text-muted">Em Producao</small>
+      </div>
+      <div class="col">
+        <span class="badge bg-success fs-6">{{ stats.concluida }}</span>
+        <small class="d-block text-muted">Concluida</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card-header bg-white">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto">
+        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos os Status</option>
+          <option value="rascunho" {% if status_filtro == 'rascunho' %}selected{% endif %}>Rascunho</option>
+          <option value="liberada" {% if status_filtro == 'liberada' %}selected{% endif %}>Liberada</option>
+          <option value="em_producao" {% if status_filtro == 'em_producao' %}selected{% endif %}>Em Producao</option>
+          <option value="concluida" {% if status_filtro == 'concluida' %}selected{% endif %}>Concluida</option>
+          <option value="cancelada" {% if status_filtro == 'cancelada' %}selected{% endif %}>Cancelada</option>
+        </select>
+      </div>
+      <div class="col-auto flex-grow-1">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" class="form-control" placeholder="Buscar numero, produto..." value="{{ query|default:'' }}">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Numero</th>
+            <th>Produto</th>
+            <th class="text-center">Qtd Plan.</th>
+            <th class="text-center">Qtd Prod.</th>
+            <th class="text-center">%</th>
+            <th class="text-center">Prioridade</th>
+            <th class="text-center">Status</th>
+            <th>Criado</th>
+            <th class="text-center">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for op in ops %}
+          <tr>
+            <td>
+              <a href="{% url 'gestor:ordem_producao_detail' op.pk %}" class="fw-bold text-decoration-none">
+                {{ op.numero }}
+              </a>
+            </td>
+            <td>
+              <code class="text-primary">{{ op.produto.codigo }}</code>
+              <small class="d-block text-muted">{{ op.produto.nome|truncatechars:30 }}</small>
+            </td>
+            <td class="text-center">{{ op.quantidade_planejada|floatformat:2 }}</td>
+            <td class="text-center">{{ op.quantidade_produzida|floatformat:2 }}</td>
+            <td class="text-center">
+              <div class="progress" style="height: 20px; min-width: 60px;">
+                <div class="progress-bar {% if op.percentual_concluido >= 100 %}bg-success{% elif op.percentual_concluido >= 50 %}bg-info{% else %}bg-warning{% endif %}"
+                     style="width: {{ op.percentual_concluido }}%">
+                  {{ op.percentual_concluido|floatformat:0 }}%
+                </div>
+              </div>
+            </td>
+            <td class="text-center">
+              {% if op.prioridade <= 3 %}
+                <span class="badge bg-danger">{{ op.prioridade }}</span>
+              {% elif op.prioridade <= 6 %}
+                <span class="badge bg-warning">{{ op.prioridade }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ op.prioridade }}</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if op.status == 'rascunho' %}
+                <span class="badge bg-light text-dark">Rascunho</span>
+              {% elif op.status == 'liberada' %}
+                <span class="badge bg-info">Liberada</span>
+              {% elif op.status == 'em_producao' %}
+                <span class="badge bg-warning">Em Producao</span>
+              {% elif op.status == 'concluida' %}
+                <span class="badge bg-success">Concluida</span>
+              {% elif op.status == 'cancelada' %}
+                <span class="badge bg-secondary">Cancelada</span>
+              {% endif %}
+            </td>
+            <td>
+              <small>{{ op.criado_em|date:"d/m/Y" }}</small>
+              <small class="d-block text-muted">{{ op.criado_por.username }}</small>
+            </td>
+            <td class="text-center">
+              <a href="{% url 'gestor:ordem_producao_detail' op.pk %}" class="btn btn-outline-primary btn-sm" title="Ver">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" class="text-center py-4 text-muted">
+              <i class="fas fa-industry fa-2x mb-2"></i>
+              <p>Nenhuma ordem de producao encontrada.</p>
+              <a href="{% url 'gestor:ordem_producao_create' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus me-1"></i> Criar Primeira OP
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if ops.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if ops.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ ops.previous_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+            &laquo;
+          </a>
+        </li>
+        {% endif %}
+        <li class="page-item active">
+          <span class="page-link">{{ ops.number }} / {{ ops.paginator.num_pages }}</span>
+        </li>
+        {% if ops.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ ops.next_page_number }}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+            &raquo;
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

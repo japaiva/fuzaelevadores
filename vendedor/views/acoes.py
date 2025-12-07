@@ -6,6 +6,7 @@ from decimal import Decimal  # ✅ IMPORT ADICIONADO
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.contrib import messages
 from django.http import JsonResponse
 
@@ -14,7 +15,7 @@ from core.models import Proposta, AnexoProposta, HistoricoProposta, ParametrosGe
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@portal_vendedor
 def proposta_calcular(request, pk):
     """
     Executar cálculos completos com impostos dinâmicos baseados em parâmetros
@@ -98,7 +99,7 @@ def proposta_calcular(request, pk):
     return render(request, 'vendedor/proposta_calcular.html', context)
 
 
-@login_required
+@portal_vendedor
 def proposta_duplicar(request, pk):
     """
     Duplicar proposta existente
@@ -203,7 +204,7 @@ def proposta_duplicar(request, pk):
     return render(request, 'vendedor/proposta_duplicar.html', context)
 
 
-@login_required
+@portal_vendedor
 def proposta_enviar_cliente(request, pk):
     """
     Enviar proposta para o cliente
@@ -256,7 +257,7 @@ def proposta_enviar_cliente(request, pk):
     return render(request, 'vendedor/proposta_enviar.html', context)
 
 
-@login_required
+@portal_vendedor
 def proposta_gerar_numero_definitivo(request, pk):
     """
     Gerar número definitivo da proposta
@@ -293,7 +294,7 @@ def proposta_gerar_numero_definitivo(request, pk):
     return redirect('vendedor:proposta_detail', pk=proposta.pk)
 
 
-@login_required
+@portal_vendedor
 def proposta_historico(request, pk):
     """
     Histórico de mudanças da proposta
@@ -313,7 +314,7 @@ def proposta_historico(request, pk):
     return render(request, 'vendedor/proposta_historico.html', context)
 
 
-@login_required
+@portal_vendedor
 def proposta_anexos(request, pk):
     """
     Gerenciar anexos da proposta

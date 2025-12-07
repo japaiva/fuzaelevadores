@@ -1,0 +1,105 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{% if tipo %}Editar{% else %}Novo{% endif %} Tipo de Movimento de Saida | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-sign-out-alt me-2"></i>
+      {% if tipo %}Editar Tipo de Movimento de Saida{% else %}Novo Tipo de Movimento de Saida{% endif %}
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.codigo.id_for_label }}" class="form-label">Codigo *</label>
+          {{ form.codigo }}
+          {% if form.codigo.errors %}
+            <div class="invalid-feedback d-block">{{ form.codigo.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.descricao.id_for_label }}" class="form-label">Descricao *</label>
+          {{ form.descricao }}
+          {% if form.descricao.errors %}
+            <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.tipo_parceiro.id_for_label }}" class="form-label">Tipo de Parceiro *</label>
+          {{ form.tipo_parceiro }}
+          {% if form.tipo_parceiro.errors %}
+            <div class="invalid-feedback d-block">{{ form.tipo_parceiro.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.tipo_produto.id_for_label }}" class="form-label">Tipo de Produto *</label>
+          {{ form.tipo_produto }}
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.tipo_operacao.id_for_label }}" class="form-label">Tipo de Operacao *</label>
+          {{ form.tipo_operacao }}
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Opcoes</label>
+          <div class="form-check">
+            {{ form.movimenta_terceiros }}
+            <label class="form-check-label" for="{{ form.movimenta_terceiros.id_for_label }}">
+              Movimenta Terceiros
+            </label>
+          </div>
+          <div class="form-check">
+            {{ form.exige_nota_fiscal }}
+            <label class="form-check-label" for="{{ form.exige_nota_fiscal.id_for_label }}">
+              Exige Nota Fiscal
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label class="form-label">Status</label>
+          <div class="form-check">
+            {{ form.ativo }}
+            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+              Ativo
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-3">
+          <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observacoes</label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}
+            <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'gestor:tipo_movimento_saida_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

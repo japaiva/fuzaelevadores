@@ -1,133 +1,123 @@
 {% extends 'base.html' %}
 
-{% block title %}Portal Produção{% endblock %}
+{% block title %}Portal Producao{% endblock %}
 
 {% block navbar_title %}
-<span class="app-title-text">Portal Produção</span>
+<span class="app-title-text">Portal Producao</span>
 {% endblock %}
 
 {% block nav_items %}
 
-<!-- 🔧 Engenharia -->
+<!-- Adm -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'proposta' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Engenharia
+  <a class="nav-link dropdown-toggle {% if 'grupo' in request.resolver_match.url_name or 'subgrupo' in request.resolver_match.url_name or 'materiaprima' in request.resolver_match.url_name or 'produto_intermediario' in request.resolver_match.url_name or 'produto_acabado' in request.resolver_match.url_name or 'tipo_movimento' in request.resolver_match.url_name or 'fornecedor' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Adm
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'producao:proposta_list_producao' %}">
-        Gestão Projetos
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:regras_yaml_list' %}">
-        Regras Composição Preço
-    </a></li>
-  </ul>
-</li>
-
-<!-- 🛒 Suprimentos -->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'requisicao' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'pedido' in request.resolver_match.url_name or 'saldo' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Suprimentos
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <li><a class="dropdown-item" href="{% url 'producao:requisicao_compra_list' %}">
-        Requisição de Compra
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:orcamento_compra_list' %}">
-        Orçamento de Compra
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
-        Pedido de Compra
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="{% url 'producao:relatorio_saldos_requisicoes' %}">
-        Saldo Requisição
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
-        Matéria Prima
-    </a></li>
-    <li><a class="dropdown-item" href="{% url 'producao:produto_intermediario_list' %}">
-        Produto Intermediário
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="{% url 'producao:grupo_list' %}">
-        Grupo Produtos
+        Grupos de Produtos
     </a></li>
     <li><a class="dropdown-item" href="{% url 'producao:subgrupo_list' %}">
-        Subgrupo Produtos
+        Subgrupos de Produtos
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:materiaprima_list' %}">
+        Materias-Primas
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:produto_intermediario_list' %}">
+        Produtos Intermediarios
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:produto_acabado_list' %}">
+        Produtos Acabados
     </a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="{% url 'producao:fornecedor_list' %}">
         Fornecedores
     </a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="{% url 'producao:relatorio_produtos_completo' %}">
-        Relatório Produtos
+    <li><a class="dropdown-item" href="{% url 'producao:tipo_movimento_entrada_list' %}">
+        Tipos Mov. Entrada
     </a></li>
-
-
-
-
-
-  </ul>
-</li>
-
-<!-- 🛒 Almoxarifado -->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'recebimento' in request.resolver_match.url_name or 'estoque' in request.resolver_match.url_name or 'inventario' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Almoxarifado
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <!-- FUTURO -->
-    <li><a class="dropdown-item disabled" href="#">
-        Recebimento Material
-    </a></li>
-    <li><a class="dropdown-item disabled" href="#">
-        Saldo Estoque MP/PI
-    </a></li>
-    <li><a class="dropdown-item disabled" href="#">
-        Inventário
+    <li><a class="dropdown-item" href="{% url 'producao:tipo_movimento_saida_list' %}">
+        Tipos Mov. Saida
     </a></li>
   </ul>
 </li>
 
-<!-- 🏭 Produção -->
+<!-- Engenharia -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'ordem' in request.resolver_match.url_name or 'remessa' in request.resolver_match.url_name or 'retorno' in request.resolver_match.url_name or 'apontamento' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Produção
+  <a class="nav-link dropdown-toggle {% if 'proposta' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Engenharia
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <!-- FUTURO -->
-    <li><a class="dropdown-item disabled" href="#">
-        Ordens de Produção
+    <li><a class="dropdown-item" href="{% url 'producao:proposta_list_producao' %}">
+        Projetos
     </a></li>
-    <li><a class="dropdown-item disabled" href="#">
-        Apontamentos
+    <li><a class="dropdown-item" href="{% url 'producao:regras_yaml_list' %}">
+        Regras Composicao Preco
     </a></li>
   </ul>
 </li>
 
-<!-- 🚚 Logística -->
+<!-- Suprimentos -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'expedicao' in request.resolver_match.url_name or 'entrega' in request.resolver_match.url_name or 'transportadora' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Logística
+  <a class="nav-link dropdown-toggle {% if 'requisicao' in request.resolver_match.url_name or 'orcamento' in request.resolver_match.url_name or 'pedido' in request.resolver_match.url_name or 'saldo' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Suprimentos
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <!-- FUTURO -->
-    <li><a class="dropdown-item disabled" href="#">
-        Expedição
+    <li><a class="dropdown-item" href="{% url 'producao:requisicao_compra_list' %}">
+        Requisicao de Compra
     </a></li>
-    <li><a class="dropdown-item disabled" href="#">
-        Entregas Programadas
+    <li><a class="dropdown-item" href="{% url 'producao:orcamento_compra_list' %}">
+        Orcamento de Compra
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:pedido_compra_list' %}">
+        Pedido de Compra
     </a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item disabled" href="#">
-        Transportadoras
+    <li><a class="dropdown-item" href="{% url 'producao:relatorio_saldos_requisicoes' %}">
+        Saldo Requisicao
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:relatorio_produtos_completo' %}">
+        Relatorio Produtos
     </a></li>
   </ul>
 </li>
 
+<!-- Materiais -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'entrada' in request.resolver_match.url_name or 'saida' in request.resolver_match.url_name or 'posicao' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Materiais
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'producao:movimento_entrada_list' %}">
+        Entradas
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:movimento_saida_list' %}">
+        Saidas
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="{% url 'producao:posicao_estoque' %}">
+        Posicao Estoque
+    </a></li>
+  </ul>
+</li>
 
-
+<!-- Producao -->
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle {% if 'ordem_producao' in request.resolver_match.url_name or 'op_list' in request.resolver_match.url_name or 'requisicao_material' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    Producao
+  </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'producao:op_list' %}">
+        Ordens de Producao
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:requisicao_material_list' %}">
+        Requisicao de Material
+    </a></li>
+  </ul>
+</li>
 
 {% endblock %}
 
@@ -138,26 +128,15 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-// Fazer botões "Voltar" retornarem para a página anterior de forma inteligente
+// Fazer botoes "Voltar" retornarem para a pagina anterior de forma inteligente
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Inicializando botões voltar inteligentes...');
-
-    // Guardar a página de onde veio ao carregar
     const paginaAnterior = document.referrer;
-    console.log('📄 Página anterior (referrer):', paginaAnterior);
-
-    // Selecionar TODOS os links/botões que contêm o ícone fa-arrow-left
     const botoesVoltar = document.querySelectorAll('a i.fa-arrow-left');
-    console.log('📍 Botões voltar encontrados:', botoesVoltar.length);
 
     botoesVoltar.forEach(function(icone, index) {
         const botao = icone.closest('a');
         if (botao) {
             const hrefOriginal = botao.getAttribute('href');
-            console.log(`✅ Botão ${index + 1} - href original:`, hrefOriginal);
-
-            // REGRA: Se o href aponta para uma lista ou dashboard, SEMPRE usar o href
-            // Só usar history.back() para navegação entre detalhes/edição
             const ehDestinoCerto = hrefOriginal && (
                 hrefOriginal.includes('_list') ||
                 hrefOriginal.includes('/list/') ||
@@ -165,29 +144,21 @@ document.addEventListener('DOMContentLoaded', function() {
             );
 
             if (ehDestinoCerto) {
-                console.log(`📌 Botão ${index + 1} aponta para destino específico, mantendo href`);
-                // Não adicionar listener - deixar comportamento padrão
                 return;
             }
 
-            // Para outros casos, tentar voltar inteligentemente
             botao.addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-
-                console.log('⬅️ Processando voltar...');
 
                 const mesmoSite = paginaAnterior && paginaAnterior.includes(window.location.hostname);
                 const veioDeOutraPagina = paginaAnterior && paginaAnterior !== window.location.href;
 
                 if (mesmoSite && veioDeOutraPagina) {
-                    console.log('✅ Voltando via referrer:', paginaAnterior);
                     window.location.href = paginaAnterior;
                 } else if (hrefOriginal) {
-                    console.log('✅ Usando href como fallback:', hrefOriginal);
                     window.location.href = hrefOriginal;
                 } else {
-                    console.log('✅ Voltando via history.back()');
                     window.history.back();
                 }
             });
@@ -212,10 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Erro ao buscar contador de tarefas:', error));
     }
 
-    // Atualizar ao carregar a página
     atualizarContadorTarefas();
-
-    // Atualizar a cada 60 segundos
     setInterval(atualizarContadorTarefas, 60000);
 });
 </script>

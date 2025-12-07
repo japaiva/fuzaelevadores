@@ -8,6 +8,7 @@ Portal de Produção - Sistema Elevadores FUZA
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 # CRUD PRODUTOS ACABADOS (TIPO = PA)
 # =============================================================================
 
-@login_required
+@portal_producao
 def produto_acabado_list(request):
     """Lista apenas produtos do tipo Produto Acabado (PA)"""
     produtos_list = Produto.objects.select_related(
@@ -62,9 +63,9 @@ def produto_acabado_list(request):
     except EmptyPage:
         produtos = paginator.page(paginator.num_pages)
 
-    grupos = GrupoProduto.objects.filter(ativo=True).order_by('nome')
+    grupos = GrupoProduto.objects.filter(ativo=True, tipo_produto='PA').order_by('codigo')
 
-    return render(request, 'producao/produto_acabado_list.html', {
+    return render(request, 'producao/produtos/produto_acabado_list.html', {
         'produtos': produtos,
         'grupos': grupos,
         'grupo_filtro': grupo_id,
@@ -73,7 +74,7 @@ def produto_acabado_list(request):
     })
 
 
-@login_required
+@portal_producao
 def produto_acabado_create(request):
     """Criar novo produto acabado"""
     if request.method == 'POST':
@@ -82,6 +83,10 @@ def produto_acabado_create(request):
         if form.is_valid():
             produto = form.save(commit=False)
             produto.tipo = 'PA'
+            # Definir valores padrão para campos não exibidos no form simplificado
+            if not produto.unidade_medida:
+                produto.unidade_medida = 'UN'
+            produto.controla_estoque = False  # PA não controla estoque direto
             produto.criado_por = request.user
             produto.atualizado_por = request.user
             produto.save()
@@ -90,15 +95,26 @@ def produto_acabado_create(request):
             return redirect('producao:produto_acabado_list')
         else:
             messages.error(request, 'Erro ao criar produto acabado. Verifique os dados informados.')
+            logger.error(f'Erros no formulário PA: {form.errors}')
     else:
-        form = ProdutoForm()
+        # Inicializar form com valores padrão para PA
+        form = ProdutoForm(initial={
+            'unidade_medida': 'UN',
+            'controla_estoque': False,
+            'status': 'ATIVO'
+        })
 
-    return render(request, 'producao/produto_acabado_form.html', {'form': form})
+    # Filtrar grupos apenas do tipo PA
+    form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='PA', ativo=True).order_by('codigo')
+
+    return render(request, 'producao/produtos/produto_acabado_form.html', {'form': form})
 
 
-@login_required
+@portal_producao
 def produto_acabado_update(request, pk):
     """Editar produto acabado"""
+    from core.models import SubgrupoProduto
+
     produto = get_object_or_404(Produto, pk=pk, tipo='PA')
 
     if request.method == 'POST':
@@ -117,13 +133,22 @@ def produto_acabado_update(request, pk):
     else:
         form = ProdutoForm(instance=produto)
 
-    return render(request, 'producao/produto_acabado_form.html', {
+    # Filtrar grupos apenas do tipo PA
+    form.fields['grupo'].queryset = GrupoProduto.objects.filter(tipo_produto='PA', ativo=True).order_by('codigo')
+
+    # Filtrar subgrupos do grupo atual do produto
+    if produto.grupo:
+        form.fields['subgrupo'].queryset = SubgrupoProduto.objects.filter(
+            grupo=produto.grupo, ativo=True
+        ).order_by('codigo')
+
+    return render(request, 'producao/produtos/produto_acabado_form.html', {
         'form': form,
         'produto': produto
     })
 
 
-@login_required
+@portal_producao
 def produto_acabado_delete(request, pk):
     """Excluir produto acabado"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PA')
@@ -138,10 +163,10 @@ def produto_acabado_delete(request, pk):
 
         return redirect('producao:produto_acabado_list')
 
-    return render(request, 'producao/produto_acabado_delete.html', {'produto': produto})
+    return render(request, 'producao/produtos/produto_acabado_delete.html', {'produto': produto})
 
 
-@login_required
+@portal_producao
 def produto_acabado_toggle_status(request, pk):
     """Ativar/desativar produto acabado"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PA')

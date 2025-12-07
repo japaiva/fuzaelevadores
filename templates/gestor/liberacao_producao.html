@@ -1,0 +1,390 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Liberação Produção | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-check me-2 text-primary"></i>Liberação Produção
+    </h5>
+    <a href="{% url 'gestor:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card-header bg-white py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto">
+        <span class="badge bg-success">Pedido: Aprovado</span>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Liberação:</label>
+          <select name="status_financeiro" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            <option value="pendente" {% if filtro_status == 'pendente' %}selected{% endif %}>Pendentes</option>
+            <option value="liberado" {% if filtro_status == 'liberado' %}selected{% endif %}>Liberados</option>
+          </select>
+        </div>
+      </div>
+      <div class="col">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" class="form-control" placeholder="Buscar projeto, cliente, OP..." value="{{ query }}">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+      <div class="col-auto text-end">
+        <span class="badge bg-secondary">{{ propostas.paginator.count }} projetos</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 80px;">Projeto</th>
+            <th>Cliente</th>
+            <th class="text-center" style="width: 90px;">Liberação</th>
+            <th class="text-center" style="width: 100px;">Produção</th>
+            <th class="text-center" style="width: 110px;">Entrega obra</th>
+            <th class="text-center" style="width: 100px;">Número OP</th>
+            <th class="text-center" style="width: 120px;">Data liberação</th>
+            <th class="text-center" style="width: 120px;">Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for proposta in propostas %}
+            <tr id="row-{{ proposta.pk }}" data-status="{{ proposta.status_financeiro }}">
+              <td><strong>{{ proposta.numero }}</strong></td>
+              <td>{{ proposta.cliente.nome }}</td>
+              <td class="text-center">
+                {% if proposta.status_financeiro == 'liberado' %}
+                  <span class="badge bg-success">Liberado</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if proposta.status_producao == 'em_producao' %}
+                  <span class="badge bg-primary">Em Produção</span>
+                {% elif proposta.status_producao == 'concluido' %}
+                  <span class="badge bg-info">Concluído</span>
+                {% elif proposta.status_producao == 'cancelado' %}
+                  <span class="badge bg-danger">Cancelado</span>
+                {% else %}
+                  <span class="badge bg-secondary">Aguardando</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if proposta.previsao_conclusao_obra %}
+                  {{ proposta.previsao_conclusao_obra|date:"d/m/Y" }}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <input type="text"
+                       class="form-control form-control-sm text-center input-op"
+                       id="op-{{ proposta.pk }}"
+                       value="{{ proposta.numero_op|default:'' }}"
+                       placeholder="OP"
+                       data-pk="{{ proposta.pk }}"
+                       {% if proposta.status_financeiro != 'liberado' %}disabled{% endif %}>
+              </td>
+              <td class="text-center">
+                <input type="date"
+                       class="form-control form-control-sm input-data"
+                       id="data-{{ proposta.pk }}"
+                       value="{% if proposta.data_liberacao_producao %}{{ proposta.data_liberacao_producao|date:'Y-m-d' }}{% endif %}"
+                       data-pk="{{ proposta.pk }}"
+                       {% if proposta.status_financeiro != 'liberado' %}disabled{% endif %}>
+              </td>
+              <td class="text-center">
+                {% if proposta.status_financeiro == 'liberado' %}
+                  <button type="button"
+                          class="btn btn-warning btn-sm btn-pendente"
+                          data-pk="{{ proposta.pk }}"
+                          title="Voltar para Pendente">
+                    <i class="fas fa-undo me-1"></i> Pendente
+                  </button>
+                {% else %}
+                  <div class="btn-group" id="btns-{{ proposta.pk }}">
+                    <button type="button"
+                            class="btn btn-outline-success btn-sm btn-liberar"
+                            data-pk="{{ proposta.pk }}"
+                            title="Liberar para Produção">
+                      <i class="fas fa-unlock me-1"></i> Liberar
+                    </button>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="fas fa-clipboard-check fa-2x mb-2 d-block"></i>
+                Nenhum projeto aprovado encontrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if propostas.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if propostas.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ propostas.previous_page_number }}{% if filtro_status %}&status_financeiro={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ propostas.number }} / {{ propostas.paginator.num_pages }}</span>
+        </li>
+        {% if propostas.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ propostas.next_page_number }}{% if filtro_status %}&status_financeiro={{ filtro_status }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="modalConfirmacao" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Deseja realmente voltar o projeto para <strong>Pendente</strong>?</p>
+        <p class="text-danger"><i class="fas fa-warning me-1"></i> O Número OP e a Data de Liberação serão apagados.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="btnConfirmarPendente">
+          <i class="fas fa-undo me-1"></i> Sim, voltar para Pendente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
+  let pkParaPendente = null;
+
+  // Botões "Liberar" - habilita campos para preencher
+  document.querySelectorAll('.btn-liberar').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const pk = this.dataset.pk;
+      habilitarCampos(pk);
+    });
+  });
+
+  // Botões "Pendente" - modal de confirmação
+  document.querySelectorAll('.btn-pendente').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      pkParaPendente = this.dataset.pk;
+      modal.show();
+    });
+  });
+
+  // Confirmação de voltar para pendente
+  document.getElementById('btnConfirmarPendente').addEventListener('click', function() {
+    if (pkParaPendente) {
+      voltarParaPendente(pkParaPendente);
+      modal.hide();
+      pkParaPendente = null;
+    }
+  });
+
+  function habilitarCampos(pk) {
+    const inputOp = document.getElementById('op-' + pk);
+    const inputData = document.getElementById('data-' + pk);
+    const btnsContainer = document.getElementById('btns-' + pk);
+
+    // Habilitar campos
+    inputOp.disabled = false;
+    inputData.disabled = false;
+    inputOp.focus();
+
+    // Trocar botão para Salvar e Cancelar
+    btnsContainer.innerHTML = `
+      <button type="button" class="btn btn-success btn-sm btn-salvar" data-pk="${pk}" title="Salvar">
+        <i class="fas fa-save me-1"></i> Salvar
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm btn-cancelar" data-pk="${pk}" title="Cancelar">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+
+    // Adicionar eventos aos novos botões
+    btnsContainer.querySelector('.btn-salvar').addEventListener('click', function() {
+      salvarLiberacao(pk);
+    });
+
+    btnsContainer.querySelector('.btn-cancelar').addEventListener('click', function() {
+      cancelarEdicao(pk);
+    });
+  }
+
+  function cancelarEdicao(pk) {
+    const inputOp = document.getElementById('op-' + pk);
+    const inputData = document.getElementById('data-' + pk);
+    const btnsContainer = document.getElementById('btns-' + pk);
+
+    // Desabilitar campos e limpar
+    inputOp.disabled = true;
+    inputData.disabled = true;
+    inputOp.value = '';
+    inputData.value = '';
+
+    // Voltar botão para Liberar
+    btnsContainer.innerHTML = `
+      <button type="button" class="btn btn-outline-success btn-sm btn-liberar" data-pk="${pk}" title="Liberar para Produção">
+        <i class="fas fa-unlock me-1"></i> Liberar
+      </button>
+    `;
+
+    // Adicionar evento ao novo botão
+    btnsContainer.querySelector('.btn-liberar').addEventListener('click', function() {
+      habilitarCampos(pk);
+    });
+  }
+
+  function salvarLiberacao(pk) {
+    const inputOp = document.getElementById('op-' + pk);
+    const inputData = document.getElementById('data-' + pk);
+    const row = document.getElementById('row-' + pk);
+    const btnsContainer = document.getElementById('btns-' + pk);
+    const btnSalvar = btnsContainer.querySelector('.btn-salvar');
+
+    // Enviar requisição
+    const formData = new FormData();
+    formData.append('status_financeiro', 'liberado');
+    formData.append('numero_op', inputOp.value);
+    formData.append('data_liberacao_producao', inputData.value);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    btnSalvar.disabled = true;
+    btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch('{% url "gestor:liberacao_producao_salvar" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', pk), {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Atualizar visual
+        row.dataset.status = 'liberado';
+        row.querySelector('td:nth-child(3)').innerHTML = '<span class="badge bg-success">Liberado</span>';
+
+        // Trocar para botão Pendente
+        btnsContainer.outerHTML = `
+          <button type="button" class="btn btn-warning btn-sm btn-pendente" data-pk="${pk}" title="Voltar para Pendente">
+            <i class="fas fa-undo me-1"></i> Pendente
+          </button>
+        `;
+
+        // Adicionar evento ao novo botão
+        row.querySelector('.btn-pendente').addEventListener('click', function() {
+          pkParaPendente = pk;
+          modal.show();
+        });
+
+        row.classList.add('table-success');
+        setTimeout(() => row.classList.remove('table-success'), 1500);
+      } else {
+        alert('Erro: ' + data.message);
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = '<i class="fas fa-save me-1"></i> Salvar';
+      }
+    })
+    .catch(error => {
+      alert('Erro ao salvar: ' + error);
+      btnSalvar.disabled = false;
+      btnSalvar.innerHTML = '<i class="fas fa-save me-1"></i> Salvar';
+    });
+  }
+
+  function voltarParaPendente(pk) {
+    const inputOp = document.getElementById('op-' + pk);
+    const inputData = document.getElementById('data-' + pk);
+    const row = document.getElementById('row-' + pk);
+    const btn = row.querySelector('.btn-pendente');
+
+    const formData = new FormData();
+    formData.append('status_financeiro', '');
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    fetch('{% url "gestor:liberacao_producao_salvar" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', pk), {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Limpar campos
+        inputOp.value = '';
+        inputData.value = '';
+        inputOp.disabled = true;
+        inputData.disabled = true;
+
+        // Atualizar visual
+        row.dataset.status = '';
+        row.querySelector('td:nth-child(3)').innerHTML = '<span class="badge bg-warning text-dark">Pendente</span>';
+
+        // Trocar para botão Liberar
+        btn.outerHTML = `
+          <div class="btn-group" id="btns-${pk}">
+            <button type="button" class="btn btn-outline-success btn-sm btn-liberar" data-pk="${pk}" title="Liberar para Produção">
+              <i class="fas fa-unlock me-1"></i> Liberar
+            </button>
+          </div>
+        `;
+
+        // Adicionar evento ao novo botão
+        document.getElementById('btns-' + pk).querySelector('.btn-liberar').addEventListener('click', function() {
+          habilitarCampos(pk);
+        });
+
+        row.classList.add('table-warning');
+        setTimeout(() => row.classList.remove('table-warning'), 1500);
+      } else {
+        alert('Erro: ' + data.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-undo me-1"></i> Pendente';
+      }
+    })
+    .catch(error => {
+      alert('Erro ao salvar: ' + error);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-undo me-1"></i> Pendente';
+    });
+  }
+});
+</script>
+{% endblock %}

@@ -5,6 +5,7 @@ import json
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.contrib import messages
 from django.db import transaction
 
@@ -14,7 +15,7 @@ from core.forms.vistoria_medicao import VistoriaMedicaoForm, VaoPortaFormSet
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@portal_vendedor
 def vistoria_medicao_create(request, proposta_pk):
     """
     Criar vistoria de medição inicial - com formulário específico
@@ -163,7 +164,7 @@ def vistoria_medicao_create(request, proposta_pk):
     return render(request, 'vendedor/vistoria/vistoria_medicao_create.html', context)
 
 
-@login_required
+@portal_vendedor
 def vistoria_medicao_detail(request, pk):
     """
     Detalhes de uma vistoria de medição - com todos os dados técnicos
@@ -187,7 +188,7 @@ def vistoria_medicao_detail(request, pk):
     return render(request, 'vendedor/vistoria/vistoria_medicao_detail.html', context)
 
 
-@login_required
+@portal_vendedor
 def vistoria_medicao_edit(request, pk):
     """
     Editar medição (apenas se ainda não foi processada pela produção)

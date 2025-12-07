@@ -9,6 +9,7 @@ import logging
 from django.db import models
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.db.models import Q, Sum, Count
 
 from core.models import (
@@ -21,13 +22,13 @@ logger = logging.getLogger(__name__)
 # PÁGINAS PRINCIPAIS
 # =============================================================================
 
-@login_required
+@portal_producao
 def home(request):
     """Página inicial do Portal de Produção"""
     return render(request, 'producao/home.html')
 
 
-@login_required
+@portal_producao
 def dashboard(request):
     """Dashboard da produção com estatísticas básicas"""
     context = {
@@ -44,7 +45,7 @@ def dashboard(request):
     return render(request, 'producao/dashboard.html', context)
 
 
-@login_required
+@portal_producao
 def dashboard_analytics(request):
     """Dashboard com analytics detalhados para produção"""
     

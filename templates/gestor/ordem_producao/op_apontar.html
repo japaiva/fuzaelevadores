@@ -1,0 +1,137 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Apontar Producao - OP {{ op.numero }} | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-check me-2"></i> Apontar Producao - {{ op.numero }}
+    </h5>
+    <a href="{% url 'gestor:ordem_producao_detail' op.pk %}" class="btn btn-outline-light btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <!-- Resumo da OP -->
+    <div class="card bg-light mb-4">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h5><code class="text-primary">{{ op.produto.codigo }}</code></h5>
+            <p class="mb-0">{{ op.produto.nome }}</p>
+          </div>
+          <div class="col-md-6">
+            <div class="row text-center">
+              <div class="col-4">
+                <small class="text-muted">Planejada</small>
+                <h5>{{ op.quantidade_planejada|floatformat:2 }}</h5>
+              </div>
+              <div class="col-4">
+                <small class="text-muted">Produzida</small>
+                <h5 class="text-success">{{ op.quantidade_produzida|floatformat:2 }}</h5>
+              </div>
+              <div class="col-4">
+                <small class="text-muted">Restante</small>
+                <h5 class="text-warning">{{ quantidade_restante|floatformat:2 }}</h5>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Barra de Progresso -->
+        <div class="mt-3">
+          <div class="d-flex justify-content-between mb-1">
+            <span>Progresso</span>
+            <span>{{ op.percentual_concluido|floatformat:0 }}%</span>
+          </div>
+          <div class="progress" style="height: 20px;">
+            <div class="progress-bar {% if op.percentual_concluido >= 100 %}bg-success{% elif op.percentual_concluido >= 50 %}bg-info{% else %}bg-warning{% endif %}"
+                 style="width: {{ op.percentual_concluido }}%">
+              {{ op.percentual_concluido|floatformat:0 }}%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario de Apontamento -->
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+        <p class="mb-0">{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="{{ form.quantidade_produzida.id_for_label }}" class="form-label">
+            Quantidade Produzida neste Apontamento *
+          </label>
+          {{ form.quantidade_produzida }}
+          {% if form.quantidade_produzida.errors %}
+          <div class="text-danger small">{{ form.quantidade_produzida.errors.0 }}</div>
+          {% endif %}
+          <small class="text-muted">
+            Maximo: {{ quantidade_restante|floatformat:2 }} (quantidade restante)
+          </small>
+        </div>
+
+        <div class="col-12">
+          <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observacoes</label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}
+          <div class="text-danger small">{{ form.observacoes.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-4 gap-2">
+        <a href="{% url 'gestor:ordem_producao_detail' op.pk %}" class="btn btn-secondary">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-check me-1"></i> Registrar Apontamento
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Historico de Apontamentos -->
+{% if apontamentos %}
+<div class="card shadow mt-4">
+  <div class="card-header">
+    <i class="fas fa-history me-2"></i> Historico de Apontamentos
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Data/Hora</th>
+            <th class="text-center">Quantidade</th>
+            <th>Usuario</th>
+            <th>Observacoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for apt in apontamentos %}
+          <tr>
+            <td>{{ apt.data|date:"d/m/Y H:i" }}</td>
+            <td class="text-center">{{ apt.quantidade|floatformat:2 }}</td>
+            <td>{{ apt.usuario.username }}</td>
+            <td>{{ apt.observacoes|default:"-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -8,6 +8,7 @@ Portal de Produção - Sistema Elevadores FUZA
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 # CRUD GRUPOS DE PRODUTOS
 # =============================================================================
 
-@login_required
+@portal_producao
 def grupo_list(request):
     """Lista de grupos de produtos com filtros"""
     grupos_list = GrupoProduto.objects.all().order_by('codigo')
@@ -66,7 +67,7 @@ def grupo_list(request):
     })
 
 
-@login_required
+@portal_producao
 def grupo_create(request):
     """Criar novo grupo de produtos"""
     if request.method == 'POST':
@@ -83,7 +84,7 @@ def grupo_create(request):
     return render(request, 'producao/produtos/grupo_form.html', {'form': form})
 
 
-@login_required
+@portal_producao
 def grupo_update(request, pk):
     """Editar grupo de produtos"""
     grupo = get_object_or_404(GrupoProduto, pk=pk)
@@ -103,7 +104,7 @@ def grupo_update(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def grupo_delete(request, pk):
     """Excluir grupo de produtos"""
     grupo = get_object_or_404(GrupoProduto, pk=pk)
@@ -123,7 +124,7 @@ def grupo_delete(request, pk):
     return render(request, 'producao/produtos/grupo_delete.html', {'grupo': grupo})
 
 
-@login_required
+@portal_producao
 def grupo_toggle_status(request, pk):
     """Ativar/desativar grupo"""
     grupo = get_object_or_404(GrupoProduto, pk=pk)
@@ -140,7 +141,7 @@ def grupo_toggle_status(request, pk):
 # CRUD SUBGRUPOS DE PRODUTOS
 # =============================================================================
 
-@login_required
+@portal_producao
 def subgrupo_list(request):
     """Lista de subgrupos de produtos com filtros"""
     subgrupos_list = SubgrupoProduto.objects.select_related('grupo').order_by('grupo__codigo', 'codigo')
@@ -193,7 +194,7 @@ def subgrupo_list(request):
     })
 
 
-@login_required
+@portal_producao
 def subgrupo_create(request):
     """Criar novo subgrupo de produtos"""
     if request.method == 'POST':
@@ -215,7 +216,7 @@ def subgrupo_create(request):
     return render(request, 'producao/produtos/subgrupo_form.html', {'form': form})
 
 
-@login_required
+@portal_producao
 def subgrupo_update(request, pk):
     """Editar subgrupo de produtos"""
     subgrupo = get_object_or_404(SubgrupoProduto, pk=pk)
@@ -235,7 +236,7 @@ def subgrupo_update(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def subgrupo_delete(request, pk):
     """Excluir subgrupo de produtos"""
     subgrupo = get_object_or_404(SubgrupoProduto, pk=pk)
@@ -255,7 +256,7 @@ def subgrupo_delete(request, pk):
     return render(request, 'producao/produtos/subgrupo_delete.html', {'subgrupo': subgrupo})
 
 
-@login_required
+@portal_producao
 def subgrupo_toggle_status(request, pk):
     """Ativar/desativar subgrupo"""
     subgrupo = get_object_or_404(SubgrupoProduto, pk=pk)

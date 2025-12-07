@@ -1,0 +1,323 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Requisicao {{ requisicao.numero }} | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-clipboard-list me-2 text-primary"></i> Requisicao {{ requisicao.numero }}
+    </h5>
+    <div>
+      {% if requisicao.status == 'rascunho' %}
+      <a href="{% url 'producao:requisicao_material_update' requisicao.pk %}" class="btn btn-warning btn-sm me-1">
+        <i class="fas fa-edit me-1"></i> Editar
+      </a>
+      <button type="button" class="btn btn-success btn-sm me-1" onclick="alterarStatus('pendente')">
+        <i class="fas fa-paper-plane me-1"></i> Enviar
+      </button>
+      <a href="{% url 'producao:requisicao_material_delete' requisicao.pk %}" class="btn btn-danger btn-sm me-1">
+        <i class="fas fa-trash me-1"></i> Excluir
+      </a>
+      {% elif requisicao.status == 'pendente' %}
+      <button type="button" class="btn btn-info btn-sm me-1" onclick="alterarStatus('parcial')">
+        <i class="fas fa-check-circle me-1"></i> Atender Parcial
+      </button>
+      <button type="button" class="btn btn-success btn-sm me-1" onclick="alterarStatus('atendida')">
+        <i class="fas fa-check-double me-1"></i> Atender Total
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm me-1" onclick="alterarStatus('cancelada')">
+        <i class="fas fa-times me-1"></i> Cancelar
+      </button>
+      {% endif %}
+      <a href="{% url 'producao:requisicao_material_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        <strong>Numero:</strong><br>
+        {{ requisicao.numero }}
+      </div>
+      <div class="col-md-3 mb-3">
+        <strong>Tipo de Movimento:</strong><br>
+        {{ requisicao.tipo_movimento.descricao }}
+      </div>
+      <div class="col-md-3 mb-3">
+        <strong>OP:</strong><br>
+        {% if requisicao.proposta %}OP {{ requisicao.proposta.numero_op }} - {{ requisicao.proposta.cliente.nome }}{% else %}<span class="text-muted">-</span>{% endif %}
+      </div>
+      <div class="col-md-3 mb-3">
+        <strong>Status:</strong><br>
+        {% if requisicao.status == 'rascunho' %}
+          <span class="badge bg-secondary">Rascunho</span>
+        {% elif requisicao.status == 'pendente' %}
+          <span class="badge bg-warning text-dark">Pendente</span>
+        {% elif requisicao.status == 'parcial' %}
+          <span class="badge bg-info">Parcialmente Atendida</span>
+        {% elif requisicao.status == 'atendida' %}
+          <span class="badge bg-success">Atendida</span>
+        {% else %}
+          <span class="badge bg-danger">Cancelada</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-3 mb-3">
+        <strong>Data Requisicao:</strong><br>
+        {{ requisicao.data_requisicao|date:"d/m/Y" }}
+      </div>
+      <div class="col-md-3 mb-3">
+        <strong>Data Necessidade:</strong><br>
+        {% if requisicao.data_necessidade %}
+          {{ requisicao.data_necessidade|date:"d/m/Y" }}
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </div>
+      <div class="col-md-6 mb-3">
+        <strong>Observacoes:</strong><br>
+        {% if requisicao.observacoes %}
+          {{ requisicao.observacoes }}
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Itens da Requisicao -->
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h6 class="card-title mb-0">
+      <i class="fas fa-list me-2"></i> Itens da Requisicao
+    </h6>
+    {% if requisicao.status == 'rascunho' %}
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAdicionarItem">
+      <i class="fas fa-plus me-1"></i> Adicionar Item
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+        <tr>
+          <th>Produto</th>
+          <th>Descricao</th>
+          <th class="text-end">Qtd Solicitada</th>
+          <th class="text-end">Qtd Atendida</th>
+          <th>Unidade</th>
+          <th>Obs</th>
+          {% if requisicao.status == 'rascunho' %}
+          <th class="text-center" style="width: 60px;">Acoes</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="tabela-itens">
+        {% for item in itens %}
+        <tr id="item-{{ item.id }}">
+          <td class="fw-bold">{{ item.produto.codigo }}</td>
+          <td>{{ item.produto.descricao }}</td>
+          <td class="text-end">{{ item.quantidade_solicitada|floatformat:4 }}</td>
+          <td class="text-end">{{ item.quantidade_atendida|floatformat:4 }}</td>
+          <td>{{ item.unidade }}</td>
+          <td>{{ item.observacoes|default:"-" }}</td>
+          {% if requisicao.status == 'rascunho' %}
+          <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerItem({{ item.id }})">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr id="sem-itens">
+          <td colspan="{% if requisicao.status == 'rascunho' %}7{% else %}6{% endif %}" class="text-center text-muted py-4">
+            <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+            Nenhum item adicionado.
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Item -->
+{% if requisicao.status == 'rascunho' %}
+<div class="modal fade" id="modalAdicionarItem" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Adicionar Item</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Buscar Produto</label>
+          <input type="text" id="busca-produto" class="form-control" placeholder="Digite codigo ou descricao...">
+          <div id="lista-produtos" class="list-group mt-2" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Produto Selecionado</label>
+          <input type="text" id="produto-selecionado" class="form-control" readonly>
+          <input type="hidden" id="produto-id">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Quantidade</label>
+          <input type="number" id="quantidade" class="form-control" step="0.0001" min="0.0001">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Observacoes</label>
+          <input type="text" id="observacoes-item" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="adicionarItem()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script>
+const requisicaoId = {{ requisicao.pk }};
+
+function alterarStatus(novoStatus) {
+  if (!confirm('Confirma a alteracao de status?')) return;
+
+  fetch("{% url 'producao:requisicao_material_alterar_status' requisicao.pk %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: 'status=' + novoStatus
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert(data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao alterar status.');
+  });
+}
+
+{% if requisicao.status == 'rascunho' %}
+let debounceTimer;
+
+document.getElementById('busca-produto').addEventListener('input', function() {
+  clearTimeout(debounceTimer);
+  const termo = this.value;
+  if (termo.length < 2) {
+    document.getElementById('lista-produtos').innerHTML = '';
+    return;
+  }
+
+  debounceTimer = setTimeout(() => {
+    fetch(`{% url 'producao:api_buscar_produtos_requisicao' requisicao.pk %}?q=${encodeURIComponent(termo)}`)
+      .then(response => response.json())
+      .then(data => {
+        const lista = document.getElementById('lista-produtos');
+        lista.innerHTML = '';
+        data.produtos.forEach(p => {
+          const item = document.createElement('a');
+          item.href = '#';
+          item.className = 'list-group-item list-group-item-action';
+          item.innerHTML = `<strong>${p.codigo}</strong> - ${p.descricao} (${p.unidade})`;
+          item.onclick = function(e) {
+            e.preventDefault();
+            document.getElementById('produto-id').value = p.id;
+            document.getElementById('produto-selecionado').value = `${p.codigo} - ${p.descricao}`;
+            lista.innerHTML = '';
+            document.getElementById('busca-produto').value = '';
+          };
+          lista.appendChild(item);
+        });
+      });
+  }, 300);
+});
+
+function adicionarItem() {
+  const produtoId = document.getElementById('produto-id').value;
+  const quantidade = document.getElementById('quantidade').value;
+  const observacoes = document.getElementById('observacoes-item').value;
+
+  if (!produtoId) {
+    alert('Selecione um produto.');
+    return;
+  }
+  if (!quantidade || parseFloat(quantidade) <= 0) {
+    alert('Informe a quantidade.');
+    return;
+  }
+
+  fetch("{% url 'producao:api_adicionar_item_requisicao' requisicao.pk %}", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    body: `produto_id=${produtoId}&quantidade=${quantidade}&observacoes=${encodeURIComponent(observacoes)}`
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert(data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao adicionar item.');
+  });
+}
+
+function removerItem(itemId) {
+  if (!confirm('Remover este item?')) return;
+
+  fetch(`/producao/requisicao-material/${requisicaoId}/remover-item/${itemId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('item-' + itemId).remove();
+      // Verificar se ainda há itens
+      const tbody = document.getElementById('tabela-itens');
+      if (tbody.querySelectorAll('tr:not(#sem-itens)').length === 0) {
+        location.reload();
+      }
+    } else {
+      alert(data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Erro:', error);
+    alert('Erro ao remover item.');
+  });
+}
+{% endif %}
+</script>
+{% endblock %}

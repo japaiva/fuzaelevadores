@@ -8,6 +8,7 @@ import logging
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Max
@@ -113,7 +114,7 @@ def processar_assinatura(assinatura_base64, proposta_numero):
         return None
 
 
-@login_required
+@portal_vendedor
 def vistoria_list(request):
     """
     Lista de propostas para vistoria - apenas propostas aprovadas e não finalizadas
@@ -208,7 +209,7 @@ def vistoria_list(request):
     return render(request, 'vendedor/vistoria/vistoria_list.html', context)
 
 
-@login_required
+@portal_vendedor
 def vistoria_proposta_detail(request, pk):
     """
     Detalhes da proposta para vistoria - com histórico de vistorias
@@ -237,7 +238,7 @@ def vistoria_proposta_detail(request, pk):
     return render(request, 'vendedor/vistoria/vistoria_proposta_detail.html', context)
 
 
-@login_required
+@portal_vendedor
 def vistoria_create(request, proposta_pk):
     """
     Criar nova vistoria no histórico - VERSÃO CORRIGIDA
@@ -363,7 +364,7 @@ def vistoria_create(request, proposta_pk):
     return render(request, 'vendedor/vistoria/vistoria_create.html', context)
 
 
-@login_required
+@portal_vendedor
 def vistoria_detail(request, pk):
     """
     Detalhes de uma vistoria específica - VIEW IMPLEMENTADA
@@ -383,7 +384,7 @@ def vistoria_detail(request, pk):
     return render(request, 'vendedor/vistoria/vistoria_detail.html', context)
 
 
-@login_required
+@portal_vendedor
 def vistoria_inativar(request, pk):
     """
     Inativar vistoria realizada (diferente de cancelar)
@@ -461,7 +462,7 @@ def vistoria_agendar_primeira(request, proposta_pk):
 
 # === APIs AJAX ===
 
-@login_required
+@portal_vendedor
 def api_vistoria_quick_status(request, proposta_pk):
     """
     API para alterar rapidamente o status da obra
@@ -503,7 +504,7 @@ def api_vistoria_quick_status(request, proposta_pk):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
-@login_required
+@portal_vendedor
 def vistoria_pdf(request, pk):
     """
     Gera PDF do relatório de vistoria com fotos e assinatura

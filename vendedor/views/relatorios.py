@@ -9,6 +9,7 @@ from datetime import date
 from collections import Counter
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.contrib import messages
 from django.db.models import Count
 
@@ -17,7 +18,7 @@ from core.models import Proposta
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@portal_vendedor
 def gerar_pdf_orcamento(request, pk):
     """Gerar PDF do orçamento"""
     # 🎯 REMOVIDO: vendedor=request.user
@@ -32,7 +33,7 @@ def gerar_pdf_orcamento(request, pk):
     return redirect('vendedor:pedido_detail', pk=pk)
 
 
-@login_required
+@portal_vendedor
 def gerar_pdf_demonstrativo(request, pk):
     """Gerar PDF do demonstrativo técnico"""
     # 🎯 REMOVIDO: vendedor=request.user
@@ -43,7 +44,7 @@ def gerar_pdf_demonstrativo(request, pk):
     return redirect('vendedor:pedido_detail', pk=pk)
 
 
-@login_required
+@portal_vendedor
 def relatorios_vendedor(request):
     """Relatórios e estatísticas do vendedor"""
     # Propostas do vendedor específico

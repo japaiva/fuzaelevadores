@@ -9,6 +9,7 @@ import logging
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.contrib import messages
 from django.http import JsonResponse
 
@@ -21,7 +22,7 @@ from core.forms.propostas import (
 
 logger = logging.getLogger(__name__)
 
-@login_required
+@portal_vendedor
 def proposta_step1(request, pk=None):
     """
     Etapa 1: Cliente + Elevador + Poço
@@ -79,7 +80,7 @@ def proposta_step1(request, pk=None):
     return render(request, 'vendedor/proposta_step1.html', context)
 
 
-@login_required
+@portal_vendedor
 def proposta_step2(request, pk):
     """
     Etapa 2: Cabine + Portas + Detalhamento por Pavimento (PADRÃO)
@@ -278,7 +279,7 @@ def processar_portas_pavimento(proposta, post_data):
         logger.debug(f"Andar {andar}: largura={largura_debug}, altura={altura_debug}")
 
 
-@login_required
+@portal_vendedor
 def proposta_step3(request, pk):
     """
     Etapa 3: Dados Comerciais

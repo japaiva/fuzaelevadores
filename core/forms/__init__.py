@@ -124,6 +124,32 @@ from .regras_yaml import (
     RegraYAMLFiltroForm
 )
 
+# === FORMULÁRIOS DE ESTOQUE ===
+from .estoque import (
+    LocalEstoqueForm,
+    LocalEstoqueFiltroForm,
+    TipoMovimentoEntradaForm,
+    TipoMovimentoEntradaFiltroForm,
+    TipoMovimentoSaidaForm,
+    TipoMovimentoSaidaFiltroForm,
+    # Movimentações
+    MovimentoEntradaForm,
+    ItemMovimentoEntradaForm,
+    MovimentoEntradaFiltroForm,
+    MovimentoSaidaForm,
+    ItemMovimentoSaidaForm,
+    MovimentoSaidaFiltroForm,
+    # Ordens de Producao (FASE 4)
+    OrdemProducaoForm,
+    OrdemProducaoFiltroForm,
+    ApontamentoProducaoForm,
+    # Requisição de Material
+    RequisicaoMaterialForm,
+    ItemRequisicaoMaterialForm,
+    ItemRequisicaoFormSet,
+    RequisicaoMaterialFiltroForm,
+)
+
 # === LISTA DE TODOS OS FORMULÁRIOS DISPONÍVEIS ===
 __all__ = [
     # Classes Base
@@ -221,4 +247,23 @@ __all__ = [
     # Regras YAML - Motor de Regras Configurável
     'RegraYAMLForm',
     'RegraYAMLFiltroForm',
+
+    # Estoque
+    'LocalEstoqueForm',
+    'LocalEstoqueFiltroForm',
+    'TipoMovimentoEntradaForm',
+    'TipoMovimentoEntradaFiltroForm',
+    'TipoMovimentoSaidaForm',
+    'TipoMovimentoSaidaFiltroForm',
+    # Movimentações
+    'MovimentoEntradaForm',
+    'ItemMovimentoEntradaForm',
+    'MovimentoEntradaFiltroForm',
+    'MovimentoSaidaForm',
+    'ItemMovimentoSaidaForm',
+    'MovimentoSaidaFiltroForm',
+    # Ordens de Producao (FASE 4)
+    'OrdemProducaoForm',
+    'OrdemProducaoFiltroForm',
+    'ApontamentoProducaoForm',
 ]

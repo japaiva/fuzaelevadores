@@ -17,17 +17,79 @@
     </div>
   </div>
 
+  <!-- Filtros -->
+  <div class="card-header bg-white py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Pedido:</label>
+          <select name="status" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_status == 'todos' %}selected{% endif %}>Todos</option>
+            {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if filtro_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Obra:</label>
+          <select name="status_obra" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_status_obra == 'todos' %}selected{% endif %}>Todos</option>
+            {% for value, label in status_obra_choices %}
+              <option value="{{ value }}" {% if filtro_status_obra == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Financeiro:</label>
+          <select name="status_financeiro" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_status_financeiro == 'todos' %}selected{% endif %}>Todos</option>
+            {% for value, label in status_financeiro_choices %}
+              <option value="{{ value }}" {% if filtro_status_financeiro == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Produção:</label>
+          <select name="status_producao" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_status_producao == 'todos' %}selected{% endif %}>Todos</option>
+            {% for value, label in status_producao_choices %}
+              <option value="{{ value }}" {% if filtro_status_producao == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="col">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" class="form-control" placeholder="Buscar projeto, cliente, OP..." value="{{ query }}">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+      <div class="col-auto text-end">
+        <span class="badge bg-secondary">{{ propostas.paginator.count }} projetos</span>
+      </div>
+    </form>
+  </div>
+
   <div class="card-body py-2">
     <div class="table-responsive">
       <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.75rem;">
         <thead class="table-light">
           <tr>
-            <th width="8%">Número</th>
-            <th width="20%">Cliente</th>
-            <th width="12%">Aprovação</th>
-            <th width="14%">Entrega Obra Prevista</th>
-            <th width="12%">Início Produção</th>
-            <th width="14%">Previsão Entrega</th>
+            <th width="7%">Número</th>
+            <th width="18%">Cliente</th>
+            <th width="6%" class="text-center">OP</th>
+            <th width="9%" class="text-center">Pedido</th>
+            <th width="10%" class="text-center">Obra</th>
+            <th width="9%" class="text-center">Financeiro</th>
+            <th width="10%" class="text-center">Produção</th>
+            <th width="10%">Entrega obra</th>
+            <th width="10%">Prev. entrega</th>
             <th width="5%" class="text-center">Ações</th>
           </tr>
         </thead>
@@ -39,32 +101,60 @@
               </td>
 
               <td>
-                <div class="text-truncate" style="max-width: 180px;" title="{{ proposta.cliente.nome }}">
-                  <strong>{{ proposta.cliente.nome }}</strong>
+                <div class="text-truncate" style="max-width: 200px;" title="{{ proposta.cliente.nome }}">
+                  {{ proposta.cliente.nome }}
                 </div>
               </td>
 
-              <td>
-                {% if proposta.data_aprovacao %}
-                  <strong>{{ proposta.data_aprovacao|date:"d/m/Y" }}</strong>
+              <td class="text-center">
+                {% if proposta.numero_op %}
+                  <strong>{{ proposta.numero_op }}</strong>
                 {% else %}
-                  <span class="text-muted fst-italic" style="font-size: 0.75rem;">-</span>
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+
+              <td class="text-center">
+                <span class="badge {{ proposta.status_badge_class }}">
+                  {{ proposta.get_status_display }}
+                </span>
+              </td>
+
+              <td class="text-center">
+                {% if proposta.status_obra %}
+                  <span class="badge {{ proposta.status_obra_badge_class }}">
+                    {{ proposta.get_status_obra_display }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary">Aguardando</span>
+                {% endif %}
+              </td>
+
+              <td class="text-center">
+                {% if proposta.status_financeiro == 'liberado' %}
+                  <span class="badge bg-success">Liberado</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% endif %}
+              </td>
+
+              <td class="text-center">
+                {% if proposta.status_producao == 'em_producao' %}
+                  <span class="badge bg-primary">Em Produção</span>
+                {% elif proposta.status_producao == 'concluido' %}
+                  <span class="badge bg-info">Concluído</span>
+                {% elif proposta.status_producao == 'cancelado' %}
+                  <span class="badge bg-danger">Cancelado</span>
+                {% else %}
+                  <span class="badge bg-secondary">Aguardando</span>
                 {% endif %}
               </td>
 
               <td>
-                {% if proposta.data_previsao_entrega_obra %}
-                  {{ proposta.data_previsao_entrega_obra|date:"d/m/Y" }}
+                {% if proposta.previsao_conclusao_obra %}
+                  {{ proposta.previsao_conclusao_obra|date:"d/m/Y" }}
                 {% else %}
-                  <span class="text-muted fst-italic" style="font-size: 0.75rem;">-</span>
-                {% endif %}
-              </td>
-
-              <td>
-                {% if proposta.data_inicio_producao %}
-                  {{ proposta.data_inicio_producao|date:"d/m/Y" }}
-                {% else %}
-                  <span class="text-muted fst-italic" style="font-size: 0.75rem;">-</span>
+                  <span class="text-muted">-</span>
                 {% endif %}
               </td>
 
@@ -72,7 +162,7 @@
                 {% if proposta.data_previsao_entrega %}
                   {{ proposta.data_previsao_entrega|date:"d/m/Y" }}
                 {% else %}
-                  <span class="text-muted fst-italic" style="font-size: 0.75rem;">-</span>
+                  <span class="text-muted">-</span>
                 {% endif %}
               </td>
 
@@ -87,10 +177,10 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="text-center py-5">
+              <td colspan="10" class="text-center py-5">
                 <div class="empty-state">
                   <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
-                  <h5 class="text-muted">Nenhum projeto aprovado encontrado</h5>
+                  <h5 class="text-muted">Nenhum projeto encontrado</h5>
                 </div>
               </td>
             </tr>
@@ -99,6 +189,32 @@
       </table>
     </div>
   </div>
+
+  {% if propostas.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if propostas.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ propostas.previous_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if filtro_status_financeiro %}&status_financeiro={{ filtro_status_financeiro }}{% endif %}{% if filtro_status_producao %}&status_producao={{ filtro_status_producao }}{% endif %}{% if filtro_status_obra %}&status_obra={{ filtro_status_obra }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ propostas.number }} / {{ propostas.paginator.num_pages }}</span>
+        </li>
+        {% if propostas.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ propostas.next_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if filtro_status_financeiro %}&status_financeiro={{ filtro_status_financeiro }}{% endif %}{% if filtro_status_producao %}&status_producao={{ filtro_status_producao }}{% endif %}{% if filtro_status_obra %}&status_obra={{ filtro_status_obra }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
 </div>
 </div>
 {% endblock %}
@@ -120,7 +236,6 @@
 .table thead th {
     font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.3px;
 }
 

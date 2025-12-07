@@ -8,9 +8,9 @@
 
 {% block nav_items %}
 
-<!-- 💼 Gerencial -->
+<!-- Gerencial -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'painel_projetos' in request.resolver_match.url_name or 'dashboard' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'painel_projetos' in request.resolver_match.url_name or 'dashboard' in request.resolver_match.url_name or 'projeto_detail' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Gerencial
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
@@ -23,15 +23,14 @@
   </ul>
 </li>
 
-<!-- 💰 Financeiro -->
+<!-- Financeiro -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'financeiro' in request.resolver_match.url_name or 'contas' in request.resolver_match.url_name or 'fluxo' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'financeiro' in request.resolver_match.url_name or 'contas' in request.resolver_match.url_name or 'fluxo' in request.resolver_match.url_name or 'liberacao_producao' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Financeiro
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
-    <!-- FUTURO -->
-    <li><a class="dropdown-item disabled" href="#">
-        Atualização Projetos
+    <li><a class="dropdown-item" href="{% url 'gestor:liberacao_producao' %}">
+        Liberação Produção
     </a></li>
     <li><a class="dropdown-item disabled" href="#">
         Contas a Receber
@@ -46,43 +45,24 @@
   </ul>
 </li>
 
-<!-- 📋 Movimentos -->
+<!-- Adm -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'nf_entrada' in request.resolver_match.url_name or 'nf_saida' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Movimentos
-  </a>
-  <ul class="dropdown-menu dropdown-menu-dark">
-    <!-- FUTURO -->
-    <li><a class="dropdown-item disabled" href="#">
-        NF Entrada
-    </a></li>
-    <li><a class="dropdown-item disabled" href="#">
-        NF Saída
-    </a></li>
-    <li><hr class="dropdown-divider"></li>
-
-    <li><a class="dropdown-item disabled" href="#">
-        Clientes
-    </a></li>
-
-    <li><a class="dropdown-item disabled" href="#">
-        Fornecedores
-    </a></li>
-  </ul>
-</li>
-
-
-<!-- ⚙️ Adm -->
-<li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'parametros' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'usuario' in request.resolver_match.url_name or 'parametros' in request.resolver_match.url_name or 'cliente' in request.resolver_match.url_name or 'fornecedor' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Adm
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'gestor:cliente_list' %}">
+        Clientes
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'gestor:fornecedor_list' %}">
+        Fornecedores
+    </a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="{% url 'gestor:usuario_list' %}">
-        Usuários
+        Usuarios
     </a></li>
     <li><a class="dropdown-item" href="{% url 'gestor:parametros_gerais' %}">
-        Parâmetros
+        Parametros
     </a></li>
   </ul>
 </li>

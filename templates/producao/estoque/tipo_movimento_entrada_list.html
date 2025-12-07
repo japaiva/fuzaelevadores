@@ -1,0 +1,143 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Tipos de Movimento de Entrada | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-sign-in-alt me-2"></i> Tipos de Movimento de Entrada
+    </h5>
+    <div>
+      <a href="{% url 'producao:tipo_movimento_entrada_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Tipo
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-header bg-white">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <select name="tipo_parceiro" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos os parceiros</option>
+          <option value="fornecedor" {% if request.GET.tipo_parceiro == 'fornecedor' %}selected{% endif %}>Fornecedor</option>
+          <option value="cliente" {% if request.GET.tipo_parceiro == 'cliente' %}selected{% endif %}>Cliente</option>
+          <option value="interno" {% if request.GET.tipo_parceiro == 'interno' %}selected{% endif %}>Interno</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="ativo" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Ativos</option>
+          <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Inativos</option>
+        </select>
+      </div>
+      <div class="col-md-5">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" class="form-control" placeholder="Buscar por codigo ou descricao..." value="{{ request.GET.q|default:'' }}">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 80px;">Codigo</th>
+            <th>Descricao</th>
+            <th>Parceiro</th>
+            <th>Produto</th>
+            <th>Operacao</th>
+            <th class="text-center">Status</th>
+            <th class="text-center" style="width: 150px;">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tipo in tipos %}
+            <tr>
+              <td><strong>{{ tipo.codigo }}</strong></td>
+              <td>{{ tipo.descricao }}</td>
+              <td>
+                {% if tipo.tipo_parceiro == 'fornecedor' %}
+                  <span class="badge bg-secondary">Fornecedor</span>
+                {% elif tipo.tipo_parceiro == 'cliente' %}
+                  <span class="badge bg-info">Cliente</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">Interno</span>
+                {% endif %}
+              </td>
+              <td>{{ tipo.get_tipo_produto_display }}</td>
+              <td>
+                {% if tipo.tipo_operacao == 'movto' %}
+                  <span class="badge bg-primary">Movimento</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">OP/Req</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge {% if tipo.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                  {% if tipo.ativo %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:tipo_movimento_entrada_update' tipo.pk %}" class="btn btn-outline-primary btn-sm" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'producao:tipo_movimento_entrada_toggle_status' tipo.pk %}"
+                     class="btn btn-sm {% if tipo.ativo %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                     title="{% if tipo.ativo %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if tipo.ativo %}fa-ban{% else %}fa-check{% endif %}"></i>
+                  </a>
+                  <a href="{% url 'producao:tipo_movimento_entrada_delete' tipo.pk %}" class="btn btn-outline-danger btn-sm" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">
+                <i class="fas fa-sign-in-alt fa-2x mb-2 d-block"></i>
+                Nenhum tipo de movimento de entrada cadastrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if tipos.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if tipos.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ tipos.previous_page_number }}{% if request.GET.tipo_parceiro %}&tipo_parceiro={{ request.GET.tipo_parceiro }}{% endif %}{% if request.GET.ativo %}&ativo={{ request.GET.ativo }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ tipos.number }} / {{ tipos.paginator.num_pages }}</span>
+        </li>
+        {% if tipos.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ tipos.next_page_number }}{% if request.GET.tipo_parceiro %}&tipo_parceiro={{ request.GET.tipo_parceiro }}{% endif %}{% if request.GET.ativo %}&ativo={{ request.GET.ativo }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Produto Acabado | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas {% if form.instance.pk %}fa-edit{% else %}fa-plus-circle{% endif %} me-2 text-success"></i>
+      {% if form.instance.pk %}Editar{% else %}Novo{% endif %} Produto Acabado
+    </h5>
+    <a href="{% url 'producao:produto_acabado_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Campos ocultos com valores padrao para PA -->
+      <input type="hidden" name="unidade_medida" value="UN">
+      <input type="hidden" name="controla_estoque" value="">
+      <input type="hidden" name="estoque_atual" value="0">
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if form.errors %}
+        <div class="alert alert-warning">
+          <strong>Erros no formulario:</strong>
+          <ul class="mb-0">
+          {% for field, errors in form.errors.items %}
+            <li><strong>{{ field }}:</strong> {{ errors|join:", " }}</li>
+          {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <!-- Bloco de Identificacao -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-barcode me-2"></i>
+            Identificacao
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% if form.instance.pk %}
+              <div class="col-md-3">
+                <label class="form-label">Codigo</label>
+                <div class="form-control-plaintext fw-bold">{{ form.instance.codigo }}</div>
+              </div>
+            {% else %}
+              <div class="col-md-3">
+                <label class="form-label">Codigo</label>
+                <div class="form-control-plaintext text-muted">
+                  <i class="fas fa-cog fa-spin me-1"></i>
+                  Automatico
+                </div>
+                <div class="form-text">
+                  <i class="fas fa-info-circle text-muted me-1"></i>
+                  Formato: PA0001, PA0002...
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="col-md-9">
+              <label for="{{ form.nome.id_for_label }}" class="form-label">Nome*</label>
+              {{ form.nome }}
+              {% if form.nome.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.nome.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-12">
+              <label for="{{ form.descricao.id_for_label }}" class="form-label">Descricao</label>
+              {{ form.descricao }}
+              {% if form.descricao.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.descricao.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Classificacao -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-tags me-2"></i>
+            Classificacao
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ form.grupo.id_for_label }}" class="form-label">Grupo*</label>
+              {{ form.grupo }}
+              {% if form.grupo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.grupo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="{{ form.subgrupo.id_for_label }}" class="form-label">Subgrupo</label>
+              {{ form.subgrupo }}
+              {% if form.subgrupo.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.subgrupo.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloco de Status -->
+      <div class="card shadow mt-4">
+        <div class="card-header bg-light">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-toggle-on me-2"></i>
+            Status
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+              {{ form.status }}
+              {% if form.status.errors %}
+                <div class="text-danger small mt-1">
+                  {% for error in form.status.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="alert alert-info mt-3 mb-0">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Nota:</strong> O custo de cada elevador sera apurado individualmente na Ordem de Producao, com base nos materiais e servicos consumidos.
+          </div>
+        </div>
+      </div>
+
+      <!-- Botoes de acao -->
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save me-1"></i> Salvar Produto Acabado
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ========================================
+    // SUBGRUPOS DINAMICOS
+    // ========================================
+
+    const grupoSelect = document.getElementById('{{ form.grupo.id_for_label }}');
+    const subgrupoSelect = document.getElementById('{{ form.subgrupo.id_for_label }}');
+
+    function carregarSubgrupos(grupoId, subgrupoSelecionado) {
+        // Limpar opcoes atuais
+        subgrupoSelect.innerHTML = '<option value="">---------</option>';
+
+        if (grupoId) {
+            fetch(`/producao/api/subgrupos/?grupo_id=${grupoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.subgrupos) {
+                        data.subgrupos.forEach(subgrupo => {
+                            const option = document.createElement('option');
+                            option.value = subgrupo.id;
+                            option.textContent = `${subgrupo.codigo_completo} - ${subgrupo.nome}`;
+                            subgrupoSelect.appendChild(option);
+                        });
+
+                        // Selecionar subgrupo se especificado
+                        if (subgrupoSelecionado) {
+                            subgrupoSelect.value = subgrupoSelecionado;
+                        }
+                    }
+                })
+                .catch(error => console.error('Erro ao carregar subgrupos:', error));
+        }
+    }
+
+    if (grupoSelect && subgrupoSelect) {
+        // Evento change do grupo
+        grupoSelect.addEventListener('change', function() {
+            carregarSubgrupos(this.value, null);
+        });
+
+        // Inicializacao: carregar subgrupos se estiver editando
+        {% if form.instance.pk and form.instance.grupo %}
+        carregarSubgrupos('{{ form.instance.grupo.id }}', '{{ form.instance.subgrupo.id|default:"" }}');
+        {% endif %}
+    }
+});
+</script>
+{% endblock %}

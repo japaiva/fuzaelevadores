@@ -710,6 +710,51 @@ class Proposta(models.Model):
         help_text="Data efetiva de entrega ao cliente"
     )
 
+    # === LIBERAÇÃO PRODUÇÃO (FINANCEIRO) ===
+    STATUS_FINANCEIRO_CHOICES = [
+        ('', 'Pendente'),
+        ('liberado', 'Liberado'),
+    ]
+
+    status_financeiro = models.CharField(
+        max_length=20,
+        choices=STATUS_FINANCEIRO_CHOICES,
+        blank=True,
+        default='',
+        verbose_name="Status Financeiro",
+        help_text="Status de liberação financeira para produção"
+    )
+
+    # === STATUS PRODUÇÃO ===
+    STATUS_PRODUCAO_CHOICES = [
+        ('', 'Aguardando'),
+        ('em_producao', 'Em Produção'),
+        ('concluido', 'Concluído'),
+        ('cancelado', 'Cancelado'),
+    ]
+
+    status_producao = models.CharField(
+        max_length=20,
+        choices=STATUS_PRODUCAO_CHOICES,
+        blank=True,
+        default='',
+        verbose_name="Status Produção",
+        help_text="Status do projeto na produção"
+    )
+    numero_op = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name="Número OP",
+        help_text="Número da Ordem de Produção"
+    )
+    data_liberacao_producao = models.DateField(
+        blank=True,
+        null=True,
+        verbose_name="Data Liberação Produção",
+        help_text="Data de liberação para produção pelo financeiro"
+    )
+
     # === AUDITORIA ===
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)

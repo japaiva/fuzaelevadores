@@ -1,0 +1,49 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Excluir OP {{ op.numero }} | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-danger text-white">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Exclusao
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-circle me-2"></i>
+      <strong>Atencao!</strong> Voce esta prestes a excluir a ordem de producao:
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <h4><code>{{ op.numero }}</code></h4>
+        <p class="mb-1"><strong>Produto:</strong> {{ op.produto.codigo }} - {{ op.produto.nome }}</p>
+        <p class="mb-1"><strong>Quantidade:</strong> {{ op.quantidade_planejada|floatformat:2 }}</p>
+        <p class="mb-0"><strong>Status:</strong>
+          {% if op.status == 'rascunho' %}
+            <span class="badge bg-light text-dark">Rascunho</span>
+          {% elif op.status == 'liberada' %}
+            <span class="badge bg-info">Liberada</span>
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <p class="text-muted">Esta acao nao pode ser desfeita. Deseja continuar?</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{% url 'gestor:ordem_producao_detail' op.pk %}" class="btn btn-secondary">
+          <i class="fas fa-times me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash me-1"></i> Sim, Excluir
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

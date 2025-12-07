@@ -8,6 +8,7 @@ Portal de Produção - Sistema Elevadores FUZA
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 # CRUD FORNECEDORES
 # =============================================================================
 
-@login_required
+@portal_producao
 def fornecedor_list(request):
     """Lista de fornecedores com filtros e paginação"""
     fornecedores_list = Fornecedor.objects.all().order_by('razao_social')
@@ -59,7 +60,7 @@ def fornecedor_list(request):
     })
 
 
-@login_required
+@portal_producao
 def fornecedor_create(request):
     """Criar novo fornecedor"""
     if request.method == 'POST':
@@ -76,7 +77,7 @@ def fornecedor_create(request):
     return render(request, 'producao/fornecedor_form.html', {'form': form})
 
 
-@login_required
+@portal_producao
 def fornecedor_update(request, pk):
     """Editar fornecedor"""
     fornecedor = get_object_or_404(Fornecedor, pk=pk)
@@ -96,7 +97,7 @@ def fornecedor_update(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def fornecedor_delete(request, pk):
     """Excluir fornecedor"""
     fornecedor = get_object_or_404(Fornecedor, pk=pk)
@@ -114,7 +115,7 @@ def fornecedor_delete(request, pk):
     return render(request, 'producao/fornecedor_delete.html', {'fornecedor': fornecedor})
 
 
-@login_required
+@portal_producao
 def fornecedor_toggle_status(request, pk):
     """Ativar/desativar fornecedor"""
     fornecedor = get_object_or_404(Fornecedor, pk=pk)
@@ -131,7 +132,7 @@ def fornecedor_toggle_status(request, pk):
 # GESTÃO DE FORNECEDORES DO PRODUTO
 # =============================================================================
 
-@login_required
+@portal_producao
 def produto_fornecedores(request, pk):
     """Gerenciar fornecedores de um produto"""
     produto = get_object_or_404(Produto, pk=pk)
@@ -156,7 +157,7 @@ def produto_fornecedores(request, pk):
     })
 
 
-@login_required
+@portal_producao
 def fornecedor_produto_toggle(request, pk):
     """Ativar/desativar relação fornecedor-produto"""
     fornecedor_produto = get_object_or_404(FornecedorProduto, pk=pk)

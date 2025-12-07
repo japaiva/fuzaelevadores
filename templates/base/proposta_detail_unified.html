@@ -19,25 +19,6 @@
           <a href="{% url 'producao:proposta_list_producao' %}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i> Voltar
           </a>
-
-          <!-- Botões de Upload (apenas produção) -->
-          <a href="{% url 'producao:upload_projeto_executivo' pedido.pk %}" class="btn btn-primary">
-            <i class="fas fa-upload me-1"></i>
-            {% if pedido.data_upload_projeto_executivo %}
-              Projeto Executivo <i class="fas fa-check-circle ms-1"></i>
-            {% else %}
-              Upload Projeto Executivo
-            {% endif %}
-          </a>
-
-          <a href="{% url 'producao:upload_projeto_elevador' pedido.pk %}" class="btn btn-success">
-            <i class="fas fa-upload me-1"></i>
-            {% if pedido.data_upload_projeto_elevador %}
-              Projeto Elevador <i class="fas fa-check-circle ms-1"></i>
-            {% else %}
-              Upload Projeto Elevador
-            {% endif %}
-          </a>
         {% else %}
           <a href="{% url 'vendedor:proposta_list' %}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i> Voltar

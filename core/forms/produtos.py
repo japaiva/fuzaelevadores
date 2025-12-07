@@ -503,9 +503,8 @@ class ProdutoForm(BaseModelForm, AuditMixin):
             
             # Validações para PA
             elif produto_tipo == 'PA':
-                # Para PA, pelo menos um dos custos deve ser preenchido
-                if not custo_material and not custo_servico:
-                    self.add_error('custo_material', 'Pelo menos um dos custos (material ou serviço) deve ser preenchido.')
+                # PA não exige custo - será calculado na Ordem de Produção
+                pass
         
         return cleaned_data
 

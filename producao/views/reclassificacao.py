@@ -3,6 +3,7 @@
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
@@ -12,12 +13,12 @@ from core.models import Produto, GrupoProduto, SubgrupoProduto
 
 logger = logging.getLogger(__name__)
 
-@login_required
+@portal_producao
 def reclassificar_produto_form(request):
     """Formulário simples de reclassificação"""
     return render(request, 'producao/produtos/reclassificar_produto.html')
 
-@login_required
+@portal_producao
 def reclassificar_produto_executar(request):
     """Executar reclassificação"""
     if request.method != 'POST':
@@ -73,7 +74,7 @@ def reclassificar_produto_executar(request):
         messages.error(request, f'Erro: {str(e)}')
         return redirect('producao:reclassificar_produto_form')
 
-@login_required
+@portal_producao
 def api_buscar_produto_para_reclassificar(request):
     """API para buscar produto"""
     codigo = request.GET.get('codigo', '').strip()
@@ -102,7 +103,7 @@ def api_buscar_produto_para_reclassificar(request):
     except Produto.DoesNotExist:
         return JsonResponse({'success': False, 'error': f'Produto "{codigo}" não encontrado'})
 
-@login_required
+@portal_producao
 def api_grupos_por_tipo(request):
     """API para carregar grupos"""
     grupos_mp = list(GrupoProduto.objects.filter(
@@ -119,7 +120,7 @@ def api_grupos_por_tipo(request):
         'grupos_pi': grupos_pi
     })
 
-@login_required
+@portal_producao
 def api_subgrupos_por_grupo_reclassificacao(request):
     """API para carregar subgrupos"""
     grupo_id = request.GET.get('grupo_id')
@@ -136,7 +137,7 @@ def api_subgrupos_por_grupo_reclassificacao(request):
         'subgrupos': subgrupos
     })
 
-@login_required
+@portal_producao
 def api_preview_novo_codigo(request):
     """API para preview do código"""
     grupo_id = request.GET.get('grupo_id')

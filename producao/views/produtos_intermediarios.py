@@ -10,6 +10,7 @@ import logging
 import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Prefetch
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 # CRUD PRODUTOS INTERMEDIÁRIOS - OTIMIZADO PARA ESTRUTURAS
 # =============================================================================
 
-@login_required
+@portal_producao
 def produto_intermediario_list(request):
     """Lista produtos PI com informações de estrutura otimizadas"""
     
@@ -136,7 +137,7 @@ def produto_intermediario_list(request):
     })
 
 
-@login_required
+@portal_producao
 def produto_intermediario_create(request):
     """Criar novo produto intermediário"""
     if request.method == 'POST':
@@ -160,7 +161,7 @@ def produto_intermediario_create(request):
     return render(request, 'producao/produtos/produto_intermediario_form.html', {'form': form}) #
 
 
-@login_required
+@portal_producao
 def produto_intermediario_update(request, pk):
     """Editar produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
@@ -224,7 +225,7 @@ def produto_intermediario_update(request, pk):
     }) #
 
 
-@login_required
+@portal_producao
 def produto_intermediario_delete(request, pk):
     """Excluir produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
@@ -254,7 +255,7 @@ def produto_intermediario_delete(request, pk):
     return render(request, 'producao/produtos/produto_intermediario_delete.html', context) #
 
 
-@login_required
+@portal_producao
 def produto_intermediario_toggle_status(request, pk):
     """Ativar/desativar produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
@@ -266,7 +267,7 @@ def produto_intermediario_toggle_status(request, pk):
     return redirect('producao:produto_intermediario_list')
 
 
-@login_required
+@portal_producao
 def produto_intermediario_toggle_utilizado(request, pk):
     """Toggle do campo utilizado para produto intermediário"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI') #
@@ -282,7 +283,7 @@ def produto_intermediario_toggle_utilizado(request, pk):
 # FUNCIONALIDADE PRINCIPAL: ESTRUTURA DE COMPONENTES - CORRIGIDA
 # =============================================================================
 
-@login_required
+@portal_producao
 def produto_intermediario_estrutura(request, pk):
     """
     Gerenciar estrutura de componentes de produto intermediário
@@ -332,7 +333,7 @@ def produto_intermediario_estrutura(request, pk):
     
     return render(request, 'producao/produtos/produto_intermediario_estrutura.html', context) #
 
-@login_required
+@portal_producao
 def produto_intermediario_calcular_custo(request, pk):
     """Calcular custo de produto intermediário baseado na estrutura"""
     produto = get_object_or_404(Produto, pk=pk, tipo='PI')
@@ -432,7 +433,7 @@ def produto_intermediario_calcular_custo(request, pk):
 # API ATUALIZADA PARA NOVOS TIPOS DE SERVIÇO
 # =============================================================================
 
-@login_required
+@portal_producao
 def api_tipo_pi_info(request):
     """API para retornar informações sobre tipos de PI via AJAX - ATUALIZADA"""
     tipo_pi = request.GET.get('tipo_pi')
@@ -487,7 +488,7 @@ def api_tipo_pi_info(request):
     })
 
 
-@login_required
+@portal_producao
 def relatorio_produtos_pi_por_tipo(request):
     """Relatório de produtos intermediários agrupados por tipo - ATUALIZADO"""
     from django.db.models import Count, Avg
@@ -535,7 +536,7 @@ def relatorio_produtos_pi_por_tipo(request):
 # APIs AJAX PARA ESTRUTURA - MANTIDAS IGUAIS
 # =============================================================================
 
-@login_required
+@portal_producao
 @require_http_methods(["GET"])
 def api_listar_componentes_estrutura(request, produto_id):
     """API PRINCIPAL: Listar componentes da estrutura em tempo real - CORRIGIDA"""
@@ -638,7 +639,7 @@ def api_listar_componentes_estrutura(request, produto_id):
         logger.error(f'Erro ao listar componentes do produto {produto_id}: {str(e)}')
         return JsonResponse({'success': False, 'error': f'Erro interno: {str(e)}'}, status=500)
 
-@login_required
+@portal_producao
 @require_http_methods(["GET"])
 def api_buscar_produtos_estrutura(request):
     """API para buscar produtos (MP e PI) para adicionar na estrutura"""
@@ -692,7 +693,7 @@ def api_buscar_produtos_estrutura(request):
         logger.error(f'Erro na API de busca de produtos para estrutura: {str(e)}')
         return JsonResponse({'success': False, 'error': f'Erro ao buscar produtos: {str(e)}'}, status=500)
 
-@login_required
+@portal_producao
 @require_http_methods(["POST"])
 def api_adicionar_componente_estrutura(request):
     """API para adicionar componente à estrutura - CORRIGIDA"""
@@ -779,7 +780,7 @@ def api_adicionar_componente_estrutura(request):
         logger.error(f'Erro ao adicionar componente: {str(e)}')
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-@login_required
+@portal_producao
 @require_http_methods(["POST"])
 def api_editar_componente_estrutura(request, componente_id):
     """API para editar componente da estrutura - CORRIGIDA"""
@@ -847,7 +848,7 @@ def api_editar_componente_estrutura(request, componente_id):
 
 
 
-@login_required
+@portal_producao
 @require_http_methods(["POST"])
 def api_remover_componente_estrutura(request, componente_id):
     """API para remover componente da estrutura"""
@@ -872,7 +873,7 @@ def api_remover_componente_estrutura(request, componente_id):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
-@login_required
+@portal_producao
 @require_http_methods(["POST"])
 def api_aplicar_custo_estrutura(request, produto_id):
     """API para aplicar custo calculado da estrutura no produto"""

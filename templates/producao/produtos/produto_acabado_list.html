@@ -1,0 +1,161 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Produtos Acabados | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-box me-2 text-success"></i> Produtos Acabados
+    </h5>
+    <div>
+      <a href="{% url 'producao:produto_acabado_create' %}" class="btn btn-success btn-sm me-2">
+        <i class="fas fa-plus me-1"></i> Novo Produto Acabado
+      </a>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-header bg-white">
+    <div class="row">
+      <div class="col-md-8">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-auto">
+            <select name="grupo" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Grupos</option>
+              {% for grupo in grupos %}
+                <option value="{{ grupo.id }}" {% if grupo_filtro == grupo.id|stringformat:"s" %}selected{% endif %}>
+                  {{ grupo.nome }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-auto">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="">Todos os Status</option>
+              <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
+              <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="col-md-4">
+        <form method="get" class="d-flex">
+          <input type="hidden" name="grupo" value="{{ grupo_filtro }}">
+          <input type="hidden" name="status" value="{{ status_filtro }}">
+          <input type="text" name="q" class="form-control form-control-sm me-2"
+                 placeholder="Buscar codigo, nome..." value="{{ query|default:'' }}">
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Codigo</th>
+            <th>Nome</th>
+            <th>Grupo</th>
+            <th class="text-center">Status</th>
+            <th class="text-center" style="min-width: 140px;">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produto in produtos %}
+            <tr>
+              <td><strong><code>{{ produto.codigo }}</code></strong></td>
+              <td>
+                <strong>{{ produto.nome }}</strong>
+                {% if produto.descricao %}
+                  <br><small class="text-muted">{{ produto.descricao|truncatechars:80 }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if produto.grupo %}
+                  <span class="badge bg-primary">{{ produto.grupo.codigo }}</span>
+                  <small class="text-muted">{{ produto.grupo.nome }}</small>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge {% if produto.status == 'ATIVO' %}bg-success{% else %}bg-secondary{% endif %}">
+                  {% if produto.status == 'ATIVO' %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:produto_acabado_update' produto.pk %}"
+                     class="btn btn-outline-primary btn-sm" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'producao:produto_acabado_toggle_status' produto.pk %}"
+                     class="btn btn-sm {% if produto.status == 'ATIVO' %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                     title="{% if produto.status == 'ATIVO' %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if produto.status == 'ATIVO' %}fa-toggle-on{% else %}fa-toggle-off{% endif %}"></i>
+                  </a>
+                  <a href="{% url 'producao:produto_acabado_delete' produto.pk %}"
+                     class="btn btn-outline-danger btn-sm" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-3 text-muted">
+                {% if query or grupo_filtro or status_filtro %}
+                  Nenhum produto acabado encontrado com os filtros aplicados.
+                  <br><a href="{% url 'producao:produto_acabado_list' %}" class="btn btn-sm btn-outline-primary mt-2">
+                    <i class="fas fa-times me-1"></i> Limpar Filtros
+                  </a>
+                {% else %}
+                  Nenhum produto acabado cadastrado.
+                  <br><a href="{% url 'producao:produto_acabado_create' %}" class="btn btn-sm btn-success mt-2">
+                    <i class="fas fa-plus me-1"></i> Cadastrar Primeiro Produto
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if produtos.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav aria-label="Paginacao">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if produtos.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ produtos.previous_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+              &laquo;
+            </a>
+          </li>
+        {% endif %}
+
+        <li class="page-item active">
+          <span class="page-link">{{ produtos.number }} / {{ produtos.paginator.num_pages }}</span>
+        </li>
+
+        {% if produtos.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ produtos.next_page_number }}{% if grupo_filtro %}&grupo={{ grupo_filtro }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+              &raquo;
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

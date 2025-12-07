@@ -798,6 +798,6 @@ class PropostaFiltroForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control form-control-sm',
-            'placeholder': 'Buscar por número, projeto ou cliente...'
+            'placeholder': 'Buscar por número, OP, projeto ou cliente...'
         })
     )

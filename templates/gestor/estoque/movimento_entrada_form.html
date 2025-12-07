@@ -1,0 +1,303 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{% if movimento %}Editar{% else %}Nova{% endif %} Entrada | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>
+    <i class="fas fa-arrow-down text-success me-2"></i>
+    {% if movimento %}Editar Entrada: {{ movimento.numero }}{% else %}Nova Entrada{% endif %}
+  </h2>
+</div>
+
+<form method="post" id="form-entrada">
+  {% csrf_token %}
+
+  <!-- Cabecalho -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Dados da Entrada</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Tipo de Movimento -->
+        <div class="col-md-4">
+          <label for="id_tipo_movimento" class="form-label">Tipo de Movimento *</label>
+          {{ form.tipo_movimento }}
+          {% if form.tipo_movimento.errors %}
+            <div class="invalid-feedback d-block">{{ form.tipo_movimento.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Fornecedor -->
+        <div class="col-md-4" id="div-fornecedor">
+          <label for="id_fornecedor" class="form-label">Fornecedor</label>
+          {{ form.fornecedor }}
+          {% if form.fornecedor.errors %}
+            <div class="invalid-feedback d-block">{{ form.fornecedor.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Cliente -->
+        <div class="col-md-4" id="div-cliente" style="display: none;">
+          <label for="id_cliente" class="form-label">Cliente</label>
+          {{ form.cliente }}
+          {% if form.cliente.errors %}
+            <div class="invalid-feedback d-block">{{ form.cliente.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Pedido de Compra -->
+        <div class="col-md-4" id="div-pedido">
+          <label for="id_pedido_compra" class="form-label">Pedido de Compra</label>
+          {{ form.pedido_compra }}
+        </div>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <!-- Local de Estoque Destino -->
+        <div class="col-md-4">
+          <label for="id_local_estoque" class="form-label">Local de Estoque Destino *</label>
+          {{ form.local_estoque }}
+          {% if form.local_estoque.errors %}
+            <div class="invalid-feedback d-block">{{ form.local_estoque.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Local de Origem (para retorno beneficiamento) -->
+        <div class="col-md-4" id="div-local-origem" style="display: none;">
+          <label for="id_local_estoque_origem" class="form-label">Local de Origem (Terceiros)</label>
+          {{ form.local_estoque_origem }}
+          {% if form.local_estoque_origem.errors %}
+            <div class="invalid-feedback d-block">{{ form.local_estoque_origem.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Data Movimento -->
+        <div class="col-md-2">
+          <label for="id_data_movimento" class="form-label">Data Movimento *</label>
+          {{ form.data_movimento }}
+        </div>
+
+        <!-- Data Entrada -->
+        <div class="col-md-2">
+          <label for="id_data_entrada" class="form-label">Data Entrada *</label>
+          {{ form.data_entrada }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nota Fiscal -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Nota Fiscal (Opcional)</h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label for="id_numero_nf" class="form-label">Numero NF</label>
+          {{ form.numero_nf }}
+          {% if form.numero_nf.errors %}
+            <div class="invalid-feedback d-block">{{ form.numero_nf.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-1">
+          <label for="id_serie_nf" class="form-label">Serie</label>
+          {{ form.serie_nf }}
+        </div>
+        <div class="col-md-2">
+          <label for="id_data_emissao_nf" class="form-label">Data Emissao</label>
+          {{ form.data_emissao_nf }}
+        </div>
+        <div class="col-md-7">
+          <label for="id_chave_acesso" class="form-label">Chave de Acesso NFe</label>
+          {{ form.chave_acesso }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Itens -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Itens</h5>
+      <button type="button" class="btn btn-sm btn-outline-success" id="btn-add-item">
+        <i class="fas fa-plus me-1"></i> Adicionar Item
+      </button>
+    </div>
+    <div class="card-body">
+      {{ formset.management_form }}
+
+      <div class="table-responsive">
+        <table class="table table-bordered" id="tabela-itens">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 30%;">Produto *</th>
+              <th style="width: 12%;">Quantidade *</th>
+              <th style="width: 8%;">Unidade</th>
+              <th style="width: 12%;">Valor Unit.</th>
+              <th style="width: 10%;">Lote</th>
+              <th style="width: 12%;">Validade</th>
+              <th style="width: 12%;">Obs.</th>
+              <th style="width: 4%;">Del</th>
+            </tr>
+          </thead>
+          <tbody id="itens-tbody">
+            {% for item_form in formset %}
+            <tr class="item-row">
+              <td>
+                {{ item_form.produto }}
+                {{ item_form.id }}
+              </td>
+              <td>{{ item_form.quantidade }}</td>
+              <td>{{ item_form.unidade }}</td>
+              <td>{{ item_form.valor_unitario }}</td>
+              <td>{{ item_form.lote }}</td>
+              <td>{{ item_form.data_validade }}</td>
+              <td>{{ item_form.observacoes }}</td>
+              <td class="text-center">
+                {{ item_form.DELETE }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Valores e Observacoes -->
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-comment me-2"></i>Observacoes</h5>
+        </div>
+        <div class="card-body">
+          {{ form.observacoes }}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Valores</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="id_valor_frete" class="form-label">Valor Frete</label>
+            {{ form.valor_frete }}
+          </div>
+          <div class="mb-3">
+            <label for="id_valor_desconto" class="form-label">Valor Desconto</label>
+            {{ form.valor_desconto }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botoes -->
+  <div class="d-flex justify-content-between">
+    <a href="{% url 'gestor:movimento_entrada_list' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+    <button type="submit" class="btn btn-success">
+      <i class="fas fa-save me-1"></i> Salvar
+    </button>
+  </div>
+</form>
+
+<!-- Template para nova linha de item -->
+<template id="template-item-row">
+  <tr class="item-row">
+    <td>
+      <select name="itens-__prefix__-produto" class="form-select item-produto">
+        <option value="">---------</option>
+      </select>
+      <input type="hidden" name="itens-__prefix__-id" value="">
+    </td>
+    <td><input type="number" name="itens-__prefix__-quantidade" step="0.0001" min="0.0001" class="form-control item-quantidade"></td>
+    <td><input type="text" name="itens-__prefix__-unidade" class="form-control item-unidade" readonly></td>
+    <td><input type="number" name="itens-__prefix__-valor_unitario" step="0.0001" min="0" class="form-control item-valor-unitario"></td>
+    <td><input type="text" name="itens-__prefix__-lote" class="form-control" placeholder="Lote"></td>
+    <td><input type="date" name="itens-__prefix__-data_validade" class="form-control"></td>
+    <td><input type="text" name="itens-__prefix__-observacoes" class="form-control" placeholder="Obs."></td>
+    <td class="text-center">
+      <input type="checkbox" name="itens-__prefix__-DELETE" class="form-check-input">
+    </td>
+  </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Dados dos tipos de movimento
+  const tiposMovimento = {{ tipos_movimento|safe }};
+  const tiposMap = {};
+  tiposMovimento.forEach(t => tiposMap[t.id] = t);
+
+  const tipoMovimentoSelect = document.getElementById('id_tipo_movimento');
+  const divFornecedor = document.getElementById('div-fornecedor');
+  const divCliente = document.getElementById('div-cliente');
+  const divPedido = document.getElementById('div-pedido');
+  const divLocalOrigem = document.getElementById('div-local-origem');
+
+  // Funcao para atualizar campos baseado no tipo
+  function atualizarCampos() {
+    const tipoId = tipoMovimentoSelect.value;
+    const tipo = tiposMap[tipoId];
+
+    if (tipo) {
+      // Mostrar/ocultar parceiro
+      if (tipo.tipo_parceiro === 'fornecedor') {
+        divFornecedor.style.display = '';
+        divCliente.style.display = 'none';
+        divPedido.style.display = '';
+      } else if (tipo.tipo_parceiro === 'cliente') {
+        divFornecedor.style.display = 'none';
+        divCliente.style.display = '';
+        divPedido.style.display = 'none';
+      } else {
+        divFornecedor.style.display = 'none';
+        divCliente.style.display = 'none';
+        divPedido.style.display = 'none';
+      }
+
+      // Mostrar local de origem se movimenta terceiros
+      divLocalOrigem.style.display = tipo.movimenta_terceiros ? '' : 'none';
+    }
+  }
+
+  tipoMovimentoSelect.addEventListener('change', atualizarCampos);
+  atualizarCampos(); // Executar no load
+
+  // Gerenciamento de itens do formset
+  const tbody = document.getElementById('itens-tbody');
+  const template = document.getElementById('template-item-row');
+  const totalForms = document.getElementById('id_itens-TOTAL_FORMS');
+
+  // Copiar opcoes de produto do primeiro select para o template
+  const firstSelect = document.querySelector('.item-produto');
+  if (firstSelect && template) {
+    const templateSelect = template.content.querySelector('.item-produto');
+    templateSelect.innerHTML = firstSelect.innerHTML;
+  }
+
+  document.getElementById('btn-add-item').addEventListener('click', function() {
+    const formNum = parseInt(totalForms.value);
+    const newRow = template.content.cloneNode(true);
+
+    // Substituir __prefix__ pelo numero do form
+    newRow.querySelectorAll('[name*="__prefix__"]').forEach(el => {
+      el.name = el.name.replace('__prefix__', formNum);
+    });
+
+    tbody.appendChild(newRow);
+    totalForms.value = formNum + 1;
+  });
+});
+</script>
+{% endblock %}

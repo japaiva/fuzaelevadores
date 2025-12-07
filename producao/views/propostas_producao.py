@@ -5,6 +5,7 @@ import logging
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -56,49 +57,29 @@ def get_valor_total_seguro(lista_materiais):
 # PROPOSTAS NO PORTAL DE PRODUÇÃO
 # =============================================================================
 
-@login_required
+@portal_producao
 def proposta_list_producao(request):
     """
     Lista de propostas para o portal de produção
     ✅ ATUALIZADA: Idêntica ao portal vendedor com filtros completos
     """
     
-    # 🎯 TODAS as propostas inicialmente - SEM FILTROS AUTOMÁTICOS
-    propostas_list = Proposta.objects.all().select_related('cliente', 'vendedor').order_by('-criado_em')
-    
-    # Aplicar APENAS os filtros do formulário (idêntico ao vendedor)
+    # 🎯 Apenas propostas APROVADAS para produção
+    propostas_list = Proposta.objects.filter(status='aprovado').select_related('cliente', 'vendedor').order_by('-criado_em')
+
+    # Filtro por status de produção
+    filtro_status_producao = request.GET.get('status_producao', 'todos')
+    if filtro_status_producao != 'todos':
+        propostas_list = propostas_list.filter(status_producao=filtro_status_producao)
+
+    # Aplicar filtros do formulário (status fixo em 'aprovado')
     form = PropostaFiltroForm(request.GET)
     if form.is_valid():
-        
-        # Filtro por status (se selecionado)
-        if form.cleaned_data.get('status'):
-            propostas_list = propostas_list.filter(status=form.cleaned_data['status'])
-        
+
         # Filtro por modelo de elevador (se selecionado)
         if form.cleaned_data.get('modelo_elevador'):
             propostas_list = propostas_list.filter(modelo_elevador=form.cleaned_data['modelo_elevador'])
-        
-        # Filtro por cliente (se selecionado)
-        if form.cleaned_data.get('cliente'):
-            propostas_list = propostas_list.filter(cliente=form.cleaned_data['cliente'])
-        
-        # Filtro por período (se selecionado)
-        periodo = form.cleaned_data.get('periodo')
-        if periodo:
-            hoje = date.today()
-            if periodo == 'hoje':
-                propostas_list = propostas_list.filter(criado_em__date=hoje)
-            elif periodo == 'semana':
-                inicio_semana = hoje - timedelta(days=hoje.weekday())
-                propostas_list = propostas_list.filter(criado_em__date__gte=inicio_semana)
-            elif periodo == 'mes':
-                propostas_list = propostas_list.filter(
-                    criado_em__year=hoje.year,
-                    criado_em__month=hoje.month
-                )
-            elif periodo == 'ano':
-                propostas_list = propostas_list.filter(criado_em__year=hoje.year)
-        
+
         # Filtro por vendedor (se selecionado)
         vendedor_filter = form.cleaned_data.get('vendedor')
         if vendedor_filter:
@@ -132,6 +113,7 @@ def proposta_list_producao(request):
             query = form.cleaned_data['q']
             propostas_list = propostas_list.filter(
                 Q(numero__icontains=query) |
+                Q(numero_op__icontains=query) |
                 Q(nome_projeto__icontains=query) |
                 Q(cliente__nome__icontains=query) |
                 Q(cliente__nome_fantasia__icontains=query)
@@ -149,12 +131,93 @@ def proposta_list_producao(request):
         'propostas': propostas,
         'form': form,
         'total_propostas': propostas_list.count(),
+        'filtro_status_producao': filtro_status_producao,
     }
     
     return render(request, 'producao/propostas/proposta_list_producao.html', context)
 
 
-@login_required
+@portal_producao
+def op_list(request):
+    """
+    Lista de Ordens de Produção (propostas liberadas financeiramente)
+    Filtro fixo: status_financeiro = 'liberado'
+    """
+
+    # 🎯 Apenas propostas com financeiro LIBERADO
+    propostas_list = Proposta.objects.filter(
+        status='aprovado',
+        status_financeiro='liberado'
+    ).select_related('cliente', 'vendedor').order_by('-criado_em')
+
+    # Filtro por status de produção
+    filtro_status_producao = request.GET.get('status_producao', 'todos')
+    if filtro_status_producao != 'todos':
+        propostas_list = propostas_list.filter(status_producao=filtro_status_producao)
+
+    # Aplicar filtros do formulário
+    form = PropostaFiltroForm(request.GET)
+    if form.is_valid():
+
+        # Filtro por modelo de elevador (se selecionado)
+        if form.cleaned_data.get('modelo_elevador'):
+            propostas_list = propostas_list.filter(modelo_elevador=form.cleaned_data['modelo_elevador'])
+
+        # Busca textual (se preenchida)
+        if form.cleaned_data.get('q'):
+            query = form.cleaned_data['q']
+            propostas_list = propostas_list.filter(
+                Q(numero__icontains=query) |
+                Q(numero_op__icontains=query) |
+                Q(nome_projeto__icontains=query) |
+                Q(cliente__nome__icontains=query) |
+                Q(cliente__nome_fantasia__icontains=query)
+            )
+
+    # Paginação
+    paginator = Paginator(propostas_list, 15)
+    page = request.GET.get('page', 1)
+    try:
+        propostas = paginator.page(page)
+    except:
+        propostas = paginator.page(1)
+
+    context = {
+        'propostas': propostas,
+        'form': form,
+        'total_propostas': propostas_list.count(),
+        'filtro_status_producao': filtro_status_producao,
+    }
+
+    return render(request, 'producao/propostas/op_list.html', context)
+
+
+@portal_producao
+@require_POST
+def alterar_status_producao(request, pk):
+    """
+    Altera o status de produção de uma proposta via AJAX
+    """
+    proposta = get_object_or_404(Proposta, pk=pk)
+
+    status = request.POST.get('status_producao', '')
+
+    # Validar status
+    status_validos = ['', 'em_producao', 'concluido', 'cancelado']
+    if status not in status_validos:
+        return JsonResponse({'success': False, 'message': 'Status inválido'})
+
+    proposta.status_producao = status
+    proposta.save()
+
+    return JsonResponse({
+        'success': True,
+        'message': 'Status alterado com sucesso',
+        'status': status
+    })
+
+
+@portal_producao
 def proposta_detail_producao(request, pk):
     """
     Detalhe da proposta no portal de produção
@@ -201,7 +264,7 @@ def proposta_detail_producao(request, pk):
     )
 
 
-@login_required
+@portal_producao
 def lista_materiais_detail(request, pk):
     """
     View para detalhar/gerenciar lista de materiais de uma proposta
@@ -231,7 +294,7 @@ def lista_materiais_detail(request, pk):
 # LISTA DE MATERIAIS - CRUD OPERATIONS
 # =============================================================================
 
-@login_required
+@portal_producao
 def gerar_lista_materiais(request, pk):
     """
     Gera/regenera lista de materiais a partir dos cálculos da proposta
@@ -381,7 +444,7 @@ def processar_item_lista(lista_materiais, item_dados, logger):
         logger.error(f"Erro ao processar item {item_dados.get('codigo', 'desconhecido')}: {str(e)}")
         return 0
 
-@login_required
+@portal_producao
 def lista_materiais_edit(request, pk):
     """
     Interface editável para lista de materiais
@@ -445,7 +508,7 @@ def lista_materiais_edit(request, pk):
     return render(request, 'producao/propostas/lista_materiais_edit.html', context)
 
 
-@login_required
+@portal_producao
 def lista_materiais_aprovar(request, pk):
     """
     Aprovar lista de materiais para gerar requisição
@@ -503,7 +566,7 @@ def lista_materiais_aprovar(request, pk):
 # AJAX APIs
 # =============================================================================
 
-@login_required
+@portal_producao
 def api_produto_info(request):
     """API para buscar informações de produto por código"""
     codigo = request.GET.get('codigo', '')
@@ -537,7 +600,7 @@ def api_produto_info(request):
 # VIEWS ADICIONAIS PARA CRUD DE ITENS DA LISTA
 # =============================================================================
 
-@login_required
+@portal_producao
 def item_lista_materiais_list(request, lista_id):
     """
     Lista simples dos itens da lista de materiais para edição CRUD
@@ -562,7 +625,7 @@ def item_lista_materiais_list(request, lista_id):
     return render(request, 'producao/propostas/item_lista_materiais_list.html', context)
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_create(request, lista_id):
     """
     Adicionar novo item à lista de materiais
@@ -604,7 +667,7 @@ def item_lista_materiais_create(request, lista_id):
     return render(request, 'producao/propostas/item_lista_materiais_form.html', context)
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_edit(request, lista_id, item_id):
     """
     Editar item da lista de materiais
@@ -644,7 +707,7 @@ def item_lista_materiais_edit(request, lista_id, item_id):
     return render(request, 'producao/propostas/item_lista_materiais_form.html', context)
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_delete(request, lista_id, item_id):
     """
     Excluir item da lista de materiais
@@ -682,7 +745,7 @@ def item_lista_materiais_delete(request, lista_id, item_id):
 # UPLOAD DE PROJETOS
 # =============================================================================
 
-@login_required
+@portal_producao
 def upload_projeto_executivo(request, pk):
     """Upload de Projeto Executivo"""
     from django.utils import timezone
@@ -716,7 +779,7 @@ def upload_projeto_executivo(request, pk):
     return render(request, 'producao/propostas/upload_projeto.html', context)
 
 
-@login_required
+@portal_producao
 def upload_projeto_elevador(request, pk):
     """Upload de Projeto do Elevador"""
     from django.utils import timezone

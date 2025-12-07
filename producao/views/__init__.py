@@ -100,6 +100,8 @@ from .relatorios_produtos import (
 # Propostas e Lista de Materiais
 from .propostas_producao import (
     proposta_list_producao,
+    op_list,
+    alterar_status_producao,
     proposta_detail_producao,
     gerar_lista_materiais,
     lista_materiais_edit,
@@ -163,6 +165,53 @@ from .tarefas import (
     concluir_tarefa,
     cancelar_tarefa,
     contador_tarefas_pendentes,
+)
+
+# =============================================================================
+# ESTOQUE - Locais, Tipos de Movimento, Movimentacoes
+# =============================================================================
+from .estoque import (
+    # Locais de Estoque
+    local_estoque_list, local_estoque_create, local_estoque_update,
+    local_estoque_delete, local_estoque_toggle_status,
+
+    # Tipos de Movimento Entrada
+    tipo_movimento_entrada_list, tipo_movimento_entrada_create,
+    tipo_movimento_entrada_update, tipo_movimento_entrada_delete,
+    tipo_movimento_entrada_toggle_status,
+
+    # Tipos de Movimento Saida
+    tipo_movimento_saida_list, tipo_movimento_saida_create,
+    tipo_movimento_saida_update, tipo_movimento_saida_delete,
+    tipo_movimento_saida_toggle_status,
+
+    # Movimentos de Entrada
+    movimento_entrada_list, movimento_entrada_create, movimento_entrada_detail,
+    movimento_entrada_update, movimento_entrada_delete,
+    movimento_entrada_confirmar, movimento_entrada_cancelar,
+
+    # Movimentos de Saida
+    movimento_saida_list, movimento_saida_create, movimento_saida_detail,
+    movimento_saida_update, movimento_saida_delete,
+    movimento_saida_confirmar, movimento_saida_cancelar,
+
+    # Posicao de Estoque
+    posicao_estoque,
+)
+
+# =============================================================================
+# REQUISIÇÃO DE MATERIAL
+# =============================================================================
+from .requisicao_material import (
+    requisicao_material_list,
+    requisicao_material_create,
+    requisicao_material_detail,
+    requisicao_material_update,
+    requisicao_material_delete,
+    requisicao_material_alterar_status,
+    api_adicionar_item_requisicao,
+    api_remover_item_requisicao,
+    api_buscar_produtos_requisicao,
 )
 
 # =============================================================================
@@ -291,4 +340,42 @@ __all__ = [
     'relatorio_produtos_pi_por_tipo',  # NOVO RELATÓRIO PI
     'relatorio_produtos_completo',      # RELATÓRIO PRODUTOS COMPLETO
     'api_subgrupos_por_grupo_relatorio', # API PARA RELATÓRIOS
+
+    # Estoque - Locais
+    'local_estoque_list', 'local_estoque_create', 'local_estoque_update',
+    'local_estoque_delete', 'local_estoque_toggle_status',
+
+    # Estoque - Tipos de Movimento Entrada
+    'tipo_movimento_entrada_list', 'tipo_movimento_entrada_create',
+    'tipo_movimento_entrada_update', 'tipo_movimento_entrada_delete',
+    'tipo_movimento_entrada_toggle_status',
+
+    # Estoque - Tipos de Movimento Saida
+    'tipo_movimento_saida_list', 'tipo_movimento_saida_create',
+    'tipo_movimento_saida_update', 'tipo_movimento_saida_delete',
+    'tipo_movimento_saida_toggle_status',
+
+    # Estoque - Movimentos de Entrada
+    'movimento_entrada_list', 'movimento_entrada_create', 'movimento_entrada_detail',
+    'movimento_entrada_update', 'movimento_entrada_delete',
+    'movimento_entrada_confirmar', 'movimento_entrada_cancelar',
+
+    # Estoque - Movimentos de Saida
+    'movimento_saida_list', 'movimento_saida_create', 'movimento_saida_detail',
+    'movimento_saida_update', 'movimento_saida_delete',
+    'movimento_saida_confirmar', 'movimento_saida_cancelar',
+
+    # Estoque - Posicao
+    'posicao_estoque',
+
+    # Requisição de Material
+    'requisicao_material_list',
+    'requisicao_material_create',
+    'requisicao_material_detail',
+    'requisicao_material_update',
+    'requisicao_material_delete',
+    'requisicao_material_alterar_status',
+    'api_adicionar_item_requisicao',
+    'api_remover_item_requisicao',
+    'api_buscar_produtos_requisicao',
 ]

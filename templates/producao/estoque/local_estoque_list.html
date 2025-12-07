@@ -1,0 +1,141 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Locais de Estoque | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-warehouse me-2"></i> Locais de Estoque
+    </h5>
+    <div>
+      <a href="{% url 'producao:local_estoque_create' %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Local
+      </a>
+      <a href="{% url 'producao:home' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-header bg-white">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-md-3">
+        <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos os tipos</option>
+          <option value="proprio" {% if request.GET.tipo == 'proprio' %}selected{% endif %}>Estoque Proprio</option>
+          <option value="terceiros" {% if request.GET.tipo == 'terceiros' %}selected{% endif %}>Em Terceiros</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select name="ativo" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Ativos</option>
+          <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Inativos</option>
+        </select>
+      </div>
+      <div class="col-md-5">
+        <div class="input-group input-group-sm">
+          <input type="text" name="q" class="form-control" placeholder="Buscar..." value="{{ request.GET.q|default:'' }}">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Fornecedor</th>
+            <th class="text-center">Status</th>
+            <th class="text-center" style="width: 150px;">Acoes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for local in locais %}
+            <tr>
+              <td>
+                <strong>{{ local.nome }}</strong>
+                {% if local.endereco %}
+                  <br><small class="text-muted">{{ local.endereco|truncatechars:50 }}</small>
+                {% endif %}
+              </td>
+              <td>
+                {% if local.tipo == 'proprio' %}
+                  <span class="badge bg-primary">Proprio</span>
+                {% else %}
+                  <span class="badge bg-info">Terceiros</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if local.fornecedor %}
+                  {{ local.fornecedor }}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <span class="badge {% if local.ativo %}bg-success{% else %}bg-danger{% endif %}">
+                  {% if local.ativo %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a href="{% url 'producao:local_estoque_update' local.pk %}" class="btn btn-outline-primary btn-sm" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{% url 'producao:local_estoque_toggle_status' local.pk %}"
+                     class="btn btn-sm {% if local.ativo %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                     title="{% if local.ativo %}Desativar{% else %}Ativar{% endif %}">
+                    <i class="fas {% if local.ativo %}fa-ban{% else %}fa-check{% endif %}"></i>
+                  </a>
+                  <a href="{% url 'producao:local_estoque_delete' local.pk %}" class="btn btn-outline-danger btn-sm" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">
+                <i class="fas fa-warehouse fa-2x mb-2 d-block"></i>
+                Nenhum local de estoque cadastrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if locais.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white">
+    <nav>
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        {% if locais.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ locais.previous_page_number }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.ativo %}&ativo={{ request.GET.ativo }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        <li class="page-item disabled">
+          <span class="page-link">{{ locais.number }} / {{ locais.paginator.num_pages }}</span>
+        </li>
+        {% if locais.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ locais.next_page_number }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}{% if request.GET.ativo %}&ativo={{ request.GET.ativo }}{% endif %}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

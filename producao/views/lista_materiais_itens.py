@@ -3,6 +3,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
@@ -13,7 +14,7 @@ from django.core.paginator import Paginator
 from core.models import ListaMateriais, ItemListaMateriais, Produto
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_list(request, lista_id):
     """Lista os itens de uma lista de materiais específica"""
     lista = get_object_or_404(ListaMateriais, id=lista_id)
@@ -49,7 +50,7 @@ def item_lista_materiais_list(request, lista_id):
     return render(request, 'producao/lista_materiais/item_list.html', context)
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_create(request, lista_id):
     """Criar novo item na lista de materiais"""
     lista = get_object_or_404(ListaMateriais, id=lista_id)
@@ -112,7 +113,7 @@ def item_lista_materiais_create(request, lista_id):
     return render(request, 'producao/lista_materiais/item_form.html', context)
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_update(request, lista_id, item_id):
     """Editar item da lista de materiais"""
     lista = get_object_or_404(ListaMateriais, id=lista_id)
@@ -176,7 +177,7 @@ def item_lista_materiais_update(request, lista_id, item_id):
     return render(request, 'producao/lista_materiais/item_form.html', context)
 
 
-@login_required
+@portal_producao
 def item_lista_materiais_delete(request, lista_id, item_id):
     """Excluir item da lista de materiais"""
     lista = get_object_or_404(ListaMateriais, id=lista_id)
@@ -204,7 +205,7 @@ def item_lista_materiais_delete(request, lista_id, item_id):
     return render(request, 'producao/lista_materiais/item_delete.html', context)
 
 
-@login_required
+@portal_producao
 def api_buscar_produtos(request):
     """API para buscar produtos por código ou nome"""
     termo = request.GET.get('q', '').strip()

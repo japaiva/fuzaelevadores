@@ -10,6 +10,7 @@ import logging
 from decimal import Decimal
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -20,7 +21,7 @@ from core.services.pricing import PricingService # Import PricingService for par
 
 logger = logging.getLogger(__name__)
 
-@login_required
+@portal_vendedor
 @require_http_methods(["GET"])
 def api_cliente_info(request, cliente_id):
     """
@@ -54,7 +55,7 @@ def api_cliente_info(request, cliente_id):
         }, status=500)
     
 
-@login_required
+@portal_vendedor
 @require_http_methods(["GET", "POST"])
 def cliente_create_ajax(request):
     """
@@ -111,7 +112,7 @@ def cliente_create_ajax(request):
             }, status=400)
 
 
-@login_required
+@portal_vendedor
 @require_http_methods(["GET"])
 def api_dados_precificacao(request, pk):
     """
@@ -174,7 +175,7 @@ def api_dados_precificacao(request, pk):
         }, status=500)
 
 
-@login_required
+@portal_vendedor
 @require_http_methods(["POST"])
 def api_salvar_preco_negociado(request, pk):
     """
@@ -262,7 +263,7 @@ def api_salvar_preco_negociado(request, pk):
         }, status=500)
 
 
-@login_required
+@portal_vendedor
 @require_http_methods(["POST"])
 def api_calcular_preco(request, pk):
     """

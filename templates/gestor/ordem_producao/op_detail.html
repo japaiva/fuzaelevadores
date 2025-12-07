@@ -1,0 +1,302 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}OP {{ op.numero }} | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-industry me-2 text-primary"></i> OP {{ op.numero }}
+    </h5>
+    <div>
+      <!-- Acoes de Workflow -->
+      {% if op.status == 'rascunho' %}
+        <a href="{% url 'gestor:ordem_producao_update' op.pk %}" class="btn btn-outline-primary btn-sm">
+          <i class="fas fa-edit me-1"></i> Editar
+        </a>
+        <form method="post" action="{% url 'gestor:ordem_producao_liberar' op.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-info btn-sm" onclick="return confirm('Liberar esta OP? Os materiais serao reservados.')">
+            <i class="fas fa-check-circle me-1"></i> Liberar
+          </button>
+        </form>
+        <a href="{% url 'gestor:ordem_producao_delete' op.pk %}" class="btn btn-outline-danger btn-sm">
+          <i class="fas fa-trash me-1"></i> Excluir
+        </a>
+      {% elif op.status == 'liberada' %}
+        <form method="post" action="{% url 'gestor:ordem_producao_iniciar' op.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Iniciar producao desta OP?')">
+            <i class="fas fa-play me-1"></i> Iniciar Producao
+          </button>
+        </form>
+        <form method="post" action="{% url 'gestor:ordem_producao_cancelar' op.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Cancelar esta OP? As reservas serao liberadas.')">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </button>
+        </form>
+      {% elif op.status == 'em_producao' %}
+        <a href="{% url 'gestor:ordem_producao_apontar' op.pk %}" class="btn btn-primary btn-sm">
+          <i class="fas fa-clipboard-check me-1"></i> Apontar Producao
+        </a>
+        <form method="post" action="{% url 'gestor:ordem_producao_concluir' op.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Concluir esta OP? Os materiais serao consumidos.')">
+            <i class="fas fa-flag-checkered me-1"></i> Concluir
+          </button>
+        </form>
+        <form method="post" action="{% url 'gestor:ordem_producao_cancelar' op.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Cancelar esta OP?')">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </button>
+        </form>
+      {% endif %}
+      <a href="{% url 'gestor:ordem_producao_list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Status Badge -->
+    <div class="mb-4 text-center">
+      {% if op.status == 'rascunho' %}
+        <span class="badge bg-light text-dark fs-5 px-4 py-2">Rascunho</span>
+      {% elif op.status == 'liberada' %}
+        <span class="badge bg-info fs-5 px-4 py-2">Liberada</span>
+      {% elif op.status == 'em_producao' %}
+        <span class="badge bg-warning fs-5 px-4 py-2">Em Producao</span>
+      {% elif op.status == 'concluida' %}
+        <span class="badge bg-success fs-5 px-4 py-2">Concluida</span>
+      {% elif op.status == 'cancelada' %}
+        <span class="badge bg-secondary fs-5 px-4 py-2">Cancelada</span>
+      {% endif %}
+    </div>
+
+    <!-- Progresso -->
+    {% if op.status == 'em_producao' or op.status == 'concluida' %}
+    <div class="mb-4">
+      <div class="d-flex justify-content-between mb-1">
+        <span>Progresso</span>
+        <span>{{ op.quantidade_produzida|floatformat:2 }} / {{ op.quantidade_planejada|floatformat:2 }}</span>
+      </div>
+      <div class="progress" style="height: 25px;">
+        <div class="progress-bar {% if op.percentual_concluido >= 100 %}bg-success{% elif op.percentual_concluido >= 50 %}bg-info{% else %}bg-warning{% endif %}"
+             style="width: {{ op.percentual_concluido }}%">
+          {{ op.percentual_concluido|floatformat:0 }}%
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Informacoes do Produto -->
+    <div class="row g-4">
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-header bg-primary text-white">
+            <i class="fas fa-box me-2"></i> Produto a Produzir
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">
+              <code class="text-primary">{{ op.produto.codigo }}</code>
+            </h5>
+            <p class="card-text">{{ op.produto.nome }}</p>
+            <div class="row">
+              <div class="col-6">
+                <small class="text-muted">Quantidade Planejada</small>
+                <h4>{{ op.quantidade_planejada|floatformat:2 }}</h4>
+              </div>
+              <div class="col-6">
+                <small class="text-muted">Quantidade Produzida</small>
+                <h4>{{ op.quantidade_produzida|floatformat:2 }}</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-header bg-secondary text-white">
+            <i class="fas fa-info-circle me-2"></i> Detalhes
+          </div>
+          <div class="card-body">
+            <p><strong>Prioridade:</strong>
+              {% if op.prioridade <= 3 %}
+                <span class="badge bg-danger">{{ op.prioridade }}</span> Urgente
+              {% elif op.prioridade <= 6 %}
+                <span class="badge bg-warning">{{ op.prioridade }}</span> Normal
+              {% else %}
+                <span class="badge bg-secondary">{{ op.prioridade }}</span> Baixa
+              {% endif %}
+            </p>
+            <p><strong>Local Producao:</strong><br>{{ op.local_producao.nome }}</p>
+            <p><strong>Local Destino:</strong><br>{{ op.local_destino.nome }}</p>
+            {% if op.proposta %}
+            <p><strong>Proposta:</strong><br>
+              <a href="{% url 'gestor:projeto_detail' op.proposta.pk %}">{{ op.proposta.numero }}</a>
+            </p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datas -->
+    <div class="row g-4 mt-2">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <small class="text-muted">Inicio Planejado</small>
+            <h6>{{ op.data_inicio_planejada|date:"d/m/Y"|default:"-" }}</h6>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <small class="text-muted">Fim Planejado</small>
+            <h6>{{ op.data_fim_planejada|date:"d/m/Y"|default:"-" }}</h6>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <small class="text-muted">Inicio Real</small>
+            <h6>{{ op.data_inicio_real|date:"d/m/Y H:i"|default:"-" }}</h6>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <small class="text-muted">Fim Real</small>
+            <h6>{{ op.data_fim_real|date:"d/m/Y H:i"|default:"-" }}</h6>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custos -->
+    {% if op.custo_previsto or op.custo_real %}
+    <div class="row g-4 mt-2">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body text-center">
+            <small class="text-muted">Custo Previsto</small>
+            <h5 class="text-primary">R$ {{ op.custo_previsto|floatformat:2|default:"0,00" }}</h5>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body text-center">
+            <small class="text-muted">Custo Real</small>
+            <h5 class="{% if op.custo_real > op.custo_previsto %}text-danger{% else %}text-success{% endif %}">
+              R$ {{ op.custo_real|floatformat:2|default:"0,00" }}
+            </h5>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Observacoes -->
+    {% if op.observacoes %}
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="fas fa-comment me-2"></i> Observacoes
+      </div>
+      <div class="card-body">
+        {{ op.observacoes|linebreaks }}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Lista de Materiais -->
+    <div class="card mt-4">
+      <div class="card-header bg-warning text-dark">
+        <i class="fas fa-list me-2"></i> Materiais Necessarios
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Codigo</th>
+                <th>Material</th>
+                <th class="text-center">Previsto</th>
+                <th class="text-center">Reservado</th>
+                <th class="text-center">Consumido</th>
+                <th class="text-center">Disponivel</th>
+                <th class="text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in itens_consumo %}
+              <tr>
+                <td><code class="text-primary">{{ item.produto.codigo }}</code></td>
+                <td>{{ item.produto.nome|truncatechars:40 }}</td>
+                <td class="text-center">{{ item.quantidade_prevista|floatformat:2 }}</td>
+                <td class="text-center">{{ item.quantidade_reservada|floatformat:2 }}</td>
+                <td class="text-center">{{ item.quantidade_consumida|floatformat:2 }}</td>
+                <td class="text-center">
+                  {% if item.estoque_disponivel >= item.quantidade_prevista %}
+                    <span class="text-success">{{ item.estoque_disponivel|floatformat:2 }}</span>
+                  {% else %}
+                    <span class="text-danger">{{ item.estoque_disponivel|floatformat:2 }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if item.quantidade_consumida >= item.quantidade_prevista %}
+                    <span class="badge bg-success">Consumido</span>
+                  {% elif item.quantidade_reservada >= item.quantidade_prevista %}
+                    <span class="badge bg-info">Reservado</span>
+                  {% elif item.estoque_disponivel >= item.quantidade_prevista %}
+                    <span class="badge bg-secondary">Disponivel</span>
+                  {% else %}
+                    <span class="badge bg-danger">Insuficiente</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                  <i class="fas fa-box-open fa-2x mb-2"></i>
+                  <p>Nenhum material calculado.</p>
+                  {% if op.status == 'rascunho' %}
+                  <small>Os materiais serao calculados ao liberar a OP.</small>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auditoria -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <i class="fas fa-history me-2"></i> Auditoria
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <small class="text-muted">Criado por</small>
+            <p>{{ op.criado_por.username }} em {{ op.criado_em|date:"d/m/Y H:i" }}</p>
+          </div>
+          <div class="col-md-6">
+            <small class="text-muted">Atualizado por</small>
+            <p>{{ op.atualizado_por.username|default:"-" }} em {{ op.atualizado_em|date:"d/m/Y H:i"|default:"-" }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

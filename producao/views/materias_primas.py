@@ -8,6 +8,7 @@ Portal de Produção - Sistema Elevadores FUZA
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 # CRUD MATÉRIAS-PRIMAS (TIPO = MP)
 # =============================================================================
 
-@login_required
+@portal_producao
 def materiaprima_list(request):
     """Lista apenas produtos do tipo Matéria Prima (MP)"""
     produtos_list = Produto.objects.select_related(
@@ -100,7 +101,7 @@ def materiaprima_list(request):
         'query': query
     })
 
-@login_required
+@portal_producao
 def materiaprima_create(request):
     """Criar nova matéria-prima"""
     if request.method == 'POST':
@@ -131,7 +132,7 @@ def materiaprima_create(request):
 
     return render(request, 'producao/produtos/materiaprima_form.html', {'form': form})
 
-@login_required
+@portal_producao
 def materiaprima_update(request, pk):
     """Editar matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
@@ -200,7 +201,7 @@ def materiaprima_update(request, pk):
         }
     })
 
-@login_required
+@portal_producao
 def materiaprima_detail(request, pk):
     """Visualizar detalhes de uma matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
@@ -208,7 +209,7 @@ def materiaprima_detail(request, pk):
     return render(request, 'producao/produtos/materiaprima_detail.html', context)
 
 
-@login_required
+@portal_producao
 def materiaprima_delete(request, pk):
     """Excluir matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
@@ -226,7 +227,7 @@ def materiaprima_delete(request, pk):
     return render(request, 'producao/produtos/materiaprima_delete.html', {'produto': produto})
 
 
-@login_required
+@portal_producao
 def materiaprima_toggle_status(request, pk):
     """Ativar/desativar matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')
@@ -245,7 +246,7 @@ def materiaprima_toggle_status(request, pk):
     return redirect('producao:materiaprima_list')
 
 
-@login_required
+@portal_producao
 def materiaprima_toggle_utilizado(request, pk):
     """Toggle do campo utilizado para matéria-prima"""
     produto = get_object_or_404(Produto, pk=pk, tipo='MP')

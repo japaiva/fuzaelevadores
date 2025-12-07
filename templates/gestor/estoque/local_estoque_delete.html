@@ -1,0 +1,39 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}Excluir Local de Estoque | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-danger text-white">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Exclusao
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <p class="lead">Tem certeza que deseja excluir o local de estoque:</p>
+    <p class="h5 text-danger">{{ local.nome }}</p>
+
+    {% if local.tipo == 'terceiros' and local.fornecedor %}
+      <p class="text-muted">Fornecedor: {{ local.fornecedor }}</p>
+    {% endif %}
+
+    <div class="alert alert-warning mt-3">
+      <i class="fas fa-exclamation-circle me-2"></i>
+      Esta acao nao podera ser desfeita. Se existirem movimentacoes vinculadas a este local, a exclusao sera bloqueada.
+    </div>
+
+    <form method="post" class="mt-4">
+      {% csrf_token %}
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'gestor:local_estoque_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash me-1"></i> Confirmar Exclusao
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

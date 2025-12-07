@@ -1,0 +1,121 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{{ titulo }} | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-industry me-2 text-primary"></i> {{ titulo }}
+    </h5>
+    <a href="{% url 'gestor:ordem_producao_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+        <p class="mb-0">{{ error }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="row g-3">
+        <!-- Produto -->
+        <div class="col-md-8">
+          <label for="{{ form.produto.id_for_label }}" class="form-label">Produto a Produzir *</label>
+          {{ form.produto }}
+          {% if form.produto.errors %}
+          <div class="text-danger small">{{ form.produto.errors.0 }}</div>
+          {% endif %}
+          <small class="text-muted">Apenas produtos (PA/PI) com estrutura de componentes cadastrada</small>
+        </div>
+
+        <!-- Quantidade -->
+        <div class="col-md-4">
+          <label for="{{ form.quantidade_planejada.id_for_label }}" class="form-label">Quantidade *</label>
+          {{ form.quantidade_planejada }}
+          {% if form.quantidade_planejada.errors %}
+          <div class="text-danger small">{{ form.quantidade_planejada.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Local Producao -->
+        <div class="col-md-4">
+          <label for="{{ form.local_producao.id_for_label }}" class="form-label">Local de Producao *</label>
+          {{ form.local_producao }}
+          {% if form.local_producao.errors %}
+          <div class="text-danger small">{{ form.local_producao.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Local Destino -->
+        <div class="col-md-4">
+          <label for="{{ form.local_destino.id_for_label }}" class="form-label">Local de Destino *</label>
+          {{ form.local_destino }}
+          {% if form.local_destino.errors %}
+          <div class="text-danger small">{{ form.local_destino.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Prioridade -->
+        <div class="col-md-4">
+          <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade</label>
+          {{ form.prioridade }}
+          {% if form.prioridade.errors %}
+          <div class="text-danger small">{{ form.prioridade.errors.0 }}</div>
+          {% endif %}
+          <small class="text-muted">1=Urgente, 5=Normal, 10=Baixa</small>
+        </div>
+
+        <!-- Data Inicio -->
+        <div class="col-md-4">
+          <label for="{{ form.data_inicio_planejada.id_for_label }}" class="form-label">Inicio Planejado</label>
+          {{ form.data_inicio_planejada }}
+          {% if form.data_inicio_planejada.errors %}
+          <div class="text-danger small">{{ form.data_inicio_planejada.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Data Fim -->
+        <div class="col-md-4">
+          <label for="{{ form.data_fim_planejada.id_for_label }}" class="form-label">Fim Planejado</label>
+          {{ form.data_fim_planejada }}
+          {% if form.data_fim_planejada.errors %}
+          <div class="text-danger small">{{ form.data_fim_planejada.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Proposta -->
+        <div class="col-md-4">
+          <label for="{{ form.proposta.id_for_label }}" class="form-label">Proposta (opcional)</label>
+          {{ form.proposta }}
+          {% if form.proposta.errors %}
+          <div class="text-danger small">{{ form.proposta.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Observacoes -->
+        <div class="col-12">
+          <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observacoes</label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}
+          <div class="text-danger small">{{ form.observacoes.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar OP
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

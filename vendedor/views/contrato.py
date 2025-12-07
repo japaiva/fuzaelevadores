@@ -8,6 +8,7 @@ import os
 from datetime import date
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_vendedor
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -19,7 +20,7 @@ from core.models import Proposta
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@portal_vendedor
 def gerar_contrato_pdf(request, pk):
     """
     Gera contrato em PDF a partir da proposta aprovada

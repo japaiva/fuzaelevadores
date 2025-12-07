@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -35,7 +36,7 @@ logger = logging.getLogger(__name__)
 # CRUD PEDIDOS DE COMPRA
 # =============================================================================
 
-@login_required
+@portal_producao
 def pedido_compra_list(request):
     """Lista de pedidos de compra com filtros"""
     pedidos_list = PedidoCompra.objects.select_related(
@@ -89,7 +90,7 @@ def pedido_compra_list(request):
     return render(request, 'producao/pedidos/pedido_compra_list.html', context)
 
 
-@login_required
+@portal_producao
 def pedido_compra_create(request):
     """Criar novo pedido de compra"""
 
@@ -202,7 +203,7 @@ def pedido_compra_create(request):
     return render(request, 'producao/pedidos/pedido_compra_form.html', context)
 
 
-@login_required
+@portal_producao
 def pedido_compra_detail(request, pk):
     """Detalhes do pedido de compra"""
     pedido = get_object_or_404(
@@ -220,7 +221,7 @@ def pedido_compra_detail(request, pk):
     return render(request, 'producao/pedidos/pedido_compra_detail.html', context)
 
 
-@login_required
+@portal_producao
 def pedido_compra_update(request, pk):
     """Editar pedido de compra"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
@@ -337,7 +338,7 @@ def pedido_compra_update(request, pk):
     return render(request, 'producao/pedidos/pedido_compra_form.html', context)
 
 
-@login_required
+@portal_producao
 def pedido_compra_delete(request, pk):
     """Excluir pedido de compra"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
@@ -364,7 +365,7 @@ def pedido_compra_delete(request, pk):
     return render(request, 'producao/pedidos/pedido_compra_delete.html', {'pedido': pedido})
 
 
-@login_required
+@portal_producao
 def pedido_compra_alterar_status(request, pk):
     """Alterar status do pedido"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
@@ -388,7 +389,7 @@ def pedido_compra_alterar_status(request, pk):
     return render(request, 'producao/pedidos/pedido_compra_alterar_status.html', context)
 
 
-@login_required
+@portal_producao
 def pedido_compra_toggle_status(request, pk):
     """Alternar status entre Rascunho e Enviado"""
     pedido = get_object_or_404(PedidoCompra, pk=pk)
@@ -422,7 +423,7 @@ def pedido_compra_toggle_status(request, pk):
     return redirect('producao:pedido_compra_detail', pk=pk)
 
 
-@login_required
+@portal_producao
 def pedido_compra_gerar_pdf(request, pk):
     """Gerar PDF do pedido de compra"""
     pedido = get_object_or_404(
@@ -469,7 +470,7 @@ def pedido_compra_gerar_pdf(request, pk):
         return redirect('producao:pedido_compra_detail', pk=pk)
 
 
-@login_required
+@portal_producao
 def pedido_compra_duplicar(request, pk):
     """Duplicar pedido de compra"""
     pedido_original = get_object_or_404(PedidoCompra, pk=pk)
@@ -524,7 +525,7 @@ def pedido_compra_duplicar(request, pk):
 # RECEBIMENTO DE MATERIAIS
 # =============================================================================
 
-@login_required
+@portal_producao
 def pedido_compra_recebimento(request, pk):
     """Tela de recebimento de materiais"""
     pedido = get_object_or_404(
@@ -545,7 +546,7 @@ def pedido_compra_recebimento(request, pk):
     return render(request, 'producao/pedidos/pedido_compra_recebimento.html', context)
 
 
-@login_required
+@portal_producao
 @require_POST
 def receber_item_pedido(request, pedido_pk, item_pk):
     """Receber item específico do pedido"""
@@ -615,7 +616,7 @@ def receber_item_pedido(request, pedido_pk, item_pk):
 # CRIAR PEDIDO A PARTIR DE REQUISIÇÃO
 # =============================================================================
 
-@login_required
+@portal_producao
 def pedido_compra_from_requisicao(request, requisicao_pk):
     """Criar pedido de compra a partir de uma requisição"""
     requisicao = get_object_or_404(
@@ -718,7 +719,7 @@ def pedido_compra_from_requisicao(request, requisicao_pk):
 # CRIAR PEDIDO A PARTIR DE ORÇAMENTO (SE NECESSÁRIO NO FUTURO)
 # =============================================================================
 
-@login_required
+@portal_producao
 def pedido_compra_from_orcamento(request, orcamento_pk):
     """Criar pedido de compra a partir de um orçamento aprovado"""
     orcamento = get_object_or_404(
@@ -817,7 +818,7 @@ def pedido_compra_from_orcamento(request, orcamento_pk):
 # RELATÓRIOS DE SALDO
 # =============================================================================
 
-@login_required
+@portal_producao
 def relatorio_saldos_requisicoes(request):
     """Relatório geral de saldo de requisições"""
 
@@ -895,7 +896,7 @@ def relatorio_saldos_requisicoes(request):
     return render(request, 'producao/relatorios/relatorio_saldos.html', context)
 
 
-@login_required
+@portal_producao
 def requisicao_saldo_detail(request, pk):
     """Detalhamento de saldo de uma requisição específica"""
     requisicao = get_object_or_404(
@@ -935,7 +936,7 @@ def requisicao_saldo_detail(request, pk):
     return render(request, 'producao/requisicoes/requisicao_saldo_detail.html', context)
 
 
-@login_required
+@portal_producao
 def exportar_saldos_requisicoes_excel(request):
     """Exportar relatório de saldos para Excel"""
     try:

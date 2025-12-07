@@ -11,6 +11,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.http import HttpResponse
 from django.db.models import Q
 from django.utils import timezone
@@ -20,7 +21,7 @@ from core.models import Produto, GrupoProduto, SubgrupoProduto
 
 logger = logging.getLogger(__name__)
 
-@login_required
+@portal_producao
 def relatorio_produtos_completo(request):
     """
     Relatório completo de produtos com filtros avançados
@@ -277,7 +278,7 @@ def exportar_produtos_excel(request, produtos, filtros_aplicados):
     return response
 
 
-@login_required
+@portal_producao
 def api_subgrupos_por_grupo_relatorio(request):
     """
     API para carregar subgrupos baseado no grupo para o relatório

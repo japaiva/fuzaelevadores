@@ -3,6 +3,14 @@
 from django.urls import path
 from . import views
 
+# Ordens de Producao ainda importadas do gestor (sera migrado depois)
+from gestor.views import (
+    ordem_producao_list, ordem_producao_create, ordem_producao_detail,
+    ordem_producao_update, ordem_producao_delete,
+    ordem_producao_liberar, ordem_producao_iniciar,
+    ordem_producao_apontar, ordem_producao_concluir, ordem_producao_cancelar,
+)
+
 app_name = 'producao'
 
 urlpatterns = [
@@ -96,7 +104,9 @@ urlpatterns = [
     # 📝 PROPOSTAS - Visualização no Portal de Produção
     # =======================================================================
     path('propostas/', views.proposta_list_producao, name='proposta_list_producao'),
+    path('ordens-producao-projetos/', views.op_list, name='op_list'),
     path('propostas/<uuid:pk>/', views.proposta_detail_producao, name='proposta_detail_producao'),
+    path('propostas/<uuid:pk>/alterar-status-producao/', views.alterar_status_producao, name='alterar_status_producao'),
     path('propostas/<uuid:pk>/gerar-lista-materiais/', views.gerar_lista_materiais, name='gerar_lista_materiais'),
     path('propostas/<uuid:pk>/upload-projeto-executivo/', views.upload_projeto_executivo, name='upload_projeto_executivo'),
     path('propostas/<uuid:pk>/upload-projeto-elevador/', views.upload_projeto_elevador, name='upload_projeto_elevador'),
@@ -208,4 +218,84 @@ urlpatterns = [
     
     # APIs para Relatórios
     path('api/subgrupos-relatorio/', views.api_subgrupos_por_grupo_relatorio, name='api_subgrupos_relatorio'),
+
+    # =======================================================================
+    # ESTOQUE - Locais
+    # =======================================================================
+    path('locais-estoque/', views.local_estoque_list, name='local_estoque_list'),
+    path('locais-estoque/novo/', views.local_estoque_create, name='local_estoque_create'),
+    path('locais-estoque/<int:pk>/editar/', views.local_estoque_update, name='local_estoque_update'),
+    path('locais-estoque/<int:pk>/excluir/', views.local_estoque_delete, name='local_estoque_delete'),
+    path('locais-estoque/<int:pk>/alternar-status/', views.local_estoque_toggle_status, name='local_estoque_toggle_status'),
+
+    # =======================================================================
+    # ESTOQUE - Tipos de Movimento
+    # =======================================================================
+    path('tipos-movimento-entrada/', views.tipo_movimento_entrada_list, name='tipo_movimento_entrada_list'),
+    path('tipos-movimento-entrada/novo/', views.tipo_movimento_entrada_create, name='tipo_movimento_entrada_create'),
+    path('tipos-movimento-entrada/<int:pk>/editar/', views.tipo_movimento_entrada_update, name='tipo_movimento_entrada_update'),
+    path('tipos-movimento-entrada/<int:pk>/excluir/', views.tipo_movimento_entrada_delete, name='tipo_movimento_entrada_delete'),
+    path('tipos-movimento-entrada/<int:pk>/alternar-status/', views.tipo_movimento_entrada_toggle_status, name='tipo_movimento_entrada_toggle_status'),
+
+    path('tipos-movimento-saida/', views.tipo_movimento_saida_list, name='tipo_movimento_saida_list'),
+    path('tipos-movimento-saida/novo/', views.tipo_movimento_saida_create, name='tipo_movimento_saida_create'),
+    path('tipos-movimento-saida/<int:pk>/editar/', views.tipo_movimento_saida_update, name='tipo_movimento_saida_update'),
+    path('tipos-movimento-saida/<int:pk>/excluir/', views.tipo_movimento_saida_delete, name='tipo_movimento_saida_delete'),
+    path('tipos-movimento-saida/<int:pk>/alternar-status/', views.tipo_movimento_saida_toggle_status, name='tipo_movimento_saida_toggle_status'),
+
+    # =======================================================================
+    # ESTOQUE - Movimentos de Entrada
+    # =======================================================================
+    path('entradas/', views.movimento_entrada_list, name='movimento_entrada_list'),
+    path('entradas/nova/', views.movimento_entrada_create, name='movimento_entrada_create'),
+    path('entradas/<int:pk>/', views.movimento_entrada_detail, name='movimento_entrada_detail'),
+    path('entradas/<int:pk>/editar/', views.movimento_entrada_update, name='movimento_entrada_update'),
+    path('entradas/<int:pk>/excluir/', views.movimento_entrada_delete, name='movimento_entrada_delete'),
+    path('entradas/<int:pk>/confirmar/', views.movimento_entrada_confirmar, name='movimento_entrada_confirmar'),
+    path('entradas/<int:pk>/cancelar/', views.movimento_entrada_cancelar, name='movimento_entrada_cancelar'),
+
+    # =======================================================================
+    # ESTOQUE - Movimentos de Saida
+    # =======================================================================
+    path('saidas/', views.movimento_saida_list, name='movimento_saida_list'),
+    path('saidas/nova/', views.movimento_saida_create, name='movimento_saida_create'),
+    path('saidas/<int:pk>/', views.movimento_saida_detail, name='movimento_saida_detail'),
+    path('saidas/<int:pk>/editar/', views.movimento_saida_update, name='movimento_saida_update'),
+    path('saidas/<int:pk>/excluir/', views.movimento_saida_delete, name='movimento_saida_delete'),
+    path('saidas/<int:pk>/confirmar/', views.movimento_saida_confirmar, name='movimento_saida_confirmar'),
+    path('saidas/<int:pk>/cancelar/', views.movimento_saida_cancelar, name='movimento_saida_cancelar'),
+
+    # =======================================================================
+    # ESTOQUE - Posicao
+    # =======================================================================
+    path('posicao-estoque/', views.posicao_estoque, name='posicao_estoque'),
+
+    # =======================================================================
+    # REQUISIÇÃO DE MATERIAL
+    # =======================================================================
+    path('requisicao-material/', views.requisicao_material_list, name='requisicao_material_list'),
+    path('requisicao-material/nova/', views.requisicao_material_create, name='requisicao_material_create'),
+    path('requisicao-material/<int:pk>/', views.requisicao_material_detail, name='requisicao_material_detail'),
+    path('requisicao-material/<int:pk>/editar/', views.requisicao_material_update, name='requisicao_material_update'),
+    path('requisicao-material/<int:pk>/excluir/', views.requisicao_material_delete, name='requisicao_material_delete'),
+    path('requisicao-material/<int:pk>/alterar-status/', views.requisicao_material_alterar_status, name='requisicao_material_alterar_status'),
+
+    # APIs para itens da requisição
+    path('requisicao-material/<int:pk>/adicionar-item/', views.api_adicionar_item_requisicao, name='api_adicionar_item_requisicao'),
+    path('requisicao-material/<int:pk>/remover-item/<int:item_pk>/', views.api_remover_item_requisicao, name='api_remover_item_requisicao'),
+    path('requisicao-material/<int:pk>/buscar-produtos/', views.api_buscar_produtos_requisicao, name='api_buscar_produtos_requisicao'),
+
+    # =======================================================================
+    # ORDENS DE PRODUCAO
+    # =======================================================================
+    path('ordens-producao/', ordem_producao_list, name='ordem_producao_list'),
+    path('ordens-producao/nova/', ordem_producao_create, name='ordem_producao_create'),
+    path('ordens-producao/<int:pk>/', ordem_producao_detail, name='ordem_producao_detail'),
+    path('ordens-producao/<int:pk>/editar/', ordem_producao_update, name='ordem_producao_update'),
+    path('ordens-producao/<int:pk>/excluir/', ordem_producao_delete, name='ordem_producao_delete'),
+    path('ordens-producao/<int:pk>/liberar/', ordem_producao_liberar, name='ordem_producao_liberar'),
+    path('ordens-producao/<int:pk>/iniciar/', ordem_producao_iniciar, name='ordem_producao_iniciar'),
+    path('ordens-producao/<int:pk>/apontar/', ordem_producao_apontar, name='ordem_producao_apontar'),
+    path('ordens-producao/<int:pk>/concluir/', ordem_producao_concluir, name='ordem_producao_concluir'),
+    path('ordens-producao/<int:pk>/cancelar/', ordem_producao_cancelar, name='ordem_producao_cancelar'),
 ]

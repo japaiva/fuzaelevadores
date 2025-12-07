@@ -9,6 +9,7 @@ import logging
 from django.db import models
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.db.models import Q, Sum, Count
 
 from core.models import Produto, Fornecedor, GrupoProduto, SubgrupoProduto
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 # RELATÓRIOS ESPECÍFICOS DA PRODUÇÃO
 # =============================================================================
 
-@login_required
+@portal_producao
 def relatorio_estoque_baixo(request):
     """Relatório de produtos com estoque baixo"""
     produtos_estoque_baixo = Produto.objects.filter(
@@ -36,7 +37,7 @@ def relatorio_estoque_baixo(request):
     return render(request, 'producao/relatorio_estoque_baixo.html', context)
 
 
-@login_required
+@portal_producao
 def relatorio_produtos_sem_fornecedor(request):
     """Relatório de produtos sem fornecedor principal"""
     produtos_sem_fornecedor = Produto.objects.filter(
@@ -52,7 +53,7 @@ def relatorio_produtos_sem_fornecedor(request):
     return render(request, 'producao/relatorio_produtos_sem_fornecedor.html', context)
 
 
-@login_required
+@portal_producao
 def relatorio_producao(request):
     """Relatório específico da produção com estatísticas por tipo"""
     

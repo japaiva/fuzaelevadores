@@ -1,0 +1,474 @@
+{% extends 'producao/base_producao.html' %}
+{% load formato_br %}
+
+{% block title %}Ordens de Produção | Portal Produção{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-industry me-2"></i>Ordens de Produção
+    </h5>
+    <div>
+      <a href="{% url 'producao:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+  </div>
+
+  <div class="card-header bg-white py-2">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-auto">
+        <span class="badge bg-success">Financeiro: Liberado</span>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Modelo:</label>
+          {{ form.modelo_elevador }}
+        </div>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-1">
+          <label class="form-label mb-0 text-nowrap small fw-bold">Produção:</label>
+          <select name="status_producao" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+            <option value="todos" {% if filtro_status_producao == 'todos' %}selected{% endif %}>Todos</option>
+            <option value="" {% if filtro_status_producao == '' %}selected{% endif %}>Aguardando</option>
+            <option value="em_producao" {% if filtro_status_producao == 'em_producao' %}selected{% endif %}>Em Produção</option>
+            <option value="concluido" {% if filtro_status_producao == 'concluido' %}selected{% endif %}>Concluído</option>
+            <option value="cancelado" {% if filtro_status_producao == 'cancelado' %}selected{% endif %}>Cancelado</option>
+          </select>
+        </div>
+      </div>
+      <div class="col">
+        <div class="input-group input-group-sm">
+          {{ form.q }}
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+      <div class="col-auto text-end">
+        <span class="badge bg-secondary">{{ propostas.paginator.count }} OPs</span>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-body py-2">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th width="8%">Número</th>
+            <th width="8%">Data</th>
+            <th width="8%" class="text-center">OP</th>
+            <th width="22%">Projeto</th>
+            <th width="12%" class="text-center">Produção</th>
+            <th width="14%" class="text-center text-nowrap">Lista Materiais</th>
+            <th width="30%" class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for proposta in propostas %}
+            <tr>
+              <td>
+                <strong class="text-primary">{{ proposta.numero }}</strong>
+              </td>
+
+              <td>
+                <div class="data-info text-center">
+                  <div class="data-principal">
+                    <strong>{{ proposta.criado_em|date:"d/m/Y" }}</strong>
+                  </div>
+                </div>
+              </td>
+
+              <td class="text-center">
+                {% if proposta.numero_op %}
+                  <strong class="text-success">{{ proposta.numero_op }}</strong>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+
+              <td>
+                <div class="d-flex align-items-start">
+                  <div class="flex-grow-1">
+                    <div class="text-truncate" style="max-width: 200px;" title="{{ proposta.nome_projeto }}">
+                      <strong>{{ proposta.nome_projeto }}</strong>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="text-center">
+                {% if proposta.status_producao == 'em_producao' %}
+                  <span class="badge bg-primary">Em Produção</span>
+                {% elif proposta.status_producao == 'concluido' %}
+                  <span class="badge bg-info">Concluído</span>
+                {% elif proposta.status_producao == 'cancelado' %}
+                  <span class="badge bg-danger">Cancelado</span>
+                {% else %}
+                  <span class="badge bg-secondary">Aguardando</span>
+                {% endif %}
+              </td>
+
+              <td class="text-center">
+                {% if proposta.lista_materiais %}
+                  {% if proposta.lista_materiais.status == 'calculando' %}
+                    <span class="badge bg-warning text-dark"><i class="fas fa-spinner fa-spin me-1"></i>Calculando</span>
+                  {% elif proposta.lista_materiais.status == 'em_edicao' %}
+                    <span class="badge bg-info"><i class="fas fa-edit me-1"></i>Em Edição</span>
+                  {% elif proposta.lista_materiais.status == 'aprovada' %}
+                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Aprovada</span>
+                  {% else %}
+                    <span class="badge bg-secondary">{{ proposta.lista_materiais.get_status_display }}</span>
+                  {% endif %}
+                {% else %}
+                  {% if proposta.pode_calcular %}
+                    <span class="badge bg-outline-secondary border">Não Gerada</span>
+                  {% else %}
+                    <span class="badge bg-light text-muted border">Pendente</span>
+                  {% endif %}
+                {% endif %}
+              </td>
+
+              <td class="text-end">
+                <div class="btn-group" role="group">
+                  <!-- Botão Ver Proposta -->
+                  <a href="{% url 'producao:proposta_detail_producao' proposta.pk %}"
+                    class="btn btn-sm btn-outline-primary"
+                    title="Ver Proposta"
+                    data-bs-toggle="tooltip">
+                    <i class="fas fa-eye"></i>
+                  </a>
+
+                  <!-- Dropdown Alterar Status Produção -->
+                  <div class="btn-group" role="group">
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            title="Alterar Status Produção">
+                      <i class="fas fa-exchange-alt"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li><h6 class="dropdown-header">Alterar Status</h6></li>
+                      <li><a class="dropdown-item btn-status {% if proposta.status_producao == '' %}active{% endif %}"
+                             href="#" data-pk="{{ proposta.pk }}" data-status="">
+                        <i class="fas fa-clock me-2 text-secondary"></i>Aguardando
+                      </a></li>
+                      <li><a class="dropdown-item btn-status {% if proposta.status_producao == 'em_producao' %}active{% endif %}"
+                             href="#" data-pk="{{ proposta.pk }}" data-status="em_producao">
+                        <i class="fas fa-cog me-2 text-primary"></i>Em Produção
+                      </a></li>
+                      <li><a class="dropdown-item btn-status {% if proposta.status_producao == 'concluido' %}active{% endif %}"
+                             href="#" data-pk="{{ proposta.pk }}" data-status="concluido">
+                        <i class="fas fa-check me-2 text-info"></i>Concluído
+                      </a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item btn-status {% if proposta.status_producao == 'cancelado' %}active{% endif %}"
+                             href="#" data-pk="{{ proposta.pk }}" data-status="cancelado">
+                        <i class="fas fa-times me-2 text-danger"></i>Cancelado
+                      </a></li>
+                    </ul>
+                  </div>
+
+                </div>
+              </td>
+
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="empty-state">
+                  <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                  <h5 class="text-muted">Nenhuma OP encontrada</h5>
+                  <p class="text-muted">Ajuste os filtros ou verifique se há projetos liberados</p>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if propostas.paginator.num_pages > 1 %}
+  <div class="card-footer bg-white py-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="pagination-info">
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} OPs
+        </small>
+      </div>
+      <nav aria-label="Navegação de página">
+        <ul class="pagination pagination-sm mb-0">
+          {% if propostas.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Primeiro">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ propostas.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;&laquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&laquo;</span>
+            </li>
+          {% endif %}
+
+          {% for i in propostas.paginator.page_range %}
+            {% if propostas.number == i %}
+              <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% elif i > propostas.number|add:'-3' and i < propostas.number|add:'3' %}
+              <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+            {% endif %}
+          {% endfor %}
+
+          {% if propostas.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ propostas.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Próximo">
+                <span aria-hidden="true">&raquo;</span>
+              </a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ propostas.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Último">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;</span>
+            </li>
+            <li class="page-item disabled">
+              <span class="page-link">&raquo;&raquo;</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if request.GET %}
+<div class="card mt-3">
+  <div class="card-body py-2">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <small class="text-muted">
+          <i class="fas fa-filter me-1"></i>
+          Mostrando {{ propostas.start_index }}-{{ propostas.end_index }} de {{ propostas.paginator.count }} OPs
+        </small>
+      </div>
+      <div>
+        <a href="{% url 'producao:op_list' %}" class="btn btn-sm btn-outline-secondary">
+          <i class="fas fa-times me-1"></i>Limpar Filtros
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.table-sm td, .table-sm th {
+  padding: 0.75rem 0.5rem;
+  vertical-align: middle;
+}
+
+.table thead th {
+  font-size: 0.75rem;
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-info {
+  min-width: 80px;
+}
+
+.data-principal {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.btn-group .btn {
+  border-radius: 0;
+  min-width: 36px;
+}
+
+.btn-group .btn:first-child {
+  border-top-left-radius: 0.375rem;
+  border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+  border-top-right-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.pagination-info {
+  flex-grow: 1;
+}
+
+.card-header form .form-select,
+.card-header form .form-control {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  height: auto;
+}
+
+/* Não gerada - cinza com borda */
+.badge.bg-outline-secondary {
+  background-color: transparent !important;
+  border: 1px solid #6c757d !important;
+  color: #6c757d !important;
+}
+
+/* Pendente - cinza claro */
+.badge.bg-light.text-muted {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+/* Animação de loading */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.badge.bg-warning .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Tooltips */
+[data-bs-toggle="tooltip"] {
+  cursor: pointer;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .btn-group .btn {
+    min-width: 32px;
+    padding: 0.25rem 0.4rem;
+  }
+
+  .empty-state {
+    padding: 2rem 0.5rem;
+  }
+
+  /* Ocultar colunas menos importantes em mobile (Data e Produção) */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
+}
+
+/* Hover effects */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Auto-submit do formulário quando filtros mudarem
+    const selects = document.querySelectorAll('select[name="modelo_elevador"]');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            this.form.submit();
+        });
+    });
+
+    // Alterar status de produção
+    document.querySelectorAll('.btn-status').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const pk = this.dataset.pk;
+            const status = this.dataset.status;
+
+            const formData = new FormData();
+            formData.append('status_producao', status);
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+            fetch('{% url "producao:alterar_status_producao" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', pk), {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Atualizar badge de status na linha
+                    const row = document.querySelector(`tr:has([data-pk="${pk}"])`);
+                    if (row) {
+                        const statusCell = row.querySelector('td:nth-child(5)');
+                        if (statusCell) {
+                            let badgeClass = 'bg-secondary';
+                            let badgeText = 'Aguardando';
+                            if (status === 'em_producao') {
+                                badgeClass = 'bg-primary';
+                                badgeText = 'Em Produção';
+                            } else if (status === 'concluido') {
+                                badgeClass = 'bg-info';
+                                badgeText = 'Concluído';
+                            } else if (status === 'cancelado') {
+                                badgeClass = 'bg-danger';
+                                badgeText = 'Cancelado';
+                            }
+                            statusCell.innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
+                        }
+
+                        // Atualizar dropdown items active
+                        row.querySelectorAll('.btn-status').forEach(item => {
+                            item.classList.remove('active');
+                            if (item.dataset.status === status) {
+                                item.classList.add('active');
+                            }
+                        });
+
+                        row.classList.add('table-success');
+                        setTimeout(() => row.classList.remove('table-success'), 1500);
+                    }
+                } else {
+                    alert('Erro: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Erro ao alterar status: ' + error);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

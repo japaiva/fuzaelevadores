@@ -1,0 +1,43 @@
+{% extends 'producao/base_producao.html' %}
+
+{% block title %}Excluir Requisicao | Portal Producao{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-danger text-white">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-trash me-2"></i> Excluir Requisicao
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Atencao!</strong> Esta acao nao pode ser desfeita.
+    </div>
+
+    <p class="mb-3">
+      Tem certeza que deseja excluir a requisicao <strong>{{ requisicao.numero }}</strong>?
+    </p>
+
+    <ul class="list-unstyled mb-4">
+      <li><strong>OP:</strong> {% if requisicao.proposta %}OP {{ requisicao.proposta.numero_op }} - {{ requisicao.proposta.cliente.nome }}{% else %}-{% endif %}</li>
+      <li><strong>Tipo de Produto:</strong> {{ requisicao.get_tipo_produto_display }}</li>
+      <li><strong>Data:</strong> {{ requisicao.data_requisicao|date:"d/m/Y" }}</li>
+      <li><strong>Itens:</strong> {{ requisicao.itens.count }}</li>
+    </ul>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'producao:requisicao_material_detail' requisicao.pk %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-danger">
+          <i class="fas fa-trash me-1"></i> Confirmar Exclusao
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

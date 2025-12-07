@@ -1,0 +1,104 @@
+{% extends 'gestor/base_gestor.html' %}
+
+{% block title %}{% if local %}Editar{% else %}Novo{% endif %} Local de Estoque | Portal Gestor{% endblock %}
+
+{% block content %}
+<div class="card shadow">
+  <div class="card-header bg-light">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-warehouse me-2"></i>
+      {% if local %}Editar Local de Estoque{% else %}Novo Local de Estoque{% endif %}
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.nome.id_for_label }}" class="form-label">Nome *</label>
+          {{ form.nome }}
+          {% if form.nome.errors %}
+            <div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo *</label>
+          {{ form.tipo }}
+          {% if form.tipo.errors %}
+            <div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <label for="{{ form.ativo.id_for_label }}" class="form-label">Status</label>
+          <div class="form-check mt-2">
+            {{ form.ativo }}
+            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" id="fornecedor-row" style="display: none;">
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.fornecedor.id_for_label }}" class="form-label">Fornecedor Responsavel</label>
+          {{ form.fornecedor }}
+          <small class="form-text text-muted">Obrigatorio para estoque em terceiros</small>
+          {% if form.fornecedor.errors %}
+            <div class="invalid-feedback d-block">{{ form.fornecedor.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.endereco.id_for_label }}" class="form-label">Endereco</label>
+          {{ form.endereco }}
+          {% if form.endereco.errors %}
+            <div class="invalid-feedback d-block">{{ form.endereco.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observacoes</label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}
+            <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'gestor:local_estoque_list' %}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save me-1"></i> Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+  const fornecedorRow = document.getElementById('fornecedor-row');
+
+  function toggleFornecedor() {
+    if (tipoSelect.value === 'terceiros') {
+      fornecedorRow.style.display = 'flex';
+    } else {
+      fornecedorRow.style.display = 'none';
+    }
+  }
+
+  tipoSelect.addEventListener('change', toggleFornecedor);
+  toggleFornecedor();
+});
+</script>
+{% endblock %}

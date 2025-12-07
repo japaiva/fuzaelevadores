@@ -1,259 +1,481 @@
 {% extends 'gestor/base_gestor.html' %}
 {% load formato_br %}
+{% load pedido_filters %}
 
 {% block title %}Projeto {{ proposta.numero }} | Portal Gestor{% endblock %}
 
+{% block extra_css %}
+<style>
+  .timeline-item {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 30px;
+    bottom: -20px;
+    width: 2px;
+    background: #dee2e6;
+  }
+  .timeline-item:last-child::before {
+    display: none;
+  }
+  .timeline-dot {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+  }
+  .timeline-dot.completed { background: #198754; box-shadow: 0 0 0 2px #198754; }
+  .timeline-dot.active { background: #0d6efd; box-shadow: 0 0 0 2px #0d6efd; }
+  .timeline-dot.pending { background: #6c757d; box-shadow: 0 0 0 2px #6c757d; }
+
+  .pdf-viewer {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+  }
+
+  .nav-tabs .nav-link {
+    font-weight: 500;
+  }
+  .nav-tabs .nav-link.active {
+    border-bottom: 3px solid #0d6efd;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card shadow">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <h5 class="card-title mb-0">
-            <i class="fas fa-project-diagram me-2"></i>Projeto {{ proposta.numero }}
-        </h5>
+<!-- Header + Tabs -->
+<div class="card shadow-sm rounded-0 border-0">
+  <!-- Header -->
+  <div class="card-header bg-white py-3 border-0">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+          <i class="fas fa-building fa-lg"></i>
+        </div>
         <div>
-            <a href="{% url 'gestor:painel_projetos' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left me-1"></i> Voltar
-            </a>
+          <h4 class="mb-0">
+            {% if proposta.numero_op %}OP {{ proposta.numero_op }} - {% endif %}{{ proposta.cliente.nome }}
+          </h4>
+          <small class="text-muted">
+            Proposta {{ proposta.numero }} | {{ proposta.nome_projeto|default:"Projeto sem nome" }}
+          </small>
         </div>
+      </div>
+      <a href="{% url 'gestor:painel_projetos' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
     </div>
+  </div>
+  <!-- Tabs -->
+  <div class="card-header bg-white border-0 pt-0">
+    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link active" id="resumo-tab" data-bs-toggle="tab" href="#resumo" role="tab">
+          <i class="fas fa-info-circle me-1"></i> Resumo
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="especificacoes-tab" data-bs-toggle="tab" href="#especificacoes" role="tab">
+          <i class="fas fa-cogs me-1"></i> Especificacoes
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="projetos-tab" data-bs-toggle="tab" href="#projetos" role="tab">
+          <i class="fas fa-file-pdf me-1"></i> Projetos
+          {% if proposta.arquivo_projeto_executivo or proposta.arquivo_projeto_elevador %}
+            <span class="badge bg-success ms-1">{{ proposta.arquivo_projeto_executivo|yesno:"1,0"|add:proposta.arquivo_projeto_elevador|yesno:"1,0" }}</span>
+          {% endif %}
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="timeline-tab" data-bs-toggle="tab" href="#timeline" role="tab">
+          <i class="fas fa-history me-1"></i> Timeline
+        </a>
+      </li>
+    </ul>
+  </div>
 
-    <div class="card-body">
-        <!-- Informações Básicas -->
-        <div class="mb-4 pb-3 border-bottom">
-            <h6 class="text-primary mb-3">
-                <i class="fas fa-info-circle me-2"></i>Informações Básicas
-            </h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Cliente:</label>
-                    <div><strong>{{ proposta.cliente.nome }}</strong></div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Projeto:</label>
-                    <div><strong>{{ proposta.nome_projeto|default:"Sem nome definido" }}</strong></div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Vendedor:</label>
-                    <div>{{ proposta.vendedor.get_full_name|default:proposta.vendedor.username }}</div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Valor:</label>
-                    <div class="text-success"><strong>{{ proposta.valor_proposta|formato_br }}</strong></div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Status:</label>
-                    <div><span class="badge {{ proposta.status_badge_class }}">{{ proposta.get_status_display }}</span></div>
-                </div>
+  <div class="card-body p-0">
+    <div class="tab-content">
+
+      <!-- TAB RESUMO -->
+      <div class="tab-pane fade show active p-3" id="resumo" role="tabpanel">
+        <!-- Parte 1 e 2 lado a lado -->
+        <div class="row g-0 mb-3">
+          <div class="col-md-6">
+            <div class="card border-0 rounded-0 h-100">
+              <div class="card-header bg-primary text-white rounded-0 border-0">
+                <h6 class="mb-0">Informacoes do Projeto</h6>
+              </div>
+              <div class="card-body bg-light">
+                <table class="table table-sm table-borderless mb-0">
+                  <tr>
+                    <td class="text-muted" width="40%">Cliente:</td>
+                    <td><strong>{{ proposta.cliente.nome }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Projeto:</td>
+                    <td>{{ proposta.nome_projeto|default:"-" }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Vendedor:</td>
+                    <td>{{ proposta.vendedor.get_full_name|default:proposta.vendedor.username }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Valor:</td>
+                    <td><strong class="text-success">{{ proposta.valor_proposta|formato_br }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Data Criacao:</td>
+                    <td>{{ proposta.criado_em|date:"d/m/Y" }}</td>
+                  </tr>
+                </table>
+              </div>
             </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-0 rounded-0 h-100">
+              <div class="card-header bg-success text-white rounded-0 border-0">
+                <h6 class="mb-0">Status do Projeto</h6>
+              </div>
+              <div class="card-body bg-light">
+                <table class="table table-sm table-borderless mb-0">
+                  <tr>
+                    <td class="text-muted" width="40%">Status Geral:</td>
+                    <td>{{ proposta.get_status_display }}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Financeiro:</td>
+                    <td>
+                      {% if proposta.status_financeiro == 'liberado' %}
+                        <span class="text-success">Liberado</span>
+                      {% else %}
+                        <span class="text-warning">Pendente</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Producao:</td>
+                    <td>
+                      {% if proposta.status_producao == 'em_producao' %}
+                        <span class="text-primary">Em Producao</span>
+                      {% elif proposta.status_producao == 'concluido' %}
+                        <span class="text-info">Concluido</span>
+                      {% else %}
+                        <span class="text-secondary">Aguardando</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Obra:</td>
+                    <td>
+                      {% if proposta.status_obra %}
+                        {{ proposta.get_status_obra_display }}
+                      {% else %}
+                        <span class="text-secondary">Aguardando</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Numero OP:</td>
+                    <td>
+                      {% if proposta.numero_op %}
+                        <strong class="text-primary">{{ proposta.numero_op }}</strong>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Fase 1: Criação e Aprovação -->
-        <div class="mb-4 pb-3 border-bottom">
-            <h6 class="text-info mb-3">
-                <i class="fas fa-flag-checkered me-2"></i>Fase 1: Criação e Aprovação
-            </h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Data de Criação:</label>
-                    <div>
-                        {% if proposta.criado_em %}
-                            <i class="fas fa-calendar-alt me-1 text-primary"></i>
-                            <strong>{{ proposta.criado_em|date:"d/m/Y H:i" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Data de Aprovação:</label>
-                    <div>
-                        {% if proposta.data_aprovacao %}
-                            <i class="fas fa-check-circle me-1 text-success"></i>
-                            <strong>{{ proposta.data_aprovacao|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+        <!-- Parte 3 - Datas Importantes -->
+        <div class="card border-0 bg-light rounded-0">
+          <div class="card-header bg-info text-white rounded-0">
+            <h6 class="mb-0">Datas Importantes</h6>
+          </div>
+          <div class="card-body">
+            <table class="table table-sm table-borderless mb-0">
+              <tr>
+                <td class="text-muted" width="20%">Data Aprovacao:</td>
+                <td width="30%">{{ proposta.data_aprovacao|date:"d/m/Y"|default:"-" }}</td>
+                <td class="text-muted" width="20%">Liberacao Producao:</td>
+                <td width="30%">{{ proposta.data_liberacao_producao|date:"d/m/Y"|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Medicao:</td>
+                <td>{{ proposta.data_medicao|date:"d/m/Y"|default:"-" }}</td>
+                <td class="text-muted">Inicio Producao:</td>
+                <td>{{ proposta.data_inicio_producao|date:"d/m/Y"|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Previsao Conclusao:</td>
+                <td>{{ proposta.data_previsao_conclusao|date:"d/m/Y"|default:"-" }}</td>
+                <td class="text-muted">Conclusao:</td>
+                <td>{{ proposta.data_conclusao|date:"d/m/Y"|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted">Previsao Entrega:</td>
+                <td>{{ proposta.data_previsao_entrega|date:"d/m/Y"|default:"-" }}</td>
+                <td class="text-muted">Entrega:</td>
+                <td>{{ proposta.data_entrega|date:"d/m/Y"|default:"-" }}</td>
+              </tr>
+            </table>
+          </div>
         </div>
+      </div>
 
-        <!-- Fase 2: Projetos -->
-        <div class="mb-4 pb-3 border-bottom">
-            <h6 class="text-warning mb-3">
-                <i class="fas fa-drafting-compass me-2"></i>Fase 2: Projetos
-            </h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Projeto Executivo:</label>
-                    <div>
-                        {% if proposta.data_upload_projeto_executivo %}
-                            <i class="fas fa-file-pdf me-1 text-danger"></i>
-                            <strong>{{ proposta.data_upload_projeto_executivo|date:"d/m/Y H:i" }}</strong>
-                            {% if proposta.arquivo_projeto_executivo %}
-                                <a href="{{ proposta.arquivo_projeto_executivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
-                            {% endif %}
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Projeto Elevador:</label>
-                    <div>
-                        {% if proposta.data_upload_projeto_elevador %}
-                            <i class="fas fa-file-pdf me-1 text-danger"></i>
-                            <strong>{{ proposta.data_upload_projeto_elevador|date:"d/m/Y H:i" }}</strong>
-                            {% if proposta.arquivo_projeto_elevador %}
-                                <a href="{{ proposta.arquivo_projeto_elevador.url }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
-                                    <i class="fas fa-download"></i> Download
-                                </a>
-                            {% endif %}
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
+      <!-- TAB ESPECIFICACOES -->
+      <div class="tab-pane fade p-3" id="especificacoes" role="tabpanel">
+        {% include "base/proposta_detail_tab_especificacoes.html" %}
+      </div>
 
-        <!-- Fase 3: Medição e Obra -->
-        <div class="mb-4 pb-3 border-bottom">
-            <h6 class="text-secondary mb-3">
-                <i class="fas fa-ruler-combined me-2"></i>Fase 3: Medição e Obra
-            </h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Data de Medição:</label>
-                    <div>
-                        {% if proposta.data_medicao %}
-                            <i class="fas fa-calendar-check me-1 text-primary"></i>
-                            <strong>{{ proposta.data_medicao|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Previsão Entrega Obra:</label>
-                    <div>
-                        {% if proposta.data_previsao_entrega_obra %}
-                            <i class="fas fa-calendar me-1 text-info"></i>
-                            <strong>{{ proposta.data_previsao_entrega_obra|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Entrega Obra:</label>
-                    <div>
-                        {% if proposta.data_entrega_obra %}
-                            <i class="fas fa-check-double me-1 text-success"></i>
-                            <strong>{{ proposta.data_entrega_obra|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
+      <!-- TAB PROJETOS -->
+      <div class="tab-pane fade p-3" id="projetos" role="tabpanel">
+        <div class="row g-3">
+          <!-- Projeto Executivo -->
+          <div class="col-md-6">
+            <div class="card h-100 rounded-0 border-end-0">
+              <div class="card-header bg-danger text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-drafting-compass me-2"></i>Projeto Executivo
+                </h6>
+              </div>
+              <div class="card-body">
+                {% if proposta.arquivo_projeto_executivo %}
+                  <div class="mb-3">
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      Enviado em: {{ proposta.data_upload_projeto_executivo|date:"d/m/Y H:i" }}
+                    </small>
+                  </div>
+                  <div class="d-grid gap-2">
+                    <a href="{{ proposta.arquivo_projeto_executivo.url }}" target="_blank" class="btn btn-outline-danger">
+                      <i class="fas fa-eye me-2"></i>Visualizar PDF
+                    </a>
+                    <a href="{{ proposta.arquivo_projeto_executivo.url }}" download class="btn btn-danger">
+                      <i class="fas fa-download me-2"></i>Download
+                    </a>
+                  </div>
+                  <hr>
+                  <div class="ratio ratio-4x3">
+                    <iframe src="{{ proposta.arquivo_projeto_executivo.url }}#toolbar=0" class="pdf-viewer"></iframe>
+                  </div>
+                {% else %}
+                  <div class="text-center py-5">
+                    <i class="fas fa-file-pdf fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Projeto Executivo</h5>
+                    <p class="text-muted">Nenhum arquivo enviado</p>
+                  </div>
+                {% endif %}
+              </div>
             </div>
-        </div>
+          </div>
 
-        <!-- Fase 4: Produção -->
-        <div class="mb-4 pb-3 border-bottom">
-            <h6 class="text-primary mb-3">
-                <i class="fas fa-industry me-2"></i>Fase 4: Produção
-            </h6>
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Autorização Produção:</label>
-                    <div>
-                        {% if proposta.data_autorizacao_producao %}
-                            <i class="fas fa-thumbs-up me-1 text-success"></i>
-                            <strong>{{ proposta.data_autorizacao_producao|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Data da Compra:</label>
-                    <div>
-                        {% if proposta.data_compra %}
-                            <i class="fas fa-shopping-cart me-1 text-primary"></i>
-                            <strong>{{ proposta.data_compra|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="text-muted small">Início da Produção:</label>
-                    <div>
-                        {% if proposta.data_inicio_producao %}
-                            <i class="fas fa-play-circle me-1 text-info"></i>
-                            <strong>{{ proposta.data_inicio_producao|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Previsão de Conclusão:</label>
-                    <div>
-                        {% if proposta.data_previsao_conclusao %}
-                            <i class="fas fa-calendar me-1 text-warning"></i>
-                            <strong>{{ proposta.data_previsao_conclusao|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Conclusão:</label>
-                    <div>
-                        {% if proposta.data_conclusao %}
-                            <i class="fas fa-flag me-1 text-success"></i>
-                            <strong>{{ proposta.data_conclusao|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
+          <!-- Projeto do Elevador -->
+          <div class="col-md-6">
+            <div class="card h-100 rounded-0">
+              <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                  <i class="fas fa-elevator me-2"></i>Projeto do Elevador
+                </h6>
+              </div>
+              <div class="card-body">
+                {% if proposta.arquivo_projeto_elevador %}
+                  <div class="mb-3">
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      Enviado em: {{ proposta.data_upload_projeto_elevador|date:"d/m/Y H:i" }}
+                    </small>
+                  </div>
+                  <div class="d-grid gap-2">
+                    <a href="{{ proposta.arquivo_projeto_elevador.url }}" target="_blank" class="btn btn-outline-primary">
+                      <i class="fas fa-eye me-2"></i>Visualizar PDF
+                    </a>
+                    <a href="{{ proposta.arquivo_projeto_elevador.url }}" download class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>Download
+                    </a>
+                  </div>
+                  <hr>
+                  <div class="ratio ratio-4x3">
+                    <iframe src="{{ proposta.arquivo_projeto_elevador.url }}#toolbar=0" class="pdf-viewer"></iframe>
+                  </div>
+                {% else %}
+                  <div class="text-center py-5">
+                    <i class="fas fa-file-pdf fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">Projeto do Elevador</h5>
+                    <p class="text-muted">Nenhum arquivo enviado</p>
+                  </div>
+                {% endif %}
+              </div>
             </div>
+          </div>
         </div>
+      </div>
 
-        <!-- Fase 5: Entrega ao Cliente -->
-        <div class="mb-3">
-            <h6 class="text-success mb-3">
-                <i class="fas fa-shipping-fast me-2"></i>Fase 5: Entrega ao Cliente
-            </h6>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Previsão de Entrega:</label>
-                    <div>
-                        {% if proposta.data_previsao_entrega %}
-                            <i class="fas fa-calendar me-1 text-warning"></i>
-                            <strong>{{ proposta.data_previsao_entrega|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
+      <!-- TAB TIMELINE -->
+      <div class="tab-pane fade p-3" id="timeline" role="tabpanel">
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+
+            <!-- Criacao -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.criado_em %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Proposta Criada</strong>
+                    <span class="text-muted">{{ proposta.criado_em|date:"d/m/Y H:i"|default:"-" }}</span>
+                  </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small">Data da Entrega:</label>
-                    <div>
-                        {% if proposta.data_entrega %}
-                            <i class="fas fa-check-circle me-1 text-success"></i>
-                            <strong>{{ proposta.data_entrega|date:"d/m/Y" }}</strong>
-                        {% else %}
-                            <span class="text-muted fst-italic">-</span>
-                        {% endif %}
-                    </div>
-                </div>
+              </div>
             </div>
+
+            <!-- Aprovacao -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_aprovacao %}completed{% elif proposta.status == 'aprovado' %}active{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Aprovacao Comercial</strong>
+                    <span class="text-muted">{{ proposta.data_aprovacao|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Liberacao Financeira -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_liberacao_producao %}completed{% elif proposta.status_financeiro == 'liberado' %}active{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Liberacao Financeira</strong>
+                    <span class="text-muted">{{ proposta.data_liberacao_producao|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                  {% if proposta.numero_op %}
+                    <small class="text-primary">OP: {{ proposta.numero_op }}</small>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Projeto Executivo -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_upload_projeto_executivo %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Projeto Executivo</strong>
+                    <span class="text-muted">{{ proposta.data_upload_projeto_executivo|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projeto Elevador -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_upload_projeto_elevador %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Projeto do Elevador</strong>
+                    <span class="text-muted">{{ proposta.data_upload_projeto_elevador|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Medicao -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_medicao %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Medicao em Campo</strong>
+                    <span class="text-muted">{{ proposta.data_medicao|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Compra -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_compra %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Compra de Materiais</strong>
+                    <span class="text-muted">{{ proposta.data_compra|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inicio Producao -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_inicio_producao %}completed{% elif proposta.status_producao == 'em_producao' %}active{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Inicio da Producao</strong>
+                    <span class="text-muted">{{ proposta.data_inicio_producao|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Conclusao Producao -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_conclusao %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Conclusao da Producao</strong>
+                    <span class="text-muted">{{ proposta.data_conclusao|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                  {% if proposta.data_previsao_conclusao and not proposta.data_conclusao %}
+                    <small class="text-warning">Previsao: {{ proposta.data_previsao_conclusao|date:"d/m/Y" }}</small>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Entrega -->
+            <div class="timeline-item">
+              <div class="timeline-dot {% if proposta.data_entrega %}completed{% else %}pending{% endif %}"></div>
+              <div class="card border-0 bg-light rounded-0">
+                <div class="card-body py-2">
+                  <div class="d-flex justify-content-between">
+                    <strong>Entrega ao Cliente</strong>
+                    <span class="text-muted">{{ proposta.data_entrega|date:"d/m/Y"|default:"-" }}</span>
+                  </div>
+                  {% if proposta.data_previsao_entrega and not proposta.data_entrega %}
+                    <small class="text-warning">Previsao: {{ proposta.data_previsao_entrega|date:"d/m/Y" }}</small>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+          </div>
         </div>
+      </div>
+
     </div>
+  </div>
 </div>
 {% endblock %}

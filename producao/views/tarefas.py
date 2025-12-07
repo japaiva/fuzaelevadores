@@ -6,6 +6,7 @@ Views para gerenciamento de tarefas do sistema de workflow
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
@@ -14,7 +15,7 @@ from django.utils import timezone
 from core.models import Tarefa, HistoricoTarefa
 
 
-@login_required
+@portal_producao
 def lista_tarefas(request):
     """
     Lista tarefas do usuário ou do seu nível
@@ -89,7 +90,7 @@ def lista_tarefas(request):
     return render(request, 'producao/tarefas/lista.html', context)
 
 
-@login_required
+@portal_producao
 def detalhes_tarefa(request, tarefa_id):
     """
     Mostra detalhes de uma tarefa específica
@@ -121,7 +122,7 @@ def detalhes_tarefa(request, tarefa_id):
     return render(request, 'producao/tarefas/detalhes.html', context)
 
 
-@login_required
+@portal_producao
 def iniciar_tarefa(request, tarefa_id):
     """
     Marca a tarefa como 'em_andamento'
@@ -161,7 +162,7 @@ def iniciar_tarefa(request, tarefa_id):
     return redirect('producao:tarefa_detalhes', tarefa_id=tarefa_id)
 
 
-@login_required
+@portal_producao
 def concluir_tarefa(request, tarefa_id):
     """
     Marca a tarefa como concluída
@@ -210,7 +211,7 @@ def concluir_tarefa(request, tarefa_id):
     return render(request, 'producao/tarefas/concluir.html', context)
 
 
-@login_required
+@portal_producao
 def cancelar_tarefa(request, tarefa_id):
     """
     Cancela uma tarefa
@@ -253,7 +254,7 @@ def cancelar_tarefa(request, tarefa_id):
     return render(request, 'producao/tarefas/cancelar.html', context)
 
 
-@login_required
+@portal_producao
 def contador_tarefas_pendentes(request):
     """
     API que retorna o número de tarefas pendentes do usuário

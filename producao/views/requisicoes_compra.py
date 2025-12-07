@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import portal_producao
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 # CRUD REQUISIÇÕES DE COMPRA
 # =============================================================================
 
-@login_required
+@portal_producao
 def requisicao_compra_list(request):
     """Lista de requisições de compra com filtros"""
     requisicoes_list = RequisicaoCompra.objects.select_related(
@@ -85,7 +86,7 @@ def requisicao_compra_list(request):
     return render(request, 'producao/requisicoes/requisicao_compra_list.html', context)
 
 
-@login_required
+@portal_producao
 def requisicao_compra_create(request):
     """Criar nova requisição de compra"""
     # Pegar lista_materiais_id da URL se vier da lista de materiais
@@ -176,7 +177,7 @@ def requisicao_compra_create(request):
     return render(request, 'producao/requisicoes/requisicao_compra_form.html', context)
 
 
-@login_required
+@portal_producao
 def requisicao_compra_detail(request, pk):
     """Detalhes da requisição de compra"""
     requisicao = get_object_or_404(
@@ -195,7 +196,7 @@ def requisicao_compra_detail(request, pk):
     return render(request, 'producao/requisicoes/requisicao_compra_detail.html', context)
 
 
-@login_required
+@portal_producao
 def requisicao_compra_update(request, pk):
     """Editar requisição de compra"""
     requisicao = get_object_or_404(RequisicaoCompra, pk=pk)
@@ -260,7 +261,7 @@ def requisicao_compra_update(request, pk):
     return render(request, 'producao/requisicoes/requisicao_compra_form.html', context)
 
 
-@login_required
+@portal_producao
 def requisicao_compra_delete(request, pk):
     """Excluir requisição de compra"""
     requisicao = get_object_or_404(RequisicaoCompra, pk=pk)
@@ -286,7 +287,7 @@ def requisicao_compra_delete(request, pk):
     return render(request, 'producao/requisicoes/requisicao_compra_delete.html', {'requisicao': requisicao})
 
 
-@login_required
+@portal_producao
 def requisicao_compra_toggle_status(request, pk):
     """Alternar status entre Rascunho e Aberta"""
     requisicao = get_object_or_404(RequisicaoCompra, pk=pk)
@@ -320,7 +321,7 @@ def requisicao_compra_toggle_status(request, pk):
     return redirect('producao:requisicao_compra_detail', pk=pk)
 
 
-@login_required
+@portal_producao
 def requisicao_compra_alterar_status(request, pk):
     """Alterar status da requisição"""
     requisicao = get_object_or_404(RequisicaoCompra, pk=pk)
@@ -389,7 +390,7 @@ def requisicao_compra_alterar_status(request, pk):
     return render(request, 'producao/requisicoes/requisicao_compra_alterar_status.html', context)
 
 
-@login_required
+@portal_producao
 def requisicao_compra_gerar_orcamento(request, pk):
     """Gerar orçamento a partir da requisição"""
     requisicao = get_object_or_404(RequisicaoCompra, pk=pk)
