@@ -29,6 +29,7 @@ class PortaPavimento(models.Model):
     ABERTURA_CHOICES = [
         ('direita', 'Direita'),
         ('esquerda', 'Esquerda'),
+        ('central', 'Central'),
     ]
     
     # === CAMPOS EXISTENTES ===
@@ -78,14 +79,13 @@ class PortaPavimento(models.Model):
         help_text="Altura específica da porta deste pavimento"
     )
     
-    # Folhas (ainda em análise - único por pavimento por enquanto)
+    # Folhas (número de folhas da porta)
     folhas = models.CharField(
         max_length=10,
         choices=[
             ('2', '2 Folhas'),
             ('3', '3 Folhas'),
             ('4', '4 Folhas'),
-            ('Central', 'Central'),
         ],
         blank=True,
         verbose_name="Número de Folhas",

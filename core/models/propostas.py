@@ -172,12 +172,13 @@ class Proposta(models.Model):
 
 # No modelo Proposta, adicionar após o campo 'saida_cabine':
 
-    # NOVO CAMPO: Abertura da Cabine
+    # Abertura da Cabine (direção de abertura da porta)
     abertura_cabine = models.CharField(
         max_length=10,
         choices=[
             ('direita', 'Direita'),
             ('esquerda', 'Esquerda'),
+            ('central', 'Central'),
         ],
         default='direita',
         verbose_name="Abertura da Cabine"
@@ -298,7 +299,7 @@ class Proposta(models.Model):
 
     folhas_porta_cabine = models.CharField(
         max_length=10,
-        choices=[('2', '2'), ('3', '3'),  ('4', '4'),('Central', 'Central')],
+        choices=[('2', '2'), ('3', '3'), ('4', '4')],
         blank=True,
         verbose_name="Folhas Porta Cabine"
     )
@@ -345,7 +346,7 @@ class Proposta(models.Model):
 
     folhas_porta_pavimento = models.CharField(
         max_length=10,
-        choices=[('2', '2'), ('3', '3'),  ('4', '4'),('Central', 'Central')],
+        choices=[('2', '2'), ('3', '3'), ('4', '4')],
         blank=True,
         verbose_name="Folhas Porta Pavimento"
     )

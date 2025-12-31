@@ -187,7 +187,7 @@ def regra_yaml_toggle_status(request, pk):
 def regra_yaml_validar(request, pk):
     """Validar códigos de produtos da regra"""
     regra = get_object_or_404(RegraYAML, pk=pk)
-    
+
     try:
         if regra.validar_codigos_produtos():
             regra.save(update_fields=['validado', 'ultimo_erro'])
@@ -197,5 +197,85 @@ def regra_yaml_validar(request, pk):
             messages.warning(request, f'Regra "{regra.nome}" contém erros: {regra.ultimo_erro}')
     except Exception as e:
         messages.error(request, f'Erro na validação: {str(e)}')
-    
+
     return redirect('producao:regras_yaml_list')
+
+
+# =============================================================================
+# FÓRMULAS DE CÁLCULO - DOCUMENTAÇÃO
+# =============================================================================
+
+@portal_producao
+def formulas_calculo(request):
+    """
+    Exibe a documentação das fórmulas de cálculo de dimensionamento.
+    Inclui os parâmetros atuais configurados no sistema.
+    """
+    from core.models import ParametrosGerais
+
+    # Obter parâmetros atuais
+    params_obj = ParametrosGerais.objects.first()
+
+    params = {
+        'percentual_mao_obra': params_obj.percentual_mao_obra if params_obj else 15.00,
+        'percentual_indiretos_fabricacao': params_obj.percentual_indiretos_fabricacao if params_obj else 5.00,
+        'percentual_instalacao': params_obj.percentual_instalacao if params_obj else 5.00,
+        'margem_padrao': params_obj.margem_padrao if params_obj else 30.00,
+        'comissao_padrao': params_obj.comissao_padrao if params_obj else 3.00,
+    }
+
+    # Obter regras YAML e validar códigos
+    import yaml
+    regras_yaml = RegraYAML.objects.all().order_by('tipo')
+    regras_com_erro = []
+
+    def extrair_contexto_codigo(dados, caminho_partes):
+        """Navega pelo YAML e extrai o contexto (nome/descricao) do código"""
+        try:
+            obj = dados
+            for parte in caminho_partes:
+                if '[' in parte:
+                    key = parte.split('[')[0]
+                    idx = int(parte.split('[')[1].replace(']', ''))
+                    obj = obj[key][idx]
+                else:
+                    obj = obj[parte]
+            return obj.get('nome', '') or obj.get('descricao', '') or ''
+        except:
+            return ''
+
+    for regra in regras_yaml:
+        # Revalidar para pegar erros atualizados
+        regra.validar_codigos_produtos()
+        if not regra.validado and regra.ultimo_erro:
+            # Extrair códigos com contexto
+            try:
+                dados_yaml = yaml.safe_load(regra.conteudo_yaml)
+            except:
+                dados_yaml = {}
+
+            codigos_detalhados = []
+            for linha in regra.ultimo_erro.split('\n'):
+                if 'codigo_produto' in linha and ': ' in linha:
+                    caminho, codigo = linha.rsplit(': ', 1)
+                    # Extrair contexto do caminho (ir até o pai do codigo_produto)
+                    partes = caminho.replace('].', '].').split('.')
+                    partes_pai = partes[:-1]  # Remove 'codigo_produto'
+                    contexto = extrair_contexto_codigo(dados_yaml, partes_pai)
+                    codigos_detalhados.append({
+                        'codigo': codigo.strip(),
+                        'contexto': contexto
+                    })
+
+            regras_com_erro.append({
+                'tipo': regra.get_tipo_display(),
+                'nome': regra.nome,
+                'ativa': regra.ativa,
+                'codigos': codigos_detalhados
+            })
+
+    return render(request, 'producao/formulas_calculo.html', {
+        'params': params,
+        'regras_yaml': regras_yaml,
+        'regras_com_erro': regras_com_erro,
+    })

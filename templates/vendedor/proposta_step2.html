@@ -245,6 +245,7 @@
                         <select name="porta_abertura_{{ porta.andar }}" class="form-select form-select-sm">
                           <option value="direita" {% if porta.abertura_porta == 'direita' %}selected{% endif %}>Direita</option>
                           <option value="esquerda" {% if porta.abertura_porta == 'esquerda' %}selected{% endif %}>Esquerda</option>
+                          <option value="central" {% if porta.abertura_porta == 'central' %}selected{% endif %}>Central</option>
                         </select>
                       </div>
                     </div>
@@ -300,7 +301,6 @@
                                 <option value="2" {% if porta.folhas == '2' %}selected{% endif %}>2 Folhas</option>
                                 <option value="3" {% if porta.folhas == '3' %}selected{% endif %}>3 Folhas</option>
                                 <option value="4" {% if porta.folhas == '4' %}selected{% endif %}>4 Folhas</option>
-                                <option value="Central" {% if porta.folhas == 'Central' %}selected{% endif %}>Central</option>
                             </select>
                         </div>
                     </div>

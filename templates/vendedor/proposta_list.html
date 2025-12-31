@@ -160,13 +160,20 @@
                     <i class="fas fa-file-contract"></i>
                   </a>
 
-                  <a href="{% url 'vendedor:proposta_status' pedido.pk %}" 
+                  <a href="{% url 'vendedor:proposta_status' pedido.pk %}"
                     class="btn btn-sm btn-outline-secondary"
                     title="Alterar Status"
                     data-bs-toggle="tooltip">
                     <i class="fas fa-exchange-alt"></i>
                   </a>
-                  
+
+                  <form method="post" action="{% url 'vendedor:proposta_calcular' pedido.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-info" title="Calcular Preço" data-bs-toggle="tooltip">
+                      <i class="fas fa-calculator"></i>
+                    </button>
+                  </form>
+
                   <!-- Dropdown com opções extras -->
                   <button type="button" 
                           class="btn btn-sm btn-outline-secondary dropdown-toggle" 
@@ -181,17 +188,6 @@
                         <i class="fas fa-copy me-2"></i>Duplicar
                       </a>
                     </li>
-
-                    {% if pedido.pode_calcular %}
-                    <li>
-                      <form method="post" action="{% url 'vendedor:proposta_calcular' pedido.pk %}" class="d-inline w-100">
-                        {% csrf_token %}
-                        <button type="submit" class="dropdown-item text-info">
-                          <i class="fas fa-calculator me-2"></i>Calcular
-                        </button>
-                      </form>
-                    </li>
-                    {% endif %}
 
                     {% if pedido.pode_excluir %}
                     <li><hr class="dropdown-divider"></li>

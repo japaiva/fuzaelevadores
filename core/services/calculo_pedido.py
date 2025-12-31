@@ -39,8 +39,37 @@ class CalculoPedidoService:
     """
     Serviço principal para cálculos de pedidos de elevadores
     ✅ HÍBRIDO: CABINE via YAML + CARRINHO/TRAÇÃO/SISTEMAS via hard-coded
+    ✅ PARAMETRIZADO: Custos indiretos e formação de preço via ParametrosGerais
     """
-    
+
+    @staticmethod
+    def _obter_parametros():
+        """
+        Obtém os parâmetros de cálculo do banco de dados.
+        Retorna valores padrão se não existir registro.
+        """
+        try:
+            params = ParametrosGerais.objects.first()
+            if params:
+                return {
+                    'percentual_mao_obra': params.percentual_mao_obra / Decimal('100'),
+                    'percentual_indiretos_fabricacao': params.percentual_indiretos_fabricacao / Decimal('100'),
+                    'percentual_instalacao': params.percentual_instalacao / Decimal('100'),
+                    'margem_padrao': params.margem_padrao / Decimal('100'),
+                    'comissao_padrao': params.comissao_padrao / Decimal('100'),
+                }
+        except Exception as e:
+            logger.warning(f"Erro ao obter parâmetros: {e}. Usando valores padrão.")
+
+        # Valores padrão caso não exista registro
+        return {
+            'percentual_mao_obra': Decimal('0.15'),           # 15%
+            'percentual_indiretos_fabricacao': Decimal('0.05'),  # 5%
+            'percentual_instalacao': Decimal('0.05'),         # 5%
+            'margem_padrao': Decimal('0.30'),                 # 30%
+            'comissao_padrao': Decimal('0.03'),               # 3%
+        }
+
     @staticmethod
     def _calcular_custos_componentes(pedido, dimensionamento) -> Dict[str, Any]:
         """
@@ -180,30 +209,38 @@ class CalculoPedidoService:
             raise ValueError(f"Erro no cálculo YAML dos SISTEMAS: {str(e)}")
         
         # =================================================================
-        # TOTALIZAÇÕES E FORMAÇÃO DE PREÇO (MANTÉM IGUAL)
+        # TOTALIZAÇÕES E FORMAÇÃO DE PREÇO (PARAMETRIZADO)
         # =================================================================
-        
+
         custo_materiais = sum(custos_por_categoria.values())
         logger.info(f"📊 TOTAL MATERIAIS: R$ {custo_materiais}")
-        
-        # MOD, indiretos, etc. (MANTÉM IGUAL)
-        custo_mao_obra_producao = custo_materiais * Decimal('0.15')     # 15%
-        custo_indiretos_fabricacao = custo_materiais * Decimal('0.05')  # 5%
-        custo_instalacao = custo_materiais * Decimal('0.05')            # 5%
-        
+
+        # ✅ OBTER PARÂMETROS DO BANCO DE DADOS
+        params = CalculoPedidoService._obter_parametros()
+        logger.info(f"📋 Parâmetros: MOD={params['percentual_mao_obra']*100}%, "
+                    f"Indiretos={params['percentual_indiretos_fabricacao']*100}%, "
+                    f"Instalação={params['percentual_instalacao']*100}%, "
+                    f"Margem={params['margem_padrao']*100}%, "
+                    f"Comissão={params['comissao_padrao']*100}%")
+
+        # MOD, indiretos, etc. (PARAMETRIZADO)
+        custo_mao_obra_producao = custo_materiais * params['percentual_mao_obra']
+        custo_indiretos_fabricacao = custo_materiais * params['percentual_indiretos_fabricacao']
+        custo_instalacao = custo_materiais * params['percentual_instalacao']
+
         # CUSTO DE PRODUÇÃO = só fábrica (SEM instalação)
         custo_producao = custo_materiais + custo_mao_obra_producao + custo_indiretos_fabricacao
-        
+
         # CUSTO TOTAL DO PROJETO
         custo_total_projeto = custo_producao + custo_instalacao
-        
-        # FORMAÇÃO DE PREÇO LINEAR
-        margem_lucro = custo_total_projeto * Decimal('0.30')  # 30%
+
+        # FORMAÇÃO DE PREÇO LINEAR (PARAMETRIZADO)
+        margem_lucro = custo_total_projeto * params['margem_padrao']
         preco_com_margem = custo_total_projeto + margem_lucro
-        
-        comissao = preco_com_margem * Decimal('0.03')  # 3%
+
+        comissao = preco_com_margem * params['comissao_padrao']
         preco_com_comissao = preco_com_margem + comissao
-        
+
         impostos = pedido.calcular_impostos_dinamicos(preco_com_comissao)
         preco_final = preco_com_comissao + impostos
         
@@ -241,8 +278,16 @@ class CalculoPedidoService:
             'metodo_usado': {
                 'CABINE': 'YAML',
                 'CARRINHO': 'YAML',
-                'TRACAO': 'YAML', 
+                'TRACAO': 'YAML',
                 'SIST_COMPLEMENTARES': 'YAML'
+            },
+            # ✅ PARÂMETROS USADOS (para auditoria)
+            'parametros_usados': {
+                'percentual_mao_obra': float(params['percentual_mao_obra'] * 100),
+                'percentual_indiretos_fabricacao': float(params['percentual_indiretos_fabricacao'] * 100),
+                'percentual_instalacao': float(params['percentual_instalacao'] * 100),
+                'margem_padrao': float(params['margem_padrao'] * 100),
+                'comissao_padrao': float(params['comissao_padrao'] * 100),
             }
         }
 

@@ -46,15 +46,19 @@
 
 <!-- Engenharia -->
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'proposta' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'proposta' in request.resolver_match.url_name or 'regras' in request.resolver_match.url_name or 'formulas' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Engenharia
   </a>
   <ul class="dropdown-menu dropdown-menu-dark">
     <li><a class="dropdown-item" href="{% url 'producao:proposta_list_producao' %}">
         Projetos
     </a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><a class="dropdown-item" href="{% url 'producao:regras_yaml_list' %}">
         Regras Composicao Preco
+    </a></li>
+    <li><a class="dropdown-item" href="{% url 'producao:formulas_calculo' %}">
+        Formulas de Calculo
     </a></li>
   </ul>
 </li>

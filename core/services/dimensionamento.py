@@ -29,6 +29,7 @@ class DimensionamentoService:
             comprimento_poco = float(especificacoes.get("Comprimento do Poço", 0))
             modelo_porta = especificacoes.get("Modelo Porta", "")
             folhas_porta = especificacoes.get("Folhas Porta", "")
+            abertura_porta = especificacoes.get("Abertura Porta", "")
             contrapeso = especificacoes.get("Contrapeso", "")
             modelo = especificacoes.get("Modelo do Elevador", "")
             capacidade_original = float(especificacoes.get("Capacidade", 0))
@@ -42,7 +43,7 @@ class DimensionamentoService:
             
             # Calcular comprimento
             comprimento = DimensionamentoService._calcular_comprimento_cabine(
-                comprimento_poco, modelo_porta, folhas_porta, saida, contrapeso
+                comprimento_poco, modelo_porta, folhas_porta, abertura_porta, saida, contrapeso
             )
             
             # Arredondar dimensões
@@ -63,7 +64,7 @@ class DimensionamentoService:
             # Gerar explicação
             explicacao_texto = DimensionamentoService._gerar_explicacao(
                 largura_poco, comprimento_poco, altura, largura, comprimento,
-                modelo_porta, folhas_porta, contrapeso, saida, modelo,
+                modelo_porta, folhas_porta, abertura_porta, contrapeso, saida, modelo,
                 capacidade_original, capacidade_cabine, tracao_cabine, chapas_info
             )
             
@@ -105,14 +106,15 @@ class DimensionamentoService:
         return largura
     
     @staticmethod
-    def _calcular_comprimento_cabine(comprimento_poco, modelo_porta, folhas_porta, saida, contrapeso):
+    def _calcular_comprimento_cabine(comprimento_poco, modelo_porta, folhas_porta, abertura_porta, saida, contrapeso):
         """Calcula o comprimento da cabine"""
         comprimento = comprimento_poco - 0.10
-        
+
         # Calcular ajuste da porta
         ajuste_porta = 0.0
         if modelo_porta == "Automática":
-            if folhas_porta == "Central":
+            # Abertura central tem ajuste específico
+            if abertura_porta and abertura_porta.lower() == "central":
                 ajuste_porta = 0.138
             elif folhas_porta == "2":
                 ajuste_porta = 0.21
@@ -149,23 +151,26 @@ class DimensionamentoService:
         
     @staticmethod
     def _gerar_explicacao(largura_poco, comprimento_poco, altura, largura, comprimento,
-                         modelo_porta, folhas_porta, contrapeso, saida, modelo,
+                         modelo_porta, folhas_porta, abertura_porta, contrapeso, saida, modelo,
                          capacidade_original, capacidade_cabine, tracao_cabine, chapas_info):
         """Gera explicação detalhada dos cálculos"""
         from core.utils.formatters import formato_seguro, formato_negrito
-        
+
         explicacoes = []
-        
+
         # Dimensões da cabine
         explicacoes.append(f"\n{formato_negrito('Dimensões Cabine:')}")
-        
+
         sub_largura = 0.42 if largura_poco <= 1.5 else 0.48
         explicacoes.append(f"Largura: Poço = {formato_seguro(largura_poco)}m - ({formato_seguro(sub_largura)}m)"
                           f"{' -Contrapeso lateral (0,23m),' if contrapeso == 'Lateral' else ''} = {formato_seguro(largura)}m")
-        
+
         ajuste_porta = 0.0
+        # Verificar tipo de abertura para cálculo
+        abertura_central = abertura_porta and abertura_porta.lower() == "central"
+
         if modelo_porta == "Automática":
-            if folhas_porta == "Central":
+            if abertura_central:
                 ajuste_porta = 0.138
             elif folhas_porta == "2":
                 ajuste_porta = 0.21
@@ -175,12 +180,19 @@ class DimensionamentoService:
             ajuste_porta = 0.13
         elif modelo_porta == "Pivotante":
             ajuste_porta = 0.04
-            
+
         if saida == "Oposta":
             ajuste_porta *= 2
-        
+
+        # Montar descrição da porta
+        desc_porta = modelo_porta
+        if abertura_central:
+            desc_porta += " (abertura central)"
+        elif folhas_porta:
+            desc_porta += f" ({folhas_porta} folhas)"
+
         explicacoes.append(f"Comprimento: Poço = {formato_seguro(comprimento_poco)}m - (0,10m) - "
-                          f"Ajuste de porta {modelo_porta} {f'({folhas_porta} folhas)' if folhas_porta else ''} "
+                          f"Ajuste de porta {desc_porta} "
                           f"{'(x2 pois saída é oposta)' if saida == 'Oposta' else ''} ({formato_seguro(ajuste_porta)}m)"
                           f"{' - Contrapeso traseiro (0,23m)' if contrapeso == 'Traseiro' else ''} = {formato_seguro(comprimento)}m")
         

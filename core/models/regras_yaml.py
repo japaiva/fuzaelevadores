@@ -107,8 +107,8 @@ class RegraYAML(models.Model):
                         novo_caminho = f"{caminho}.{chave}" if caminho else chave
                         
                         if chave == 'codigo_produto':
-                            # Verificar se o código existe
-                            if not Produto.objects.filter(codigo=valor, disponivel=True).exists():
+                            # Verificar se o código existe (mesmo critério do cálculo)
+                            if not Produto.objects.filter(codigo=valor, utilizado=True, status='ATIVO').exists():
                                 codigos_faltantes.append(f"{novo_caminho}: {valor}")
                         
                         elif isinstance(valor, (dict, list)):

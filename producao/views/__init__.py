@@ -153,6 +153,9 @@ from .regras_yaml import (
     # Actions Regras YAML
     regra_yaml_toggle_status,
     regra_yaml_validar,
+
+    # Documentação de Fórmulas
+    formulas_calculo,
 )
 
 # =============================================================================

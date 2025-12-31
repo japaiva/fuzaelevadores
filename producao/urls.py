@@ -39,7 +39,12 @@ urlpatterns = [
     path('regras-yaml/<int:pk>/excluir/', views.regra_yaml_delete, name='regra_yaml_delete'),
     path('regras-yaml/<int:pk>/toggle-status/', views.regra_yaml_toggle_status, name='regra_yaml_toggle_status'),
     path('regras-yaml/<int:pk>/validar/', views.regra_yaml_validar, name='regra_yaml_validar'),
-    
+
+    # =======================================================================
+    # 📐 FÓRMULAS DE CÁLCULO (Documentação)
+    # =======================================================================
+    path('formulas-calculo/', views.formulas_calculo, name='formulas_calculo'),
+
     # =======================================================================
     # 👥 FORNECEDORES
     # =======================================================================

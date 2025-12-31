@@ -43,11 +43,55 @@ class ParametrosGerais(models.Model):
         help_text="Email ou telefone do setor de compras"
     )
 
-    # === PARÂMETROS NUMÉRICOS ===
-    margem_padrao = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    comissao_padrao = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    desconto_alcada_1 = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    desconto_alcada_2 = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    # === PARÂMETROS DE CUSTOS INDIRETOS (%) ===
+    percentual_mao_obra = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=15.00,
+        verbose_name="Mão de Obra (%)",
+        help_text="Percentual de mão de obra sobre o custo de materiais"
+    )
+    percentual_indiretos_fabricacao = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=5.00,
+        verbose_name="Indiretos Fabricação (%)",
+        help_text="Percentual de custos indiretos de fabricação"
+    )
+    percentual_instalacao = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=5.00,
+        verbose_name="Instalação (%)",
+        help_text="Percentual de custo de instalação"
+    )
+
+    # === PARÂMETROS DE FORMAÇÃO DE PREÇO (%) ===
+    margem_padrao = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=30.00,
+        verbose_name="Margem de Lucro (%)",
+        help_text="Margem de lucro padrão sobre o custo total"
+    )
+    comissao_padrao = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=3.00,
+        verbose_name="Comissão (%)",
+        help_text="Percentual de comissão sobre o preço"
+    )
+
+    # === PARÂMETROS DE DESCONTO ===
+    desconto_alcada_1 = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=5.00,
+        verbose_name="Desconto Alçada 1 (%)",
+        help_text="Desconto máximo permitido para alçada 1"
+    )
+    desconto_alcada_2 = models.DecimalField(
+        max_digits=5, decimal_places=2,
+        default=10.00,
+        verbose_name="Desconto Alçada 2 (%)",
+        help_text="Desconto máximo permitido para alçada 2"
+    )
+
+    # === FATURAMENTO ===
     faturamento_elevadores = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     faturamento_fuza = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     faturamento_manutencao = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)

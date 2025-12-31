@@ -20,12 +20,20 @@ class ParametrosGeraisForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
     class Meta:
         model = ParametrosGerais
         fields = [
+            # Dados da empresa
             'razao_social', 'nome_fantasia', 'cnpj', 'inscricao_estadual',
             'endereco', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep',
             'telefone', 'email',
-            'comprador_responsavel', 'contato_compras',  # NOVOS CAMPOS
-            'margem_padrao', 'faturamento_elevadores', 'faturamento_fuza', 'faturamento_manutencao',
-            'comissao_padrao', 'desconto_alcada_1', 'desconto_alcada_2'
+            # Compras
+            'comprador_responsavel', 'contato_compras',
+            # Custos indiretos (NOVOS)
+            'percentual_mao_obra', 'percentual_indiretos_fabricacao', 'percentual_instalacao',
+            # Formação de preço
+            'margem_padrao', 'comissao_padrao',
+            # Descontos
+            'desconto_alcada_1', 'desconto_alcada_2',
+            # Faturamento
+            'faturamento_elevadores', 'faturamento_fuza', 'faturamento_manutencao',
         ]
         widgets = {
             'razao_social': forms.TextInput(attrs={
@@ -77,14 +85,23 @@ class ParametrosGeraisForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
                 'placeholder': 'Email ou telefone do setor de compras'
             }),
             
-            # CAMPOS FINANCEIROS
+            # CUSTOS INDIRETOS (NOVOS)
+            'percentual_mao_obra': PercentageInput(),
+            'percentual_indiretos_fabricacao': PercentageInput(),
+            'percentual_instalacao': PercentageInput(),
+
+            # FORMAÇÃO DE PREÇO
             'margem_padrao': PercentageInput(),
+            'comissao_padrao': PercentageInput(),
+
+            # DESCONTOS
+            'desconto_alcada_1': PercentageInput(),
+            'desconto_alcada_2': PercentageInput(),
+
+            # FATURAMENTO
             'faturamento_elevadores': PercentageInput(),
             'faturamento_fuza': PercentageInput(),
             'faturamento_manutencao': PercentageInput(),
-            'comissao_padrao': PercentageInput(),
-            'desconto_alcada_1': PercentageInput(),
-            'desconto_alcada_2': PercentageInput(),
         }
         labels = {
             'razao_social': 'Razão Social',
@@ -105,14 +122,23 @@ class ParametrosGeraisForm(BaseModelForm, AuditMixin, ValidacaoComumMixin):
             'comprador_responsavel': 'Comprador Responsável',
             'contato_compras': 'Contato de Compras',
             
-            # CAMPOS FINANCEIROS
-            'margem_padrao': 'Margem Padrão (%)',
+            # CUSTOS INDIRETOS
+            'percentual_mao_obra': 'Mão de Obra (%)',
+            'percentual_indiretos_fabricacao': 'Indiretos Fabricação (%)',
+            'percentual_instalacao': 'Instalação (%)',
+
+            # FORMAÇÃO DE PREÇO
+            'margem_padrao': 'Margem de Lucro (%)',
+            'comissao_padrao': 'Comissão (%)',
+
+            # DESCONTOS
+            'desconto_alcada_1': 'Desconto Alçada 1 (%)',
+            'desconto_alcada_2': 'Desconto Alçada 2 (%)',
+
+            # FATURAMENTO
             'faturamento_elevadores': 'Faturamento Elevadores (%)',
             'faturamento_fuza': 'Faturamento FUZA (%)',
             'faturamento_manutencao': 'Faturamento Manutenção (%)',
-            'comissao_padrao': 'Comissão Padrão (%)',
-            'desconto_alcada_1': 'Desconto Alçada 1 (%)',
-            'desconto_alcada_2': 'Desconto Alçada 2 (%)',
         }
 
     def __init__(self, *args, **kwargs):

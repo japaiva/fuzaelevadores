@@ -34,9 +34,14 @@
 </li>
 
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle {% if 'vistoria' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+  <a class="nav-link dropdown-toggle {% if 'formulas' in request.resolver_match.url_name %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Gerencial
   </a>
+  <ul class="dropdown-menu dropdown-menu-dark">
+    <li><a class="dropdown-item" href="{% url 'producao:formulas_calculo' %}?origem=vendedor">
+        Formulas de Calculo
+    </a></li>
+  </ul>
 </li>
 
 {% endblock %}
